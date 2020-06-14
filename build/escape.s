@@ -25,7 +25,6 @@
 	.import		_memcpy
 	.import		_set_vram_buffer
 	.import		_clear_vram_buffer
-	.import		_check_collision
 	.import		_set_scroll_y
 	.import		_get_ppu_addr
 	.import		_set_data_pointer
@@ -69,17 +68,18 @@
 	.export		_L_R_switch
 	.export		_old_x
 	.export		_old_y
-	.export		_text
 	.export		_c_map
 	.export		_c_map2
 	.export		_palette_bg
 	.export		_palette_sp
 	.export		_valrigard
+	.export		_hitbox
 	.export		_star
 	.export		_draw_sprites
 	.export		_movement
-	.export		_test_collision
 	.export		_load_room
+	.export		_bg_collision
+	.export		_bg_collision_sub
 	.export		_main
 
 .segment	"DATA"
@@ -87,8 +87,6 @@
 _valrigard:
 	.byte	$14
 	.byte	$28
-	.byte	$0F
-	.byte	$0F
 _star:
 	.byte	$46
 	.byte	$28
@@ -618,9 +616,6 @@ _testmap:
 	.byte	$04
 	.byte	$04
 	.byte	$04
-_text:
-	.byte	$45,$20,$69,$73,$20,$66,$6F,$72,$20,$45,$6D,$72,$61,$6B,$75,$6C
-	.byte	$00
 _palette_bg:
 	.byte	$0F
 	.byte	$00
@@ -728,6 +723,8 @@ _c_map:
 	.res	240,$00
 _c_map2:
 	.res	240,$00
+_hitbox:
+	.res	4,$00
 
 ; ---------------------------------------------------------------
 ; void __near__ draw_sprites (void)
@@ -747,7 +744,7 @@ _c_map2:
 ; if (direction == LEFT) {
 ;
 	lda     _direction
-	bne     L027F
+	bne     L0286
 ;
 ; oam_meta_spr(valrigard.x, valrigard.y, valrigardIdleLeft);
 ;
@@ -763,11 +760,11 @@ _c_map2:
 ;
 ; } else {
 ;
-	jmp     L02BF
+	jmp     L037B
 ;
 ; oam_meta_spr(valrigard.x, valrigard.y, valrigardIdleRight);
 ;
-L027F:	jsr     decsp2
+L0286:	jsr     decsp2
 	lda     _valrigard
 	ldy     #$01
 	sta     (sp),y
@@ -776,7 +773,7 @@ L027F:	jsr     decsp2
 	sta     (sp),y
 	lda     #<(_valrigardIdleRight)
 	ldx     #>(_valrigardIdleRight)
-L02BF:	jsr     _oam_meta_spr
+L037B:	jsr     _oam_meta_spr
 ;
 ; oam_meta_spr(star.x, star.y, valrigardIdleLeftAlternate);
 ;
@@ -809,11 +806,11 @@ L02BF:	jsr     _oam_meta_spr
 	lda     _valrigard
 	sta     _old_x
 ;
-; if(pad1 & PAD_LEFT){
+; if (pad1 & PAD_LEFT) {
 ;
 	lda     _pad1
 	and     #$02
-	beq     L02C2
+	beq     L0381
 ;
 ; direction = LEFT;
 ;
@@ -824,7 +821,7 @@ L02BF:	jsr     _oam_meta_spr
 ;
 	lda     _valrigard
 	cmp     #$02
-	bcs     L02C1
+	bcs     L0380
 ;
 ; hero_velocity_x = 0;
 ;
@@ -838,107 +835,325 @@ L02BF:	jsr     _oam_meta_spr
 	sta     _hero_x
 	stx     _hero_x+1
 ;
-; } else if (valrigard.x < 4) {
+; } else if (valrigard.x < 4) { // Don't allow us to wrap to the other side
 ;
-	jmp     L02C3
-L02C1:	lda     _valrigard
+	jmp     L02BD
+L0380:	lda     _valrigard
 	cmp     #$04
-	bcs     L029C
+	bcs     L02A3
 ;
 ; hero_velocity_x = -0x100;
 ;
 	ldx     #$FF
 	lda     #$00
-	sta     _hero_velocity_x
-	stx     _hero_velocity_x+1
 ;
 ; } else {
 ;
-	jmp     L02C3
+	jmp     L0384
 ;
 ; hero_velocity_x = -SPEED;
 ;
-L029C:	ldx     #$FE
-	lda     #$80
-	sta     _hero_velocity_x
-	stx     _hero_velocity_x+1
+L02A3:	ldx     #$FE
 ;
 ; else if (pad1 & PAD_RIGHT){
 ;
-	jmp     L02C3
-L02C2:	lda     _pad1
+	jmp     L038D
+L0381:	lda     _pad1
+	ldx     #$00
 	and     #$01
-	beq     L02C3
+	beq     L0384
 ;
-; valrigard.x += 1;
+; direction = RIGHT;
 ;
-	inc     _valrigard
+	lda     #$01
+	sta     _direction
 ;
-; if(pad1 & PAD_UP){
+; if (valrigard.x > 0xf0) {
 ;
-L02C3:	lda     _pad1
+	lda     _valrigard
+	cmp     #$F1
+	bcc     L0382
+;
+; hero_velocity_x = 0;
+;
+	txa
+	sta     _hero_velocity_x
+	sta     _hero_velocity_x+1
+;
+; hero_x = 0xf100;
+;
+	ldx     #$F1
+	sta     _hero_x
+	stx     _hero_x+1
+;
+; } else if (valrigard.x > 0xec) { // Don't allow us to wrap to the other side
+;
+	jmp     L02BD
+L0382:	lda     _valrigard
+	cmp     #$ED
+	bcc     L02B6
+;
+; hero_velocity_x = 0x100;
+;
+	inx
+	lda     #$00
+;
+; } else {
+;
+	jmp     L0384
+;
+; hero_velocity_x = SPEED;
+;
+L02B6:	inx
+L038D:	lda     #$80
+;
+; hero_velocity_x = 0;
+;
+L0384:	sta     _hero_velocity_x
+	stx     _hero_velocity_x+1
+;
+; hero_x += hero_velocity_x;
+;
+L02BD:	lda     _hero_velocity_x
+	clc
+	adc     _hero_x
+	sta     _hero_x
+	lda     _hero_velocity_x+1
+	adc     _hero_x+1
+	sta     _hero_x+1
+;
+; valrigard.x = hero_x >> 8; // Taking the high byte of this 16-bit int, since the low byte is the subpixel x
+;
+	sta     _valrigard
+;
+; L_R_switch = 1; // Shrinks the Y values in bg_coll. This makes head/foot collisions less problematic (examine this)
+;
+	lda     #$01
+	sta     _L_R_switch
+;
+; hitbox.x = valrigard.x; 
+;
+	lda     _valrigard
+	sta     _hitbox
+;
+; hitbox.y = valrigard.y;
+;
+	lda     _valrigard+1
+	sta     _hitbox+1
+;
+; hitbox.width = VALRIGARD_WIDTH;
+;
+	lda     #$0D
+	sta     _hitbox+2
+;
+; hitbox.height = VALRIGARD_HEIGHT;
+;
+	sta     _hitbox+3
+;
+; bg_collision();
+;
+	jsr     _bg_collision
+;
+; if (collision_L && collision_R) { // Half-stuck in a wall, I'm guessing?
+;
+	lda     _collision_L
+	beq     L02CF
+	lda     _collision_R
+	beq     L02CF
+;
+; valrigard.x = old_x;
+;
+	lda     _old_x
+;
+; else if (collision_L) {
+;
+	jmp     L037D
+L02CF:	lda     _collision_L
+	beq     L02D6
+;
+; valrigard.x -= eject_L;
+;
+	lda     _eject_L
+;
+; else if (collision_R) {
+;
+	jmp     L0391
+L02D6:	lda     _collision_R
+	beq     L0385
+;
+; valrigard.x -= eject_R;
+;
+	lda     _eject_R
+L0391:	eor     #$FF
+	sec
+	adc     _valrigard
+L037D:	sta     _valrigard
+;
+; high_byte(hero_x) = valrigard.x;
+;
+L0385:	lda     _valrigard
+	sta     _hero_x+1
+;
+; if (pad1 & PAD_UP) {
+;
+	lda     _pad1
 	and     #$08
-	beq     L02C4
+	beq     L0387
 ;
-; valrigard.y -= 1;
+; if (valrigard.y < 2) {
 ;
-	dec     _valrigard+1
+	lda     _valrigard+1
+	cmp     #$02
+	bcs     L0386
 ;
-; else if (pad1 & PAD_DOWN){
+; hero_velocity_y = 0;
 ;
-	rts
-L02C4:	lda     _pad1
+	lda     #$00
+	sta     _hero_velocity_y
+	sta     _hero_velocity_y+1
+;
+; hero_y = 0x100;
+;
+	ldx     #$01
+	sta     _hero_y
+	stx     _hero_y+1
+;
+; else if (valrigard.y < 4) { // Stop sprite-wrapping
+;
+	jmp     L0303
+L0386:	lda     _valrigard+1
+	cmp     #$04
+	bcs     L02EB
+;
+; hero_velocity_y = -0x100;
+;
+	ldx     #$FF
+	lda     #$00
+;
+; else { 
+;
+	jmp     L038A
+;
+; hero_velocity_y = -SPEED;
+;
+L02EB:	ldx     #$FE
+;
+; else if (pad1 & PAD_DOWN) {
+;
+	jmp     L038F
+L0387:	lda     _pad1
+	ldx     #$00
 	and     #$04
-	beq     L02AD
+	beq     L038A
 ;
-; valrigard.y += 1;
+; if (valrigard.y > 0xdf) {
 ;
-	inc     _valrigard+1
+	lda     _valrigard+1
+	cmp     #$E0
+	bcc     L0388
+;
+; hero_velocity_y = 0;
+;
+	txa
+	sta     _hero_velocity_y
+	sta     _hero_velocity_y+1
+;
+; hero_y = 0xdf00;
+;
+	ldx     #$DF
+	sta     _hero_y
+	stx     _hero_y+1
+;
+; else if (valrigard.y > 0xdc) { // If you could be half in the floor and half in the cieling, would you?
+;
+	jmp     L0303
+L0388:	lda     _valrigard+1
+	cmp     #$DD
+	bcc     L02FC
+;
+; hero_velocity_y = 0x100;
+;
+	inx
+	lda     #$00
+;
+; else {
+;
+	jmp     L038A
+;
+; hero_velocity_y = SPEED;
+;
+L02FC:	inx
+L038F:	lda     #$80
+;
+; hero_velocity_y = 0;
+;
+L038A:	sta     _hero_velocity_y
+	stx     _hero_velocity_y+1
+;
+; hero_y += hero_velocity_y;
+;
+L0303:	lda     _hero_velocity_y
+	clc
+	adc     _hero_y
+	sta     _hero_y
+	lda     _hero_velocity_y+1
+	adc     _hero_y+1
+	sta     _hero_y+1
+;
+; valrigard.y = hero_y >> 8; // "Downcast" to char (high byte is what matters here, the low byte is the subpixel portion)
+;
+	sta     _valrigard+1
+;
+; L_R_switch = 0;
+;
+	lda     #$00
+	sta     _L_R_switch
+;
+; hitbox.x = valrigard.x;
+;
+	lda     _valrigard
+	sta     _hitbox
+;
+; hitbox.y = valrigard.y;
+;
+	lda     _valrigard+1
+	sta     _hitbox+1
+;
+; bg_collision();
+;
+	jsr     _bg_collision
+;
+; if(collision_U) {
+;
+	lda     _collision_U
+	beq     L0311
+;
+; valrigard.y -= eject_U;
+;
+	lda     _eject_U
+;
+; else if (collision_D) {
+;
+	jmp     L0392
+L0311:	lda     _collision_D
+	beq     L0316
+;
+; valrigard.y -= eject_D;
+;
+	lda     _eject_D
+L0392:	eor     #$FF
+	sec
+	adc     _valrigard+1
+	sta     _valrigard+1
+;
+; high_byte(hero_y) = valrigard.y;
+;
+L0316:	lda     _valrigard+1
+	sta     _hero_y+1
 ;
 ; }
 ;
-L02AD:	rts
-
-.endproc
-
-; ---------------------------------------------------------------
-; void __near__ test_collision (void)
-; ---------------------------------------------------------------
-
-.segment	"CODE"
-
-.proc	_test_collision: near
-
-.segment	"CODE"
-
-;
-; collision = check_collision(&valrigard, &star);
-;
-	lda     #<(_valrigard)
-	ldx     #>(_valrigard)
-	jsr     pushax
-	lda     #<(_star)
-	ldx     #>(_star)
-	jsr     _check_collision
-	sta     _collision
-;
-; if (collision){
-;
-	lda     _collision
-	beq     L02C5
-;
-; pal_col(0,0x29);
-;
-	lda     #$00
-	jsr     pusha
-	lda     #$29
-	jmp     _pal_col
-;
-; pal_col(0,0x0f);
-;
-L02C5:	jsr     pusha
-	lda     #$0F
-	jmp     _pal_col
+	rts
 
 .endproc
 
@@ -968,12 +1183,12 @@ L02C5:	jsr     pusha
 ; for (y = 0; /*We'll break manually*/; y += 0x20) {
 ;
 	lda     #$00
-L02C8:	sta     _y
+L0395:	sta     _y
 ;
 ; for (x = 0; ; x += 0x20) {
 ;
 	lda     #$00
-L02C7:	sta     _x
+L0394:	sta     _x
 ;
 ; clear_vram_buffer(); // do this each frame, and before putting anything in the buffer.
 ;
@@ -1024,41 +1239,41 @@ L02C7:	sta     _x
 	ldx     #$00
 	lda     _x
 	cmp     #$E0
-	beq     L02C9
+	beq     L0396
 ;
 ; for (x = 0; ; x += 0x20) {
 ;
 	lda     #$20
 	clc
 	adc     _x
-	jmp     L02C7
+	jmp     L0394
 ;
 ; if (y == 0xe0) break;
 ;
-L02C9:	lda     _y
+L0396:	lda     _y
 	cmp     #$E0
-	beq     L02CA
+	beq     L0397
 ;
 ; for (y = 0; /*We'll break manually*/; y += 0x20) {
 ;
 	lda     #$20
 	clc
 	adc     _y
-	jmp     L02C8
+	jmp     L0395
 ;
 ; set_vram_update(NULL); // just turn ppu updates OFF for this example
 ;
-L02CA:	txa
+L0397:	txa
 	jsr     _set_vram_update
 ;
 ; memcpy (c_map, testmap, 240);
 ;
 	ldy     #$00
-L0278:	lda     _testmap,y
+L027F:	lda     _testmap,y
 	sta     _c_map,y
 	iny
 	cpy     #$F0
-	bne     L0278
+	bne     L027F
 ;
 ; hero_y = valrigard.y << 8;
 ;
@@ -1073,6 +1288,295 @@ L0278:	lda     _testmap,y
 	sta     _hero_x+1
 	lda     #$00
 	sta     _hero_x
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ bg_collision (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_bg_collision: near
+
+.segment	"CODE"
+
+;
+; collision_L = 0;
+;
+	lda     #$00
+	sta     _collision_L
+;
+; collision_R = 0;
+;
+	sta     _collision_R
+;
+; collision_U = 0;
+;
+	sta     _collision_U
+;
+; collision_D = 0;
+;
+	sta     _collision_D
+;
+; if(hitbox.y >= 0xf0) return;
+;
+	lda     _hitbox+1
+	cmp     #$F0
+	bcc     L039A
+;
+; }
+;
+	rts
+;
+; temp6 = temp5 = hitbox.x + scroll_x; // upper left (temp6 = save for reuse)
+;
+L039A:	lda     _hitbox
+	clc
+	adc     _scroll_x
+	pha
+	lda     #$00
+	adc     _scroll_x+1
+	tax
+	pla
+	sta     _temp5
+	stx     _temp5+1
+	sta     _temp6
+	stx     _temp6+1
+;
+; temp1 = temp5 & 0xff; // low byte x
+;
+	lda     _temp5
+	sta     _temp1
+;
+; temp2 = temp5 >> 8; // high byte x
+;
+	lda     _temp5+1
+	sta     _temp2
+;
+; eject_L = temp1 | 0xf0;
+;
+	lda     _temp1
+	ora     #$F0
+	sta     _eject_L
+;
+; temp3 = hitbox.y; // y top
+;
+	lda     _hitbox+1
+	sta     _temp3
+;
+; eject_U = temp3 | 0xf0;
+;
+	ora     #$F0
+	sta     _eject_U
+;
+; if(L_R_switch) temp3 += 2; // fix bug, walking through walls
+;
+	lda     _L_R_switch
+	beq     L0335
+	lda     #$02
+	clc
+	adc     _temp3
+	sta     _temp3
+;
+; bg_collision_sub();
+;
+L0335:	jsr     _bg_collision_sub
+;
+; if(collision){ // find a corner in the collision map
+;
+	lda     _collision
+	beq     L033A
+;
+; ++collision_L;
+;
+	inc     _collision_L
+;
+; ++collision_U;
+;
+	inc     _collision_U
+;
+; temp5 += hitbox.width;
+;
+L033A:	lda     _hitbox+2
+	clc
+	adc     _temp5
+	sta     _temp5
+	lda     #$00
+	adc     _temp5+1
+	sta     _temp5+1
+;
+; temp1 = temp5 & 0xff; // low byte x
+;
+	lda     _temp5
+	sta     _temp1
+;
+; temp2 = temp5 >> 8; // high byte x
+;
+	lda     _temp5+1
+	sta     _temp2
+;
+; eject_R = (temp1 + 1) & 0x0f;
+;
+	lda     _temp1
+	clc
+	adc     #$01
+	and     #$0F
+	sta     _eject_R
+;
+; bg_collision_sub();
+;
+	jsr     _bg_collision_sub
+;
+; if(collision){ // find a corner in the collision map
+;
+	lda     _collision
+	beq     L0349
+;
+; ++collision_R;
+;
+	inc     _collision_R
+;
+; ++collision_U;
+;
+	inc     _collision_U
+;
+; temp3 = hitbox.y + hitbox.height; //y bottom
+;
+L0349:	lda     _hitbox+1
+	clc
+	adc     _hitbox+3
+	sta     _temp3
+;
+; if(L_R_switch) temp3 -= 2; // fix bug, walking through walls
+;
+	lda     _L_R_switch
+	beq     L0399
+	lda     _temp3
+	sec
+	sbc     #$02
+	sta     _temp3
+;
+; eject_D = (temp3 + 1) & 0x0f;
+;
+L0399:	lda     _temp3
+	clc
+	adc     #$01
+	and     #$0F
+	sta     _eject_D
+;
+; if(temp3 >= 0xf0) return;
+;
+	lda     _temp3
+	cmp     #$F0
+	bcs     L0363
+;
+; bg_collision_sub();
+;
+	jsr     _bg_collision_sub
+;
+; if(collision){ // find a corner in the collision map
+;
+	lda     _collision
+	beq     L035A
+;
+; ++collision_R;
+;
+	inc     _collision_R
+;
+; ++collision_D;
+;
+	inc     _collision_D
+;
+; temp1 = temp6 & 0xff; // low byte x
+;
+L035A:	lda     _temp6
+	sta     _temp1
+;
+; temp2 = temp6 >> 8; // high byte x
+;
+	lda     _temp6+1
+	sta     _temp2
+;
+; bg_collision_sub();
+;
+	jsr     _bg_collision_sub
+;
+; if(collision){ // find a corner in the collision map
+;
+	lda     _collision
+	beq     L0363
+;
+; ++collision_L;
+;
+	inc     _collision_L
+;
+; ++collision_D;
+;
+	inc     _collision_D
+;
+; }
+;
+L0363:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ bg_collision_sub (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_bg_collision_sub: near
+
+.segment	"CODE"
+
+;
+; coordinates = (temp1 >> 4) + (temp3 & 0xf0); // upper left
+;
+	lda     _temp1
+	lsr     a
+	lsr     a
+	lsr     a
+	lsr     a
+	sta     ptr1
+	lda     _temp3
+	and     #$F0
+	clc
+	adc     ptr1
+	sta     _coordinates
+;
+; map = temp2&1; // high byte
+;
+	lda     _temp2
+	and     #$01
+	sta     _map
+;
+; if (!map) {
+;
+	lda     _map
+	bne     L036E
+;
+; collision = (c_map[coordinates] < 0x17); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
+;
+	ldy     _coordinates
+	lda     _c_map,y
+;
+; else {
+;
+	jmp     L039E
+;
+; collision = (c_map2[coordinates] < 0x17);
+;
+L036E:	ldy     _coordinates
+	lda     _c_map2,y
+L039E:	cmp     #$17
+	jsr     boolult
+	sta     _collision
 ;
 ; }
 ;
@@ -1124,10 +1628,10 @@ L0278:	lda     _testmap,y
 ;
 	jsr     _load_room
 ;
-; set_scroll_y(0xff); // Shift the background down by 1 pixel to offset the inherent shift in sprites on the NES. (Probably not necessary but we'll see)
+; set_scroll_y(0xfe); // Shift the background down by 2 pixels to offset the inherent shift in sprites on the NES.
 ;
 	ldx     #$00
-	lda     #$FF
+	lda     #$FE
 	jsr     _set_scroll_y
 ;
 ; ppu_on_all(); // turn on screen
@@ -1136,7 +1640,7 @@ L0278:	lda     _testmap,y
 ;
 ; ppu_wait_nmi(); // wait till beginning of the frame
 ;
-L0240:	jsr     _ppu_wait_nmi
+L023D:	jsr     _ppu_wait_nmi
 ;
 ; pad1 = pad_poll(0); // read the first controller
 ;
@@ -1148,17 +1652,38 @@ L0240:	jsr     _ppu_wait_nmi
 ;
 	jsr     _movement
 ;
-; test_collision();
-;
-	jsr     _test_collision
-;
 ; draw_sprites();
 ;
 	jsr     _draw_sprites
 ;
+; if (c_map[coordinates] < 0x04) {
+;
+	ldy     _coordinates
+	lda     _c_map,y
+	cmp     #$04
+	bcs     L0247
+;
+; pal_col(0,0x06);
+;
+	lda     #$00
+	jsr     pusha
+	lda     #$06
+	jsr     _pal_col
+;
+; } else {
+;
+	jmp     L023D
+;
+; pal_col(0,0x0f);
+;
+L0247:	lda     #$00
+	jsr     pusha
+	lda     #$0F
+	jsr     _pal_col
+;
 ; while (1){
 ;
-	jmp     L0240
+	jmp     L023D
 
 .endproc
 

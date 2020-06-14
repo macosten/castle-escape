@@ -36,10 +36,14 @@ unsigned char direction; //facing left or right?
 #define RIGHT 1
 
 int address;
-unsigned char x; // room loader code
+
+// load_room variables
+unsigned char x;
 unsigned char y;
 unsigned char index;
 unsigned char map;
+
+
 unsigned int scroll_x;
 unsigned int scroll_y;
 signed int hero_velocity_x; // signed, low byte is sub-pixel
@@ -50,14 +54,12 @@ unsigned char L_R_switch;
 unsigned char old_x;
 unsigned char old_y;
 
-#define VALRIGARD_WIDTH 11
+#define VALRIGARD_WIDTH 13
 #define VALRIGARD_HEIGHT 13
 
 #define SPEED 0x180
 
 #pragma bss-name(push, "BSS")
-
-const unsigned char text[]="E is for Emrakul";
 
 // Used for collisions.
 unsigned char c_map[240];
@@ -78,13 +80,13 @@ const unsigned char palette_sp[]={
 };
 
 // X, Y, Width, Height
-Player valrigard = {20, 40, 15, 15}; // A width of 12 simulates the original game's quirky, slightly-shifted-forward hitbox
+Player valrigard = {20, 40}; // A width of 12 simulates the original game's quirky, slightly-shifted-forward hitbox
+Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C stack is not preferable to using a global in this use case)
 Enemy star = {70, 40, 15, 15};
     
 // MARK: Function Declarations
 void draw_sprites(void);
 void movement(void);
-void test_collision(void);
 void load_room(void);
 void bg_collision(void);
 void bg_collision_sub(void);
@@ -114,7 +116,7 @@ void main (void) {
 
     load_room();
     
-    set_scroll_y(0xff); // Shift the background down by 1 pixel to offset the inherent shift in sprites on the NES. (Probably not necessary but we'll see)
+    set_scroll_y(0xfe); // Shift the background down by 2 pixels to offset the inherent shift in sprites on the NES.
     
     ppu_on_all(); // turn on screen
     
@@ -130,9 +132,17 @@ void main (void) {
         
         movement();
         
-        test_collision();
-        
         draw_sprites();
+
+
+        // If it were any of the first 4 tiles, then we should die, because we're touching spikes -- still need to figure out how best to actually make this reliable...
+        if (c_map[coordinates] < 0x04) {
+            pal_col(0,0x06);
+        } else {
+            pal_col(0,0x0f);
+        }
+
+
     }
     
 }
@@ -177,46 +187,210 @@ void draw_sprites(void) {
     
     oam_meta_spr(star.x, star.y, valrigardIdleLeftAlternate);
 }
-    
 
 void movement(void) {
     
+    // Handle X.
     old_x = valrigard.x;
     
-    if(pad1 & PAD_LEFT){
+    // Left
+    if (pad1 & PAD_LEFT) {
         direction = LEFT;
         if (valrigard.x < 2) {
             hero_velocity_x = 0;
             hero_x = 0x100;
-        } else if (valrigard.x < 4) {
+        } else if (valrigard.x < 4) { // Don't allow us to wrap to the other side
             hero_velocity_x = -0x100;
         } else {
             hero_velocity_x = -SPEED;
         }
-        
     }
+    // Right
     else if (pad1 & PAD_RIGHT){
-        valrigard.x += 1;
+        direction = RIGHT;
+        if (valrigard.x > 0xf0) {
+            hero_velocity_x = 0;
+            hero_x = 0xf100;
+        } else if (valrigard.x > 0xec) { // Don't allow us to wrap to the other side
+            hero_velocity_x = 0x100;
+        } else {
+            hero_velocity_x = SPEED;
+        }
     }
-    if(pad1 & PAD_UP){
-        valrigard.y -= 1;
-    }
-    else if (pad1 & PAD_DOWN){
-        valrigard.y += 1;
+    // Neither Left nor Right
+    else {
+        hero_velocity_x = 0;
     }
     
+    // Apply changes in x.
+    hero_x += hero_velocity_x;
+    valrigard.x = hero_x >> 8; // Taking the high byte of this 16-bit int, since the low byte is the subpixel x
+    // The collision routine also requires an 8-bit value anyway.
+
+    L_R_switch = 1; // Shrinks the Y values in bg_coll. This makes head/foot collisions less problematic (examine this)
+    
+    // Copying these bytes like this is faster than passing a pointer to Valrigard.
+    hitbox.x = valrigard.x; 
+    hitbox.y = valrigard.y;
+    hitbox.width = VALRIGARD_WIDTH;
+    hitbox.height = VALRIGARD_HEIGHT;
+    
+    bg_collision();
+    if (collision_L && collision_R) { // Half-stuck in a wall, I'm guessing?
+        valrigard.x = old_x;
+    }
+    else if (collision_L) {
+        valrigard.x -= eject_L;
+    }
+    else if (collision_R) {
+        valrigard.x -= eject_R;
+    }
+    high_byte(hero_x) = valrigard.x;
+    
+    // Handle Y. We're probably going to eventually assign flying to A and sword-swinging to B, but... one thing at a time.
+    if (pad1 & PAD_UP) {
+        if (valrigard.y < 2) {
+            hero_velocity_y = 0;
+            hero_y = 0x100;
+        }
+        else if (valrigard.y < 4) { // Stop sprite-wrapping
+            hero_velocity_y = -0x100;
+        }    
+        else { 
+            hero_velocity_y = -SPEED;
+        }
+    }
+    else if (pad1 & PAD_DOWN) {
+        if (valrigard.y > 0xdf) {
+            hero_velocity_y = 0;
+            hero_y = 0xdf00;
+        }
+        else if (valrigard.y > 0xdc) { // If you could be half in the floor and half in the cieling, would you?
+            hero_velocity_y = 0x100;
+        } 
+        else {
+            hero_velocity_y = SPEED;
+        }
+    }
+    else { // No direction.
+        hero_velocity_y = 0;
+    }
+
+    hero_y += hero_velocity_y;
+    valrigard.y = hero_y >> 8; // "Downcast" to char (high byte is what matters here, the low byte is the subpixel portion)
+
+    L_R_switch = 0;
+    
+    hitbox.x = valrigard.x;
+    hitbox.y = valrigard.y;
+    // Shouldn't need to change the the height and width since those were already set
+
+    bg_collision();
+
+    // The original doesn't seem to care about collision_U && collision_D; hope that doesn't cause any glitches
+    if(collision_U) {
+        valrigard.y -= eject_U;
+    }
+    else if (collision_D) {
+        valrigard.y -= eject_D;
+        // if ... (something was here, but I removed it)
+    }
+    high_byte(hero_y) = valrigard.y;
 }
 
 
+void bg_collision(void) {
+    // Unlike the original code, !0 is not all we need for a collision
+    // Luckily, I put all the solid metatiles at the beginning of the IDs and the non-solid ones at the end.
+    // Eventually, I imagine that the powerup-collision code would go here too. Not sure.
 
-void test_collision(void) {
-    collision = check_collision(&valrigard, &star);
-        
-    // change the BG color, if sprites are touching
-    if (collision){
-        pal_col(0,0x29);
+    // This was borrowed from nesdoug, who borrowed it from "a multi-screen engine" -- the cycle of borrowing continues.
+
+    collision_L = 0;
+    collision_R = 0;
+    collision_U = 0;
+    collision_D = 0;
+    
+    if(hitbox.y >= 0xf0) return;
+    
+    temp6 = temp5 = hitbox.x + scroll_x; // upper left (temp6 = save for reuse)
+    temp1 = temp5 & 0xff; // low byte x
+    temp2 = temp5 >> 8; // high byte x
+    
+    eject_L = temp1 | 0xf0;
+    
+    temp3 = hitbox.y; // y top
+    
+    eject_U = temp3 | 0xf0;
+    
+    if(L_R_switch) temp3 += 2; // fix bug, walking through walls
+    
+    bg_collision_sub();
+    
+    if(collision){ // find a corner in the collision map
+        ++collision_L;
+        ++collision_U;
     }
-    else{
-        pal_col(0,0x0f);
+    
+    // upper right
+    temp5 += hitbox.width;
+    temp1 = temp5 & 0xff; // low byte x
+    temp2 = temp5 >> 8; // high byte x
+    
+    eject_R = (temp1 + 1) & 0x0f;
+    
+    // temp3 is unchanged
+    bg_collision_sub();
+    
+    if(collision){ // find a corner in the collision map
+        ++collision_R;
+        ++collision_U;
+    }
+    
+    
+    // again, lower
+    
+    // bottom right, x hasn't changed
+
+    temp3 = hitbox.y + hitbox.height; //y bottom
+    if(L_R_switch) temp3 -= 2; // fix bug, walking through walls
+    eject_D = (temp3 + 1) & 0x0f;
+    if(temp3 >= 0xf0) return;
+    
+    bg_collision_sub();
+    
+    if(collision){ // find a corner in the collision map
+        ++collision_R;
+        ++collision_D;
+    }
+    
+    // bottom left
+    temp1 = temp6 & 0xff; // low byte x
+    temp2 = temp6 >> 8; // high byte x
+    
+    //temp3, y is unchanged
+
+    bg_collision_sub();
+    
+    if(collision){ // find a corner in the collision map
+        ++collision_L;
+        ++collision_D;
     }
 }
+
+
+void bg_collision_sub(void) {
+    // Also borrowed from nesdoug -- I'm guessing this is a subroutine to save ROM space.
+
+    coordinates = (temp1 >> 4) + (temp3 & 0xf0); // upper left
+    
+    map = temp2&1; // high byte
+    if (!map) {
+        collision = (c_map[coordinates] < 0x17); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
+    }
+    else {
+        collision = (c_map2[coordinates] < 0x17);
+    }
+
+}
+

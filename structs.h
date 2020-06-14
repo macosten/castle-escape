@@ -16,9 +16,6 @@
 typedef struct PlayerSprite {
     unsigned char x;
     unsigned char y;
-    unsigned char width;
-    unsigned char height;
-    // unsigned char state;
 } Player;
 
 typedef struct EnemySprite {
@@ -27,3 +24,10 @@ typedef struct EnemySprite {
     unsigned char width;
     unsigned char height;
 } Enemy;
+
+typedef struct Hitbox_t {
+    unsigned char x;
+    unsigned char y;
+    unsigned char width;
+    unsigned char height;
+} Hitbox;
