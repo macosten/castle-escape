@@ -13,109 +13,611 @@
 	.forceimport	__STARTUP__
 	.import		_pal_bg
 	.import		_pal_spr
+	.import		_pal_col
 	.import		_ppu_wait_nmi
 	.import		_ppu_off
 	.import		_ppu_on_all
 	.import		_oam_clear
-	.import		_oam_spr
 	.import		_oam_meta_spr
+	.import		_pad_poll
 	.import		_bank_spr
-	.import		_vram_adr
-	.import		_vram_write
+	.import		_set_vram_update
+	.import		_memcpy
+	.import		_set_vram_buffer
+	.import		_clear_vram_buffer
+	.import		_check_collision
+	.import		_set_scroll_y
+	.import		_get_ppu_addr
+	.import		_set_data_pointer
+	.import		_set_mt_pointer
+	.import		_buffer_4_mt
+	.import		_flush_vram_update_nmi
 	.export		_valrigardIdleLeft
-	.export		_metasprite
-	.export		_metasprite2
+	.export		_valrigardIdleRight
+	.export		_valrigardIdleLeftAlternate
+	.export		_metatiles
+	.export		_testmap
+	.export		_pad1
+	.export		_collision
+	.export		_collision_L
+	.export		_collision_R
+	.export		_collision_U
+	.export		_collision_D
+	.export		_coordinates
+	.export		_temp1
+	.export		_temp2
+	.export		_temp3
+	.export		_temp4
+	.export		_temp5
+	.export		_temp6
+	.export		_eject_L
+	.export		_eject_R
+	.export		_eject_D
+	.export		_eject_U
+	.export		_direction
+	.export		_address
+	.export		_x
+	.export		_y
+	.export		_index
+	.export		_map
+	.export		_scroll_x
+	.export		_scroll_y
+	.export		_hero_velocity_x
+	.export		_hero_velocity_y
+	.export		_hero_x
+	.export		_hero_y
+	.export		_L_R_switch
+	.export		_old_x
+	.export		_old_y
 	.export		_text
+	.export		_c_map
+	.export		_c_map2
 	.export		_palette_bg
 	.export		_palette_sp
-	.export		_y_position
-	.export		_x_position
-	.export		_x_position2
-	.export		_x_position3
-	.export		_valX
+	.export		_valrigard
+	.export		_star
+	.export		_draw_sprites
+	.export		_movement
+	.export		_test_collision
+	.export		_load_room
 	.export		_main
 
 .segment	"DATA"
 
-_y_position:
-	.byte	$40
-_x_position:
-	.byte	$88
-_x_position2:
-	.byte	$A0
-_x_position3:
-	.byte	$C0
-_valX:
-	.byte	$69
+_valrigard:
+	.byte	$14
+	.byte	$28
+	.byte	$0F
+	.byte	$0F
+_star:
+	.byte	$46
+	.byte	$28
+	.byte	$0F
+	.byte	$0F
 
 .segment	"RODATA"
 
 _valrigardIdleLeft:
-	.byte	$F8
-	.byte	$F0
+	.byte	$00
+	.byte	$00
 	.byte	$E0
 	.byte	$01
+	.byte	$08
 	.byte	$00
-	.byte	$F0
 	.byte	$E1
 	.byte	$01
-	.byte	$F8
-	.byte	$F8
+	.byte	$00
+	.byte	$08
 	.byte	$F0
 	.byte	$01
-	.byte	$00
-	.byte	$F8
+	.byte	$08
+	.byte	$08
 	.byte	$F1
 	.byte	$01
 	.byte	$80
-_metasprite:
-	.byte	$00
-	.byte	$00
-	.byte	$01
-	.byte	$00
-	.byte	$00
-	.byte	$08
-	.byte	$11
-	.byte	$00
+_valrigardIdleRight:
 	.byte	$08
 	.byte	$00
-	.byte	$01
-	.byte	$40
+	.byte	$E0
+	.byte	$41
+	.byte	$00
+	.byte	$00
+	.byte	$E1
+	.byte	$41
 	.byte	$08
 	.byte	$08
-	.byte	$11
-	.byte	$40
+	.byte	$F0
+	.byte	$41
+	.byte	$00
+	.byte	$08
+	.byte	$F1
+	.byte	$41
 	.byte	$80
-_metasprite2:
+_valrigardIdleLeftAlternate:
+	.byte	$00
+	.byte	$00
+	.byte	$E0
+	.byte	$00
 	.byte	$08
 	.byte	$00
+	.byte	$E1
+	.byte	$00
+	.byte	$00
+	.byte	$08
+	.byte	$F0
+	.byte	$00
+	.byte	$08
+	.byte	$08
+	.byte	$F1
+	.byte	$00
+	.byte	$80
+_metatiles:
+	.byte	$A0
+	.byte	$A0
+	.byte	$B0
+	.byte	$B0
+	.byte	$00
+	.byte	$A1
+	.byte	$A1
+	.byte	$B1
+	.byte	$B1
+	.byte	$00
+	.byte	$A2
+	.byte	$A3
+	.byte	$A2
+	.byte	$A3
+	.byte	$00
+	.byte	$B2
+	.byte	$B3
+	.byte	$B2
+	.byte	$B3
+	.byte	$00
+	.byte	$E6
+	.byte	$E7
+	.byte	$F6
+	.byte	$F7
+	.byte	$00
+	.byte	$84
+	.byte	$E5
+	.byte	$F6
+	.byte	$F7
+	.byte	$00
+	.byte	$E6
+	.byte	$E3
+	.byte	$F6
+	.byte	$F3
+	.byte	$00
+	.byte	$E6
+	.byte	$E7
+	.byte	$94
+	.byte	$F5
+	.byte	$00
+	.byte	$E2
+	.byte	$E7
+	.byte	$F2
+	.byte	$F7
+	.byte	$00
+	.byte	$84
+	.byte	$8D
+	.byte	$F6
+	.byte	$F3
+	.byte	$00
+	.byte	$E6
+	.byte	$E3
+	.byte	$94
+	.byte	$9D
+	.byte	$00
+	.byte	$E2
+	.byte	$E7
+	.byte	$F0
+	.byte	$F5
+	.byte	$00
+	.byte	$E0
+	.byte	$E5
+	.byte	$F2
+	.byte	$F7
+	.byte	$00
+	.byte	$84
+	.byte	$E5
+	.byte	$94
+	.byte	$F5
+	.byte	$00
+	.byte	$E2
+	.byte	$E3
+	.byte	$F2
+	.byte	$F3
+	.byte	$00
+	.byte	$E0
+	.byte	$8D
+	.byte	$F0
+	.byte	$9D
+	.byte	$00
+	.byte	$80
+	.byte	$81
+	.byte	$90
+	.byte	$91
+	.byte	$00
+	.byte	$84
+	.byte	$85
+	.byte	$94
+	.byte	$95
+	.byte	$00
+	.byte	$86
+	.byte	$81
+	.byte	$96
+	.byte	$91
+	.byte	$00
+	.byte	$84
+	.byte	$89
+	.byte	$94
+	.byte	$99
+	.byte	$00
+	.byte	$8A
+	.byte	$81
+	.byte	$9A
+	.byte	$91
+	.byte	$00
+	.byte	$84
+	.byte	$8D
+	.byte	$94
+	.byte	$9D
+	.byte	$00
+	.byte	$EC
+	.byte	$ED
+	.byte	$FC
+	.byte	$FD
 	.byte	$03
+	.byte	$A4
+	.byte	$A5
+	.byte	$B4
+	.byte	$B5
+	.byte	$03
+	.byte	$A6
+	.byte	$A5
+	.byte	$B6
+	.byte	$B5
+	.byte	$03
+	.byte	$A6
+	.byte	$A9
+	.byte	$B6
+	.byte	$B9
+	.byte	$03
+	.byte	$AA
+	.byte	$AB
+	.byte	$BA
+	.byte	$BB
+	.byte	$02
+	.byte	$8E
+	.byte	$8F
+	.byte	$9E
+	.byte	$9F
 	.byte	$00
 	.byte	$00
-	.byte	$08
+	.byte	$00
+	.byte	$00
+	.byte	$8E
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$8F
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$9E
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$9F
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$AC
+	.byte	$AD
+	.byte	$BC
+	.byte	$BD
+	.byte	$00
+	.byte	$AE
+	.byte	$AF
+	.byte	$BE
+	.byte	$BF
+	.byte	$00
+	.byte	$BC
+	.byte	$CD
+	.byte	$BC
+	.byte	$DD
+	.byte	$00
+	.byte	$CE
+	.byte	$BF
+	.byte	$DE
+	.byte	$BF
+	.byte	$00
+	.byte	$C4
+	.byte	$C5
+	.byte	$D4
+	.byte	$D5
+	.byte	$00
+	.byte	$C6
+	.byte	$C7
+	.byte	$D6
+	.byte	$D7
+	.byte	$00
+	.byte	$C8
+	.byte	$C9
+	.byte	$D8
+	.byte	$D9
+	.byte	$00
+	.byte	$CA
+	.byte	$CB
+	.byte	$DA
+	.byte	$DB
+	.byte	$00
+	.byte	$C2
+	.byte	$C3
+	.byte	$D2
+	.byte	$D3
+	.byte	$03
+	.byte	$C0
+	.byte	$C1
+	.byte	$D0
+	.byte	$D1
+	.byte	$00
+	.byte	$E8
+	.byte	$E9
+	.byte	$F8
+	.byte	$F9
+	.byte	$03
+	.byte	$EA
+	.byte	$EB
+	.byte	$FA
+	.byte	$FB
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+_testmap:
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2A
+	.byte	$2B
+	.byte	$2C
+	.byte	$2C
+	.byte	$16
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$10
+	.byte	$11
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$1A
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$00
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$28
+	.byte	$29
+	.byte	$2C
+	.byte	$2C
+	.byte	$0F
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$03
+	.byte	$04
+	.byte	$02
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
 	.byte	$12
-	.byte	$00
-	.byte	$08
-	.byte	$08
 	.byte	$13
-	.byte	$00
-	.byte	$10
-	.byte	$08
-	.byte	$12
-	.byte	$40
-	.byte	$00
-	.byte	$10
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$01
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$1B
+	.byte	$2C
+	.byte	$2C
+	.byte	$25
+	.byte	$2C
+	.byte	$2C
+	.byte	$1C
+	.byte	$1D
+	.byte	$2C
+	.byte	$20
+	.byte	$21
+	.byte	$17
+	.byte	$19
+	.byte	$26
+	.byte	$27
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$26
+	.byte	$24
+	.byte	$27
+	.byte	$2C
+	.byte	$1E
+	.byte	$1F
+	.byte	$2C
 	.byte	$22
-	.byte	$00
-	.byte	$08
-	.byte	$10
 	.byte	$23
-	.byte	$00
-	.byte	$10
-	.byte	$10
-	.byte	$22
-	.byte	$40
-	.byte	$80
+	.byte	$18
+	.byte	$18
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$04
+	.byte	$04
+	.byte	$04
+	.byte	$04
+	.byte	$04
+	.byte	$04
+	.byte	$04
+	.byte	$04
+	.byte	$04
+	.byte	$04
+	.byte	$04
+	.byte	$04
+	.byte	$04
+	.byte	$04
+	.byte	$04
+	.byte	$04
 _text:
 	.byte	$45,$20,$69,$73,$20,$66,$6F,$72,$20,$45,$6D,$72,$61,$6B,$75,$6C
 	.byte	$00
@@ -124,23 +626,23 @@ _palette_bg:
 	.byte	$00
 	.byte	$10
 	.byte	$30
-	.byte	$00
-	.byte	$00
-	.byte	$00
-	.byte	$00
-	.byte	$00
-	.byte	$00
-	.byte	$00
-	.byte	$00
-	.byte	$00
-	.byte	$00
-	.byte	$00
-	.byte	$00
+	.byte	$0F
+	.byte	$01
+	.byte	$11
+	.byte	$31
+	.byte	$0F
+	.byte	$06
+	.byte	$16
+	.byte	$26
+	.byte	$0F
+	.byte	$17
+	.byte	$27
+	.byte	$38
 _palette_sp:
 	.byte	$0F
-	.byte	$0F
-	.byte	$0F
-	.byte	$28
+	.byte	$17
+	.byte	$27
+	.byte	$07
 	.byte	$0F
 	.byte	$01
 	.byte	$0F
@@ -153,6 +655,430 @@ _palette_sp:
 	.byte	$00
 	.byte	$00
 	.byte	$00
+
+.segment	"BSS"
+
+.segment	"ZEROPAGE"
+_pad1:
+	.res	1,$00
+_collision:
+	.res	1,$00
+_collision_L:
+	.res	1,$00
+_collision_R:
+	.res	1,$00
+_collision_U:
+	.res	1,$00
+_collision_D:
+	.res	1,$00
+_coordinates:
+	.res	1,$00
+_temp1:
+	.res	1,$00
+_temp2:
+	.res	1,$00
+_temp3:
+	.res	1,$00
+_temp4:
+	.res	1,$00
+_temp5:
+	.res	2,$00
+_temp6:
+	.res	2,$00
+_eject_L:
+	.res	1,$00
+_eject_R:
+	.res	1,$00
+_eject_D:
+	.res	1,$00
+_eject_U:
+	.res	1,$00
+_direction:
+	.res	1,$00
+_address:
+	.res	2,$00
+_x:
+	.res	1,$00
+_y:
+	.res	1,$00
+_index:
+	.res	1,$00
+_map:
+	.res	1,$00
+_scroll_x:
+	.res	2,$00
+_scroll_y:
+	.res	2,$00
+_hero_velocity_x:
+	.res	2,$00
+_hero_velocity_y:
+	.res	2,$00
+_hero_x:
+	.res	2,$00
+_hero_y:
+	.res	2,$00
+_L_R_switch:
+	.res	1,$00
+_old_x:
+	.res	1,$00
+_old_y:
+	.res	1,$00
+.segment	"BSS"
+_c_map:
+	.res	240,$00
+_c_map2:
+	.res	240,$00
+
+; ---------------------------------------------------------------
+; void __near__ draw_sprites (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_draw_sprites: near
+
+.segment	"CODE"
+
+;
+; oam_clear();
+;
+	jsr     _oam_clear
+;
+; if (direction == LEFT) {
+;
+	lda     _direction
+	bne     L027F
+;
+; oam_meta_spr(valrigard.x, valrigard.y, valrigardIdleLeft);
+;
+	jsr     decsp2
+	lda     _valrigard
+	ldy     #$01
+	sta     (sp),y
+	lda     _valrigard+1
+	dey
+	sta     (sp),y
+	lda     #<(_valrigardIdleLeft)
+	ldx     #>(_valrigardIdleLeft)
+;
+; } else {
+;
+	jmp     L02BF
+;
+; oam_meta_spr(valrigard.x, valrigard.y, valrigardIdleRight);
+;
+L027F:	jsr     decsp2
+	lda     _valrigard
+	ldy     #$01
+	sta     (sp),y
+	lda     _valrigard+1
+	dey
+	sta     (sp),y
+	lda     #<(_valrigardIdleRight)
+	ldx     #>(_valrigardIdleRight)
+L02BF:	jsr     _oam_meta_spr
+;
+; oam_meta_spr(star.x, star.y, valrigardIdleLeftAlternate);
+;
+	jsr     decsp2
+	lda     _star
+	ldy     #$01
+	sta     (sp),y
+	lda     _star+1
+	dey
+	sta     (sp),y
+	lda     #<(_valrigardIdleLeftAlternate)
+	ldx     #>(_valrigardIdleLeftAlternate)
+	jmp     _oam_meta_spr
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ movement (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_movement: near
+
+.segment	"CODE"
+
+;
+; old_x = valrigard.x;
+;
+	lda     _valrigard
+	sta     _old_x
+;
+; if(pad1 & PAD_LEFT){
+;
+	lda     _pad1
+	and     #$02
+	beq     L02C2
+;
+; direction = LEFT;
+;
+	lda     #$00
+	sta     _direction
+;
+; if (valrigard.x < 2) {
+;
+	lda     _valrigard
+	cmp     #$02
+	bcs     L02C1
+;
+; hero_velocity_x = 0;
+;
+	lda     #$00
+	sta     _hero_velocity_x
+	sta     _hero_velocity_x+1
+;
+; hero_x = 0x100;
+;
+	ldx     #$01
+	sta     _hero_x
+	stx     _hero_x+1
+;
+; } else if (valrigard.x < 4) {
+;
+	jmp     L02C3
+L02C1:	lda     _valrigard
+	cmp     #$04
+	bcs     L029C
+;
+; hero_velocity_x = -0x100;
+;
+	ldx     #$FF
+	lda     #$00
+	sta     _hero_velocity_x
+	stx     _hero_velocity_x+1
+;
+; } else {
+;
+	jmp     L02C3
+;
+; hero_velocity_x = -SPEED;
+;
+L029C:	ldx     #$FE
+	lda     #$80
+	sta     _hero_velocity_x
+	stx     _hero_velocity_x+1
+;
+; else if (pad1 & PAD_RIGHT){
+;
+	jmp     L02C3
+L02C2:	lda     _pad1
+	and     #$01
+	beq     L02C3
+;
+; valrigard.x += 1;
+;
+	inc     _valrigard
+;
+; if(pad1 & PAD_UP){
+;
+L02C3:	lda     _pad1
+	and     #$08
+	beq     L02C4
+;
+; valrigard.y -= 1;
+;
+	dec     _valrigard+1
+;
+; else if (pad1 & PAD_DOWN){
+;
+	rts
+L02C4:	lda     _pad1
+	and     #$04
+	beq     L02AD
+;
+; valrigard.y += 1;
+;
+	inc     _valrigard+1
+;
+; }
+;
+L02AD:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ test_collision (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_test_collision: near
+
+.segment	"CODE"
+
+;
+; collision = check_collision(&valrigard, &star);
+;
+	lda     #<(_valrigard)
+	ldx     #>(_valrigard)
+	jsr     pushax
+	lda     #<(_star)
+	ldx     #>(_star)
+	jsr     _check_collision
+	sta     _collision
+;
+; if (collision){
+;
+	lda     _collision
+	beq     L02C5
+;
+; pal_col(0,0x29);
+;
+	lda     #$00
+	jsr     pusha
+	lda     #$29
+	jmp     _pal_col
+;
+; pal_col(0,0x0f);
+;
+L02C5:	jsr     pusha
+	lda     #$0F
+	jmp     _pal_col
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ load_room (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_load_room: near
+
+.segment	"CODE"
+
+;
+; set_data_pointer(testmap);
+;
+	lda     #<(_testmap)
+	ldx     #>(_testmap)
+	jsr     _set_data_pointer
+;
+; set_mt_pointer(metatiles);
+;
+	lda     #<(_metatiles)
+	ldx     #>(_metatiles)
+	jsr     _set_mt_pointer
+;
+; for (y = 0; /*We'll break manually*/; y += 0x20) {
+;
+	lda     #$00
+L02C8:	sta     _y
+;
+; for (x = 0; ; x += 0x20) {
+;
+	lda     #$00
+L02C7:	sta     _x
+;
+; clear_vram_buffer(); // do this each frame, and before putting anything in the buffer.
+;
+	jsr     _clear_vram_buffer
+;
+; address = get_ppu_addr(0, x, y);
+;
+	jsr     decsp2
+	lda     #$00
+	ldy     #$01
+	sta     (sp),y
+	lda     _x
+	dey
+	sta     (sp),y
+	lda     _y
+	jsr     _get_ppu_addr
+	sta     _address
+	stx     _address+1
+;
+; index = (y & 0xf0) + (x >> 4);
+;
+	lda     _y
+	and     #$F0
+	sta     ptr1
+	lda     _x
+	lsr     a
+	lsr     a
+	lsr     a
+	lsr     a
+	clc
+	adc     ptr1
+	sta     _index
+;
+; buffer_4_mt(address, index); // ppu_address, index to the data
+;
+	lda     _address
+	ldx     _address+1
+	jsr     pushax
+	lda     _index
+	jsr     _buffer_4_mt
+;
+; flush_vram_update_nmi();
+;
+	jsr     _flush_vram_update_nmi
+;
+; if (x == 0xe0) break;
+;
+	ldx     #$00
+	lda     _x
+	cmp     #$E0
+	beq     L02C9
+;
+; for (x = 0; ; x += 0x20) {
+;
+	lda     #$20
+	clc
+	adc     _x
+	jmp     L02C7
+;
+; if (y == 0xe0) break;
+;
+L02C9:	lda     _y
+	cmp     #$E0
+	beq     L02CA
+;
+; for (y = 0; /*We'll break manually*/; y += 0x20) {
+;
+	lda     #$20
+	clc
+	adc     _y
+	jmp     L02C8
+;
+; set_vram_update(NULL); // just turn ppu updates OFF for this example
+;
+L02CA:	txa
+	jsr     _set_vram_update
+;
+; memcpy (c_map, testmap, 240);
+;
+	ldy     #$00
+L0278:	lda     _testmap,y
+	sta     _c_map,y
+	iny
+	cpy     #$F0
+	bne     L0278
+;
+; hero_y = valrigard.y << 8;
+;
+	lda     _valrigard+1
+	sta     _hero_y+1
+	lda     #$00
+	sta     _hero_y
+;
+; hero_x = valrigard.x << 8;
+;
+	lda     _valrigard
+	sta     _hero_x+1
+	lda     #$00
+	sta     _hero_x
+;
+; }
+;
+	rts
+
+.endproc
 
 ; ---------------------------------------------------------------
 ; void __near__ main (void)
@@ -186,20 +1112,23 @@ _palette_sp:
 	lda     #$01
 	jsr     _bank_spr
 ;
-; vram_adr(NTADR_A(2,14)); // set a start position for the text
+; set_vram_buffer(); // do at least once, sets a pointer to a buffer
 ;
-	ldx     #$21
-	lda     #$C2
-	jsr     _vram_adr
+	jsr     _set_vram_buffer
 ;
-; vram_write(text,sizeof(text));
+; clear_vram_buffer();
 ;
-	lda     #<(_text)
-	ldx     #>(_text)
-	jsr     pushax
+	jsr     _clear_vram_buffer
+;
+; load_room();
+;
+	jsr     _load_room
+;
+; set_scroll_y(0xff); // Shift the background down by 1 pixel to offset the inherent shift in sprites on the NES. (Probably not necessary but we'll see)
+;
 	ldx     #$00
-	lda     #$11
-	jsr     _vram_write
+	lda     #$FF
+	jsr     _set_scroll_y
 ;
 ; ppu_on_all(); // turn on screen
 ;
@@ -207,72 +1136,29 @@ _palette_sp:
 ;
 ; ppu_wait_nmi(); // wait till beginning of the frame
 ;
-L007B:	jsr     _ppu_wait_nmi
+L0240:	jsr     _ppu_wait_nmi
 ;
-; oam_clear();
+; pad1 = pad_poll(0); // read the first controller
 ;
-	jsr     _oam_clear
-;
-; oam_spr(x_position, y_position, 0, 0);
-;
-	jsr     decsp3
-	lda     _x_position
-	ldy     #$02
-	sta     (sp),y
-	lda     _y_position
-	dey
-	sta     (sp),y
 	lda     #$00
-	dey
-	sta     (sp),y
-	jsr     _oam_spr
+	jsr     _pad_poll
+	sta     _pad1
 ;
-; oam_meta_spr(x_position2, y_position, metasprite);
+; movement();
 ;
-	jsr     decsp2
-	lda     _x_position2
-	ldy     #$01
-	sta     (sp),y
-	lda     _y_position
-	dey
-	sta     (sp),y
-	lda     #<(_metasprite)
-	ldx     #>(_metasprite)
-	jsr     _oam_meta_spr
+	jsr     _movement
 ;
-; oam_meta_spr(x_position3, y_position, metasprite2);
+; test_collision();
 ;
-	jsr     decsp2
-	lda     _x_position3
-	ldy     #$01
-	sta     (sp),y
-	lda     _y_position
-	dey
-	sta     (sp),y
-	lda     #<(_metasprite2)
-	ldx     #>(_metasprite2)
-	jsr     _oam_meta_spr
+	jsr     _test_collision
 ;
-; oam_meta_spr(valX, y_position, valrigardIdleLeft);
+; draw_sprites();
 ;
-	jsr     decsp2
-	lda     _valX
-	ldy     #$01
-	sta     (sp),y
-	lda     _y_position
-	dey
-	sta     (sp),y
-	lda     #<(_valrigardIdleLeft)
-	ldx     #>(_valrigardIdleLeft)
-	jsr     _oam_meta_spr
-;
-; ++y_position; // every frame, shift them down 1 pixel
-;
-	inc     _y_position
+	jsr     _draw_sprites
 ;
 ; while (1){
 ;
-	jmp     L007B
+	jmp     L0240
 
 .endproc
 

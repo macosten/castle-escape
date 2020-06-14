@@ -7,8 +7,14 @@
 #  
 
 export name="escape"
-export nesemupath="/Applications/Nesicide/nes-emulator.app/Contents/MacOS/nes-emulator"
+export nesemupath="mednafen"
+
+#"/Applications/OpenEmu.app/Contents/MacOS/OpenEmu"
+
+#"/Applications/Nesicide/nes-emulator.app/Contents/MacOS/nes-emulator"
+
 export CC65_HOME="/usr/local/share/cc65"
+# Important; otherwise, CC65 will not know where to find its includes.
 
 cc65 -Oirs $name.c --add-source
 ca65 crt0.s
@@ -22,4 +28,4 @@ mv -f labels.txt build/
 mv -f $name.s build/
 mv -f $name.nes build/
 
-$nesemupath -o build/$name.nes
+$nesemupath build/$name.nes >/dev/null
