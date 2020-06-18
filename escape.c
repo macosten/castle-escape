@@ -162,7 +162,7 @@ void load_level(void) {
     nt_max = level_starting_nt[level_index+1];
     nt_current = valrigard_starting_nt[level_index];
     high_byte(scroll_y) = nt_current;
-    low_byte(scroll_y) = 0;
+    low_byte(scroll_y) = MIN_SCROLL;
     scroll_count = 0;
 }
 
@@ -381,33 +381,33 @@ void movement(void) {
 }
 
 
-void bg_collision(void) {
-    // Unlike the original code, !0 is not all we need for a collision
-    // Luckily, I put all the solid metatiles at the beginning of the IDs and the non-solid ones at the end.
-    // Eventually, I imagine that the powerup-collision code would go here too. Not sure.
-
-    // This was borrowed from nesdoug, who borrowed it from "a multi-screen engine" -- the cycle of borrowing continues.
+void bg_collision(void){
+    // note, !0 = collision
+    // sprite collision with backgrounds
+    // load the object's x,y,width,height to hitbox, then call this
+    
 
     collision_L = 0;
     collision_R = 0;
     collision_U = 0;
     collision_D = 0;
     
-    if(hitbox.y >= 0xf0) return;
     
-    temp6 = temp5 = hitbox.x /*+ scroll_x*/; // upper left (temp6 = save for reuse)
-    temp1 = temp5 & 0xff; // low byte x
-    temp2 = temp5 >> 8; // high byte x
     
-    eject_L = temp1 | 0xf0;
-    
-    temp3 = hitbox.y; // y top
-    
-    eject_U = temp3 | 0xf0;
-    
+    temp3 = hitbox.y;
     if(L_R_switch) temp3 += 2; // fix bug, walking through walls
     
-    // temp2's value matters in bg_collision_sub -- be aware of that.
+    if(temp3 >= 0xf0) return;
+    
+    temp5 = add_scroll_y(temp3, scroll_y); // upper left
+    temp2 = temp5 >> 8; // high byte y
+    temp3 = temp5 & 0xff; // low byte y
+
+    temp1 = hitbox.x; // x left
+    
+    eject_L = temp1 | 0xf0;
+    eject_U = temp3 | 0xf0;
+    
     bg_collision_sub();
     
     if(collision){ // find a corner in the collision map
@@ -415,14 +415,11 @@ void bg_collision(void) {
         ++collision_U;
     }
     
-    // upper right
-    temp5 += hitbox.width;
-    temp1 = temp5 & 0xff; // low byte x
-    temp2 = temp5 >> 8; // high byte x
+    temp1 += hitbox.width; // x right
     
     eject_R = (temp1 + 1) & 0x0f;
     
-    // temp3 is unchanged
+    // temp2,temp3 is unchanged
     bg_collision_sub();
     
     if(collision){ // find a corner in the collision map
@@ -430,12 +427,17 @@ void bg_collision(void) {
         ++collision_U;
     }
     
+    
     // again, lower
     
     // bottom right, x hasn't changed
 
-    temp3 = hitbox.y + hitbox.height; //y bottom
+    temp3 = hitbox.y + hitbox.height; // y bottom
     if(L_R_switch) temp3 -= 2; // fix bug, walking through walls
+    temp5 = add_scroll_y(temp3, scroll_y); // upper left
+    temp2 = temp5 >> 8; // high byte y
+    temp3 = temp5 & 0xff; // low byte y
+    
     eject_D = (temp3 + 1) & 0x0f;
     if(temp3 >= 0xf0) return;
     
@@ -447,10 +449,9 @@ void bg_collision(void) {
     }
     
     // bottom left
-    temp1 = temp6 & 0xff; // low byte x
-    temp2 = temp6 >> 8; // high byte x
+    temp1 = hitbox.x; // x left
     
-    //temp3, y is unchanged
+    //temp2,temp3 is unchanged
 
     bg_collision_sub();
     
@@ -460,13 +461,12 @@ void bg_collision(void) {
     }
 }
 
-
 void bg_collision_sub(void) {
     // Also borrowed from nesdoug -- I'm guessing this is a subroutine to save ROM space.
 
     coordinates = (temp1 >> 4) + (temp3 & 0xf0); // upper left
     
-    map = temp2&1; // high byte
+    map = temp2&1;
     if (!map) {
         collision = (c_map[coordinates] < 0x17 && c_map[coordinates] > 0x03); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
         //spikeDeath = (c_map[coordinates] < 0x04);
@@ -496,7 +496,7 @@ void bg_collision_sub(void) {
  */
 
 void draw_screen_U(void){
-    pseudo_scroll_y = sub_scroll_y(0x20,scroll_y);
+    pseudo_scroll_y = sub_scroll_y(0x20, scroll_y);
     
     temp1 = pseudo_scroll_y >> 8;
     
@@ -556,7 +556,7 @@ void draw_screen_U(void){
 // (mostly nesdoug): copy a new collision map to one of the 2 c_map arrays
 void new_cmap(void) {
     // copy a new collision map to one of the 2 c_map arrays
-    nt_current = high_byte(scroll_y); //high byte = the index of the nametable we're in?, one to the right
+    nt_current = (scroll_y >> 8); //high byte = the index of the nametable we're in?, one to the right
     
     map = nt_current & 1; //even or odd?
     if (!map) {
