@@ -12,18 +12,18 @@
 // X offset, Y offset, sprite/tile ID, palette
 // 128 terminates (I think).
 const unsigned char valrigardIdleLeft[]={
-      0xfe, 0xff,   0xe0,   1,
-      6,    0xff,   0xe1,   1,
-      0xfe,    7,   0xf0,   1,
-      6,       7,   0xf1,   1,
+      0xfe, 0xfd,   0xe0,   1,
+      6,    0xfd,   0xe1,   1,
+      0xfe,    5,   0xf0,   1,
+      6,       5,   0xf1,   1,
     128
 };
 
 const unsigned char valrigardIdleRight[]={
-         6,  0xff,  0xe0,1|OAM_FLIP_H,
-      0xfe,  0xff,  0xe1,1|OAM_FLIP_H,
-         6,     7,  0xf0,1|OAM_FLIP_H,
-      0xfe,     7,  0xf1,1|OAM_FLIP_H,
+         6,  0xfd,  0xe0,1|OAM_FLIP_H,
+      0xfe,  0xfd,  0xe1,1|OAM_FLIP_H,
+         6,     5,  0xf0,1|OAM_FLIP_H,
+      0xfe,     5,  0xf1,1|OAM_FLIP_H,
     128
 };
 

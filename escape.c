@@ -34,9 +34,9 @@ unsigned char eject_L; // from the left
 unsigned char eject_R; // remember these from the collision sub routine
 unsigned char eject_D; // from below
 unsigned char eject_U; // from up
+#define SPEED 0x180
 
 unsigned char direction; //facing left or right? Todo - make this part of Player.
-
 #define LEFT 0
 #define RIGHT 1
 
@@ -52,23 +52,27 @@ unsigned char map;
 //unsigned int scroll_x;
 unsigned int pseudo_scroll_y;
 unsigned int scroll_y;
+#define MAX_UP 0x4000
+#define MIN_SCROLL 2
+
+
 unsigned char L_R_switch;
 unsigned int old_x;
 unsigned int old_y;
 
 unsigned char level_index;
 
-#define VALRIGARD_WIDTH 11
-#define VALRIGARD_HEIGHT 13
-
-#define SPEED 0x180
-#define MAX_UP 0x4000
-#define MIN_SCROLL 2
-
 #define SONGS 0
 unsigned char song;
 // enum {SONG_NAME1, SONG_NAME2};
 // enum {SFX_FLAP, ...};
+
+// Level information.
+unsigned char nt_max; // current_level->nt_array.count -- in other words, (current_level->header0 >> 4)
+unsigned char nt_current; // The nametable Valrigard is currently in. This should help us determine what other nametable to load when scrolling...?
+
+#define VALRIGARD_WIDTH 11
+#define VALRIGARD_HEIGHT 13
 
 #pragma bss-name(push, "BSS")
 
@@ -94,10 +98,6 @@ const unsigned char palette_sp[]={
 Player valrigard = {20, 40}; // A width of 12 makes Valrigard's hitbox a bit more forgiving. It also happens to match up with his nose.
 Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C stack is not preferable to using a global in this use case)
 Enemy star = {70, 40, 15, 15};
-
-// Level information.
-unsigned char nt_max; // current_level->nt_array.count -- in other words, (current_level->header0 >> 4)
-unsigned char nt_current; // The nametable Valrigard is currently in. This should help us determine what other nametable to load when scrolling...?
 
 // MARK: Function Declarations
 void draw_sprites(void);
@@ -127,9 +127,6 @@ void main (void) {
     load_level();
     load_room();
 
-    scroll_y = 0xfe;
-    set_scroll_y(0xfe); // Shift the background down by 2 pixels to offset the inherent shift in sprites on the NES and the fact that Valrigard's hitbox is 13, thus making his foot clip through the floor otherwise.
-    
     ppu_on_all(); // turn on screen
     
     level_index = 0;
@@ -148,7 +145,7 @@ void main (void) {
         // set_scroll_x(scroll_x); Yeah... this game won't need to scroll in the X direction. I'll keep a more advanced 
         set_scroll_y(scroll_y);
 
-
+        draw_screen_U();
 
         draw_sprites();
 
@@ -160,6 +157,7 @@ void load_level(void) {
     nt_max = level_starting_nt[level_index+1];
     nt_current = valrigard_starting_nt[level_index];
     high_byte(scroll_y) = nt_current;
+    low_byte(scroll_y) = 0;
 }
 
 void load_room(void) {
@@ -199,8 +197,8 @@ void load_room(void) {
     temp1 = temp1 ^ 2;
     
     //copy the room to the collision map
-    memcpy(c_map, temppointer, 240);
-    
+    //memcpy(c_map, temppointer, 240);
+    new_cmap();
     
     if (nt_current == nt_max - 1){ // If we're at the top, there's not much of a reason to load what's above us.
         y = 0;
@@ -211,10 +209,7 @@ void load_room(void) {
     }
     // temp2 will be the next nt to load.
     // temp3 is the starting y.
-    
-    temppointer = level_nametables[temp2];
-    set_data_pointer(temppointer);
-    
+        
     /* If we want to load part of the next room (we probably don't... I didn't design the level maps that way.)
     for (x = 0; ; x += 0x20) {
         clear_vram_buffer(); // do this each frame, and before putting anything in the buffer.
@@ -224,6 +219,8 @@ void load_room(void) {
         flush_vram_update_nmi();
         if (x == 0xe0) break;
     }*/
+    
+    // If it were any of the first 4 tiles, then we should die, because we're touching spikes -- still need to figure out how best to actually make this reliable...
     
 }
 
@@ -404,6 +401,7 @@ void bg_collision(void) {
     
     if(L_R_switch) temp3 += 2; // fix bug, walking through walls
     
+    // temp2's value matters in bg_collision_sub -- be aware of that.
     bg_collision_sub();
     
     if(collision){ // find a corner in the collision map
@@ -425,7 +423,6 @@ void bg_collision(void) {
         ++collision_R;
         ++collision_U;
     }
-    
     
     // again, lower
     
@@ -465,10 +462,12 @@ void bg_collision_sub(void) {
     
     map = temp2&1; // high byte
     if (!map) {
+        pal_col(0,0x10);
         collision = (c_map[coordinates] < 0x17 && c_map[coordinates] > 0x03); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
         //spikeDeath = (c_map[coordinates] < 0x04);
     }
     else {
+        pal_col(0,0x20);
         collision = (c_map2[coordinates] < 0x17 && c_map[coordinates] > 0x03);
         //spikeDeath = (c_map2[coordinates] < 0x04);
     }
@@ -492,13 +491,17 @@ void bg_collision_sub(void) {
  }
  */
 
-// copy a new collision map to one of the 2 c_map arrays
-void new_cmap(void){
+void draw_screen_U(void) {
+    // This function definitely wants the main loop to clear the vram buffer...
+}
+
+// (mostly nesdoug): copy a new collision map to one of the 2 c_map arrays
+void new_cmap(void) {
     // copy a new collision map to one of the 2 c_map arrays
     nt_current = high_byte(scroll_y); //high byte = the index of the nametable we're in?, one to the right
     
-    // map = ; //even or odd?
-    if (!(nt_current & 1)) {
+    map = nt_current & 1; //even or odd?
+    if (!map) {
         memcpy (c_map, level_nametables[nt_current], 240);
     }
     else {
