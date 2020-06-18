@@ -13,7 +13,6 @@
 	.forceimport	__STARTUP__
 	.import		_pal_bg
 	.import		_pal_spr
-	.import		_pal_col
 	.import		_ppu_wait_nmi
 	.import		_ppu_off
 	.import		_ppu_on_all
@@ -21,7 +20,6 @@
 	.import		_oam_meta_spr
 	.import		_pad_poll
 	.import		_bank_spr
-	.import		_set_vram_update
 	.import		_memcpy
 	.import		_set_vram_buffer
 	.import		_clear_vram_buffer
@@ -35,7 +33,13 @@
 	.export		_valrigardIdleRight
 	.export		_valrigardIdleLeftAlternate
 	.export		_metatiles
-	.export		_testmap
+	.export		_level10_0
+	.export		_level10_1
+	.export		_level10_2
+	.export		_level_starting_nt
+	.export		_valrigard_starting_nt
+	.export		_valrigard_inital_coords
+	.export		_level_nametables
 	.export		_pad1
 	.export		_collision
 	.export		_collision_L
@@ -55,19 +59,19 @@
 	.export		_eject_U
 	.export		_direction
 	.export		_address
+	.export		_pointer
 	.export		_x
 	.export		_y
 	.export		_index
 	.export		_map
-	.export		_scroll_x
+	.export		_pseudo_scroll_y
 	.export		_scroll_y
-	.export		_hero_velocity_x
-	.export		_hero_velocity_y
 	.export		_hero_x
 	.export		_hero_y
 	.export		_L_R_switch
 	.export		_old_x
 	.export		_old_y
+	.export		_level_index
 	.export		_c_map
 	.export		_c_map2
 	.export		_palette_bg
@@ -75,8 +79,11 @@
 	.export		_valrigard
 	.export		_hitbox
 	.export		_star
+	.export		_nt_max
+	.export		_nt_current
 	.export		_draw_sprites
 	.export		_movement
+	.export		_load_level
 	.export		_load_room
 	.export		_bg_collision
 	.export		_bg_collision_sub
@@ -84,9 +91,14 @@
 
 .segment	"DATA"
 
+_level_nametables:
+	.addr	_level10_0
+	.addr	_level10_1
+	.addr	_level10_2
 _valrigard:
 	.byte	$14
 	.byte	$28
+	.res	4,$00
 _star:
 	.byte	$46
 	.byte	$28
@@ -96,38 +108,38 @@ _star:
 .segment	"RODATA"
 
 _valrigardIdleLeft:
-	.byte	$00
-	.byte	$00
+	.byte	$FE
+	.byte	$FF
 	.byte	$E0
 	.byte	$01
-	.byte	$08
-	.byte	$00
+	.byte	$06
+	.byte	$FF
 	.byte	$E1
 	.byte	$01
-	.byte	$00
-	.byte	$08
+	.byte	$FE
+	.byte	$07
 	.byte	$F0
 	.byte	$01
-	.byte	$08
-	.byte	$08
+	.byte	$06
+	.byte	$07
 	.byte	$F1
 	.byte	$01
 	.byte	$80
 _valrigardIdleRight:
-	.byte	$08
-	.byte	$00
+	.byte	$06
+	.byte	$FF
 	.byte	$E0
 	.byte	$41
-	.byte	$00
-	.byte	$00
+	.byte	$FE
+	.byte	$FF
 	.byte	$E1
 	.byte	$41
-	.byte	$08
-	.byte	$08
+	.byte	$06
+	.byte	$07
 	.byte	$F0
 	.byte	$41
-	.byte	$00
-	.byte	$08
+	.byte	$FE
+	.byte	$07
 	.byte	$F1
 	.byte	$41
 	.byte	$80
@@ -375,7 +387,8 @@ _metatiles:
 	.byte	$00
 	.byte	$00
 	.byte	$00
-_testmap:
+_level10_0:
+	.byte	$06
 	.byte	$2C
 	.byte	$2C
 	.byte	$2C
@@ -386,6 +399,12 @@ _testmap:
 	.byte	$2C
 	.byte	$2C
 	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
 	.byte	$2C
 	.byte	$2C
 	.byte	$2C
@@ -396,26 +415,287 @@ _testmap:
 	.byte	$2C
 	.byte	$2C
 	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
 	.byte	$2C
 	.byte	$2C
 	.byte	$2C
 	.byte	$2C
 	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
 	.byte	$2A
-	.byte	$2B
-	.byte	$2C
-	.byte	$2C
-	.byte	$16
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
+	.byte	$2A
+	.byte	$2A
+	.byte	$2A
+	.byte	$2A
 	.byte	$2C
 	.byte	$2C
 	.byte	$2C
 	.byte	$2C
 	.byte	$2C
+	.byte	$0E
 	.byte	$2C
 	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$17
+	.byte	$19
+	.byte	$2A
+	.byte	$2A
+	.byte	$2A
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$18
+	.byte	$18
+	.byte	$2A
+	.byte	$2A
+	.byte	$2A
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$0D
+	.byte	$0D
+	.byte	$0D
+	.byte	$0D
+	.byte	$0D
+	.byte	$0D
+	.byte	$0D
+	.byte	$15
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$01
+	.byte	$01
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0F
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+_level10_1:
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$0C
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$0B
+	.byte	$07
+	.byte	$07
+	.byte	$07
+	.byte	$07
+	.byte	$07
+	.byte	$07
+	.byte	$07
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$28
+	.byte	$2C
+	.byte	$28
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$04
+	.byte	$0D
+	.byte	$11
 	.byte	$2C
 	.byte	$10
 	.byte	$11
@@ -424,6 +704,12 @@ _testmap:
 	.byte	$2C
 	.byte	$2C
 	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
 	.byte	$2C
 	.byte	$2C
 	.byte	$2C
@@ -434,8 +720,373 @@ _testmap:
 	.byte	$2C
 	.byte	$2C
 	.byte	$2C
+	.byte	$0E
 	.byte	$2C
 	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$16
+	.byte	$2C
+	.byte	$2C
+	.byte	$28
+	.byte	$1C
+	.byte	$1D
+	.byte	$28
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$1E
+	.byte	$1F
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$29
+	.byte	$2C
+	.byte	$29
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$04
+	.byte	$0D
+	.byte	$0D
+	.byte	$11
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2A
+	.byte	$2A
+	.byte	$2A
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2A
+	.byte	$16
+	.byte	$2A
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2A
+	.byte	$2A
+	.byte	$2A
+	.byte	$2C
+	.byte	$2A
+	.byte	$2A
+	.byte	$2A
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+_level10_2:
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$04
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$09
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$04
+	.byte	$07
+	.byte	$07
+	.byte	$07
+	.byte	$07
+	.byte	$07
+	.byte	$07
+	.byte	$15
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$28
+	.byte	$2C
+	.byte	$2C
+	.byte	$0E
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$28
+	.byte	$2C
+	.byte	$2C
+	.byte	$0C
+	.byte	$04
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0C
+	.byte	$07
+	.byte	$07
+	.byte	$0A
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$28
+	.byte	$2C
+	.byte	$28
+	.byte	$2C
+	.byte	$2C
+	.byte	$0C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$06
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$0C
+	.byte	$04
+	.byte	$06
 	.byte	$2C
 	.byte	$1A
 	.byte	$2C
@@ -443,179 +1094,29 @@ _testmap:
 	.byte	$2C
 	.byte	$2C
 	.byte	$2C
+	.byte	$04
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$05
+	.byte	$04
+	.byte	$05
+	.byte	$05
+	.byte	$09
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+	.byte	$2C
+_level_starting_nt:
 	.byte	$00
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$28
-	.byte	$29
-	.byte	$2C
-	.byte	$2C
-	.byte	$0F
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
 	.byte	$03
-	.byte	$04
+_valrigard_starting_nt:
 	.byte	$02
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$12
-	.byte	$13
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$01
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$1B
-	.byte	$2C
-	.byte	$2C
-	.byte	$25
-	.byte	$2C
-	.byte	$2C
-	.byte	$1C
-	.byte	$1D
-	.byte	$2C
-	.byte	$20
-	.byte	$21
-	.byte	$17
-	.byte	$19
-	.byte	$26
-	.byte	$27
-	.byte	$2C
-	.byte	$2C
-	.byte	$2C
-	.byte	$26
-	.byte	$24
-	.byte	$27
-	.byte	$2C
-	.byte	$1E
-	.byte	$1F
-	.byte	$2C
-	.byte	$22
-	.byte	$23
-	.byte	$18
-	.byte	$18
-	.byte	$05
-	.byte	$05
-	.byte	$05
-	.byte	$05
-	.byte	$05
-	.byte	$05
-	.byte	$05
-	.byte	$05
-	.byte	$05
-	.byte	$05
-	.byte	$05
-	.byte	$05
-	.byte	$05
-	.byte	$05
-	.byte	$05
-	.byte	$05
-	.byte	$04
-	.byte	$04
-	.byte	$04
-	.byte	$04
-	.byte	$04
-	.byte	$04
-	.byte	$04
-	.byte	$04
-	.byte	$04
-	.byte	$04
-	.byte	$04
-	.byte	$04
-	.byte	$04
-	.byte	$04
-	.byte	$04
-	.byte	$04
+_valrigard_inital_coords:
+	.byte	$4D
 _palette_bg:
 	.byte	$0F
 	.byte	$00
@@ -692,6 +1193,8 @@ _direction:
 	.res	1,$00
 _address:
 	.res	2,$00
+_pointer:
+	.res	2,$00
 _x:
 	.res	1,$00
 _y:
@@ -700,13 +1203,9 @@ _index:
 	.res	1,$00
 _map:
 	.res	1,$00
-_scroll_x:
+_pseudo_scroll_y:
 	.res	2,$00
 _scroll_y:
-	.res	2,$00
-_hero_velocity_x:
-	.res	2,$00
-_hero_velocity_y:
 	.res	2,$00
 _hero_x:
 	.res	2,$00
@@ -718,6 +1217,8 @@ _old_x:
 	.res	1,$00
 _old_y:
 	.res	1,$00
+_level_index:
+	.res	1,$00
 .segment	"BSS"
 _c_map:
 	.res	240,$00
@@ -725,6 +1226,10 @@ _c_map2:
 	.res	240,$00
 _hitbox:
 	.res	4,$00
+_nt_max:
+	.res	1,$00
+_nt_current:
+	.res	1,$00
 
 ; ---------------------------------------------------------------
 ; void __near__ draw_sprites (void)
@@ -744,7 +1249,7 @@ _hitbox:
 ; if (direction == LEFT) {
 ;
 	lda     _direction
-	bne     L0286
+	bne     L04B6
 ;
 ; oam_meta_spr(valrigard.x, valrigard.y, valrigardIdleLeft);
 ;
@@ -760,11 +1265,11 @@ _hitbox:
 ;
 ; } else {
 ;
-	jmp     L037B
+	jmp     L05B5
 ;
 ; oam_meta_spr(valrigard.x, valrigard.y, valrigardIdleRight);
 ;
-L0286:	jsr     decsp2
+L04B6:	jsr     decsp2
 	lda     _valrigard
 	ldy     #$01
 	sta     (sp),y
@@ -773,7 +1278,7 @@ L0286:	jsr     decsp2
 	sta     (sp),y
 	lda     #<(_valrigardIdleRight)
 	ldx     #>(_valrigardIdleRight)
-L037B:	jsr     _oam_meta_spr
+L05B5:	jsr     _oam_meta_spr
 ;
 ; oam_meta_spr(star.x, star.y, valrigardIdleLeftAlternate);
 ;
@@ -810,115 +1315,115 @@ L037B:	jsr     _oam_meta_spr
 ;
 	lda     _pad1
 	and     #$02
-	beq     L0381
+	beq     L05BB
 ;
 ; direction = LEFT;
 ;
 	lda     #$00
 	sta     _direction
 ;
-; if (valrigard.x < 2) {
+; if (valrigard.x <= 2) { // Changed by 1 from nesdoug's example because Valrigard's hitbox is narrower by 1 pixel on both sides
 ;
 	lda     _valrigard
-	cmp     #$02
-	bcs     L0380
+	cmp     #$03
+	bcs     L05BA
 ;
-; hero_velocity_x = 0;
+; valrigard.velocity_x = 0;
 ;
 	lda     #$00
-	sta     _hero_velocity_x
-	sta     _hero_velocity_x+1
+	sta     _valrigard+2
+	sta     _valrigard+2+1
 ;
-; hero_x = 0x100;
+; hero_x = 0x200;
 ;
-	ldx     #$01
+	ldx     #$02
 	sta     _hero_x
 	stx     _hero_x+1
 ;
-; } else if (valrigard.x < 4) { // Don't allow us to wrap to the other side
+; } else if (valrigard.x < 6) { // Don't allow us to wrap to the other side
 ;
-	jmp     L02BD
-L0380:	lda     _valrigard
-	cmp     #$04
-	bcs     L02A3
+	jmp     L04ED
+L05BA:	lda     _valrigard
+	cmp     #$06
+	bcs     L04D3
 ;
-; hero_velocity_x = -0x100;
+; valrigard.velocity_x = -0x100;
 ;
 	ldx     #$FF
 	lda     #$00
 ;
 ; } else {
 ;
-	jmp     L0384
+	jmp     L05BE
 ;
-; hero_velocity_x = -SPEED;
+; valrigard.velocity_x = -SPEED;
 ;
-L02A3:	ldx     #$FE
+L04D3:	ldx     #$FE
 ;
 ; else if (pad1 & PAD_RIGHT){
 ;
-	jmp     L038D
-L0381:	lda     _pad1
+	jmp     L05C7
+L05BB:	lda     _pad1
 	ldx     #$00
 	and     #$01
-	beq     L0384
+	beq     L05BE
 ;
 ; direction = RIGHT;
 ;
 	lda     #$01
 	sta     _direction
 ;
-; if (valrigard.x > 0xf0) {
+; if (valrigard.x >= 0xf0) {  // Also changed by 1 from nesdoug's example because Valrigard's hitbox is narrower by 1 pixel on both sides
 ;
 	lda     _valrigard
-	cmp     #$F1
-	bcc     L0382
+	cmp     #$F0
+	bcc     L05BC
 ;
-; hero_velocity_x = 0;
+; valrigard.velocity_x = 0;
 ;
 	txa
-	sta     _hero_velocity_x
-	sta     _hero_velocity_x+1
+	sta     _valrigard+2
+	sta     _valrigard+2+1
 ;
-; hero_x = 0xf100;
+; hero_x = 0xf000; // ...and we'd add 0x100 to this constant here (and the 0x200 in the PAD_LEFT block would be a 0x100)
 ;
-	ldx     #$F1
+	ldx     #$F0
 	sta     _hero_x
 	stx     _hero_x+1
 ;
 ; } else if (valrigard.x > 0xec) { // Don't allow us to wrap to the other side
 ;
-	jmp     L02BD
-L0382:	lda     _valrigard
+	jmp     L04ED
+L05BC:	lda     _valrigard
 	cmp     #$ED
-	bcc     L02B6
+	bcc     L04E6
 ;
-; hero_velocity_x = 0x100;
+; valrigard.velocity_x = 0x100;
 ;
 	inx
 	lda     #$00
 ;
 ; } else {
 ;
-	jmp     L0384
+	jmp     L05BE
 ;
-; hero_velocity_x = SPEED;
+; valrigard.velocity_x = SPEED;
 ;
-L02B6:	inx
-L038D:	lda     #$80
+L04E6:	inx
+L05C7:	lda     #$80
 ;
-; hero_velocity_x = 0;
+; valrigard.velocity_x = 0;
 ;
-L0384:	sta     _hero_velocity_x
-	stx     _hero_velocity_x+1
+L05BE:	sta     _valrigard+2
+	stx     _valrigard+2+1
 ;
-; hero_x += hero_velocity_x;
+; hero_x += valrigard.velocity_x;
 ;
-L02BD:	lda     _hero_velocity_x
+L04ED:	lda     _valrigard+2
 	clc
 	adc     _hero_x
 	sta     _hero_x
-	lda     _hero_velocity_x+1
+	lda     _valrigard+2+1
 	adc     _hero_x+1
 	sta     _hero_x+1
 ;
@@ -943,11 +1448,12 @@ L02BD:	lda     _hero_velocity_x
 ;
 ; hitbox.width = VALRIGARD_WIDTH;
 ;
-	lda     #$0D
+	lda     #$0B
 	sta     _hitbox+2
 ;
 ; hitbox.height = VALRIGARD_HEIGHT;
 ;
+	lda     #$0D
 	sta     _hitbox+3
 ;
 ; bg_collision();
@@ -957,9 +1463,9 @@ L02BD:	lda     _hero_velocity_x
 ; if (collision_L && collision_R) { // Half-stuck in a wall, I'm guessing?
 ;
 	lda     _collision_L
-	beq     L02CF
+	beq     L04FF
 	lda     _collision_R
-	beq     L02CF
+	beq     L04FF
 ;
 ; valrigard.x = old_x;
 ;
@@ -967,9 +1473,9 @@ L02BD:	lda     _hero_velocity_x
 ;
 ; else if (collision_L) {
 ;
-	jmp     L037D
-L02CF:	lda     _collision_L
-	beq     L02D6
+	jmp     L05B7
+L04FF:	lda     _collision_L
+	beq     L0506
 ;
 ; valrigard.x -= eject_L;
 ;
@@ -977,40 +1483,45 @@ L02CF:	lda     _collision_L
 ;
 ; else if (collision_R) {
 ;
-	jmp     L0391
-L02D6:	lda     _collision_R
-	beq     L0385
+	jmp     L05CB
+L0506:	lda     _collision_R
+	beq     L05BF
 ;
 ; valrigard.x -= eject_R;
 ;
 	lda     _eject_R
-L0391:	eor     #$FF
+L05CB:	eor     #$FF
 	sec
 	adc     _valrigard
-L037D:	sta     _valrigard
+L05B7:	sta     _valrigard
 ;
 ; high_byte(hero_x) = valrigard.x;
 ;
-L0385:	lda     _valrigard
+L05BF:	lda     _valrigard
 	sta     _hero_x+1
+;
+; old_y = valrigard.y;
+;
+	lda     _valrigard+1
+	sta     _old_y
 ;
 ; if (pad1 & PAD_UP) {
 ;
 	lda     _pad1
 	and     #$08
-	beq     L0387
+	beq     L05C1
 ;
 ; if (valrigard.y < 2) {
 ;
 	lda     _valrigard+1
 	cmp     #$02
-	bcs     L0386
+	bcs     L05C0
 ;
-; hero_velocity_y = 0;
+; valrigard.velocity_y = 0;
 ;
 	lda     #$00
-	sta     _hero_velocity_y
-	sta     _hero_velocity_y+1
+	sta     _valrigard+4
+	sta     _valrigard+4+1
 ;
 ; hero_y = 0x100;
 ;
@@ -1020,43 +1531,43 @@ L0385:	lda     _valrigard
 ;
 ; else if (valrigard.y < 4) { // Stop sprite-wrapping
 ;
-	jmp     L0303
-L0386:	lda     _valrigard+1
+	jmp     L0535
+L05C0:	lda     _valrigard+1
 	cmp     #$04
-	bcs     L02EB
+	bcs     L051D
 ;
-; hero_velocity_y = -0x100;
+; valrigard.velocity_y = -0x100;
 ;
 	ldx     #$FF
 	lda     #$00
 ;
 ; else { 
 ;
-	jmp     L038A
+	jmp     L05C4
 ;
-; hero_velocity_y = -SPEED;
+; valrigard.velocity_y = -SPEED;
 ;
-L02EB:	ldx     #$FE
+L051D:	ldx     #$FE
 ;
 ; else if (pad1 & PAD_DOWN) {
 ;
-	jmp     L038F
-L0387:	lda     _pad1
+	jmp     L05C9
+L05C1:	lda     _pad1
 	ldx     #$00
 	and     #$04
-	beq     L038A
+	beq     L05C4
 ;
 ; if (valrigard.y > 0xdf) {
 ;
 	lda     _valrigard+1
 	cmp     #$E0
-	bcc     L0388
+	bcc     L05C2
 ;
-; hero_velocity_y = 0;
+; valrigard.velocity_y = 0;
 ;
 	txa
-	sta     _hero_velocity_y
-	sta     _hero_velocity_y+1
+	sta     _valrigard+4
+	sta     _valrigard+4+1
 ;
 ; hero_y = 0xdf00;
 ;
@@ -1066,37 +1577,37 @@ L0387:	lda     _pad1
 ;
 ; else if (valrigard.y > 0xdc) { // If you could be half in the floor and half in the cieling, would you?
 ;
-	jmp     L0303
-L0388:	lda     _valrigard+1
+	jmp     L0535
+L05C2:	lda     _valrigard+1
 	cmp     #$DD
-	bcc     L02FC
+	bcc     L052E
 ;
-; hero_velocity_y = 0x100;
+; valrigard.velocity_y = 0x100;
 ;
 	inx
 	lda     #$00
 ;
 ; else {
 ;
-	jmp     L038A
+	jmp     L05C4
 ;
-; hero_velocity_y = SPEED;
+; valrigard.velocity_y = SPEED;
 ;
-L02FC:	inx
-L038F:	lda     #$80
+L052E:	inx
+L05C9:	lda     #$80
 ;
-; hero_velocity_y = 0;
+; valrigard.velocity_y = 0;
 ;
-L038A:	sta     _hero_velocity_y
-	stx     _hero_velocity_y+1
+L05C4:	sta     _valrigard+4
+	stx     _valrigard+4+1
 ;
-; hero_y += hero_velocity_y;
+; hero_y += valrigard.velocity_y;
 ;
-L0303:	lda     _hero_velocity_y
+L0535:	lda     _valrigard+4
 	clc
 	adc     _hero_y
 	sta     _hero_y
-	lda     _hero_velocity_y+1
+	lda     _valrigard+4+1
 	adc     _hero_y+1
 	sta     _hero_y+1
 ;
@@ -1126,7 +1637,7 @@ L0303:	lda     _hero_velocity_y
 ; if(collision_U) {
 ;
 	lda     _collision_U
-	beq     L0311
+	beq     L0543
 ;
 ; valrigard.y -= eject_U;
 ;
@@ -1134,22 +1645,62 @@ L0303:	lda     _hero_velocity_y
 ;
 ; else if (collision_D) {
 ;
-	jmp     L0392
-L0311:	lda     _collision_D
-	beq     L0316
+	jmp     L05CC
+L0543:	lda     _collision_D
+	beq     L0548
 ;
 ; valrigard.y -= eject_D;
 ;
 	lda     _eject_D
-L0392:	eor     #$FF
+L05CC:	eor     #$FF
 	sec
 	adc     _valrigard+1
 	sta     _valrigard+1
 ;
 ; high_byte(hero_y) = valrigard.y;
 ;
-L0316:	lda     _valrigard+1
+L0548:	lda     _valrigard+1
 	sta     _hero_y+1
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ load_level (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_load_level: near
+
+.segment	"CODE"
+
+;
+; nt_max = level_starting_nt[level_index+1];
+;
+	ldx     #$00
+	lda     _level_index
+	clc
+	adc     #$01
+	bcc     L0439
+	inx
+L0439:	sta     ptr1
+	txa
+	clc
+	adc     #>(_level_starting_nt)
+	sta     ptr1+1
+	ldy     #<(_level_starting_nt)
+	lda     (ptr1),y
+	sta     _nt_max
+;
+; nt_current = valrigard_starting_nt[level_index];
+;
+	ldy     _level_index
+	lda     _valrigard_starting_nt,y
+	sta     _nt_current
 ;
 ; }
 ;
@@ -1168,10 +1719,63 @@ L0316:	lda     _valrigard+1
 .segment	"CODE"
 
 ;
-; set_data_pointer(testmap);
+; temp1 = nt_current;
 ;
-	lda     #<(_testmap)
-	ldx     #>(_testmap)
+	lda     _nt_current
+	sta     _temp1
+;
+; pointer = level_nametables[temp1];
+;
+	ldx     #$00
+	lda     _temp1
+	asl     a
+	bcc     L05D5
+	inx
+	clc
+L05D5:	adc     #<(_level_nametables)
+	sta     ptr1
+	txa
+	adc     #>(_level_nametables)
+	sta     ptr1+1
+	ldy     #$01
+	lda     (ptr1),y
+	sta     _pointer+1
+	dey
+	lda     (ptr1),y
+	sta     _pointer
+;
+; temp1 = valrigard_inital_coords[level_index];
+;
+	ldy     _level_index
+	lda     _valrigard_inital_coords,y
+	sta     _temp1
+;
+; valrigard.x = (temp1 >> 4) * 16;
+;
+	lsr     a
+	lsr     a
+	lsr     a
+	lsr     a
+	asl     a
+	asl     a
+	asl     a
+	asl     a
+	sta     _valrigard
+;
+; valrigard.y = (temp1 & 0x0f) * 16;
+;
+	lda     _temp1
+	and     #$0F
+	asl     a
+	asl     a
+	asl     a
+	asl     a
+	sta     _valrigard+1
+;
+; set_data_pointer(pointer);
+;
+	lda     _pointer
+	ldx     _pointer+1
 	jsr     _set_data_pointer
 ;
 ; set_mt_pointer(metatiles);
@@ -1180,24 +1784,50 @@ L0316:	lda     _valrigard+1
 	ldx     #>(_metatiles)
 	jsr     _set_mt_pointer
 ;
+; temp2 = nt_current - nt_max; // temp2 is now the total length of this level
+;
+	lda     _nt_current
+	sec
+	sbc     _nt_max
+	sta     _temp2
+;
+; temp1 = (((temp2 * 0x100) - 0x11) >> 8) + 1; // MAX_SCROLL in scroll_up.h, but different since we're keeping track of nt_max.
+;
+	tax
+	lda     #$00
+	sec
+	sbc     #$11
+	bcs     L0459
+	dex
+L0459:	txa
+	clc
+	adc     #$01
+	sta     _temp1
+;
+; temp1 = (temp1 & 1) << 1;
+;
+	and     #$01
+	asl     a
+	sta     _temp1
+;
 ; for (y = 0; /*We'll break manually*/; y += 0x20) {
 ;
 	lda     #$00
-L0395:	sta     _y
+L05D2:	sta     _y
 ;
 ; for (x = 0; ; x += 0x20) {
 ;
 	lda     #$00
-L0394:	sta     _x
+L05D1:	sta     _x
 ;
 ; clear_vram_buffer(); // do this each frame, and before putting anything in the buffer.
 ;
 	jsr     _clear_vram_buffer
 ;
-; address = get_ppu_addr(0, x, y);
+; address = get_ppu_addr(temp1, x, y);
 ;
 	jsr     decsp2
-	lda     #$00
+	lda     _temp1
 	ldy     #$01
 	sta     (sp),y
 	lda     _x
@@ -1236,48 +1866,169 @@ L0394:	sta     _x
 ;
 ; if (x == 0xe0) break;
 ;
-	ldx     #$00
 	lda     _x
 	cmp     #$E0
-	beq     L0396
+	beq     L05D7
 ;
 ; for (x = 0; ; x += 0x20) {
 ;
 	lda     #$20
 	clc
 	adc     _x
-	jmp     L0394
+	jmp     L05D1
 ;
 ; if (y == 0xe0) break;
 ;
-L0396:	lda     _y
+L05D7:	lda     _y
 	cmp     #$E0
-	beq     L0397
+	beq     L05D8
 ;
 ; for (y = 0; /*We'll break manually*/; y += 0x20) {
 ;
 	lda     #$20
 	clc
 	adc     _y
-	jmp     L0395
+	jmp     L05D2
 ;
-; set_vram_update(NULL); // just turn ppu updates OFF for this example
+; temp1 = temp1 ^ 2;
 ;
-L0397:	txa
-	jsr     _set_vram_update
+L05D8:	lda     _temp1
+	eor     #$02
+	sta     _temp1
 ;
-; memcpy (c_map, testmap, 240);
+; memcpy(c_map, pointer, 240);
 ;
-	ldy     #$00
-L027F:	lda     _testmap,y
-	sta     _c_map,y
-	iny
-	cpy     #$F0
-	bne     L027F
+	lda     #<(_c_map)
+	ldx     #>(_c_map)
+	jsr     pushax
+	lda     _pointer
+	ldx     _pointer+1
+	jsr     pushax
+	ldx     #$00
+	lda     #$F0
+	jsr     _memcpy
+;
+; if (temp2 == 0){ // If we're at the top, there's not much of a reason to load what's above us.
+;
+	lda     _temp2
+	bne     L05D9
+;
+; y = 0;
+;
+	sta     _y
+;
+; temp2 = nt_current + 1;
+;
+	lda     _nt_current
+	clc
+	adc     #$01
+;
+; } else { // Usually we'll be going up, so we'll pre-load part of the nt above us.
+;
+	jmp     L05D3
+;
+; y = 0xe0;
+;
+L05D9:	lda     #$E0
+	sta     _y
+;
+; temp2 = nt_current - 1;
+;
+	lda     _nt_current
+	sec
+	sbc     #$01
+L05D3:	sta     _temp2
+;
+; pointer = level_nametables[temp2];
+;
+	ldx     #$00
+	lda     _temp2
+	asl     a
+	bcc     L05D6
+	inx
+	clc
+L05D6:	adc     #<(_level_nametables)
+	sta     ptr1
+	txa
+	adc     #>(_level_nametables)
+	sta     ptr1+1
+	ldy     #$01
+	lda     (ptr1),y
+	tax
+	dey
+	lda     (ptr1),y
+	sta     _pointer
+	stx     _pointer+1
+;
+; set_data_pointer(pointer);
+;
+	jsr     _set_data_pointer
+;
+; for (x = 0; ; x += 0x20) {
+;
+	lda     #$00
+L05D4:	sta     _x
+;
+; clear_vram_buffer(); // do this each frame, and before putting anything in the buffer.
+;
+	jsr     _clear_vram_buffer
+;
+; address = get_ppu_addr(temp1, x, y);
+;
+	jsr     decsp2
+	lda     _temp1
+	ldy     #$01
+	sta     (sp),y
+	lda     _x
+	dey
+	sta     (sp),y
+	lda     _y
+	jsr     _get_ppu_addr
+	sta     _address
+	stx     _address+1
+;
+; index = (y & 0xf0) + (x >> 4);
+;
+	lda     _y
+	and     #$F0
+	sta     ptr1
+	lda     _x
+	lsr     a
+	lsr     a
+	lsr     a
+	lsr     a
+	clc
+	adc     ptr1
+	sta     _index
+;
+; buffer_4_mt(address, index); // ppu_address, index to the data
+;
+	lda     _address
+	ldx     _address+1
+	jsr     pushax
+	lda     _index
+	jsr     _buffer_4_mt
+;
+; flush_vram_update_nmi();
+;
+	jsr     _flush_vram_update_nmi
+;
+; if (x == 0xe0) break;
+;
+	lda     _x
+	cmp     #$E0
+	beq     L05DA
+;
+; for (x = 0; ; x += 0x20) {
+;
+	lda     #$20
+	clc
+	adc     _x
+	jmp     L05D4
 ;
 ; hero_y = valrigard.y << 8;
 ;
-	lda     _valrigard+1
+L05DA:	lda     _valrigard+1
 	sta     _hero_y+1
 	lda     #$00
 	sta     _hero_y
@@ -1327,22 +2078,16 @@ L027F:	lda     _testmap,y
 ;
 	lda     _hitbox+1
 	cmp     #$F0
-	bcc     L039A
+	bcc     L05DD
 ;
 ; }
 ;
 	rts
 ;
-; temp6 = temp5 = hitbox.x + scroll_x; // upper left (temp6 = save for reuse)
+; temp6 = temp5 = hitbox.x /*+ scroll_x*/; // upper left (temp6 = save for reuse)
 ;
-L039A:	lda     _hitbox
-	clc
-	adc     _scroll_x
-	pha
-	lda     #$00
-	adc     _scroll_x+1
-	tax
-	pla
+L05DD:	lda     _hitbox
+	ldx     #$00
 	sta     _temp5
 	stx     _temp5+1
 	sta     _temp6
@@ -1377,7 +2122,7 @@ L039A:	lda     _hitbox
 ; if(L_R_switch) temp3 += 2; // fix bug, walking through walls
 ;
 	lda     _L_R_switch
-	beq     L0335
+	beq     L0567
 	lda     #$02
 	clc
 	adc     _temp3
@@ -1385,12 +2130,12 @@ L039A:	lda     _hitbox
 ;
 ; bg_collision_sub();
 ;
-L0335:	jsr     _bg_collision_sub
+L0567:	jsr     _bg_collision_sub
 ;
 ; if(collision){ // find a corner in the collision map
 ;
 	lda     _collision
-	beq     L033A
+	beq     L056C
 ;
 ; ++collision_L;
 ;
@@ -1402,7 +2147,7 @@ L0335:	jsr     _bg_collision_sub
 ;
 ; temp5 += hitbox.width;
 ;
-L033A:	lda     _hitbox+2
+L056C:	lda     _hitbox+2
 	clc
 	adc     _temp5
 	sta     _temp5
@@ -1435,7 +2180,7 @@ L033A:	lda     _hitbox+2
 ; if(collision){ // find a corner in the collision map
 ;
 	lda     _collision
-	beq     L0349
+	beq     L057B
 ;
 ; ++collision_R;
 ;
@@ -1447,7 +2192,7 @@ L033A:	lda     _hitbox+2
 ;
 ; temp3 = hitbox.y + hitbox.height; //y bottom
 ;
-L0349:	lda     _hitbox+1
+L057B:	lda     _hitbox+1
 	clc
 	adc     _hitbox+3
 	sta     _temp3
@@ -1455,7 +2200,7 @@ L0349:	lda     _hitbox+1
 ; if(L_R_switch) temp3 -= 2; // fix bug, walking through walls
 ;
 	lda     _L_R_switch
-	beq     L0399
+	beq     L05DC
 	lda     _temp3
 	sec
 	sbc     #$02
@@ -1463,7 +2208,7 @@ L0349:	lda     _hitbox+1
 ;
 ; eject_D = (temp3 + 1) & 0x0f;
 ;
-L0399:	lda     _temp3
+L05DC:	lda     _temp3
 	clc
 	adc     #$01
 	and     #$0F
@@ -1473,7 +2218,7 @@ L0399:	lda     _temp3
 ;
 	lda     _temp3
 	cmp     #$F0
-	bcs     L0363
+	bcs     L0595
 ;
 ; bg_collision_sub();
 ;
@@ -1482,7 +2227,7 @@ L0399:	lda     _temp3
 ; if(collision){ // find a corner in the collision map
 ;
 	lda     _collision
-	beq     L035A
+	beq     L058C
 ;
 ; ++collision_R;
 ;
@@ -1494,7 +2239,7 @@ L0399:	lda     _temp3
 ;
 ; temp1 = temp6 & 0xff; // low byte x
 ;
-L035A:	lda     _temp6
+L058C:	lda     _temp6
 	sta     _temp1
 ;
 ; temp2 = temp6 >> 8; // high byte x
@@ -1509,7 +2254,7 @@ L035A:	lda     _temp6
 ; if(collision){ // find a corner in the collision map
 ;
 	lda     _collision
-	beq     L0363
+	beq     L0595
 ;
 ; ++collision_L;
 ;
@@ -1521,7 +2266,7 @@ L035A:	lda     _temp6
 ;
 ; }
 ;
-L0363:	rts
+L0595:	rts
 
 .endproc
 
@@ -1559,24 +2304,35 @@ L0363:	rts
 ; if (!map) {
 ;
 	lda     _map
-	bne     L036E
+	bne     L05A0
 ;
-; collision = (c_map[coordinates] < 0x17); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
+; collision = (c_map[coordinates] < 0x17 && c_map[coordinates] > 0x03); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
 ;
 	ldy     _coordinates
 	lda     _c_map,y
+	cmp     #$17
+	bcs     L05DF
+	ldy     _coordinates
+	lda     _c_map,y
+	cmp     #$04
+	bcs     L05E3
+L05DF:	lda     #$00
+	jmp     L05DE
 ;
-; else {
+; collision = (c_map2[coordinates] < 0x17 && c_map[coordinates] > 0x03);
 ;
-	jmp     L039E
-;
-; collision = (c_map2[coordinates] < 0x17);
-;
-L036E:	ldy     _coordinates
+L05A0:	ldy     _coordinates
 	lda     _c_map2,y
-L039E:	cmp     #$17
-	jsr     boolult
-	sta     _collision
+	cmp     #$17
+	bcs     L05E2
+	ldy     _coordinates
+	lda     _c_map,y
+	cmp     #$04
+	bcs     L05E3
+L05E2:	lda     #$00
+	jmp     L05DE
+L05E3:	lda     #$01
+L05DE:	sta     _collision
 ;
 ; }
 ;
@@ -1624,23 +2380,37 @@ L039E:	cmp     #$17
 ;
 	jsr     _clear_vram_buffer
 ;
+; load_level();
+;
+	jsr     _load_level
+;
 ; load_room();
 ;
 	jsr     _load_room
 ;
-; set_scroll_y(0xfe); // Shift the background down by 2 pixels to offset the inherent shift in sprites on the NES.
+; scroll_y = 0xfe;
 ;
 	ldx     #$00
 	lda     #$FE
+	sta     _scroll_y
+	stx     _scroll_y+1
+;
+; set_scroll_y(0xfe); // Shift the background down by 2 pixels to offset the inherent shift in sprites on the NES and the fact that Valrigard's hitbox is 13, thus making his foot clip through the floor otherwise.
+;
 	jsr     _set_scroll_y
 ;
 ; ppu_on_all(); // turn on screen
 ;
 	jsr     _ppu_on_all
 ;
+; level_index = 0;
+;
+	lda     #$00
+	sta     _level_index
+;
 ; ppu_wait_nmi(); // wait till beginning of the frame
 ;
-L023D:	jsr     _ppu_wait_nmi
+L0429:	jsr     _ppu_wait_nmi
 ;
 ; pad1 = pad_poll(0); // read the first controller
 ;
@@ -1652,38 +2422,19 @@ L023D:	jsr     _ppu_wait_nmi
 ;
 	jsr     _movement
 ;
+; set_scroll_y(scroll_y);
+;
+	lda     _scroll_y
+	ldx     _scroll_y+1
+	jsr     _set_scroll_y
+;
 ; draw_sprites();
 ;
 	jsr     _draw_sprites
 ;
-; if (c_map[coordinates] < 0x04) {
-;
-	ldy     _coordinates
-	lda     _c_map,y
-	cmp     #$04
-	bcs     L0247
-;
-; pal_col(0,0x06);
-;
-	lda     #$00
-	jsr     pusha
-	lda     #$06
-	jsr     _pal_col
-;
-; } else {
-;
-	jmp     L023D
-;
-; pal_col(0,0x0f);
-;
-L0247:	lda     #$00
-	jsr     pusha
-	lda     #$0F
-	jsr     _pal_col
-;
 ; while (1){
 ;
-	jmp     L023D
+	jmp     L0429
 
 .endproc
 

@@ -13,7 +13,6 @@
 		11B841252490931700CBB7CC /* neslib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = neslib.h; sourceTree = "<group>"; };
 		11B841262490931700CBB7CC /* compile.bat */ = {isa = PBXFileReference; lastKnownFileType = text; path = compile.bat; sourceTree = "<group>"; };
 		11B841282490931700CBB7CC /* famitone2.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = famitone2.s; sourceTree = "<group>"; };
-		11B841292490931700CBB7CC /* screenshot01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = screenshot01.png; sourceTree = "<group>"; };
 		11B8412B2490931800CBB7CC /* labels.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = labels.txt; sourceTree = "<group>"; };
 		11B8412E2490931800CBB7CC /* escape.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = escape.c; sourceTree = "<group>"; };
 		11B8412F2490931800CBB7CC /* License.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = License.txt; sourceTree = "<group>"; };
@@ -23,10 +22,11 @@
 		11B8413324918CEE00CBB7CC /* AlphaPlus.chr */ = {isa = PBXFileReference; lastKnownFileType = file; path = AlphaPlus.chr; sourceTree = "<group>"; };
 		11B84137249304A500CBB7CC /* metasprites.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = metasprites.h; sourceTree = "<group>"; };
 		11B841382493053A00CBB7CC /* escape.chr */ = {isa = PBXFileReference; lastKnownFileType = file; path = escape.chr; sourceTree = "<group>"; };
-		11B8413A249305D800CBB7CC /* colors.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = colors.h; sourceTree = "<group>"; };
 		11B8413B2493262B00CBB7CC /* structs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = structs.h; sourceTree = "<group>"; };
 		11B8413D24947A1900CBB7CC /* metatiles.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = metatiles.h; sourceTree = "<group>"; };
 		11B8413E2495DD4100CBB7CC /* testmap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = testmap.h; sourceTree = "<group>"; };
+		11B84140249ADF6400CBB7CC /* level10.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = level10.c; sourceTree = "<group>"; };
+		11B84142249AE9E800CBB7CC /* levels.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = levels.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -39,9 +39,9 @@
 				11B841262490931700CBB7CC /* compile.bat */,
 				11B8413224909BC300CBB7CC /* compile.sh */,
 				11B841302490931800CBB7CC /* crt0.s */,
-				11B8413A249305D800CBB7CC /* colors.h */,
 				11B84137249304A500CBB7CC /* metasprites.h */,
 				11B8413D24947A1900CBB7CC /* metatiles.h */,
+				11B84142249AE9E800CBB7CC /* levels.h */,
 				11B841392493057800CBB7CC /* metasprites */,
 				11B8412E2490931800CBB7CC /* escape.c */,
 				11B8413B2493262B00CBB7CC /* structs.h */,
@@ -49,7 +49,6 @@
 				11B8412F2490931800CBB7CC /* License.txt */,
 				11B841272490931700CBB7CC /* music */,
 				11B841312490931800CBB7CC /* nrom_32k_vert.cfg */,
-				11B841292490931700CBB7CC /* screenshot01.png */,
 				11B8411F249092B700CBB7CC /* tilemaps */,
 			);
 			sourceTree = "<group>";
@@ -58,6 +57,7 @@
 			isa = PBXGroup;
 			children = (
 				11B8413E2495DD4100CBB7CC /* testmap.h */,
+				11B84140249ADF6400CBB7CC /* level10.c */,
 			);
 			path = tilemaps;
 			sourceTree = "<group>";
