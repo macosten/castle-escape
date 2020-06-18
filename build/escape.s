@@ -34,7 +34,6 @@
 	.import		_flush_vram_update_nmi
 	.export		_valrigardIdleLeft
 	.export		_valrigardIdleRight
-	.export		_valrigardIdleLeftAlternate
 	.export		_metatiles
 	.export		_level10_0
 	.export		_level10_1
@@ -87,7 +86,6 @@
 	.export		_palette_sp
 	.export		_valrigard
 	.export		_hitbox
-	.export		_star
 	.export		_draw_sprites
 	.export		_movement
 	.export		_load_level
@@ -108,11 +106,6 @@ _valrigard:
 	.word	$0014
 	.word	$0028
 	.res	4,$00
-_star:
-	.byte	$46
-	.byte	$28
-	.byte	$0F
-	.byte	$0F
 
 .segment	"RODATA"
 
@@ -151,24 +144,6 @@ _valrigardIdleRight:
 	.byte	$05
 	.byte	$F1
 	.byte	$41
-	.byte	$80
-_valrigardIdleLeftAlternate:
-	.byte	$00
-	.byte	$00
-	.byte	$E0
-	.byte	$00
-	.byte	$08
-	.byte	$00
-	.byte	$E1
-	.byte	$00
-	.byte	$00
-	.byte	$08
-	.byte	$F0
-	.byte	$00
-	.byte	$08
-	.byte	$08
-	.byte	$F1
-	.byte	$00
 	.byte	$80
 _metatiles:
 	.byte	$A0
@@ -1276,7 +1251,7 @@ _hitbox:
 ; if (direction == LEFT) {
 ;
 	lda     _direction
-	bne     L04B2
+	bne     L049D
 ;
 ; oam_meta_spr(temp1, temp2, valrigardIdleLeft);
 ;
@@ -1289,14 +1264,11 @@ _hitbox:
 	sta     (sp),y
 	lda     #<(_valrigardIdleLeft)
 	ldx     #>(_valrigardIdleLeft)
-;
-; } else {
-;
-	jmp     L0675
+	jmp     _oam_meta_spr
 ;
 ; oam_meta_spr(temp1, temp2, valrigardIdleRight);
 ;
-L04B2:	jsr     decsp2
+L049D:	jsr     decsp2
 	lda     _temp1
 	ldy     #$01
 	sta     (sp),y
@@ -1305,19 +1277,6 @@ L04B2:	jsr     decsp2
 	sta     (sp),y
 	lda     #<(_valrigardIdleRight)
 	ldx     #>(_valrigardIdleRight)
-L0675:	jsr     _oam_meta_spr
-;
-; oam_meta_spr(star.x, star.y, valrigardIdleLeftAlternate);
-;
-	jsr     decsp2
-	lda     _star
-	ldy     #$01
-	sta     (sp),y
-	lda     _star+1
-	dey
-	sta     (sp),y
-	lda     #<(_valrigardIdleLeftAlternate)
-	ldx     #>(_valrigardIdleLeftAlternate)
 	jmp     _oam_meta_spr
 
 .endproc
@@ -1344,7 +1303,7 @@ L0675:	jsr     _oam_meta_spr
 ;
 	lda     _pad1
 	and     #$02
-	beq     L067B
+	beq     L0661
 ;
 ; direction = LEFT;
 ;
@@ -1355,10 +1314,10 @@ L0675:	jsr     _oam_meta_spr
 ;
 	lda     _valrigard+1
 	cmp     #$02
-	bne     L04CA
+	bne     L04B1
 	lda     _valrigard
 	cmp     #$01
-L04CA:	bcs     L04C8
+L04B1:	bcs     L04AF
 ;
 ; valrigard.velocity_x = 0;
 ;
@@ -1374,10 +1333,10 @@ L04CA:	bcs     L04C8
 ;
 ; } else if (valrigard.x < 0x0600) { // Don't allow us to wrap to the other side
 ;
-	jmp     L04EA
-L04C8:	ldx     _valrigard+1
+	jmp     L04D1
+L04AF:	ldx     _valrigard+1
 	cpx     #$06
-	bcs     L04D0
+	bcs     L04B7
 ;
 ; valrigard.velocity_x = -0x100;
 ;
@@ -1386,19 +1345,19 @@ L04C8:	ldx     _valrigard+1
 ;
 ; } else {
 ;
-	jmp     L067D
+	jmp     L0663
 ;
 ; valrigard.velocity_x = -SPEED;
 ;
-L04D0:	ldx     #$FE
+L04B7:	ldx     #$FE
 ;
 ; else if (pad1 & PAD_RIGHT){
 ;
-	jmp     L068B
-L067B:	lda     _pad1
+	jmp     L0671
+L0661:	lda     _pad1
 	ldx     #$00
 	and     #$01
-	beq     L067D
+	beq     L0663
 ;
 ; direction = RIGHT;
 ;
@@ -1411,7 +1370,7 @@ L067B:	lda     _pad1
 	cmp     #$00
 	lda     _valrigard+1
 	sbc     #$F0
-	bcc     L04DC
+	bcc     L04C3
 ;
 ; valrigard.velocity_x = 0;
 ;
@@ -1427,12 +1386,12 @@ L067B:	lda     _pad1
 ;
 ; } else if (valrigard.x > 0xec00) { // Don't allow us to wrap to the other side
 ;
-	jmp     L04EA
-L04DC:	lda     _valrigard
+	jmp     L04D1
+L04C3:	lda     _valrigard
 	cmp     #$01
 	lda     _valrigard+1
 	sbc     #$EC
-	bcc     L04E3
+	bcc     L04CA
 ;
 ; valrigard.velocity_x = 0x100;
 ;
@@ -1441,21 +1400,21 @@ L04DC:	lda     _valrigard
 ;
 ; } else {
 ;
-	jmp     L067D
+	jmp     L0663
 ;
 ; valrigard.velocity_x = SPEED;
 ;
-L04E3:	inx
-L068B:	lda     #$80
+L04CA:	inx
+L0671:	lda     #$80
 ;
 ; valrigard.velocity_x = 0;
 ;
-L067D:	sta     _valrigard+4
+L0663:	sta     _valrigard+4
 	stx     _valrigard+4+1
 ;
 ; valrigard.x += valrigard.velocity_x;
 ;
-L04EA:	lda     _valrigard+4
+L04D1:	lda     _valrigard+4
 	clc
 	adc     _valrigard
 	sta     _valrigard
@@ -1467,23 +1426,23 @@ L04EA:	lda     _valrigard+4
 ;
 	ldx     _valrigard+1
 	cpx     #$01
-	bcc     L067E
+	bcc     L0664
 	lda     _valrigard
 	cmp     #$01
 	lda     _valrigard+1
 	sbc     #$F8
-	bcc     L067F
+	bcc     L0665
 ;
 ; valrigard.x = 0x100;
 ;
-L067E:	ldx     #$01
+L0664:	ldx     #$01
 	lda     #$00
 	sta     _valrigard
 	stx     _valrigard+1
 ;
 ; L_R_switch = 1; // Shrinks the Y values in bg_coll. This makes head/foot collisions less problematic (examine this)
 ;
-L067F:	lda     #$01
+L0665:	lda     #$01
 	sta     _L_R_switch
 ;
 ; hitbox.x = high_byte(valrigard.x);
@@ -1513,9 +1472,9 @@ L067F:	lda     #$01
 ; if (collision_L && collision_R) { // Half-stuck in a wall, I'm guessing?
 ;
 	lda     _collision_L
-	beq     L0503
+	beq     L04EA
 	lda     _collision_R
-	beq     L0503
+	beq     L04EA
 ;
 ; valrigard.x = old_x;
 ;
@@ -1526,9 +1485,9 @@ L067F:	lda     #$01
 ;
 ; else if (collision_L) {
 ;
-	jmp     L0510
-L0503:	lda     _collision_L
-	beq     L050A
+	jmp     L04F7
+L04EA:	lda     _collision_L
+	beq     L04F1
 ;
 ; valrigard.x -= (eject_L << 8);
 ;
@@ -1540,9 +1499,9 @@ L0503:	lda     _collision_L
 ;
 ; else if (collision_R) {
 ;
-	jmp     L0690
-L050A:	lda     _collision_R
-	beq     L0510
+	jmp     L0676
+L04F1:	lda     _collision_R
+	beq     L04F7
 ;
 ; valrigard.x -= (eject_R << 8);
 ;
@@ -1551,13 +1510,13 @@ L050A:	lda     _collision_R
 	adc     _valrigard
 	sta     _valrigard
 	lda     _eject_R
-L0690:	eor     #$FF
+L0676:	eor     #$FF
 	adc     _valrigard+1
 	sta     _valrigard+1
 ;
 ; old_y = valrigard.y;
 ;
-L0510:	lda     _valrigard+2+1
+L04F7:	lda     _valrigard+2+1
 	sta     _old_y+1
 	lda     _valrigard+2
 	sta     _old_y
@@ -1566,7 +1525,7 @@ L0510:	lda     _valrigard+2+1
 ;
 	lda     _pad1
 	and     #$08
-	beq     L0680
+	beq     L0666
 ;
 ; valrigard.velocity_y = -SPEED;
 ;
@@ -1574,11 +1533,11 @@ L0510:	lda     _valrigard+2+1
 ;
 ; else if (pad1 & PAD_DOWN) {
 ;
-	jmp     L068D
-L0680:	lda     _pad1
+	jmp     L0673
+L0666:	lda     _pad1
 	ldx     #$00
 	and     #$04
-	beq     L0682
+	beq     L0668
 ;
 ; if (valrigard.y > 0xdf00) {
 ;
@@ -1586,7 +1545,7 @@ L0680:	lda     _pad1
 	cmp     #$01
 	lda     _valrigard+2+1
 	sbc     #$DF
-	bcc     L051E
+	bcc     L0505
 ;
 ; valrigard.velocity_y = 0;
 ;
@@ -1602,12 +1561,12 @@ L0680:	lda     _pad1
 ;
 ; else if (valrigard.y > 0xdc00) { // If you could be half in the floor and half in the cieling, would you?
 ;
-	jmp     L052C
-L051E:	lda     _valrigard+2
+	jmp     L0513
+L0505:	lda     _valrigard+2
 	cmp     #$01
 	lda     _valrigard+2+1
 	sbc     #$DC
-	bcc     L0525
+	bcc     L050C
 ;
 ; valrigard.velocity_y = 0x100;
 ;
@@ -1616,21 +1575,21 @@ L051E:	lda     _valrigard+2
 ;
 ; else {
 ;
-	jmp     L0682
+	jmp     L0668
 ;
 ; valrigard.velocity_y = SPEED;
 ;
-L0525:	inx
-L068D:	lda     #$80
+L050C:	inx
+L0673:	lda     #$80
 ;
 ; valrigard.velocity_y = 0;
 ;
-L0682:	sta     _valrigard+6
+L0668:	sta     _valrigard+6
 	stx     _valrigard+6+1
 ;
 ; valrigard.y += valrigard.velocity_y;
 ;
-L052C:	lda     _valrigard+6
+L0513:	lda     _valrigard+6
 	clc
 	adc     _valrigard+2
 	sta     _valrigard+2
@@ -1642,25 +1601,25 @@ L052C:	lda     _valrigard+6
 ;
 	ldx     _valrigard+2+1
 	cpx     #$01
-	bcc     L0683
+	bcc     L0669
 	lda     _valrigard+2
 	cmp     #$01
 	lda     _valrigard+2+1
 	sbc     #$F0
-	bcs     L0683
+	bcs     L0669
 	lda     #$00
-	jmp     L0685
+	jmp     L066B
 ;
 ; valrigard.y = 0x100;
 ;
-L0683:	ldx     #$01
+L0669:	ldx     #$01
 	lda     #$00
 	sta     _valrigard+2
 	stx     _valrigard+2+1
 ;
 ; L_R_switch = 0;
 ;
-L0685:	sta     _L_R_switch
+L066B:	sta     _L_R_switch
 ;
 ; hitbox.x = high_byte(valrigard.x);
 ;
@@ -1679,9 +1638,9 @@ L0685:	sta     _L_R_switch
 ; if (collision_U && collision_D) {
 ;
 	lda     _collision_U
-	beq     L0541
+	beq     L0528
 	lda     _collision_D
-	beq     L0541
+	beq     L0528
 ;
 ; valrigard.y = old_y;
 ;
@@ -1692,9 +1651,9 @@ L0685:	sta     _L_R_switch
 ;
 ; else if(collision_U) {
 ;
-	jmp     L054E
-L0541:	lda     _collision_U
-	beq     L0548
+	jmp     L0535
+L0528:	lda     _collision_U
+	beq     L052F
 ;
 ; valrigard.y -= (eject_U << 8);
 ;
@@ -1706,9 +1665,9 @@ L0541:	lda     _collision_U
 ;
 ; else if (collision_D) {
 ;
-	jmp     L0691
-L0548:	lda     _collision_D
-	beq     L054E
+	jmp     L0677
+L052F:	lda     _collision_D
+	beq     L0535
 ;
 ; valrigard.y -= (eject_D << 8);
 ;
@@ -1717,13 +1676,13 @@ L0548:	lda     _collision_D
 	adc     _valrigard+2
 	sta     _valrigard+2
 	lda     _eject_D
-L0691:	eor     #$FF
+L0677:	eor     #$FF
 	adc     _valrigard+2+1
 	sta     _valrigard+2+1
 ;
 ; temp5 = valrigard.y;
 ;
-L054E:	lda     _valrigard+2+1
+L0535:	lda     _valrigard+2+1
 	sta     _temp5+1
 	lda     _valrigard+2
 	sta     _temp5
@@ -1732,7 +1691,7 @@ L054E:	lda     _valrigard+2+1
 ;
 	ldx     _valrigard+2+1
 	cpx     #$40
-	bcs     L0555
+	bcs     L053C
 ;
 ; temp1 = (MAX_UP - valrigard.y + 0x80) >> 8; // "the numbers work better with +80 (like 0.5)". I'll take his word for it.
 ;
@@ -1746,9 +1705,9 @@ L054E:	lda     _valrigard+2+1
 	pla
 	clc
 	adc     #$80
-	bcc     L055A
+	bcc     L0541
 	inx
-L055A:	txa
+L0541:	txa
 	sta     _temp1
 ;
 ; scroll_y = sub_scroll_y(temp1, scroll_y);
@@ -1772,18 +1731,18 @@ L055A:	txa
 ;
 ; if((high_byte(scroll_y) >= 0x80) || (scroll_y <= MIN_SCROLL)) { // 0x80 = negative
 ;
-L0555:	lda     _scroll_y+1
+L053C:	lda     _scroll_y+1
 	cmp     #$80
-	bcs     L0686
+	bcs     L066C
 	cmp     #$00
-	bne     L0567
+	bne     L054E
 	lda     _scroll_y
 	cmp     #$03
-L0567:	bcs     L0573
+L054E:	bcs     L055A
 ;
 ; scroll_y = MIN_SCROLL;
 ;
-L0686:	ldx     #$00
+L066C:	ldx     #$00
 	lda     #$02
 	sta     _scroll_y
 	stx     _scroll_y+1
@@ -1802,17 +1761,17 @@ L0686:	ldx     #$00
 ;
 ; else if (high_byte(valrigard.y) > 0xf0) valrigard.y = 0x0200; // > 0xf0 wrapped to the bottom.
 ;
-	bcc     L0692
+	bcc     L0678
 	cmp     #$F1
-	bcc     L0573
-L0692:	ldx     #$02
+	bcc     L055A
+L0678:	ldx     #$02
 	lda     #$00
 	sta     _valrigard+2
 	stx     _valrigard+2+1
 ;
 ; if ((scroll_y & 0xff) >= 0xec) {
 ;
-L0573:	lda     _scroll_y
+L055A:	lda     _scroll_y
 	cmp     #$EC
 ;
 ; new_cmap();
@@ -1842,9 +1801,9 @@ L0573:	lda     _scroll_y
 	lda     _level_index
 	clc
 	adc     #$01
-	bcc     L0439
+	bcc     L0424
 	inx
-L0439:	sta     ptr1
+L0424:	sta     ptr1
 	txa
 	clc
 	adc     #>(_level_starting_nt)
@@ -1878,9 +1837,9 @@ L0439:	sta     ptr1
 	ldx     _nt_current
 	sec
 	sbc     #$11
-	bcs     L044A
+	bcs     L0435
 	dex
-L044A:	sta     _initial_scroll
+L0435:	sta     _initial_scroll
 	stx     _initial_scroll+1
 ;
 ; temp4 = valrigard_inital_coords[level_index];
@@ -1937,10 +1896,10 @@ L044A:	sta     _initial_scroll
 	ldx     #$00
 	lda     _nt_current
 	asl     a
-	bcc     L069A
+	bcc     L0680
 	inx
 	clc
-L069A:	adc     #<(_level_nametables)
+L0680:	adc     #<(_level_nametables)
 	sta     ptr1
 	txa
 	adc     #>(_level_nametables)
@@ -1974,12 +1933,12 @@ L069A:	adc     #<(_level_nametables)
 ; for(y=0; ;y+=0x20){
 ;
 	lda     #$00
-L0698:	sta     _y
+L067E:	sta     _y
 ;
 ; for(x=0; ;x+=0x20){
 ;
 	lda     #$00
-L0697:	sta     _x
+L067D:	sta     _x
 ;
 ; clear_vram_buffer(); // do each frame, and before putting anything in the buffer
 ;
@@ -2029,31 +1988,31 @@ L0697:	sta     _x
 ;
 	lda     _x
 	cmp     #$E0
-	beq     L069C
+	beq     L0682
 ;
 ; for(x=0; ;x+=0x20){
 ;
 	lda     #$20
 	clc
 	adc     _x
-	jmp     L0697
+	jmp     L067D
 ;
 ; if (y == 0xe0) break;
 ;
-L069C:	lda     _y
+L0682:	lda     _y
 	cmp     #$E0
-	beq     L069D
+	beq     L0683
 ;
 ; for(y=0; ;y+=0x20){
 ;
 	lda     #$20
 	clc
 	adc     _y
-	jmp     L0698
+	jmp     L067E
 ;
 ; temp1 = temp1 ^ 2; // flip that 0000 0010 bit
 ;
-L069D:	lda     _temp1
+L0683:	lda     _temp1
 	eor     #$02
 	sta     _temp1
 ;
@@ -2063,9 +2022,9 @@ L069D:	lda     _temp1
 	lda     _nt_current
 	sec
 	sbc     #$01
-	bcs     L048B
+	bcs     L0476
 	dex
-L048B:	stx     tmp1
+L0476:	stx     tmp1
 	asl     a
 	rol     tmp1
 	clc
@@ -2084,7 +2043,7 @@ L048B:	stx     tmp1
 ; for(x=0; ;x+=0x20){
 ;
 	lda     #$00
-L0699:	sta     _x
+L067F:	sta     _x
 ;
 ; y = 0xe0;
 ;
@@ -2139,20 +2098,20 @@ L0699:	sta     _x
 ;
 	lda     _x
 	cmp     #$E0
-	beq     L048D
+	beq     L0478
 ;
 ; for(x=0; ;x+=0x20){
 ;
 	lda     #$20
 	clc
 	adc     _x
-	jmp     L0699
+	jmp     L067F
 ;
 ; clear_vram_buffer();
 ;
-L048D:	jsr     _clear_vram_buffer
+L0478:	jsr     _clear_vram_buffer
 ;
-; memcpy (c_map, level_nametables[nt_current], 240);
+; memcpy(c_map, level_nametables[nt_current], 240);
 ;
 	lda     #<(_c_map)
 	ldx     #>(_c_map)
@@ -2160,10 +2119,10 @@ L048D:	jsr     _clear_vram_buffer
 	ldx     #$00
 	lda     _nt_current
 	asl     a
-	bcc     L069B
+	bcc     L0681
 	inx
 	clc
-L069B:	adc     #<(_level_nametables)
+L0681:	adc     #<(_level_nametables)
 	sta     ptr1
 	txa
 	adc     #>(_level_nametables)
@@ -2216,7 +2175,7 @@ L069B:	adc     #<(_level_nametables)
 ; if(L_R_switch) temp3 += 2; // fix bug, walking through walls
 ;
 	lda     _L_R_switch
-	beq     L069F
+	beq     L0685
 	lda     #$02
 	clc
 	adc     _temp3
@@ -2224,9 +2183,9 @@ L069B:	adc     #<(_level_nametables)
 ;
 ; if(temp3 >= 0xf0) return;
 ;
-L069F:	lda     _temp3
+L0685:	lda     _temp3
 	cmp     #$F0
-	bcc     L06A0
+	bcc     L0686
 ;
 ; }
 ;
@@ -2234,7 +2193,7 @@ L069F:	lda     _temp3
 ;
 ; temp5 = add_scroll_y(temp3, scroll_y); // upper left
 ;
-L06A0:	jsr     pusha
+L0686:	jsr     pusha
 	lda     _scroll_y
 	ldx     _scroll_y+1
 	jsr     _add_scroll_y
@@ -2274,7 +2233,7 @@ L06A0:	jsr     pusha
 ; if(collision){ // find a corner in the collision map
 ;
 	lda     _collision
-	beq     L059C
+	beq     L0583
 ;
 ; ++collision_L;
 ;
@@ -2286,7 +2245,7 @@ L06A0:	jsr     pusha
 ;
 ; temp1 += hitbox.width; // x right
 ;
-L059C:	lda     _hitbox+2
+L0583:	lda     _hitbox+2
 	clc
 	adc     _temp1
 	sta     _temp1
@@ -2305,7 +2264,7 @@ L059C:	lda     _hitbox+2
 ; if(collision){ // find a corner in the collision map
 ;
 	lda     _collision
-	beq     L05A7
+	beq     L058E
 ;
 ; ++collision_R;
 ;
@@ -2317,7 +2276,7 @@ L059C:	lda     _hitbox+2
 ;
 ; temp3 = hitbox.y + hitbox.height; // y bottom
 ;
-L05A7:	lda     _hitbox+1
+L058E:	lda     _hitbox+1
 	clc
 	adc     _hitbox+3
 	sta     _temp3
@@ -2325,7 +2284,7 @@ L05A7:	lda     _hitbox+1
 ; if(L_R_switch) temp3 -= 2; // fix bug, walking through walls
 ;
 	lda     _L_R_switch
-	beq     L05AD
+	beq     L0594
 	lda     _temp3
 	sec
 	sbc     #$02
@@ -2333,7 +2292,7 @@ L05A7:	lda     _hitbox+1
 ;
 ; temp5 = add_scroll_y(temp3, scroll_y); // upper left
 ;
-L05AD:	lda     _temp3
+L0594:	lda     _temp3
 	jsr     pusha
 	lda     _scroll_y
 	ldx     _scroll_y+1
@@ -2362,7 +2321,7 @@ L05AD:	lda     _temp3
 ;
 	lda     _temp3
 	cmp     #$F0
-	bcs     L05C7
+	bcs     L05AE
 ;
 ; bg_collision_sub();
 ;
@@ -2371,7 +2330,7 @@ L05AD:	lda     _temp3
 ; if(collision){ // find a corner in the collision map
 ;
 	lda     _collision
-	beq     L05C0
+	beq     L05A7
 ;
 ; ++collision_R;
 ;
@@ -2383,7 +2342,7 @@ L05AD:	lda     _temp3
 ;
 ; temp1 = hitbox.x; // x left
 ;
-L05C0:	lda     _hitbox
+L05A7:	lda     _hitbox
 	sta     _temp1
 ;
 ; bg_collision_sub();
@@ -2393,7 +2352,7 @@ L05C0:	lda     _hitbox
 ; if(collision){ // find a corner in the collision map
 ;
 	lda     _collision
-	beq     L05C7
+	beq     L05AE
 ;
 ; ++collision_L;
 ;
@@ -2405,7 +2364,7 @@ L05C0:	lda     _hitbox
 ;
 ; }
 ;
-L05C7:	rts
+L05AE:	rts
 
 .endproc
 
@@ -2443,35 +2402,35 @@ L05C7:	rts
 ; if (!map) {
 ;
 	lda     _map
-	bne     L05D2
+	bne     L05B9
 ;
 ; collision = (c_map[coordinates] < 0x17 && c_map[coordinates] > 0x03); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
 ;
 	ldy     _coordinates
 	lda     _c_map,y
 	cmp     #$17
-	bcs     L06A2
+	bcs     L0688
 	ldy     _coordinates
 	lda     _c_map,y
 	cmp     #$04
-	bcs     L06A6
-L06A2:	lda     #$00
-	jmp     L06A1
+	bcs     L068C
+L0688:	lda     #$00
+	jmp     L0687
 ;
 ; collision = (c_map2[coordinates] < 0x17 && c_map[coordinates] > 0x03);
 ;
-L05D2:	ldy     _coordinates
+L05B9:	ldy     _coordinates
 	lda     _c_map2,y
 	cmp     #$17
-	bcs     L06A5
+	bcs     L068B
 	ldy     _coordinates
 	lda     _c_map,y
 	cmp     #$04
-	bcs     L06A6
-L06A5:	lda     #$00
-	jmp     L06A1
-L06A6:	lda     #$01
-L06A1:	sta     _collision
+	bcs     L068C
+L068B:	lda     #$00
+	jmp     L0687
+L068C:	lda     #$01
+L0687:	sta     _collision
 ;
 ; }
 ;
@@ -2510,10 +2469,10 @@ L06A1:	sta     _collision
 	ldx     #$00
 	lda     _temp1
 	asl     a
-	bcc     L06AA
+	bcc     L0690
 	inx
 	clc
-L06AA:	adc     #<(_level_nametables)
+L0690:	adc     #<(_level_nametables)
 	sta     ptr1
 	txa
 	adc     #>(_level_nametables)
@@ -2543,16 +2502,16 @@ L06AA:	adc     #<(_level_nametables)
 ;
 ; }
 ;
-	beq     L05FA
+	beq     L05E1
 	cmp     #$01
-	beq     L0613
+	beq     L05FA
 	cmp     #$02
-	jeq     L062D
-	jmp     L0646
+	jeq     L0614
+	jmp     L062D
 ;
 ; address = get_ppu_addr(nt, 0, y);
 ;
-L05FA:	jsr     decsp2
+L05E1:	jsr     decsp2
 	lda     _nt
 	ldy     #$01
 	sta     (sp),y
@@ -2601,11 +2560,11 @@ L05FA:	jsr     decsp2
 ;
 ; break;
 ;
-	jmp     L06AF
+	jmp     L0695
 ;
 ; address = get_ppu_addr(nt, 0x40, y);
 ;
-L0613:	jsr     decsp2
+L05FA:	jsr     decsp2
 	lda     _nt
 	ldy     #$01
 	sta     (sp),y
@@ -2656,11 +2615,11 @@ L0613:	jsr     decsp2
 ;
 ; break;
 ;
-	jmp     L06AF
+	jmp     L0695
 ;
 ; address = get_ppu_addr(nt, 0x80, y);
 ;
-L062D:	jsr     decsp2
+L0614:	jsr     decsp2
 	lda     _nt
 	ldy     #$01
 	sta     (sp),y
@@ -2711,11 +2670,11 @@ L062D:	jsr     decsp2
 ;
 ; break;
 ;
-	jmp     L06AF
+	jmp     L0695
 ;
 ; address = get_ppu_addr(nt, 0xc0, y);
 ;
-L0646:	jsr     decsp2
+L062D:	jsr     decsp2
 	lda     _nt
 	ldy     #$01
 	sta     (sp),y
@@ -2763,7 +2722,7 @@ L0646:	jsr     decsp2
 	and     #$F0
 	clc
 	adc     #$0E
-L06AF:	sta     _index
+L0695:	sta     _index
 ;
 ; buffer_4_mt(address, index); // ppu_address, index to the data
 ;
@@ -2813,7 +2772,7 @@ L06AF:	sta     _index
 ; if (!map) {
 ;
 	lda     _map
-	bne     L0668
+	bne     L064F
 ;
 ; memcpy (c_map, level_nametables[nt_current], 240);
 ;
@@ -2823,10 +2782,10 @@ L06AF:	sta     _index
 	ldx     #$00
 	lda     _nt_current
 	asl     a
-	bcc     L06B2
+	bcc     L0698
 	inx
 	clc
-L06B2:	adc     #<(_level_nametables)
+L0698:	adc     #<(_level_nametables)
 	sta     ptr1
 	txa
 	adc     #>(_level_nametables)
@@ -2843,16 +2802,16 @@ L06B2:	adc     #<(_level_nametables)
 ;
 ; memcpy (c_map2, level_nametables[nt_current], 240);
 ;
-L0668:	lda     #<(_c_map2)
+L064F:	lda     #<(_c_map2)
 	ldx     #>(_c_map2)
 	jsr     pushax
 	ldx     #$00
 	lda     _nt_current
 	asl     a
-	bcc     L06B3
+	bcc     L0699
 	inx
 	clc
-L06B3:	adc     #<(_level_nametables)
+L0699:	adc     #<(_level_nametables)
 	sta     ptr1
 	txa
 	adc     #>(_level_nametables)
@@ -2928,7 +2887,7 @@ L06B3:	adc     #<(_level_nametables)
 ;
 ; ppu_wait_nmi(); // wait till beginning of the frame
 ;
-L0425:	jsr     _ppu_wait_nmi
+L0410:	jsr     _ppu_wait_nmi
 ;
 ; pad1 = pad_poll(0); // read the first controller
 ;
@@ -2966,7 +2925,7 @@ L0425:	jsr     _ppu_wait_nmi
 ;
 ; while (1){
 ;
-	jmp     L0425
+	jmp     L0410
 
 .endproc
 

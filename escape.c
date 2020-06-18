@@ -101,7 +101,6 @@ const unsigned char palette_sp[]={
 // X, Y, Width, Height
 Player valrigard = {20, 40}; // A width of 12 makes Valrigard's hitbox a bit more forgiving. It also happens to match up with his nose.
 Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C stack is not preferable to using a global in this use case)
-Enemy star = {70, 40, 15, 15};
 
 // MARK: Function Declarations
 void draw_sprites(void);
@@ -208,75 +207,8 @@ void load_room(void) {
     clear_vram_buffer();
     
     //copy the room to the collision map
-    memcpy (c_map, level_nametables[nt_current], 240);
-    
-    
-    
-    //valrigard.x = 0x4000;
-    //valrigard.y = 0x4000;
-    //high_byte(scroll_y) = nt_current;
-    //new_cmap();
+    memcpy(c_map, level_nametables[nt_current], 240);
 }
-/*
-void load_room(void) {
-    
-    // Set initial nametable
-    temp1 = nt_current;
-    temppointer = level_nametables[temp1];
-    
-    // Set inital coordinates
-    temp1 = valrigard_inital_coords[level_index];
-    valrigard.x = ((temp1 >> 4) * 16) << 8;
-    valrigard.y = ((temp1 & 0x0f) * 16) << 8;
-    
-    set_data_pointer(temppointer);
-    set_mt_pointer(metatiles);
-    
-    
-    
-    // ?? Is this line correct?
-    temp1 = (initial_scroll >> 8) + 1; // initial_scroll in scroll_up.h, but different since we're keeping track of nt_max.
-    temp1 = (temp1 & 1) << 1; // Not sure if the temp1 stuff here is necessary.
-    
-    for (y = 0; ; y += 0x20) {
-        for (x = 0; ; x += 0x20) {
-            clear_vram_buffer(); // do this each frame, and before putting anything in the buffer.
-            address = get_ppu_addr(temp1, x, y);
-            index = (y & 0xf0) + (x >> 4);
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            flush_vram_update_nmi();
-            if (x == 0xe0) break;
-        }
-        if (y == 0xe0) break;
-    }
-    
-    temp1 = temp1 ^ 2;
-    
-    //copy the room to the collision map
-    //memcpy(c_map, temppointer, 240);
-    new_cmap();
-    
-    // temp2 will be the next nt to load.
-    // temp3 is the starting y.
-    temp2 = nt_current - 1;
-    temppointer = level_nametables[temp2];
-    set_data_pointer(temppointer);
-    // Load the topmost row of the nametable...
-    for (x = 0; ; x += 0x20) {
-        y = 0xe0; // Should already be the case, but...
-        clear_vram_buffer(); // do this each frame, and before putting anything in the buffer.
-        address = get_ppu_addr(temp1, x, y);
-        index = (y & 0xf0) + (x >> 4);
-        buffer_4_mt(address, index); // ppu_address, index to the data
-        flush_vram_update_nmi();
-        if (x == 0xe0) break;
-    }//
-    clear_vram_buffer();
-    // If it were any of the first 4 tiles, then we should die, because we're touching spikes -- still need to figure out how best to actually make this reliable...
-    
-}*/
-
-
 
 
 void draw_sprites(void) {
@@ -292,8 +224,6 @@ void draw_sprites(void) {
     } else {
         oam_meta_spr(temp1, temp2, valrigardIdleRight);
     }
-    
-    oam_meta_spr(star.x, star.y, valrigardIdleLeftAlternate);
 }
 
 void movement(void) {

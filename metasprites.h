@@ -26,13 +26,3 @@ const unsigned char valrigardIdleRight[]={
       0xfe,     5,  0xf1,1|OAM_FLIP_H,
     128
 };
-
-
-
-const unsigned char valrigardIdleLeftAlternate[]={
-        0,  0,0xe0,0,
-        8,  0,0xe1,0,
-        0,  8,0xf0,0,
-        8,  8,0xf1,0,
-    128
-};
