@@ -166,13 +166,12 @@ void load_level(void) {
     low_byte(scroll_y) = 2;
     scroll_count = 0;
     
-    temp2 = nt_current - nt_max;
-    initial_scroll = ((temp2 * 0x100) - 0x11);
+    initial_scroll = ((nt_current * 0x100) - 0x11);
     
     // Set inital coordinates
-    //temp4 = valrigard_inital_coords[level_index];
-    //valrigard.x = ((temp4 >> 4) * 16) << 8;
-    //valrigard.y = ((temp4 & 0x0f) * 16) << 8;
+    temp4 = valrigard_inital_coords[level_index];
+    valrigard.x = ((temp4 >> 4) * 16) << 8;
+    valrigard.y = ((temp4 & 0x0f) * 16) << 8;
 }
 
 void load_room(void) {
