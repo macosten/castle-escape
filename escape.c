@@ -46,12 +46,14 @@ const unsigned char * temppointer;
 // load_room variables
 unsigned char x;
 unsigned char y;
+unsigned char nt;
 unsigned char index;
 unsigned char map;
 
 //unsigned int scroll_x;
 unsigned int pseudo_scroll_y;
 unsigned int scroll_y;
+unsigned char scroll_count;
 #define MAX_UP 0x4000
 #define MIN_SCROLL 2
 
@@ -68,7 +70,8 @@ unsigned char song;
 // enum {SFX_FLAP, ...};
 
 // Level information.
-unsigned char nt_max; // current_level->nt_array.count -- in other words, (current_level->header0 >> 4)
+unsigned char nt_min; // lower bound (included) in the range of nametables we're allowed to scroll in right now.
+unsigned char nt_max; // upper bound (not included) in the range of nametables we're allowed to scroll in right now.
 unsigned char nt_current; // The nametable Valrigard is currently in. This should help us determine what other nametable to load when scrolling...?
 
 #define VALRIGARD_WIDTH 11
@@ -140,6 +143,8 @@ void main (void) {
         pad1 = pad_poll(0); // read the first controller
         // pad2 = pad_poll(1); // read the second controller
         
+        clear_vram_buffer();
+        
         movement();
         
         // set_scroll_x(scroll_x); Yeah... this game won't need to scroll in the X direction. I'll keep a more advanced 
@@ -158,6 +163,7 @@ void load_level(void) {
     nt_current = valrigard_starting_nt[level_index];
     high_byte(scroll_y) = nt_current;
     low_byte(scroll_y) = 0;
+    scroll_count = 0;
 }
 
 void load_room(void) {
@@ -174,7 +180,7 @@ void load_room(void) {
     set_data_pointer(temppointer);
     set_mt_pointer(metatiles);
     
-    temp2 = nt_current - nt_max; // temp2 is now the total length of this level
+    temp2 = nt_current - nt_max;
     
     
     // ?? Is this line correct?
@@ -462,12 +468,10 @@ void bg_collision_sub(void) {
     
     map = temp2&1; // high byte
     if (!map) {
-        pal_col(0,0x10);
         collision = (c_map[coordinates] < 0x17 && c_map[coordinates] > 0x03); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
         //spikeDeath = (c_map[coordinates] < 0x04);
     }
     else {
-        pal_col(0,0x20);
         collision = (c_map2[coordinates] < 0x17 && c_map[coordinates] > 0x03);
         //spikeDeath = (c_map2[coordinates] < 0x04);
     }
@@ -491,8 +495,62 @@ void bg_collision_sub(void) {
  }
  */
 
-void draw_screen_U(void) {
-    // This function definitely wants the main loop to clear the vram buffer...
+void draw_screen_U(void){
+    pseudo_scroll_y = sub_scroll_y(0x20,scroll_y);
+    
+    temp1 = pseudo_scroll_y >> 8;
+    
+    set_data_pointer(level_nametables[temp1]);
+    nt = (temp1 & 1) << 1; // 0 or 2
+    y = pseudo_scroll_y & 0xff;
+    
+    // important that the main loop clears the vram_buffer
+    
+    switch(scroll_count){
+        case 0:
+            address = get_ppu_addr(nt, 0, y);
+            index = (y & 0xf0) + 0;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            
+            address = get_ppu_addr(nt, 0x20, y);
+            index = (y & 0xf0) + 2;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            break;
+            
+        case 1:
+            address = get_ppu_addr(nt, 0x40, y);
+            index = (y & 0xf0) + 4;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            
+            address = get_ppu_addr(nt, 0x60, y);
+            index = (y & 0xf0) + 6;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            break;
+            
+        case 2:
+            address = get_ppu_addr(nt, 0x80, y);
+            index = (y & 0xf0) + 8;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            
+            address = get_ppu_addr(nt, 0xa0, y);
+            index = (y & 0xf0) + 10;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            break;
+            
+        default:
+            address = get_ppu_addr(nt, 0xc0, y);
+            index = (y & 0xf0) + 12;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            
+            address = get_ppu_addr(nt, 0xe0, y);
+            index = (y & 0xf0) + 14;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+    }
+
+    
+    
+    ++scroll_count;
+    scroll_count &= 3; //mask off top bits, keep it 0-3
 }
 
 // (mostly nesdoug): copy a new collision map to one of the 2 c_map arrays
