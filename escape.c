@@ -20,12 +20,16 @@ unsigned char collision_R;
 unsigned char collision_U;
 unsigned char collision_D;
 unsigned char coordinates;
+
+// Best to assume that the values of these temps are NOT stored between function calls.
 unsigned char temp1;
 unsigned char temp2;
 unsigned char temp3;
 unsigned char temp4;
+
 unsigned int temp5;
 unsigned int temp6;
+
 unsigned char eject_L; // from the left
 unsigned char eject_R; // remember these from the collision sub routine
 unsigned char eject_D; // from below
@@ -37,7 +41,7 @@ unsigned char direction; //facing left or right? Todo - make this part of Player
 #define RIGHT 1
 
 int address;
-const unsigned char * pointer;
+const unsigned char * temppointer;
 
 // load_room variables
 unsigned char x;
@@ -49,8 +53,8 @@ unsigned char map;
 unsigned int pseudo_scroll_y;
 unsigned int scroll_y;
 unsigned char L_R_switch;
-unsigned char old_x;
-unsigned char old_y;
+unsigned int old_x;
+unsigned int old_y;
 
 unsigned char level_index;
 
@@ -58,6 +62,13 @@ unsigned char level_index;
 #define VALRIGARD_HEIGHT 13
 
 #define SPEED 0x180
+#define MAX_UP 0x4000
+#define MIN_SCROLL 2
+
+#define SONGS 0
+unsigned char song;
+// enum {SONG_NAME1, SONG_NAME2};
+// enum {SFX_FLAP, ...};
 
 #pragma bss-name(push, "BSS")
 
@@ -95,6 +106,8 @@ void load_level(void);
 void load_room(void);
 void bg_collision(void);
 void bg_collision_sub(void);
+void draw_screen_U(void);
+void new_cmap(void);
 
 void main (void) {
         
@@ -146,26 +159,30 @@ void main (void) {
 void load_level(void) {
     nt_max = level_starting_nt[level_index+1];
     nt_current = valrigard_starting_nt[level_index];
+    high_byte(scroll_y) = nt_current;
 }
 
 void load_room(void) {
     
     // Set initial nametable
     temp1 = nt_current;
-    pointer = level_nametables[temp1];
+    temppointer = level_nametables[temp1];
     
     // Set inital coordinates
     temp1 = valrigard_inital_coords[level_index];
     valrigard.x = ((temp1 >> 4) * 16) << 8;
     valrigard.y = ((temp1 & 0x0f) * 16) << 8;
     
-    set_data_pointer(pointer);
+    set_data_pointer(temppointer);
     set_mt_pointer(metatiles);
     
     temp2 = nt_current - nt_max; // temp2 is now the total length of this level
     
+    
+    // ?? Is this line correct?
     temp1 = (((temp2 * 0x100) - 0x11) >> 8) + 1; // MAX_SCROLL in scroll_up.h, but different since we're keeping track of nt_max.
-    temp1 = (temp1 & 1) << 1;
+    
+    temp1 = (temp1 & 1) << 1; // Not sure if the temp1 stuff here is necessary.
     
     for (y = 0; /*We'll break manually*/; y += 0x20) {
         for (x = 0; ; x += 0x20) {
@@ -182,9 +199,10 @@ void load_room(void) {
     temp1 = temp1 ^ 2;
     
     //copy the room to the collision map
-    memcpy(c_map, pointer, 240);
+    memcpy(c_map, temppointer, 240);
     
-    if (temp2 == 0){ // If we're at the top, there's not much of a reason to load what's above us.
+    
+    if (nt_current == nt_max - 1){ // If we're at the top, there's not much of a reason to load what's above us.
         y = 0;
         temp2 = nt_current + 1;
     } else { // Usually we'll be going up, so we'll pre-load part of the nt above us.
@@ -192,11 +210,12 @@ void load_room(void) {
         temp2 = nt_current - 1;
     }
     // temp2 will be the next nt to load.
+    // temp3 is the starting y.
     
-    pointer = level_nametables[temp2];
-    set_data_pointer(pointer);
+    temppointer = level_nametables[temp2];
+    set_data_pointer(temppointer);
     
-    
+    /* If we want to load part of the next room (we probably don't... I didn't design the level maps that way.)
     for (x = 0; ; x += 0x20) {
         clear_vram_buffer(); // do this each frame, and before putting anything in the buffer.
         address = get_ppu_addr(temp1, x, y);
@@ -204,7 +223,7 @@ void load_room(void) {
         buffer_4_mt(address, index); // ppu_address, index to the data
         flush_vram_update_nmi();
         if (x == 0xe0) break;
-    }
+    }*/
     
 }
 
@@ -267,8 +286,8 @@ void movement(void) {
     L_R_switch = 1; // Shrinks the Y values in bg_coll. This makes head/foot collisions less problematic (examine this)
     
     // Copying these bytes like this is faster than passing a pointer to Valrigard.
-    hitbox.x = valrigard.x >> 8;
-    hitbox.y = valrigard.y >> 8;
+    hitbox.x = high_byte(valrigard.x);
+    hitbox.y = high_byte(valrigard.y);
     hitbox.width = VALRIGARD_WIDTH;
     hitbox.height = VALRIGARD_HEIGHT;
     
@@ -277,34 +296,33 @@ void movement(void) {
         valrigard.x = old_x;
     }
     else if (collision_L) {
-        valrigard.x -= eject_L;
+        valrigard.x -= (eject_L << 8);
     }
     else if (collision_R) {
-        valrigard.x -= eject_R;
+        valrigard.x -= (eject_R << 8);
     }
-    high_byte(hero_x) = valrigard.x;
     
 
     old_y = valrigard.y;
     // Handle Y. We're probably going to eventually assign flying to A and sword-swinging to B, but... one thing at a time.
     if (pad1 & PAD_UP) {
-        if (valrigard.y < 2) {
+        if (valrigard.y < 0x0200) {
             valrigard.velocity_y = 0;
-            hero_y = 0x100;
+            valrigard.y = 0x100;
         }
-        else if (valrigard.y < 4) { // Stop sprite-wrapping
+        else if (valrigard.y < 0x0400) { // Stop sprite-wrapping
             valrigard.velocity_y = -0x100;
         }    
-        else { 
+        else {
             valrigard.velocity_y = -SPEED;
         }
     }
     else if (pad1 & PAD_DOWN) {
-        if (valrigard.y > 0xdf) {
+        if (valrigard.y > 0xdf00) {
             valrigard.velocity_y = 0;
-            hero_y = 0xdf00;
+            valrigard.y = 0xdf00;
         }
-        else if (valrigard.y > 0xdc) { // If you could be half in the floor and half in the cieling, would you?
+        else if (valrigard.y > 0xdc00) { // If you could be half in the floor and half in the cieling, would you?
             valrigard.velocity_y = 0x100;
         } 
         else {
@@ -315,26 +333,48 @@ void movement(void) {
         valrigard.velocity_y = 0;
     }
 
-    hero_y += valrigard.velocity_y;
-    valrigard.y = hero_y >> 8; // "Downcast" to char (high byte is what matters here, the low byte is the subpixel portion)
-
+    valrigard.y += valrigard.velocity_y;
+    
     L_R_switch = 0;
     
-    hitbox.x = valrigard.x;
-    hitbox.y = valrigard.y;
+    hitbox.x = high_byte(valrigard.x);
+    hitbox.y = high_byte(valrigard.y);
+
+    //hitbox.width = VALRIGARD_WIDTH;
+    //hitbox.height = VALRIGARD_HEIGHT;
     // Shouldn't need to change the the height and width since those were already set
 
     bg_collision();
 
-    // The original doesn't seem to care about collision_U && collision_D; hope that doesn't cause any glitches
-    if(collision_U) {
-        valrigard.y -= eject_U;
+    if (collision_U && collision_D) {
+        valrigard.y = old_y;
+    }
+    else if(collision_U) {
+        valrigard.y -= (eject_U << 8);
     }
     else if (collision_D) {
-        valrigard.y -= eject_D;
+        valrigard.y -= (eject_D << 8);
         // if ... (something was here, but I removed it)
     }
-    high_byte(hero_y) = valrigard.y;
+    
+    temp5 = valrigard.y;
+    if (valrigard.y < MAX_UP) {
+        temp1 = (MAX_UP - valrigard.y + 0x80) >> 8; // "the numbers work better with +80 (like 0.5)". I'll take his word for it.
+        scroll_y = sub_scroll_y(temp1, scroll_y);
+        valrigard.y += (temp1 << 8);
+    }
+    
+    if((high_byte(scroll_y) >= 0x80) || (scroll_y <= MIN_SCROLL)) { // 0x80 = negative
+        scroll_y = MIN_SCROLL;
+        valrigard.y = temp5;
+        if (high_byte(valrigard.y) < 2) valrigard.y = 0x0200;
+        else if (high_byte(valrigard.y) > 0xf0) valrigard.y = 0x0200; // > 0xf0 wrapped to the bottom.
+    }
+    
+    // Do we need a new collision map? (Did we scroll into a new room/nametable?)
+    if ((scroll_y & 0xff) >= 0xec) {
+        new_cmap();
+    }
 }
 
 
@@ -451,3 +491,17 @@ void bg_collision_sub(void) {
      }
  }
  */
+
+// copy a new collision map to one of the 2 c_map arrays
+void new_cmap(void){
+    // copy a new collision map to one of the 2 c_map arrays
+    nt_current = high_byte(scroll_y); //high byte = the index of the nametable we're in?, one to the right
+    
+    // map = ; //even or odd?
+    if (!(nt_current & 1)) {
+        memcpy (c_map, level_nametables[nt_current], 240);
+    }
+    else {
+        memcpy (c_map2, level_nametables[nt_current], 240);
+    }
+}
