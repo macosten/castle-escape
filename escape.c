@@ -50,9 +50,10 @@ unsigned char nt;
 unsigned char index;
 unsigned char map;
 
-//unsigned int scroll_x;
+unsigned int scroll_x;
 unsigned int pseudo_scroll_y;
 unsigned int scroll_y;
+unsigned int initial_scroll;
 unsigned char scroll_count;
 #define MAX_UP 0x4000
 #define MIN_SCROLL 2
@@ -147,7 +148,7 @@ void main (void) {
         
         movement();
         
-        // set_scroll_x(scroll_x); Yeah... this game won't need to scroll in the X direction. I'll keep a more advanced 
+        set_scroll_x(scroll_x); // Yeah... this game won't need to scroll in the X direction. I'll keep a more advanced
         set_scroll_y(scroll_y);
 
         draw_screen_U();
@@ -162,10 +163,62 @@ void load_level(void) {
     nt_max = level_starting_nt[level_index+1];
     nt_current = valrigard_starting_nt[level_index];
     high_byte(scroll_y) = nt_current;
-    low_byte(scroll_y) = MIN_SCROLL;
+    low_byte(scroll_y) = 2;
     scroll_count = 0;
+    
+    temp2 = nt_current - nt_max;
+    initial_scroll = ((temp2 * 0x100) - 0x11);
+    
+    // Set inital coordinates
+    //temp4 = valrigard_inital_coords[level_index];
+    //valrigard.x = ((temp4 >> 4) * 16) << 8;
+    //valrigard.y = ((temp4 & 0x0f) * 16) << 8;
 }
 
+void load_room(void) {
+    set_data_pointer(level_nametables[nt_current]);
+    set_mt_pointer(metatiles);
+    temp1 = (initial_scroll >> 8) + 1;
+    temp1 = (temp1 & 1) << 1;
+    for(y=0; ;y+=0x20){
+        for(x=0; ;x+=0x20){
+            clear_vram_buffer(); // do each frame, and before putting anything in the buffer
+            
+            address = get_ppu_addr(temp1, x, y);
+            index = (y & 0xf0) + (x >> 4);
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            flush_vram_update_nmi();
+            if (x == 0xe0) break;
+        }
+        if (y == 0xe0) break;
+    }
+    
+    
+    temp1 = temp1 ^ 2; // flip that 0000 0010 bit
+    // a little bit in the other room
+    set_data_pointer(level_nametables[nt_current-1]);
+    for(x=0; ;x+=0x20){
+        y = 0xe0;
+        clear_vram_buffer(); // do each frame, and before putting anything in the buffer
+        address = get_ppu_addr(temp1, x, y);
+        index = (y & 0xf0) + (x >> 4);
+        buffer_4_mt(address, index); // ppu_address, index to the data
+        flush_vram_update_nmi();
+        if (x == 0xe0) break;
+    }
+    clear_vram_buffer();
+    
+    //copy the room to the collision map
+    memcpy (c_map, level_nametables[nt_current], 240);
+    
+    
+    
+    //valrigard.x = 0x4000;
+    //valrigard.y = 0x4000;
+    //high_byte(scroll_y) = nt_current;
+    //new_cmap();
+}
+/*
 void load_room(void) {
     
     // Set initial nametable
@@ -180,15 +233,13 @@ void load_room(void) {
     set_data_pointer(temppointer);
     set_mt_pointer(metatiles);
     
-    temp2 = nt_current - nt_max;
     
     
     // ?? Is this line correct?
-    temp1 = (((temp2 * 0x100) - 0x11) >> 8) + 1; // MAX_SCROLL in scroll_up.h, but different since we're keeping track of nt_max.
-    
+    temp1 = (initial_scroll >> 8) + 1; // initial_scroll in scroll_up.h, but different since we're keeping track of nt_max.
     temp1 = (temp1 & 1) << 1; // Not sure if the temp1 stuff here is necessary.
     
-    for (y = 0; /*We'll break manually*/; y += 0x20) {
+    for (y = 0; ; y += 0x20) {
         for (x = 0; ; x += 0x20) {
             clear_vram_buffer(); // do this each frame, and before putting anything in the buffer.
             address = get_ppu_addr(temp1, x, y);
@@ -206,29 +257,28 @@ void load_room(void) {
     //memcpy(c_map, temppointer, 240);
     new_cmap();
     
-    if (nt_current == nt_max - 1){ // If we're at the top, there's not much of a reason to load what's above us.
-        y = 0;
-        temp2 = nt_current + 1;
-    } else { // Usually we'll be going up, so we'll pre-load part of the nt above us.
-        y = 0xe0;
-        temp2 = nt_current - 1;
-    }
     // temp2 will be the next nt to load.
     // temp3 is the starting y.
-        
-    /* If we want to load part of the next room (we probably don't... I didn't design the level maps that way.)
+    temp2 = nt_current - 1;
+    temppointer = level_nametables[temp2];
+    set_data_pointer(temppointer);
+    // Load the topmost row of the nametable...
     for (x = 0; ; x += 0x20) {
+        y = 0xe0; // Should already be the case, but...
         clear_vram_buffer(); // do this each frame, and before putting anything in the buffer.
         address = get_ppu_addr(temp1, x, y);
         index = (y & 0xf0) + (x >> 4);
         buffer_4_mt(address, index); // ppu_address, index to the data
         flush_vram_update_nmi();
         if (x == 0xe0) break;
-    }*/
-    
+    }//
+    clear_vram_buffer();
     // If it were any of the first 4 tiles, then we should die, because we're touching spikes -- still need to figure out how best to actually make this reliable...
     
-}
+}*/
+
+
+
 
 void draw_sprites(void) {
     // clear all sprites from sprite buffer
@@ -255,7 +305,7 @@ void movement(void) {
     // Left
     if (pad1 & PAD_LEFT) {
         direction = LEFT;
-        if (valrigard.x <= 2) { // Changed by 1 from nesdoug's example because Valrigard's hitbox is narrower by 1 pixel on both sides
+        if (valrigard.x <= 0x0200) { // Changed by 1 from nesdoug's example because Valrigard's hitbox is narrower by 1 pixel on both sides
             valrigard.velocity_x = 0;
             valrigard.x = 0x200;
         } else if (valrigard.x < 0x0600) { // Don't allow us to wrap to the other side
@@ -286,6 +336,10 @@ void movement(void) {
     valrigard.x += valrigard.velocity_x;
     // The collision routine also requires an 8-bit value anyway.
 
+    if((valrigard.x < 0x100)||(valrigard.x > 0xf800)) { // make sure no wrap around to the other side
+        valrigard.x = 0x100;
+    }
+    
     L_R_switch = 1; // Shrinks the Y values in bg_coll. This makes head/foot collisions less problematic (examine this)
     
     // Copying these bytes like this is faster than passing a pointer to Valrigard.
@@ -309,16 +363,16 @@ void movement(void) {
     old_y = valrigard.y;
     // Handle Y. We're probably going to eventually assign flying to A and sword-swinging to B, but... one thing at a time.
     if (pad1 & PAD_UP) {
-        if (valrigard.y < 0x0200) {
+        /*if (valrigard.y < 0x0200) {
             valrigard.velocity_y = 0;
             valrigard.y = 0x100;
         }
         else if (valrigard.y < 0x0400) { // Stop sprite-wrapping
             valrigard.velocity_y = -0x100;
         }    
-        else {
+        else {*/
             valrigard.velocity_y = -SPEED;
-        }
+        //}
     }
     else if (pad1 & PAD_DOWN) {
         if (valrigard.y > 0xdf00) {
@@ -337,6 +391,10 @@ void movement(void) {
     }
 
     valrigard.y += valrigard.velocity_y;
+    
+    if((valrigard.y < 0x100)||(valrigard.y > 0xf000)) { // make sure no wrap around to the other side
+        valrigard.y = 0x100;
+    }
     
     L_R_switch = 0;
     
