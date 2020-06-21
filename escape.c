@@ -119,6 +119,7 @@ void draw_screen_D(void);
 void draw_screen_edges(void);
 
 void new_cmap(void);
+void new_cmap_D(void);
 
 void main (void) {
         
@@ -164,8 +165,6 @@ void main (void) {
             draw_screen_D();
         }
         
-        //draw_screen_D();
-
         draw_sprites();
 
     }
@@ -377,9 +376,23 @@ void movement(void) {
     
     // Do we need a new collision map? (Did we scroll into a new room/nametable?)
     
+    // This portion of the code can definitely be optimized into just one function, but I'm tired, so for now:
+    if (valrigard.velocity_y <= 0) {
+        if ((scroll_y & 0xff) >= 0xec) {
+            new_cmap();
+        }
+    } else {
+        if ((scroll_y & 0xff) <= 0x02) {
+            new_cmap_D();
+        }
+    }
+    
+    /*
     if ((scroll_y & 0xff) >= 0xec) {
         new_cmap();
-    }
+    } else {
+        //pal_col(0, 0x0f);
+    }*/
 }
 
 
@@ -620,9 +633,28 @@ void new_cmap(void) {
     
     map = nt_current & 1; //even or odd?
     if (!map) {
-        memcpy (c_map, level_nametables[nt_current], 240);
+        memcpy(c_map, level_nametables[nt_current], 240);
     }
     else {
-        memcpy (c_map2, level_nametables[nt_current], 240);
+        memcpy(c_map2, level_nametables[nt_current], 240);
+    }
+    
+    // pal_col(0, nt_current);
+}
+
+// If we're scrolling down and want to load a nametable that was below us,
+// we'll call this modified cmap function instead...
+void new_cmap_D(void) {
+    // copy a new collision map to one of the 2 c_map arrays
+    nt_current = (scroll_y >> 8) + 1; //high byte = the index of the nametable we're in?, one to the right
+    
+    // pal_col(0, nt_current);
+    
+    map = nt_current & 1; //even or odd?
+    if (!map) {
+        memcpy(c_map, level_nametables[nt_current], 240);
+    }
+    else {
+        memcpy(c_map2, level_nametables[nt_current], 240);
     }
 }
