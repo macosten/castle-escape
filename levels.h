@@ -23,7 +23,8 @@ const unsigned char valrigard_inital_coords[] = {
 };
 
 const unsigned char * level_nametables[] = {
-    level10_0, level10_1, level10_2
+    level10_0, level10_1, level10_2,
+    level10_0 // a buffer -- this prevents graphical glitching when at the bottom of a level
 };
 
 /*

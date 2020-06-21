@@ -53,9 +53,13 @@ unsigned char map;
 unsigned int scroll_x;
 unsigned int pseudo_scroll_y;
 unsigned int scroll_y;
+unsigned int min_scroll_y;
+unsigned int max_scroll_y;
 unsigned int initial_scroll;
 unsigned char scroll_count;
+unsigned char scroll_count_2;
 #define MAX_UP 0x4000
+#define MIN_DOWN 0x8000
 #define MIN_SCROLL 2
 
 
@@ -102,7 +106,7 @@ const unsigned char palette_sp[]={
 Player valrigard = {20, 40}; // A width of 12 makes Valrigard's hitbox a bit more forgiving. It also happens to match up with his nose.
 Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C stack is not preferable to using a global in this use case)
 
-// MARK: Function Declarations
+// MARK: Function Prototypes
 void draw_sprites(void);
 void movement(void);
 void load_level(void);
@@ -110,6 +114,10 @@ void load_room(void);
 void bg_collision(void);
 void bg_collision_sub(void);
 void draw_screen_U(void);
+void draw_screen_D(void);
+
+void draw_screen_edges(void);
+
 void new_cmap(void);
 
 void main (void) {
@@ -150,7 +158,13 @@ void main (void) {
         set_scroll_x(scroll_x); // Yeah... this game won't need to scroll in the X direction. I'll keep a more advanced
         set_scroll_y(scroll_y);
 
-        draw_screen_U();
+        if (valrigard.velocity_y < 0) {
+            draw_screen_U();
+        } else {
+            draw_screen_D();
+        }
+        
+        //draw_screen_D();
 
         draw_sprites();
 
@@ -161,8 +175,16 @@ void main (void) {
 void load_level(void) {
     nt_max = level_starting_nt[level_index+1];
     nt_current = valrigard_starting_nt[level_index];
-    high_byte(scroll_y) = nt_current;
+    high_byte(scroll_y) = nt_current; // The high byte of scroll_y is the nametable we're currently in (0-255).
     low_byte(scroll_y) = 2;
+    
+    high_byte(max_scroll_y) = nt_max - 1; // bottom of this level
+    low_byte(max_scroll_y) = 0xef;
+    
+    // nt_min = level_starting_nt[level_index]
+    high_byte(min_scroll_y) = level_starting_nt[level_index]; // Min Scroll
+    low_byte(min_scroll_y) = 0x02;
+    
     scroll_count = 0;
     
     initial_scroll = ((nt_current * 0x100) - 0x11);
@@ -208,6 +230,8 @@ void load_room(void) {
     
     //copy the room to the collision map
     memcpy(c_map, level_nametables[nt_current], 240);
+    
+    max_scroll_y = scroll_y;
 }
 
 
@@ -292,28 +316,10 @@ void movement(void) {
     old_y = valrigard.y;
     // Handle Y. We're probably going to eventually assign flying to A and sword-swinging to B, but... one thing at a time.
     if (pad1 & PAD_UP) {
-        /*if (valrigard.y < 0x0200) {
-            valrigard.velocity_y = 0;
-            valrigard.y = 0x100;
-        }
-        else if (valrigard.y < 0x0400) { // Stop sprite-wrapping
-            valrigard.velocity_y = -0x100;
-        }    
-        else {*/
-            valrigard.velocity_y = -SPEED;
-        //}
+        valrigard.velocity_y = -SPEED;
     }
     else if (pad1 & PAD_DOWN) {
-        if (valrigard.y > 0xdf00) {
-            valrigard.velocity_y = 0;
-            valrigard.y = 0xdf00;
-        }
-        else if (valrigard.y > 0xdc00) { // If you could be half in the floor and half in the cieling, would you?
-            valrigard.velocity_y = 0x100;
-        } 
-        else {
-            valrigard.velocity_y = SPEED;
-        }
+        valrigard.velocity_y = SPEED;
     }
     else { // No direction.
         valrigard.velocity_y = 0;
@@ -321,7 +327,7 @@ void movement(void) {
 
     valrigard.y += valrigard.velocity_y;
     
-    if((valrigard.y < 0x100)||(valrigard.y > 0xf000)) { // make sure no wrap around to the other side
+    if((valrigard.y < 0x100)||(valrigard.y > 0xf000)) { // make sure not to wrap around to the other side
         valrigard.y = 0x100;
     }
     
@@ -348,20 +354,29 @@ void movement(void) {
     }
     
     temp5 = valrigard.y;
-    if (valrigard.y < MAX_UP) {
+    if (valrigard.y < MAX_UP && scroll_y > min_scroll_y) {
         temp1 = (MAX_UP - valrigard.y + 0x80) >> 8; // "the numbers work better with +80 (like 0.5)". I'll take his word for it.
         scroll_y = sub_scroll_y(temp1, scroll_y);
         valrigard.y += (temp1 << 8);
     }
     
+    if (valrigard.y > MIN_DOWN && scroll_y < max_scroll_y) {
+        temp1 = (MIN_DOWN + valrigard.y + 0x80) >> 8;
+        // temp1 = (MIN_DOWN + valrigard.y + 0x80) >> 8;
+        scroll_y = add_scroll_y(temp1, scroll_y);
+        valrigard.y -= (temp1 << 8);
+    }
+    
+    /*
     if((high_byte(scroll_y) >= 0x80) || (scroll_y <= MIN_SCROLL)) { // 0x80 = negative
         scroll_y = MIN_SCROLL;
         valrigard.y = temp5;
         if (high_byte(valrigard.y) < 2) valrigard.y = 0x0200;
         else if (high_byte(valrigard.y) > 0xf0) valrigard.y = 0x0200; // > 0xf0 wrapped to the bottom.
-    }
+    }*/
     
     // Do we need a new collision map? (Did we scroll into a new room/nametable?)
+    
     if ((scroll_y & 0xff) >= 0xec) {
         new_cmap();
     }
@@ -534,6 +549,64 @@ void draw_screen_U(void){
             buffer_4_mt(address, index); // ppu_address, index to the data
     }
 
+    
+    
+    ++scroll_count;
+    scroll_count &= 3; //mask off top bits, keep it 0-3
+}
+
+void draw_screen_D(void) {
+    pseudo_scroll_y = add_scroll_y(0x20, scroll_y) + 0xef; 
+    // This 0xef (239, which is the height of the screen minus one) might possibly want to be either a 0xf0 (240) or a 
+    // 0x100 (1 full nametable compensating for the fact that the last 16 values are masked off by add_scroll_y)
+    
+    temp1 = pseudo_scroll_y >> 8;
+    
+    set_data_pointer(level_nametables[temp1]);
+    nt = (temp1 & 1) << 1; // 0 or 2
+    y = pseudo_scroll_y & 0xff;
+    
+    // important that the main loop clears the vram_buffer
+    switch(scroll_count){
+        case 0:
+            address = get_ppu_addr(nt, 0, y);
+            index = (y & 0xf0) + 0;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            
+            address = get_ppu_addr(nt, 0x20, y);
+            index = (y & 0xf0) + 2;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            break;
+            
+        case 1:
+            address = get_ppu_addr(nt, 0x40, y);
+            index = (y & 0xf0) + 4;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            
+            address = get_ppu_addr(nt, 0x60, y);
+            index = (y & 0xf0) + 6;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            break;
+            
+        case 2:
+            address = get_ppu_addr(nt, 0x80, y);
+            index = (y & 0xf0) + 8;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            
+            address = get_ppu_addr(nt, 0xa0, y);
+            index = (y & 0xf0) + 10;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            break;
+            
+        default:
+            address = get_ppu_addr(nt, 0xc0, y);
+            index = (y & 0xf0) + 12;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            
+            address = get_ppu_addr(nt, 0xe0, y);
+            index = (y & 0xf0) + 14;
+            buffer_4_mt(address, index); // ppu_address, index to the data
+    }
     
     
     ++scroll_count;
