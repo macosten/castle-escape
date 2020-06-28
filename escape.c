@@ -10,10 +10,19 @@
 #include "metatiles.h"
 #include "levels.h"
 
+#define SPEED 0x150
+
+#define ACCEL 0x20
+#define GRAVITY 0x50
+#define MAX_SPEED 0x150
+#define MAX_FALL MAX_SPEED
+#define FLY_VEL -0x600
+
 #pragma bss-name(push, "ZEROPAGE")
 
 //MARK: Zero Page Globals
 unsigned char pad1;
+unsigned char pad1_new;
 unsigned char collision;
 unsigned char collision_L;
 unsigned char collision_R;
@@ -34,7 +43,7 @@ unsigned char eject_L; // from the left
 unsigned char eject_R; // remember these from the collision sub routine
 unsigned char eject_D; // from below
 unsigned char eject_U; // from up
-#define SPEED 0x180
+
 
 unsigned char direction; //facing left or right? Todo - make this part of Player.
 #define LEFT 0
@@ -68,6 +77,16 @@ unsigned int old_x;
 unsigned int old_y;
 
 unsigned char level_index;
+
+unsigned char energy;
+#define MAX_ENERGY 0x90 // 144: 9 (number of tiles of flight height with no tapping) * 16(height of [meta]tile in pixels)?
+// Or should this be the number of frames which we should be able to fly for?
+
+// 255 frames / 60 fps (NTSC) = 4.25 seconds
+
+unsigned char timer;
+#define TITLE_SCREEN_LENGTH 120
+
 
 #define SONGS 0
 unsigned char song;
@@ -143,6 +162,8 @@ void main (void) {
     
     level_index = 0;
 
+    energy = MAX_ENERGY;
+    
     while (1){
 
         // infinite loop
@@ -247,7 +268,17 @@ void draw_sprites(void) {
     } else {
         oam_meta_spr(temp1, temp2, valrigardIdleRight);
     }
+    
+    // dDraw the energy level as sprites.
+    
+    temp1 = energy >> 4; // Unfortunately this is ASCII so ABCDEF are not directly after 789
+    oam_spr(20, 20, temp1, 1);
+    temp1 = energy & 0x0f;
+    oam_spr(28, 20, temp1, 1);
+    
 }
+
+// MARK: -- Movement.
 
 void movement(void) {
     
@@ -311,9 +342,10 @@ void movement(void) {
         valrigard.x -= (eject_R << 8);
     }
     
-
+    // MARK: Handle Y.
+    // We're probably going to eventually assign flying to A and sword-swinging to B, but... one thing at a time.
     old_y = valrigard.y;
-    // Handle Y. We're probably going to eventually assign flying to A and sword-swinging to B, but... one thing at a time.
+    /*
     if (pad1 & PAD_UP) {
         valrigard.velocity_y = -SPEED;
     }
@@ -326,31 +358,50 @@ void movement(void) {
 
     valrigard.y += valrigard.velocity_y;
     
-    if((valrigard.y < 0x100)||(valrigard.y > 0xf000)) { // make sure not to wrap around to the other side
-        valrigard.y = 0x100;
+    
+    */
+    // MARK: - Gravity
+    
+    if (pad1 & PAD_UP) { // If we're holding up on the DPad...
+    
+        valrigard.velocity_y -= GRAVITY;
+        if (valrigard.velocity_y < -SPEED) valrigard.velocity_y = -SPEED;
+    
+    } else {
+        
+        valrigard.velocity_y += GRAVITY;
+        if (valrigard.velocity_y > MAX_FALL) valrigard.velocity_y = MAX_FALL;
+        
     }
     
+    valrigard.y += valrigard.velocity_y;
+    
+    // Make sure not to wrap around to the other side
+    if (valrigard.y < 0x100)  valrigard.y = 0x100;
+    if (valrigard.y > 0xf000) valrigard.y = 0xf000;
+    
+    // MARK: - Collision
     L_R_switch = 0;
     
     hitbox.x = high_byte(valrigard.x);
     hitbox.y = high_byte(valrigard.y);
-
-    //hitbox.width = VALRIGARD_WIDTH;
-    //hitbox.height = VALRIGARD_HEIGHT;
     // Shouldn't need to change the the height and width since those were already set
-
     bg_collision();
 
-    if (collision_U && collision_D) {
-        valrigard.y = old_y;
-    }
-    else if(collision_U) {
-        valrigard.y -= (eject_U << 8);
+    // if (collision_U && collision_D) valrigard.y = old_y;
+    
+    if(collision_U) {
+        //valrigard.y -= (eject_U << 8);
+        high_byte(valrigard.y) -= eject_U;
+        // Play head_hit sound
     }
     else if (collision_D) {
-        valrigard.y -= (eject_D << 8);
+        //valrigard.y -= (eject_D << 8);
+        high_byte(valrigard.y) -= eject_D;
         // if ... (something was here, but I removed it)
     }
+    
+    // MARK: - Deal with scrolling
     
     temp5 = valrigard.y;
     if (valrigard.y < MAX_UP && scroll_y > min_scroll_y) {
