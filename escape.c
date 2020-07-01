@@ -9,11 +9,12 @@
 #include "metasprites.h"
 #include "metatiles.h"
 #include "levels.h"
+#include "asm/bitwise.h"
 
 #define SPEED 0x150
 
 #define ACCEL 0x20
-#define GRAVITY 0x50
+#define GRAVITY 0x30
 #define MAX_SPEED 0x150
 #define MAX_FALL MAX_SPEED
 #define FLY_VEL -0x600
@@ -164,6 +165,10 @@ void main (void) {
 
     energy = MAX_ENERGY;
     
+    //Debug: set the first half of the bitfield to FF.
+    //for (temp1 = 0; temp1 < 128; ++temp1) { set_object_bit(temp1); }
+    
+    
     while (1){
 
         // infinite loop
@@ -193,6 +198,8 @@ void main (void) {
 }
 
 void load_level(void) {
+    clear_object_bitfield(); // Clear all object destruction flags
+    
     nt_max = level_starting_nt[level_index+1];
     nt_current = valrigard_starting_nt[level_index];
     high_byte(scroll_y) = nt_current; // The high byte of scroll_y is the nametable we're currently in (0-255).
@@ -269,7 +276,7 @@ void draw_sprites(void) {
         oam_meta_spr(temp1, temp2, valrigardIdleRight);
     }
     
-    // dDraw the energy level as sprites.
+    // Draw the energy level as sprites.
     
     temp1 = energy >> 4; // Unfortunately this is ASCII so ABCDEF are not directly after 789
     oam_spr(20, 20, temp1, 1);

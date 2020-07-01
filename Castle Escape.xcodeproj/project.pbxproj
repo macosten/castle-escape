@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXFileReference section */
+		11A6C2F424AAFFE000BD0484 /* bitwise.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitwise.h; sourceTree = "<group>"; };
+		11A6C2F524AB154400BD0484 /* bitwise.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = bitwise.s; sourceTree = "<group>"; };
 		11B841222490931700CBB7CC /* nesdoug.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = nesdoug.s; sourceTree = "<group>"; };
 		11B841232490931700CBB7CC /* nesdoug.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = nesdoug.h; sourceTree = "<group>"; };
 		11B841242490931700CBB7CC /* neslib.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = neslib.s; sourceTree = "<group>"; };
@@ -30,6 +32,15 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		11A6C2F624ABB67000BD0484 /* asm */ = {
+			isa = PBXGroup;
+			children = (
+				11A6C2F524AB154400BD0484 /* bitwise.s */,
+				11A6C2F424AAFFE000BD0484 /* bitwise.h */,
+			);
+			path = asm;
+			sourceTree = "<group>";
+		};
 		11B841162490929300CBB7CC = {
 			isa = PBXGroup;
 			children = (
@@ -47,6 +58,7 @@
 				11B8413B2493262B00CBB7CC /* structs.h */,
 				11B841212490931700CBB7CC /* lib */,
 				11B8412F2490931800CBB7CC /* License.txt */,
+				11A6C2F624ABB67000BD0484 /* asm */,
 				11B841272490931700CBB7CC /* music */,
 				11B841312490931800CBB7CC /* nrom_32k_vert.cfg */,
 				11B8411F249092B700CBB7CC /* tilemaps */,
