@@ -127,7 +127,7 @@ Player valrigard = {20, 40}; // A width of 12 makes Valrigard's hitbox a bit mor
 Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C stack is not preferable to using a global in this use case)
 
 // MARK: Function Prototypes
-void set_sprite_zero(void);
+//void set_sprite_zero(void);
 
 void draw_sprites(void);
 void movement(void);
@@ -169,7 +169,8 @@ void main (void) {
     //for (temp1 = 0; temp1 < 128; ++temp1) { set_object_bit(temp1); }
     
     ppu_on_all(); // turn on screen
-    set_sprite_zero();    // this needs to be done before ppu_wait_nmi, before the first frame, to ensure sprite zero is in the correct place for the screen split
+    // If we're using Sprite 0 to split the screen:
+    // set_sprite_zero();    // this needs to be done before ppu_wait_nmi, before the first frame, to ensure sprite zero is in the correct place for the screen split
     
     while (1){
 
@@ -184,7 +185,7 @@ void main (void) {
         
         movement();
         
-        set_scroll_x(scroll_x); // Yeah... this game won't need to scroll in the X direction. I'll keep a more advanced
+        //set_scroll_x(0); // Yeah... this game won't need to scroll in the X direction.
         set_scroll_y(scroll_y);
 
         if (valrigard.velocity_y < 0) {
@@ -195,10 +196,11 @@ void main (void) {
         
         draw_sprites();
 
-        xy_split(0,0); // Do not do too much stuff in a frame or we risk overshooting the sprite zero hit (and then crashing)
+        // gray_line();
         
-        gray_line();
-        //split(scroll_x);
+        // So it turns out that Sprite 0 needs to collide with an opauqe background pixel - i.e it needs to collide with a tile that has at least some of its pixels that aren't just transparent.
+        // Or... it needs to not be in front of a blank area. If it is, ths game will just crash.
+        //xy_split(0, scroll_y);
         
     }
     
@@ -272,7 +274,7 @@ void load_room(void) {
 void draw_sprites(void) {
     // clear all sprites from sprite buffer
     oam_clear();
-    set_sprite_zero(); // Ensure sprite 0 exists
+    //set_sprite_zero(); // Ensure sprite 0 exists
     
     oam_set(4); // Technically redundant
     
@@ -550,12 +552,13 @@ void bg_collision_sub(void) {
     coordinates = (temp1 >> 4) + (temp3 & 0xf0); // upper left
     
     map = temp2&1;
+    
     if (!map) {
         collision = (c_map[coordinates] < 0x17 && c_map[coordinates] > 0x03); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
         //spikeDeath = (c_map[coordinates] < 0x04);
     }
     else {
-        collision = (c_map2[coordinates] < 0x17 && c_map[coordinates] > 0x03);
+        collision = (c_map2[coordinates] < 0x17 && c_map2[coordinates] > 0x03);
         //spikeDeath = (c_map2[coordinates] < 0x04);
     }
 
@@ -728,8 +731,15 @@ void new_cmap_D(void) {
 }
 
 // Sprite Zero: a trick commonly used in a game where some sort of nonscrolling HUD is onscreen (and there's no mapper involved).
-// This is *required* now - if this doesn't work, or the sprite zero hits fail, the game will probably crash.
-void set_sprite_zero(void){
+// If we're splitting the screen and this doesn't work/the sprite zero hits fail, the game will freeze.
+/*
+ void set_sprite_zero(void){
     oam_set(0); // double check that this goes in the zero slot
-    oam_spr(0xf0,0xce,0xff,3);
+    
+    oam_spr(0x08,0x0f,0xff,1);
+    
+    //oam_spr(0x08,0xce,0xff,3); HUD at Bottom
+    
+    // oam_spr(0xf0,0xce,0xff,3);
 }
+*/
