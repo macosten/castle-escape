@@ -127,6 +127,8 @@ Player valrigard = {20, 40}; // A width of 12 makes Valrigard's hitbox a bit mor
 Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C stack is not preferable to using a global in this use case)
 
 // MARK: Function Prototypes
+void set_sprite_zero(void);
+
 void draw_sprites(void);
 void movement(void);
 void load_level(void);
@@ -159,15 +161,15 @@ void main (void) {
     load_level();
     load_room();
 
-    ppu_on_all(); // turn on screen
-    
     level_index = 0;
 
     energy = MAX_ENERGY;
-    
+
     //Debug: set the first half of the bitfield to FF.
     //for (temp1 = 0; temp1 < 128; ++temp1) { set_object_bit(temp1); }
     
+    ppu_on_all(); // turn on screen
+    set_sprite_zero();    // this needs to be done before ppu_wait_nmi, before the first frame, to ensure sprite zero is in the correct place for the screen split
     
     while (1){
 
@@ -176,7 +178,7 @@ void main (void) {
         // the sprites are pushed from a buffer to the OAM during nmi
         
         pad1 = pad_poll(0); // read the first controller
-        // pad2 = pad_poll(1); // read the second controller
+        pad1_new = get_pad_new(0);
         
         clear_vram_buffer();
         
@@ -193,6 +195,11 @@ void main (void) {
         
         draw_sprites();
 
+        xy_split(0,0); // Do not do too much stuff in a frame or we risk overshooting the sprite zero hit (and then crashing)
+        
+        gray_line();
+        //split(scroll_x);
+        
     }
     
 }
@@ -265,6 +272,9 @@ void load_room(void) {
 void draw_sprites(void) {
     // clear all sprites from sprite buffer
     oam_clear();
+    set_sprite_zero(); // Ensure sprite 0 exists
+    
+    oam_set(4); // Technically redundant
     
     temp1 = valrigard.x >> 8;
     temp2 = valrigard.y >> 8;
@@ -715,4 +725,11 @@ void new_cmap_D(void) {
     else {
         memcpy(c_map2, level_nametables[nt_current], 240);
     }
+}
+
+// Sprite Zero: a trick commonly used in a game where some sort of nonscrolling HUD is onscreen (and there's no mapper involved).
+// This is *required* now - if this doesn't work, or the sprite zero hits fail, the game will probably crash.
+void set_sprite_zero(void){
+    oam_set(0); // double check that this goes in the zero slot
+    oam_spr(0xf0,0xce,0xff,3);
 }
