@@ -10,6 +10,7 @@
 #include "metatiles.h"
 #include "levels.h"
 #include "asm/bitwise.h"
+#include "asm/score.h"
 
 #define SPEED 0x150
 
@@ -119,7 +120,7 @@ const unsigned char palette_sp[]={
 0x0f, 0x17, 0x27, 0x07,
 0x0f, 0x01, 0x0f, 0x32, // valrigard's palette
 0,0,0,0,
-0,0,0,0
+0x0f,0x30,0x16,0x00 // HUD and Spikeball
 };
 
 // X, Y, Width, Height
@@ -164,6 +165,8 @@ void main (void) {
     level_index = 0;
 
     energy = MAX_ENERGY;
+    
+    convert_to_decimal(0xffff);
 
     //Debug: set the first half of the bitfield to FF.
     //for (temp1 = 0; temp1 < 128; ++temp1) { set_object_bit(temp1); }
@@ -295,6 +298,12 @@ void draw_sprites(void) {
     temp1 = energy & 0x0f;
     oam_spr(28, 20, temp1, 1);
     
+    // Draw the score.
+    oam_spr(200, 20, score_string[4], 3);
+    oam_spr(208, 20, score_string[3], 3);
+    oam_spr(216, 20, score_string[2], 3);
+    oam_spr(224, 20, score_string[1], 3);
+    oam_spr(232, 20, score_string[0], 3);
 }
 
 // MARK: -- Movement.
@@ -683,6 +692,7 @@ void draw_screen_D(void) {
             break;
             
         default:
+            // break; // Currently, we don't actually need the last quarter of the screen...
             address = get_ppu_addr(nt, 0xc0, y);
             index = (y & 0xf0) + 12;
             buffer_4_mt(address, index); // ppu_address, index to the data

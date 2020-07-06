@@ -9,6 +9,8 @@
 /* Begin PBXFileReference section */
 		11A6C2F424AAFFE000BD0484 /* bitwise.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitwise.h; sourceTree = "<group>"; };
 		11A6C2F524AB154400BD0484 /* bitwise.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = bitwise.s; sourceTree = "<group>"; };
+		11A6C2F724B2927600BD0484 /* score.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = score.h; sourceTree = "<group>"; };
+		11A6C2F824B294A000BD0484 /* score.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = score.s; sourceTree = "<group>"; };
 		11B841222490931700CBB7CC /* nesdoug.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = nesdoug.s; sourceTree = "<group>"; };
 		11B841232490931700CBB7CC /* nesdoug.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = nesdoug.h; sourceTree = "<group>"; };
 		11B841242490931700CBB7CC /* neslib.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = neslib.s; sourceTree = "<group>"; };
@@ -37,6 +39,8 @@
 			children = (
 				11A6C2F524AB154400BD0484 /* bitwise.s */,
 				11A6C2F424AAFFE000BD0484 /* bitwise.h */,
+				11A6C2F824B294A000BD0484 /* score.s */,
+				11A6C2F724B2927600BD0484 /* score.h */,
 			);
 			path = asm;
 			sourceTree = "<group>";

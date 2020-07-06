@@ -256,6 +256,7 @@ detectNTSC:
     .include "lib/neslib.s"
     .include "lib/nesdoug.s"
     .include "asm/bitwise.s"
+    .include "asm/score.s"
     .include "music/famitone2.s"
     
     
