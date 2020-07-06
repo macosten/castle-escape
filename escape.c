@@ -81,7 +81,7 @@ unsigned int old_y;
 unsigned char level_index;
 
 unsigned char energy;
-#define MAX_ENERGY 0x90 // 144: 9 (number of tiles of flight height with no tapping) * 16(height of [meta]tile in pixels)?
+#define MAX_ENERGY 0x70 // 144: 9 (number of tiles of flight height with no tapping) * 16(height of [meta]tile in pixels)?
 // Or should this be the number of frames which we should be able to fly for?
 
 // 255 frames / 60 fps (NTSC) = 4.25 seconds
@@ -294,9 +294,9 @@ void draw_sprites(void) {
     // Draw the energy level as sprites.
     
     temp1 = energy >> 4; // Unfortunately this is ASCII so ABCDEF are not directly after 789
-    oam_spr(20, 20, temp1, 1);
+    oam_spr(200, 28, temp1, 1);
     temp1 = energy & 0x0f;
-    oam_spr(28, 20, temp1, 1);
+    oam_spr(208, 28, temp1, 1);
     
     // Draw the score.
     oam_spr(200, 20, score_string[4], 3);
@@ -390,11 +390,12 @@ void movement(void) {
     */
     // MARK: - Gravity
     
-    if (pad1 & PAD_UP) { // If we're holding up on the DPad...
-    
+    if (pad1 & PAD_UP && energy > 0) { // If we're holding up on the DPad...
         valrigard.velocity_y -= GRAVITY;
         if (valrigard.velocity_y < -SPEED) valrigard.velocity_y = -SPEED;
     
+        energy -= 1;
+        
     } else {
         
         valrigard.velocity_y += GRAVITY;
@@ -427,6 +428,9 @@ void movement(void) {
         //valrigard.y -= (eject_D << 8);
         high_byte(valrigard.y) -= eject_D;
         // if ... (something was here, but I removed it)
+        
+        energy += 4;
+        if (energy > MAX_ENERGY) energy = MAX_ENERGY;
     }
     
     // MARK: - Deal with scrolling

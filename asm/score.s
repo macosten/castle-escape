@@ -4,7 +4,7 @@
 
 .segment "BSS"
 
-_score_string: .res 5 ; Max score of "65535" - 1 extra byte for debug
+_score_string: .res 5 ; Max score of "65535"
 
 .segment "CODE"
 
