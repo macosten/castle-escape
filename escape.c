@@ -52,7 +52,7 @@ unsigned char direction; //facing left or right? Todo - make this part of Player
 #define RIGHT 1
 
 int address;
-const unsigned char * temppointer;
+// void * temppointer;
 
 // load_room variables
 unsigned char x;
@@ -142,7 +142,6 @@ void draw_screen_D(void);
 void draw_screen_edges(void);
 
 void new_cmap(void);
-void new_cmap_D(void);
 
 void main (void) {
         
@@ -449,33 +448,21 @@ void movement(void) {
         valrigard.y -= (temp1 << 8);
     }
     
-    /*
-    if((high_byte(scroll_y) >= 0x80) || (scroll_y <= MIN_SCROLL)) { // 0x80 = negative
-        scroll_y = MIN_SCROLL;
-        valrigard.y = temp5;
-        if (high_byte(valrigard.y) < 2) valrigard.y = 0x0200;
-        else if (high_byte(valrigard.y) > 0xf0) valrigard.y = 0x0200; // > 0xf0 wrapped to the bottom.
-    }*/
-    
     // Do we need a new collision map? (Did we scroll into a new room/nametable?)
     
     // This portion of the code can definitely be optimized into just one function, but I'm tired, so for now:
     if (valrigard.velocity_y <= 0) {
         if ((scroll_y & 0xff) >= 0xec) {
+            nt_current = (scroll_y >> 8);
             new_cmap();
         }
     } else {
         if ((scroll_y & 0xff) <= 0x02) {
-            new_cmap_D();
+            nt_current = (scroll_y >> 8) + 1;
+            new_cmap();
         }
     }
     
-    /*
-    if ((scroll_y & 0xff) >= 0xec) {
-        new_cmap();
-    } else {
-        //pal_col(0, 0x0f);
-    }*/
 }
 
 
@@ -711,30 +698,10 @@ void draw_screen_D(void) {
     scroll_count &= 3; //mask off top bits, keep it 0-3
 }
 
-// (mostly nesdoug): copy a new collision map to one of the 2 c_map arrays
+// (adapted from nesdoug): copy a new collision map to one of the 2 c_map arrays.
+// In this version, nt_current should be set before this function is called.
 void new_cmap(void) {
     // copy a new collision map to one of the 2 c_map arrays
-    nt_current = (scroll_y >> 8); //high byte = the index of the nametable we're in?, one to the right
-    
-    map = nt_current & 1; //even or odd?
-    if (!map) {
-        memcpy(c_map, level_nametables[nt_current], 240);
-    }
-    else {
-        memcpy(c_map2, level_nametables[nt_current], 240);
-    }
-    
-    // pal_col(0, nt_current);
-}
-
-// If we're scrolling down and want to load a nametable that was below us,
-// we'll call this modified cmap function instead...
-void new_cmap_D(void) {
-    // copy a new collision map to one of the 2 c_map arrays
-    nt_current = (scroll_y >> 8) + 1; //high byte = the index of the nametable we're in?, one to the right
-    
-    // pal_col(0, nt_current);
-    
     map = nt_current & 1; //even or odd?
     if (!map) {
         memcpy(c_map, level_nametables[nt_current], 240);
@@ -744,16 +711,3 @@ void new_cmap_D(void) {
     }
 }
 
-// Sprite Zero: a trick commonly used in a game where some sort of nonscrolling HUD is onscreen (and there's no mapper involved).
-// If we're splitting the screen and this doesn't work/the sprite zero hits fail, the game will freeze.
-/*
- void set_sprite_zero(void){
-    oam_set(0); // double check that this goes in the zero slot
-    
-    oam_spr(0x08,0x0f,0xff,1);
-    
-    //oam_spr(0x08,0xce,0xff,3); HUD at Bottom
-    
-    // oam_spr(0xf0,0xce,0xff,3);
-}
-*/
