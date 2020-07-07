@@ -251,7 +251,7 @@ void load_room(void) {
     
     temp1 = temp1 ^ 2; // flip that 0000 0010 bit
     // a little bit in the other room
-    set_data_pointer(level_nametables[nt_current-1]);
+    set_data_pointer(level_nametables[(char)nt_current-1]); // NOTE: Don't call if nt_current = 0, or who really knows what will happen
     for(x=0; ;x+=0x20){
         y = 0xe0;
         clear_vram_buffer(); // do each frame, and before putting anything in the buffer
@@ -537,13 +537,15 @@ void bg_collision_sub(void) {
     map = temp2&1;
     
     if (!map) {
-        collision = (c_map[coordinates] < 0x17 && c_map[coordinates] > 0x03); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
-        //spikeDeath = (c_map[coordinates] < 0x04);
+        temp4 = c_map[coordinates];
+        
     }
     else {
-        collision = (c_map2[coordinates] < 0x17 && c_map2[coordinates] > 0x03);
-        //spikeDeath = (c_map2[coordinates] < 0x04);
+        temp4 = c_map2[coordinates];
     }
+    
+    collision = (temp4 < 0x17 && temp4 > 0x03); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
+    // At some point we should figure out what else should be calculated here
 
 }
 

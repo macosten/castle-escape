@@ -36,9 +36,23 @@ const unsigned char * const level_names[] = {
  There is OBJECT_BITFIELD which will allow up to 255 destructible objects (stars, killable enemies, etc) to have their states kept track of.
  If need be, perhaps we can expand this to allow for a separate STAR_BITFIELD and ENEMY_BITFIELD, but I'm not sure we'll need more than 255 things in a (non user-designed) level.
  
- What if we store objects like this:
-    0xAABC 0xXY
+ We shouldn't really need to store what the object is in the data since there will be a source tile at that area (a star, an Enemy Source Tile, etc)
  
- Where:
-    A is a nametable ID - 1 nt - the nametable in which
+ What if we store objects like this:
+    0xAAXY
+ 
+ Where (1 letter = 1 hex digit/4 bits):
+    AA is a nametable ID - 8 bits - the nametable in which this object lives.
+    X is its X coordinate (metatile)
+    Y is its Y coordinate (metatile)
+ 
+ Or perhaps we could store objects in two tables:
+    Table 1 could be the number of objects in each nametable, and
+    Table 2 could be the coordinates of each object (0xXY).
+ 
+ When copying cmaps to memory, we will check to see if an object should be loaded or if it should be replaced with an empty tile.
+ 
+ We can store compacted coordinates of objects somewhere in RAM in a hash map of some sort...
+ 
+ This also means that an enemy in RAM should keep track of what bit in the OBJECT_BITFIELD it's supposed to modify.
 */
