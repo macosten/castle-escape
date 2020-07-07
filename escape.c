@@ -89,7 +89,6 @@ unsigned char energy;
 unsigned char timer;
 #define TITLE_SCREEN_LENGTH 120
 
-
 #define SONGS 0
 unsigned char song;
 // enum {SONG_NAME1, SONG_NAME2};
@@ -104,6 +103,8 @@ unsigned char nt_current; // The nametable Valrigard is currently in. This shoul
 #define VALRIGARD_HEIGHT 13
 
 #pragma bss-name(push, "BSS")
+
+unsigned int score; // Is the score important enough to place in the zp?
 
 // Used for collisions.
 unsigned char c_map[240];
@@ -165,10 +166,10 @@ void main (void) {
 
     energy = MAX_ENERGY;
     
-    convert_to_decimal(0xffff);
-
     //Debug: set the first half of the bitfield to FF.
     //for (temp1 = 0; temp1 < 128; ++temp1) { set_object_bit(temp1); }
+    
+    score = 0x6969;
     
     ppu_on_all(); // turn on screen
     // If we're using Sprite 0 to split the screen:
@@ -196,6 +197,7 @@ void main (void) {
             draw_screen_D();
         }
         
+        convert_to_decimal(score);
         draw_sprites();
 
         // gray_line();
@@ -372,21 +374,7 @@ void movement(void) {
     // MARK: Handle Y.
     // We're probably going to eventually assign flying to A and sword-swinging to B, but... one thing at a time.
     old_y = valrigard.y;
-    /*
-    if (pad1 & PAD_UP) {
-        valrigard.velocity_y = -SPEED;
-    }
-    else if (pad1 & PAD_DOWN) {
-        valrigard.velocity_y = SPEED;
-    }
-    else { // No direction.
-        valrigard.velocity_y = 0;
-    }
 
-    valrigard.y += valrigard.velocity_y;
-    
-    
-    */
     // MARK: - Gravity
     
     if (pad1 & PAD_UP && energy > 0) { // If we're holding up on the DPad...

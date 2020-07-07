@@ -62,3 +62,5 @@ const unsigned char metatiles[]={
     
     0,   0,   0,   0,    0, // Empty
 };
+
+#define EMPTY_TILE 44
