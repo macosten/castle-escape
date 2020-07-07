@@ -139,6 +139,7 @@ void bg_collision(void);
 void bg_collision_sub(void);
 void draw_screen_U(void);
 void draw_screen_D(void);
+void draw_screen_sub(void);
 
 void draw_screen_edges(void);
 
@@ -172,8 +173,6 @@ void main (void) {
     score = 0x6969;
     
     ppu_on_all(); // turn on screen
-    // If we're using Sprite 0 to split the screen:
-    // set_sprite_zero();    // this needs to be done before ppu_wait_nmi, before the first frame, to ensure sprite zero is in the correct place for the screen split
     
     while (1){
 
@@ -201,10 +200,6 @@ void main (void) {
         draw_sprites();
 
         // gray_line();
-        
-        // So it turns out that Sprite 0 needs to collide with an opauqe background pixel - i.e it needs to collide with a tile that has at least some of its pixels that aren't just transparent.
-        // Or... it needs to not be in front of a blank area. If it is, ths game will just crash.
-        //xy_split(0, scroll_y);
         
     }
     
@@ -569,62 +564,14 @@ void bg_collision_sub(void) {
  }
  */
 
-void draw_screen_U(void){
+// MARK: -- Screen Buffering Functions
+
+// At some point, I should probably inline these functions (manually).
+
+void draw_screen_U(void) {
     pseudo_scroll_y = sub_scroll_y(0x20, scroll_y);
     
-    temp1 = pseudo_scroll_y >> 8;
-    
-    set_data_pointer(level_nametables[temp1]);
-    nt = (temp1 & 1) << 1; // 0 or 2
-    y = pseudo_scroll_y & 0xff;
-    
-    // important that the main loop clears the vram_buffer
-    
-    switch(scroll_count){
-        case 0:
-            address = get_ppu_addr(nt, 0, y);
-            index = (y & 0xf0) + 0;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            
-            address = get_ppu_addr(nt, 0x20, y);
-            index = (y & 0xf0) + 2;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            break;
-            
-        case 1:
-            address = get_ppu_addr(nt, 0x40, y);
-            index = (y & 0xf0) + 4;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            
-            address = get_ppu_addr(nt, 0x60, y);
-            index = (y & 0xf0) + 6;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            break;
-            
-        case 2:
-            address = get_ppu_addr(nt, 0x80, y);
-            index = (y & 0xf0) + 8;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            
-            address = get_ppu_addr(nt, 0xa0, y);
-            index = (y & 0xf0) + 10;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            break;
-            
-        default:
-            address = get_ppu_addr(nt, 0xc0, y);
-            index = (y & 0xf0) + 12;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            
-            address = get_ppu_addr(nt, 0xe0, y);
-            index = (y & 0xf0) + 14;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-    }
-
-    
-    
-    ++scroll_count;
-    scroll_count &= 3; //mask off top bits, keep it 0-3
+    draw_screen_sub();
 }
 
 void draw_screen_D(void) {
@@ -632,6 +579,10 @@ void draw_screen_D(void) {
     // This 0xef (239, which is the height of the screen minus one) might possibly want to be either a 0xf0 (240) or a 
     // 0x100 (1 full nametable compensating for the fact that the last 16 values are masked off by add_scroll_y)
     
+    draw_screen_sub();
+}
+
+void draw_screen_sub(void) {
     temp1 = pseudo_scroll_y >> 8;
     
     set_data_pointer(level_nametables[temp1]);
@@ -639,6 +590,7 @@ void draw_screen_D(void) {
     y = pseudo_scroll_y & 0xff;
     
     // important that the main loop clears the vram_buffer
+    
     switch(scroll_count){
         case 0:
             address = get_ppu_addr(nt, 0, y);
@@ -671,7 +623,6 @@ void draw_screen_D(void) {
             break;
             
         default:
-            // break; // Currently, we don't actually need the last quarter of the screen...
             address = get_ppu_addr(nt, 0xc0, y);
             index = (y & 0xf0) + 12;
             buffer_4_mt(address, index); // ppu_address, index to the data
@@ -680,6 +631,7 @@ void draw_screen_D(void) {
             index = (y & 0xf0) + 14;
             buffer_4_mt(address, index); // ppu_address, index to the data
     }
+
     
     
     ++scroll_count;

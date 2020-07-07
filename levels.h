@@ -32,8 +32,13 @@ const unsigned char * const level_names[] = {
     "Null"
 };
 
-/*
- #define MAX_ROOMS (8-1)
- #define MAX_SCROLL (MAX_ROOMS*0x100)-1
- #define MIN_SCROLL 2
- */
+/* Notes related to storing initial state of objects:
+ There is OBJECT_BITFIELD which will allow up to 255 destructible objects (stars, killable enemies, etc) to have their states kept track of.
+ If need be, perhaps we can expand this to allow for a separate STAR_BITFIELD and ENEMY_BITFIELD, but I'm not sure we'll need more than 255 things in a (non user-designed) level.
+ 
+ What if we store objects like this:
+    0xAABC 0xXY
+ 
+ Where:
+    A is a nametable ID - 1 nt - the nametable in which
+*/
