@@ -47,9 +47,24 @@ unsigned char eject_D; // from below
 unsigned char eject_U; // from up
 
 
-unsigned char direction; //facing left or right? Todo - make this part of Player.
+unsigned char player_flags; // All of these flags should be such that the default value for this byte when starting a level is 0
+#define DIRECTION (player_flags&1) //facing left or right? (lsb of player_flags)
+#define SET_DIRECTION_LEFT() (player_flags &= 0b11111110) // Un-set the lsb
+#define SET_DIRECTION_RIGHT() (player_flags |= 1) // Set the lsb
 #define LEFT 0
 #define RIGHT 1
+
+#define STATUS_DEAD (player_flags&2)
+#define SET_STATUS_ALIVE() (player_flags &= 0b11111101)
+#define SET_STATUS_DEAD() (player_flags |= 2) // set bit 1
+#define ALIVE 0
+#define DEAD 2
+
+#define STATUS_DIRECTION (player_flags&4)
+#define SET_STATUS_NOT_SWINGING_SWORD() (player_flags &= 0b11111011)
+#define SET_STATUS_SWINGING_SWORD() (player_flags |= 4)
+#define NOT_SWINGING_SWORD 0
+#define SWINGING_SWORD 4
 
 int address;
 // void * temppointer;
@@ -201,12 +216,18 @@ void main (void) {
 
         // gray_line();
         
+        // debug:
+        if (pad1 & PAD_DOWN) {
+            SET_STATUS_ALIVE();
+        }
+        
     }
     
 }
 
 void load_level(void) {
     clear_object_bitfield(); // Clear all object destruction flags
+    player_flags = 0; // Clear the player flags
     
     nt_max = level_starting_nt[level_index+1];
     nt_current = valrigard_starting_nt[level_index];
@@ -274,14 +295,14 @@ void draw_sprites(void) {
     // clear all sprites from sprite buffer
     oam_clear();
     //set_sprite_zero(); // Ensure sprite 0 exists
-    
-    oam_set(4); // Technically redundant
-    
+
     temp1 = valrigard.x >> 8;
     temp2 = valrigard.y >> 8;
     
+    oam_spr(232, 34, DIRECTION, 3);
+    oam_spr(232, 42, STATUS_DEAD, 2);
     // draw valrigard
-    if (direction == LEFT) {
+    if (DIRECTION == LEFT) {
         oam_meta_spr(temp1, temp2, valrigardIdleLeft);
     } else {
         oam_meta_spr(temp1, temp2, valrigardIdleRight);
@@ -311,7 +332,10 @@ void movement(void) {
     
     // Left
     if (pad1 & PAD_LEFT) {
-        direction = LEFT;
+        // DIRECTION = LEFT;
+        //player_flags &= 0b11111110;
+        SET_DIRECTION_LEFT();
+        
         if (valrigard.x <= 0x0200) { // Changed by 1 from nesdoug's example because Valrigard's hitbox is narrower by 1 pixel on both sides
             valrigard.velocity_x = 0;
             valrigard.x = 0x200;
@@ -323,7 +347,9 @@ void movement(void) {
     }
     // Right
     else if (pad1 & PAD_RIGHT){
-        direction = RIGHT;
+        // DIRECTION = RIGHT;
+        SET_DIRECTION_RIGHT();
+        
         if (valrigard.x >= 0xf000) {  // Also changed by 1 from nesdoug's example because Valrigard's hitbox is narrower by 1 pixel on both sides
             // If VALRIGARD_WIDTH was 15, we'd change this >= into a >...
             valrigard.velocity_x = 0;
@@ -546,7 +572,17 @@ void bg_collision_sub(void) {
     
     collision = (temp4 < 0x17 && temp4 > 0x03); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
     // At some point we should figure out what else should be calculated here
-
+    
+    // Did we touch any special tiles?
+    switch (temp4) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+            // Set the dead flag
+            SET_STATUS_DEAD();
+            break;
+    }
 }
 
 /*
