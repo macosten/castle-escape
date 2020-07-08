@@ -17,7 +17,7 @@ export CC65_HOME="/usr/local/share/cc65"
 # Important; otherwise, CC65 will not know where to find its includes.
 
 # cc65 -Oirs $name.c --add-source
-cc65 -O $name.c --add-source
+cc65  $name.c --add-source
 ca65 crt0.s
 ca65 $name.s -g
 

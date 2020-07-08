@@ -33,6 +33,7 @@ unsigned char collision_D;
 unsigned char coordinates;
 
 // Best to assume that the values of these temps are NOT stored between function calls.
+// unsigned char temp0;
 unsigned char temp1;
 unsigned char temp2;
 unsigned char temp3;
@@ -143,6 +144,9 @@ const unsigned char palette_sp[]={
 Player valrigard = {20, 40}; // A width of 12 makes Valrigard's hitbox a bit more forgiving. It also happens to match up with his nose.
 Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C stack is not preferable to using a global in this use case)
 
+unsigned char debug_tile_x;
+unsigned char debug_tile_y;
+
 // MARK: Function Prototypes
 //void set_sprite_zero(void);
 
@@ -156,7 +160,7 @@ void draw_screen_U(void);
 void draw_screen_D(void);
 void draw_screen_sub(void);
 
-void draw_screen_edges(void);
+void collect_item(void);
 
 void new_cmap(void);
 
@@ -184,9 +188,7 @@ void main (void) {
     
     //Debug: set the first half of the bitfield to FF.
     //for (temp1 = 0; temp1 < 128; ++temp1) { set_object_bit(temp1); }
-    
-    score = 0x6969;
-    
+        
     ppu_on_all(); // turn on screen
     
     while (1){
@@ -201,6 +203,7 @@ void main (void) {
         clear_vram_buffer();
         
         movement();
+        collect_item();
         
         //set_scroll_x(0); // Yeah... this game won't need to scroll in the X direction.
         set_scroll_y(scroll_y);
@@ -214,7 +217,7 @@ void main (void) {
         convert_to_decimal(score);
         draw_sprites();
 
-        // gray_line();
+        //gray_line();
         
         // debug:
         if (pad1 & PAD_DOWN) {
@@ -301,6 +304,12 @@ void draw_sprites(void) {
     
     oam_spr(232, 34, DIRECTION, 3);
     oam_spr(232, 42, STATUS_DEAD, 2);
+    
+    oam_spr(200, 50, debug_tile_x >> 4, 1);
+    oam_spr(208, 50, debug_tile_x & 0x0f, 1);
+    
+    oam_spr(224, 50, debug_tile_y >> 4, 1);
+    oam_spr(232, 50, debug_tile_y & 0x0f, 1);
     // draw valrigard
     if (DIRECTION == LEFT) {
         oam_meta_spr(temp1, temp2, valrigardIdleLeft);
@@ -564,7 +573,6 @@ void bg_collision_sub(void) {
     
     if (!map) {
         temp4 = c_map[coordinates];
-        
     }
     else {
         temp4 = c_map2[coordinates];
@@ -582,25 +590,34 @@ void bg_collision_sub(void) {
             // Set the dead flag
             SET_STATUS_DEAD();
             break;
+        case STAR_TILE:
+            // Touched a star: Let's collect it
+            if (!map) {
+                c_map[coordinates] = EMPTY_TILE;
+            }
+            else {
+                c_map2[coordinates] = EMPTY_TILE;
+            }
+            
+            score += 1;
+            
+            
+            //clear_vram_buffer();
+            address = get_ppu_addr(nt, temp1, temp3);
+            buffer_1_mt(address, EMPTY_TILE);
+            
+            debug_tile_x = temp1 >> 4;
+            debug_tile_y = temp3 >> 4;
+            
+            // Shouldn't really need to change the palette, but:
+            // address = get_at_addr(nt, (temp1>>4), (temp2 & 0xf0));
+            // one_vram_buffer(0, address); Set to the 0th palette
+            break;
+        default:
+            //debug_did_touch_star_this_frame = 0;
+            break;
     }
 }
-
-/*
- NESDoug function that I'm betting I can make use of by modifying it
- void break_wall(void){
-     temp1 = BoxGuy1.x + 0x16;
-     temp2 = BoxGuy1.y + 5;
-     coordinates = (temp1>>4) + (temp2 & 0xf0);
-     if(c_map[coordinates] == 1){ // if brick
-        c_map[coordinates] = 0; // can walk through it
-        address = get_ppu_addr(0, temp1, temp2);
-        buffer_1_mt(address, 0); // put metatile #0 here = blank grass
- 
-        address = get_at_addr(0, (temp1>>4), (temp2 & 0xf0)); // Not sure if the stuff I did to this line is correct
-        one_vram_buffer(0x00, address); // Set to the 0th palette
-     }
- }
- */
 
 // MARK: -- Screen Buffering Functions
 
@@ -689,3 +706,80 @@ void new_cmap(void) {
     }
 }
 
+/*
+ NESDoug function that I'm betting I can make use of by modifying it
+ void break_wall(void){
+     temp1 = BoxGuy1.x + 0x16;
+     temp2 = BoxGuy1.y + 5;
+     coordinates = (temp1>>4) + (temp2 & 0xf0);
+     if(c_map[coordinates] == 1){ // if brick
+        c_map[coordinates] = 0; // can walk through it
+        address = get_ppu_addr(0, temp1, temp2);
+        buffer_1_mt(address, 0); // put metatile #0 here = blank grass
+ 
+        address = get_at_addr(0, (temp1>>4), (temp2 & 0xf0)); // Not sure if the stuff I did to this line is correct
+        one_vram_buffer(0x00, address); // Set to the 0th palette
+     }
+ }
+ */
+
+void collect_item(void) {
+    
+    return;
+    
+    temp1 = hitbox.x + 0x05; // Center of Valrigard
+    
+    temp3 = hitbox.y;
+    if(L_R_switch) temp3 += 2; // fix bug, walking through walls
+    temp5 = add_scroll_y(temp3, scroll_y); // upper left
+    temp3 = temp5 & 0xff; // low byte y
+    
+    
+    
+    
+    
+    coordinates = (temp1 >> 4) + (temp3 & 0xf0);
+    
+    debug_tile_x = temp1 >> 4;
+    debug_tile_y = temp3 >> 4;
+    
+    map = nt_current & 1; //even or odd?
+    if (!map) {
+        temp4 = c_map[coordinates];
+    }
+    else {
+        temp4 = c_map2[coordinates];
+    }
+    
+    switch (temp4) {
+        case STAR_TILE:
+            score += 1;
+            // play the star collection sound
+            break;
+        case ENERGY_REFILL_TILE:
+            energy = MAX_ENERGY;
+            break;
+        default:
+            return;
+    }
+    
+    if (!map) {
+        c_map[coordinates] = EMPTY_TILE;
+    } else {
+        c_map2[coordinates] = EMPTY_TILE;
+    }
+    
+    temp2 = pseudo_scroll_y >> 8;
+    nt = (temp2 & 1) << 1; // 0 or 2
+    
+    clear_vram_buffer();
+    
+    address = get_ppu_addr(nt, temp1, temp3);
+    buffer_1_mt(address, ENERGY_REFILL_TILE);
+    
+    
+    // We probably don't need to clear the palette, but I'll leave these comments here just in case
+    //address = get_at_addr(0, (temp1>>4), (temp2 & 0xf0));
+    //one_vram_buffer(0x00, address); // Set to the 0th palette
+    
+}
