@@ -9,6 +9,7 @@
 #include "metasprites.h"
 #include "metatiles.h"
 #include "levels.h"
+#include "lookuptables.h"
 #include "asm/bitwise.h"
 #include "asm/score.h"
 
@@ -217,7 +218,7 @@ void main (void) {
         convert_to_decimal(score);
         draw_sprites();
 
-        //gray_line();
+        gray_line();
         
         // debug:
         if (pad1 & PAD_DOWN) {
@@ -646,6 +647,9 @@ void draw_screen_sub(void) {
     
     // important that the main loop clears the vram_buffer
     
+    /*
+    //Old drawing method. Not certain if this is faster or slower than the new one, 
+    //but I'm fairly sure the new drawing method saves a few bytes.
     switch(scroll_count){
         case 0:
             address = get_ppu_addr(nt, 0, y);
@@ -676,8 +680,10 @@ void draw_screen_sub(void) {
             index = (y & 0xf0) + 10;
             buffer_4_mt(address, index); // ppu_address, index to the data
             break;
-            
+         
         default:
+            // As our levels are only 12 metatiles wide, nothing really needs to happen here.
+            // In the future, we may need to change what happens here (to zero out this part of the screen, perhaps?)
             address = get_ppu_addr(nt, 0xc0, y);
             index = (y & 0xf0) + 12;
             buffer_4_mt(address, index); // ppu_address, index to the data
@@ -685,8 +691,23 @@ void draw_screen_sub(void) {
             address = get_ppu_addr(nt, 0xe0, y);
             index = (y & 0xf0) + 14;
             buffer_4_mt(address, index); // ppu_address, index to the data
-    }
+            
+            break;
+    }*/
+    
+    temp1 = draw_screen_sub_lookup_addr_0[scroll_count];
+    temp2 = draw_screen_sub_lookup_index_offset_0[scroll_count];
+    temp3 = draw_screen_sub_lookup_addr_1[scroll_count];
+    temp4 = draw_screen_sub_lookup_index_offset_1[scroll_count];
 
+    address = get_ppu_addr(nt, temp1, y);
+    index = (y & 0xf0) + temp2;
+    buffer_4_mt(address, index); // ppu_address, index to the data
+            
+    address = get_ppu_addr(nt, temp3, y);
+    index = (y & 0xf0) + temp4;
+    buffer_4_mt(address, index); // ppu_address, index to the data
+    
     
     
     ++scroll_count;
