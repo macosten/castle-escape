@@ -606,6 +606,15 @@ void bg_collision_sub(void) {
             buffer_1_mt(address, EMPTY_TILE);
 
             break;
+        case ENERGY_REFILL_TILE:
+            // Touched an energy refill tile: Let's collect it.
+            *(unsigned char *)temp5 = EMPTY_TILE;
+            // Refill the energy.
+            energy = MAX_ENERGY;
+
+            // Set the metatile to the Empty Tile... once we figure out the right way.
+
+            break;
         default:
             
             break;
