@@ -69,7 +69,6 @@ unsigned char player_flags; // All of these flags should be such that the defaul
 #define SWINGING_SWORD 4
 
 int address;
-// void * temppointer;
 
 // load_room variables
 unsigned char x;
@@ -85,7 +84,6 @@ unsigned int min_scroll_y;
 unsigned int max_scroll_y;
 unsigned int initial_scroll;
 unsigned char scroll_count;
-unsigned char scroll_count_2;
 #define MAX_UP 0x4000
 #define MIN_DOWN 0x8000
 #define MIN_SCROLL 2
@@ -161,8 +159,6 @@ void draw_screen_U(void);
 void draw_screen_D(void);
 void draw_screen_sub(void);
 
-void collect_item(void);
-
 void new_cmap(void);
 
 void main (void) {
@@ -193,18 +189,16 @@ void main (void) {
     ppu_on_all(); // turn on screen
     
     while (1){
-
         // infinite loop
         ppu_wait_nmi(); // wait till beginning of the frame
         // the sprites are pushed from a buffer to the OAM during nmi
-        
+
         pad1 = pad_poll(0); // read the first controller
         pad1_new = get_pad_new(0);
         
         clear_vram_buffer();
         
         movement();
-        collect_item();
         
         //set_scroll_x(0); // Yeah... this game won't need to scroll in the X direction.
         set_scroll_y(scroll_y);
@@ -572,11 +566,15 @@ void bg_collision_sub(void) {
     
     map = temp2&1;
     
+    // Select the correct collision map based on the high byte of y.
     if (!map) {
         temp4 = c_map[coordinates];
+        temp5 = (unsigned int)&(c_map[coordinates]); 
+        // temp5 is now a pointer to the tile in memory that we're checking.
     }
     else {
         temp4 = c_map2[coordinates];
+        temp5 = (unsigned int)&(c_map2[coordinates]);
     }
     
     collision = (temp4 < 0x17 && temp4 > 0x03); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
@@ -588,36 +586,35 @@ void bg_collision_sub(void) {
         case 1:
         case 2:
         case 3:
-            // Set the dead flag
+            // Set the dead flag.
             SET_STATUS_DEAD();
             break;
         case STAR_TILE:
             // Touched a star: Let's collect it
-            if (!map) {
-                c_map[coordinates] = EMPTY_TILE;
-            }
-            else {
-                c_map2[coordinates] = EMPTY_TILE;
-            }
-            
+            *(unsigned char *)temp5 = EMPTY_TILE;
+            // Increment the score.
             score += 1;
-            
-            
-            //clear_vram_buffer();
-            address = get_ppu_addr(nt, temp1, temp3);
-            buffer_1_mt(address, EMPTY_TILE);
-            
-            debug_tile_x = temp1 >> 4;
-            debug_tile_y = temp3 >> 4;
             
             // Shouldn't really need to change the palette, but:
             // address = get_at_addr(nt, (temp1>>4), (temp2 & 0xf0));
             // one_vram_buffer(0, address); Set to the 0th palette
+            
+            // Bug: stars don't consistently get cleared.
+            // They are collected in memory (and thus only collided with once),
+            // but the metatiles are not always actually set to EMPTY_TILE.
+            address = get_ppu_addr(nt, temp1, temp3 & 0xf0);
+            buffer_1_mt(address, EMPTY_TILE);
+
             break;
         default:
-            //debug_did_touch_star_this_frame = 0;
+            
             break;
     }
+
+    debug_tile_x = temp1 >> 4;
+    debug_tile_y = temp3 >> 4;
+
+
 }
 
 // MARK: -- Screen Buffering Functions
@@ -645,56 +642,8 @@ void draw_screen_sub(void) {
     nt = (temp1 & 1) << 1; // 0 or 2
     y = pseudo_scroll_y & 0xff;
     
-    // important that the main loop clears the vram_buffer
-    
-    /*
-    //Old drawing method. Not certain if this is faster or slower than the new one, 
-    //but I'm fairly sure the new drawing method saves a few bytes.
-    switch(scroll_count){
-        case 0:
-            address = get_ppu_addr(nt, 0, y);
-            index = (y & 0xf0) + 0;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            
-            address = get_ppu_addr(nt, 0x20, y);
-            index = (y & 0xf0) + 2;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            break;
-            
-        case 1:
-            address = get_ppu_addr(nt, 0x40, y);
-            index = (y & 0xf0) + 4;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            
-            address = get_ppu_addr(nt, 0x60, y);
-            index = (y & 0xf0) + 6;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            break;
-            
-        case 2:
-            address = get_ppu_addr(nt, 0x80, y);
-            index = (y & 0xf0) + 8;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            
-            address = get_ppu_addr(nt, 0xa0, y);
-            index = (y & 0xf0) + 10;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            break;
-         
-        default:
-            // As our levels are only 12 metatiles wide, nothing really needs to happen here.
-            // In the future, we may need to change what happens here (to zero out this part of the screen, perhaps?)
-            address = get_ppu_addr(nt, 0xc0, y);
-            index = (y & 0xf0) + 12;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            
-            address = get_ppu_addr(nt, 0xe0, y);
-            index = (y & 0xf0) + 14;
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            
-            break;
-    }*/
-    
+    // Important that the main loop clears the vram_buffer.
+        
     temp1 = draw_screen_sub_lookup_addr_0[scroll_count];
     temp2 = draw_screen_sub_lookup_index_offset_0[scroll_count];
     temp3 = draw_screen_sub_lookup_addr_1[scroll_count];
@@ -707,8 +656,6 @@ void draw_screen_sub(void) {
     address = get_ppu_addr(nt, temp3, y);
     index = (y & 0xf0) + temp4;
     buffer_4_mt(address, index); // ppu_address, index to the data
-    
-    
     
     ++scroll_count;
     scroll_count &= 3; //mask off top bits, keep it 0-3
@@ -725,82 +672,4 @@ void new_cmap(void) {
     else {
         memcpy(c_map2, level_nametables[nt_current], 240);
     }
-}
-
-/*
- NESDoug function that I'm betting I can make use of by modifying it
- void break_wall(void){
-     temp1 = BoxGuy1.x + 0x16;
-     temp2 = BoxGuy1.y + 5;
-     coordinates = (temp1>>4) + (temp2 & 0xf0);
-     if(c_map[coordinates] == 1){ // if brick
-        c_map[coordinates] = 0; // can walk through it
-        address = get_ppu_addr(0, temp1, temp2);
-        buffer_1_mt(address, 0); // put metatile #0 here = blank grass
- 
-        address = get_at_addr(0, (temp1>>4), (temp2 & 0xf0)); // Not sure if the stuff I did to this line is correct
-        one_vram_buffer(0x00, address); // Set to the 0th palette
-     }
- }
- */
-
-void collect_item(void) {
-    
-    return;
-    
-    temp1 = hitbox.x + 0x05; // Center of Valrigard
-    
-    temp3 = hitbox.y;
-    if(L_R_switch) temp3 += 2; // fix bug, walking through walls
-    temp5 = add_scroll_y(temp3, scroll_y); // upper left
-    temp3 = temp5 & 0xff; // low byte y
-    
-    
-    
-    
-    
-    coordinates = (temp1 >> 4) + (temp3 & 0xf0);
-    
-    debug_tile_x = temp1 >> 4;
-    debug_tile_y = temp3 >> 4;
-    
-    map = nt_current & 1; //even or odd?
-    if (!map) {
-        temp4 = c_map[coordinates];
-    }
-    else {
-        temp4 = c_map2[coordinates];
-    }
-    
-    switch (temp4) {
-        case STAR_TILE:
-            score += 1;
-            // play the star collection sound
-            break;
-        case ENERGY_REFILL_TILE:
-            energy = MAX_ENERGY;
-            break;
-        default:
-            return;
-    }
-    
-    if (!map) {
-        c_map[coordinates] = EMPTY_TILE;
-    } else {
-        c_map2[coordinates] = EMPTY_TILE;
-    }
-    
-    temp2 = pseudo_scroll_y >> 8;
-    nt = (temp2 & 1) << 1; // 0 or 2
-    
-    clear_vram_buffer();
-    
-    address = get_ppu_addr(nt, temp1, temp3);
-    buffer_1_mt(address, ENERGY_REFILL_TILE);
-    
-    
-    // We probably don't need to clear the palette, but I'll leave these comments here just in case
-    //address = get_at_addr(0, (temp1>>4), (temp2 & 0xf0));
-    //one_vram_buffer(0x00, address); // Set to the 0th palette
-    
 }
