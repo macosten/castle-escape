@@ -54,7 +54,20 @@ const unsigned char const level10_2[]={
 6,44,44,44,44,44,44,44,44,44,12,6,44,44,44,44,
 6,44,44,44,44,44,40,44,44,12,4,6,44,44,44,44,
 6,44,44,44,44,44,44,44,12,7,7,10,44,44,44,44,
-6,44,40,44,40,44,44,12,6,44,44,44,44,44,44,44,
-6,44,44,44,44,44,12,4,6,44,26,44,44,44,44,44,
+6,44,40,32,33,44,44,12,6,44,44,44,44,44,44,44,
+6,44,44,34,35,44,12,4,6,44,26,44,44,44,44,44,
 4,5,5,5,5,5,4,4,4,5,5,9,44,44,44,44,
+};
+
+	// bitpacked coords (0xXY), nt, direction (or other info) + type
+	// 0x10 + type for right-facing, just type for left-facing
+
+const unsigned char const level10_enemy[]={
+	0x49, 2, 4, // ENEMY_CANNON, 
+	0x24, 2, 8, // ENEMY_SPIKEBALL,
+	0x71, 2, 8, // ENEMY_SPIKEBALL, 
+	0x91, 2, 2, // ENEMY_GRARRL,
+	0x2A, 1, 8, // ENEMY_SPIKEBALL,
+	0x9C, 0, 1, // ENEMY_KORBAT,
+	0xFF
 };

@@ -19,7 +19,7 @@ const unsigned char const valrigard_starting_nt[] = {
 // This means we can just use nibbles to encode the coordinates at which valrigard starts on a level.
 
 const unsigned char const valrigard_inital_coords[] = {
-    0x4d // x,y; 0x4d -> (4 [0x4], 13 [0xd])
+    0x4d // x,y; 0x4d -> (4 [0x4], 13 [0xd] - starts at that metatile)
 };
 
 const unsigned char * const level_nametables[] = {
@@ -30,6 +30,10 @@ const unsigned char * const level_nametables[] = {
 const unsigned char * const level_names[] = {
     "Mockup Level 10",
     "Null"
+};
+
+const unsigned char * const level_enemy_data[] = {
+    level10_enemy
 };
 
 /* Notes related to storing initial state of objects:

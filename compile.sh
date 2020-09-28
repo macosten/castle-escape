@@ -30,4 +30,6 @@ mv -f labels.txt build/
 mv -f $name.s build/
 mv -f $name.nes build/
 
+python3 fceux_symbols.py
+
 $nesemupath build/$name.nes >/dev/null

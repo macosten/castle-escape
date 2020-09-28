@@ -10,6 +10,7 @@
 #include "metatiles.h"
 #include "levels.h"
 #include "lookuptables.h"
+#include "enemies.h"
 #include "asm/bitwise.h"
 #include "asm/score.h"
 
@@ -88,16 +89,22 @@ unsigned char scroll_count;
 #define MIN_DOWN 0x8000
 #define MIN_SCROLL 2
 
-
 unsigned char L_R_switch;
 unsigned int old_x;
 unsigned int old_y;
+// For enemies:
+unsigned char temp_x;
+unsigned char temp_y;
 
 unsigned char level_index;
 
 unsigned char energy;
 #define MAX_ENERGY 0x70 // 144: 9 (number of tiles of flight height with no tapping) * 16(height of [meta]tile in pixels)?
 // Or should this be the number of frames which we should be able to fly for?
+
+// At 100, you should get an extra life!
+unsigned char stars;
+const unsigned char * pointer;
 
 // 255 frames / 60 fps (NTSC) = 4.25 seconds
 
@@ -117,6 +124,8 @@ unsigned char nt_current; // The nametable Valrigard is currently in. This shoul
 #define VALRIGARD_WIDTH 11
 #define VALRIGARD_HEIGHT 13
 
+#define METATILE_IS_SOLID(mtid) (mtid < 0x17 && mtid > 0x03)
+
 #pragma bss-name(push, "BSS")
 
 unsigned int score; // Is the score important enough to place in the zp?
@@ -133,16 +142,39 @@ const unsigned char palette_bg[]={
 };
 
 const unsigned char palette_sp[]={
-0x0f, 0x17, 0x27, 0x07,
+0x0f, 0x16, 0x27, 0x37, // Red, Yellow, Light Yellow
 0x0f, 0x01, 0x0f, 0x32, // valrigard's palette
-0,0,0,0,
-0x0f,0x30,0x16,0x00 // HUD and Spikeball
+0x0f, 0x04, 0x14, 0x24, // Purples.
+0x0f, 0x30, 0x16, 0x00, // HUD(?) and Spikeball/Acid
 };
 
-// X, Y, Width, Height
+// For shuffling 32 enemies...
+const unsigned char const shuffle_array[]={
+ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15, 
+16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
+31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,
+15,14,13,12,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
+
+ 0, 2, 4, 6, 8,10,12,14,16,18,20,22,24,26,28,30,
+ 1, 3, 5, 7, 9,11,13,15,17,19,21,23,25,27,29,31,
+31,29,27,25,23,21,19,17,15,13,11, 9, 7, 5, 3, 1,
+30,28,26,24,22,20,18,16,14,12,10, 8, 6, 4, 2, 0,
+};
+
+// X, Y
 Player valrigard = {20, 40}; // A width of 12 makes Valrigard's hitbox a bit more forgiving. It also happens to match up with his nose.
 Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C stack is not preferable to using a global in this use case)
+// I renamed nesdoug's "Generic" to "Hitbox" to remind me of what purpose it serves.
 
+// Enemy memory.
+Enemies enemies;
+Hitbox hitbox2; 
+
+#define ACTIVATE_ENEMY(index) (enemies.flags_type[index] |= 0b10000000) // Set high bit.
+#define DEACTIVATE_ENEMY(index) (enemies.flags_type[index] &= 0b01111111) // Unset high bit.
+#define IS_ENEMY_ACTIVE(index) (enemies.flags_type[index] & 0b10000000) // Test if high bit is set.
+
+// Debug variables - these will be removed in the future.
 unsigned char debug_tile_x;
 unsigned char debug_tile_y;
 
@@ -153,13 +185,15 @@ void draw_sprites(void);
 void movement(void);
 void load_level(void);
 void load_room(void);
-void bg_collision(void);
+void bg_collision(void); // For the player
 void bg_collision_sub(void);
 void draw_screen_U(void);
 void draw_screen_D(void);
 void draw_screen_sub(void);
-
 void new_cmap(void);
+
+void check_spr_objects(void);
+// char get_position(void);
 
 void main (void) {
         
@@ -198,10 +232,21 @@ void main (void) {
         
         clear_vram_buffer();
         
+        // Move the player
         movement();
+
+        // Check to see what's on-screen
+        check_spr_objects();
+
+        // Check sprite collisions (todo)
+
+        // Move enemies (todo)
         
         //set_scroll_x(0); // Yeah... this game won't need to scroll in the X direction.
         set_scroll_y(scroll_y);
+
+        convert_to_decimal(score);
+        draw_sprites();
 
         if (valrigard.velocity_y < 0) {
             draw_screen_U();
@@ -209,12 +254,8 @@ void main (void) {
             draw_screen_D();
         }
         
-        convert_to_decimal(score);
-        draw_sprites();
-
-        gray_line();
-        
         // debug:
+        gray_line();
         if (pad1 & PAD_DOWN) {
             SET_STATUS_ALIVE();
         }
@@ -245,8 +286,13 @@ void load_level(void) {
     
     // Set inital coordinates
     temp4 = valrigard_inital_coords[level_index];
-    valrigard.x = ((temp4 >> 4) * 16) << 8;
+
+    // This combination of (uncommented) lines results in the smallest code...
+    //valrigard.x = ((temp4 >> 4) * 16) << 8;
+    //valrigard.y = (temp4 & 0x0f) << 12;
+    valrigard.x = (temp4 & 0xf0) << 8;
     valrigard.y = ((temp4 & 0x0f) * 16) << 8;
+
 }
 
 void load_room(void) {
@@ -284,10 +330,48 @@ void load_room(void) {
     
     //copy the room to the collision map
     memcpy(c_map, level_nametables[nt_current], 240);
-    
-    max_scroll_y = scroll_y;
-}
 
+    max_scroll_y = scroll_y;
+
+    // Load the enemy data.
+    // ... todo.
+
+    // sprite_obj_init / Load Enemies
+
+    // Load the enemy data for the current level.
+    pointer = level_enemy_data[level_index];
+
+    for (x = 0, y = 0; x < MAX_ENEMIES; ++x){
+
+        enemies.y[x] = 0;
+        temp1 = pointer[y]; // Get a byte of data - the bitpacked coords.
+
+        if (temp1 == 0xff) break; // 0xff terminates the enemy data.
+
+        enemies.x[x] = temp1 & 0xf0;
+        enemies.actual_y[x] = (temp1 & 0x0f) << 4;
+
+        ++y; // Next byte:
+
+        temp1 = pointer[y]; // the namtetable byte.
+        enemies.nt[x] = temp1;
+
+        ++y; // Next byte:
+
+        temp1 = pointer[y]; // the direction+type byte.
+        enemies.flags_type[x] = temp1; 
+        // The high nibble will is direction; the low one will be type.
+
+        ++y; // Next byte.
+        
+    }
+    
+    // Set all the other enemies to be NONEs.
+    for(++x; x < MAX_ENEMIES; ++x) {
+        enemies.flags_type[x] = ENEMY_NONE;
+    }
+    
+}
 
 void draw_sprites(void) {
     // clear all sprites from sprite buffer
@@ -297,14 +381,6 @@ void draw_sprites(void) {
     temp1 = valrigard.x >> 8;
     temp2 = valrigard.y >> 8;
     
-    oam_spr(232, 34, DIRECTION, 3);
-    oam_spr(232, 42, STATUS_DEAD, 2);
-    
-    oam_spr(200, 50, debug_tile_x >> 4, 1);
-    oam_spr(208, 50, debug_tile_x & 0x0f, 1);
-    
-    oam_spr(224, 50, debug_tile_y >> 4, 1);
-    oam_spr(232, 50, debug_tile_y & 0x0f, 1);
     // draw valrigard
     if (DIRECTION == LEFT) {
         oam_meta_spr(temp1, temp2, valrigardIdleLeft);
@@ -312,19 +388,58 @@ void draw_sprites(void) {
         oam_meta_spr(temp1, temp2, valrigardIdleRight);
     }
     
+    // draw enemies.
+    temp1 = get_frame_count() & 3;
+    temp1 = temp1 << 8; // * 32, since that's the size of our shuffle array.
+    for (x = 0; x < MAX_ENEMIES; ++x) {
+        y = shuffle_array[temp1];
+        ++temp1;
+        
+        temp2 = enemies.flags_type[y];
+        // 0 == ENEMY_NONE (cc65 complained when I used ENEMY_NONE... I wish I knew why...)
+        if (temp2 == 0) continue;
+        
+        if (!IS_ENEMY_ACTIVE(y)) continue;
+
+        temp_x = enemies.x[y];
+        
+        // Not that we should have enemies ever in these X values, but...
+        // (We may be able to optimize this away)
+        if (temp_x == 0) temp_x = 1; // Basing this off NESDoug's report of problems with temp_x = 0.
+        if (temp_x > 0xf0) continue;
+
+        temp_y = enemies.y[y];
+        if (temp_y < 0xf0) {
+            // "spikeball" should be changed to part of an enemy_anim array at some point.
+            oam_meta_spr(temp_x, temp_y, spikeball);
+        }
+
+    }
+
     // Draw the energy level as sprites.
     
-    temp1 = energy >> 4; // Unfortunately this is ASCII so ABCDEF are not directly after 789
+    temp1 = energy >> 4; 
     oam_spr(200, 28, temp1, 1);
     temp1 = energy & 0x0f;
     oam_spr(208, 28, temp1, 1);
     
     // Draw the score.
-    oam_spr(200, 20, score_string[4], 3);
-    oam_spr(208, 20, score_string[3], 3);
-    oam_spr(216, 20, score_string[2], 3);
-    oam_spr(224, 20, score_string[1], 3);
-    oam_spr(232, 20, score_string[0], 3);
+    y = 4;
+    for (x = 200; x <= 232; x+=8) {
+        oam_spr(x, 20, score_string[y], 3);
+        --y;
+        // if (x == 232) break; //Is this more efficient, or is it more efficient to have the condition in the loop's head?
+    }
+
+    // Debug HUD, drawn last because it's the least important.
+    oam_spr(232, 42, STATUS_DEAD, 2);
+    
+    oam_spr(200, 50, debug_tile_x >> 4, 1);
+    oam_spr(208, 50, debug_tile_x & 0x0f, 1);
+    
+    oam_spr(224, 50, debug_tile_y >> 4, 1);
+    oam_spr(232, 50, debug_tile_y & 0x0f, 1);
+
 }
 
 // MARK: -- Movement.
@@ -474,8 +589,7 @@ void movement(void) {
             nt_current = (scroll_y >> 8) + 1;
             new_cmap();
         }
-    }
-    
+    }   
 }
 
 
@@ -497,6 +611,8 @@ void bg_collision(void){
     
     if(temp3 >= 0xf0) return;
     
+    // Upper left... 
+
     temp5 = add_scroll_y(temp3, scroll_y); // upper left
     temp2 = temp5 >> 8; // high byte y
     temp3 = temp5 & 0xff; // low byte y
@@ -512,6 +628,8 @@ void bg_collision(void){
         ++collision_L;
         ++collision_U;
     }
+
+    // Upper right...
     
     temp1 += hitbox.width; // x right
     
@@ -560,8 +678,6 @@ void bg_collision(void){
 }
 
 void bg_collision_sub(void) {
-    // Also borrowed from nesdoug -- I'm guessing this is a subroutine to save ROM space.
-
     coordinates = (temp1 >> 4) + (temp3 & 0xf0); // upper left
     
     map = temp2&1;
@@ -620,8 +736,8 @@ void bg_collision_sub(void) {
             break;
     }
 
-    debug_tile_x = temp1 >> 4;
-    debug_tile_y = temp3 >> 4;
+    // debug_tile_x = temp1 >> 4;
+    // debug_tile_y = temp3 >> 4;
 
 
 }
@@ -652,22 +768,24 @@ void draw_screen_sub(void) {
     y = pseudo_scroll_y & 0xff;
     
     // Important that the main loop clears the vram_buffer.
-        
-    temp1 = draw_screen_sub_lookup_addr_0[scroll_count];
+    
+    //temp1 = draw_screen_sub_lookup_addr_0[scroll_count];
     temp2 = draw_screen_sub_lookup_index_offset_0[scroll_count];
-    temp3 = draw_screen_sub_lookup_addr_1[scroll_count];
+    //temp3 = draw_screen_sub_lookup_addr_1[scroll_count];
     temp4 = draw_screen_sub_lookup_index_offset_1[scroll_count];
 
-    address = get_ppu_addr(nt, temp1, y);
+    address = get_ppu_addr(nt, draw_screen_sub_lookup_addr_0[scroll_count], y);
     index = (y & 0xf0) + temp2;
     buffer_4_mt(address, index); // ppu_address, index to the data
             
-    address = get_ppu_addr(nt, temp3, y);
+    address = get_ppu_addr(nt, draw_screen_sub_lookup_addr_1[scroll_count], y);
     index = (y & 0xf0) + temp4;
     buffer_4_mt(address, index); // ppu_address, index to the data
     
     ++scroll_count;
     scroll_count &= 3; //mask off top bits, keep it 0-3
+
+
 }
 
 // (adapted from nesdoug): copy a new collision map to one of the 2 c_map arrays.
@@ -682,3 +800,49 @@ void new_cmap(void) {
         memcpy(c_map2, level_nametables[nt_current], 240);
     }
 }
+
+// Check to see what's on-screen.
+void check_spr_objects(void) {
+    
+    // This will be used later. Let's only make it update once.
+    // Todo: make it only update once a frame? Save a few clock cycles that way?
+    nt_current = high_byte(scroll_y);
+
+    // Check enemies...
+    for (x = 0; x < MAX_ENEMIES; ++x) {
+        temp1 = enemies.flags_type[x] & 0x0f;
+        if (temp1 == 0) continue; 
+        // Check to see where this enemy is supposed to be.
+        temp5 = (enemies.nt[x] << 8) + enemies.actual_y[x];
+
+        // temp1 = get_position(); Just going to inline this for now.
+        // If we end up having to make stars/energy powerups into sprites,
+        // then we can revisit this...
+
+        temp5 -= scroll_y;
+        if (high_byte(temp5)) {
+            // This enemy isn't on-screen, deactivate it...
+            DEACTIVATE_ENEMY(x);
+            continue;
+        }
+        // temp_y = 10;
+        ACTIVATE_ENEMY(x); // This enemy is active if it's on-screen.
+        enemies.y[x] = temp5 & 0xff;
+
+        // If the topmost nametable currently on-screen (nt_current) is
+        // not the enemy's native nametable, it'll be shifted down (positive y) by 16.
+
+        // Let's counteract that...
+        if (nt_current != enemies.nt[x]) enemies.y[x] -= 16;
+
+    }
+}
+
+// A subroutine of check_spr_objects; if this sprite is in the screen's range, return 1.
+// The value of temp_y will change after this call.
+/*char get_position(void) {
+    temp5 -= scroll_y;
+    temp_y = temp5 & 0xff;
+    if (high_byte(temp5)) return 0;
+    return 1;
+}*/
