@@ -34,3 +34,20 @@ const unsigned char const spikeball[]= {
          7,     7,  0x12,3|OAM_FLIP_H|OAM_FLIP_V,
     128     
 };
+
+const unsigned char const korbat_left[]= {
+      0xff, 0xff, 0x20,2,
+      0x07, 0xff, 0x21,2,
+      0xff, 0x07, 0x30,2,
+      0x07, 0x07, 0x31,2,
+  128
+};
+
+const unsigned char const korbat_right[]= {
+      0x07, 0xff, 0x20,2|OAM_FLIP_H,
+      0xff, 0xff, 0x21,2|OAM_FLIP_H,
+      0x07, 0x07, 0x30,2|OAM_FLIP_H,
+      0xff, 0x07, 0x31,2|OAM_FLIP_H,
+  128
+};
+

@@ -23,4 +23,7 @@
 #define ENEMY_WIDTH 13;
 #define ENEMY_HEIGHT 13;
 
+#define PROJECTILE_WIDTH 6;
+#define PROJECTILE_HEIGHT 6;
+
 #endif

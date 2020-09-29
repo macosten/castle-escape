@@ -9,7 +9,6 @@
 #include "metasprites.h"
 #include "metatiles.h"
 #include "levels.h"
-#include "lookuptables.h"
 #include "enemies.h"
 #include "asm/bitwise.h"
 #include "asm/score.h"
@@ -44,6 +43,8 @@ unsigned char temp4;
 unsigned int temp5;
 unsigned int temp6;
 
+const unsigned char * temppointer;
+
 unsigned char eject_L; // from the left
 unsigned char eject_R; // remember these from the collision sub routine
 unsigned char eject_D; // from below
@@ -51,23 +52,22 @@ unsigned char eject_U; // from up
 
 
 unsigned char player_flags; // All of these flags should be such that the default value for this byte when starting a level is 0
-#define DIRECTION (player_flags&1) //facing left or right? (lsb of player_flags)
+#define DIRECTION (player_flags & 1) //facing left or right? (lsb of player_flags)
 #define SET_DIRECTION_LEFT() (player_flags &= 0b11111110) // Un-set the lsb
 #define SET_DIRECTION_RIGHT() (player_flags |= 1) // Set the lsb
 #define LEFT 0
 #define RIGHT 1
 
-#define STATUS_DEAD (player_flags&2)
+#define STATUS_DEAD (player_flags & 2)
 #define SET_STATUS_ALIVE() (player_flags &= 0b11111101)
 #define SET_STATUS_DEAD() (player_flags |= 2) // set bit 1
 #define ALIVE 0
 #define DEAD 2
 
-#define STATUS_DIRECTION (player_flags&4)
+#define IS_SWINGING_SWORD (player_flags & 4)
 #define SET_STATUS_NOT_SWINGING_SWORD() (player_flags &= 0b11111011)
 #define SET_STATUS_SWINGING_SWORD() (player_flags |= 4)
-#define NOT_SWINGING_SWORD 0
-#define SWINGING_SWORD 4
+
 
 int address;
 
@@ -173,6 +173,13 @@ Hitbox hitbox2;
 #define ACTIVATE_ENEMY(index) (enemies.flags_type[index] |= 0b10000000) // Set high bit.
 #define DEACTIVATE_ENEMY(index) (enemies.flags_type[index] &= 0b01111111) // Unset high bit.
 #define IS_ENEMY_ACTIVE(index) (enemies.flags_type[index] & 0b10000000) // Test if high bit is set.
+#define GET_ENEMY_TYPE(index) (enemies.flags_type[x] & 0x0f) // Bottom nibble == type
+
+
+#define ENEMY_SET_DIRECTION_LEFT(index) (enemies.flags_type[index] &= 0b10111111)
+#define ENEMY_SET_DIRECTION_RIGHT(index) (enemies.flags_type[index] |= 0b01000000)
+#define ENEMY_FLIP_DIRECTION(index) (enemies.flags_type[index] ^= 0b01000000)
+#define ENEMY_DIRECTION(index) (enemies.flags_type[index] & 0b01000000)
 
 // Debug variables - these will be removed in the future.
 unsigned char debug_tile_x;
@@ -194,6 +201,31 @@ void new_cmap(void);
 
 void check_spr_objects(void);
 // char get_position(void);
+void sprite_collisions(void);
+void enemy_movement(void);
+
+void korbat_ai();
+void spikeball_ai();
+
+// MARK: Lookup Tables
+
+// The lookup tables for draw_screen_sub().
+
+const unsigned char const draw_screen_sub_lookup_addr_0[] = {0, 0x40, 0x80, 0xc0};
+const unsigned char const draw_screen_sub_lookup_index_offset_0[] = {0, 4, 8, 12};
+const unsigned char const draw_screen_sub_lookup_addr_1[] = {0x20, 0x60, 0xa0, 0xe0};
+const unsigned char const draw_screen_sub_lookup_index_offset_1[] = {2, 6, 10, 14};
+
+// The lookup tables for enemy_movement().
+const unsigned char const leftright_movement_offset_lookup_table[] = {0xff, 15};
+const unsigned char const leftright_movement_moving_lookup_table[] = {0xff, 1};
+
+// Lookup tables for enemy sprites (not yet animated).
+const unsigned char * const korbat_sprite_lookup_table[] = {korbat_left, korbat_right};
+
+// Actually, this doesn't work whatsoever - we'll try again later...
+// typedef void (* const VoidFunctionLookupTable)(void);
+// const VoidFunctionLookupTable enemy_movement_lookup[] = {&korbat_ai, &spikeball_ai};
 
 void main (void) {
         
@@ -238,9 +270,11 @@ void main (void) {
         // Check to see what's on-screen
         check_spr_objects();
 
-        // Check sprite collisions (todo)
+        // Check sprite collisions
+        sprite_collisions();
 
         // Move enemies (todo)
+        enemy_movement();
         
         //set_scroll_x(0); // Yeah... this game won't need to scroll in the X direction.
         set_scroll_y(scroll_y);
@@ -287,7 +321,8 @@ void load_level(void) {
     // Set inital coordinates
     temp4 = valrigard_inital_coords[level_index];
 
-    // This combination of (uncommented) lines results in the smallest code...
+    // This combination of (uncommented) lines results in the smallest code... bytewise.
+    // Still not sure what cc65 makes the fastest.
     //valrigard.x = ((temp4 >> 4) * 16) << 8;
     //valrigard.y = (temp4 & 0x0f) << 12;
     valrigard.x = (temp4 & 0xf0) << 8;
@@ -410,8 +445,22 @@ void draw_sprites(void) {
 
         temp_y = enemies.y[y];
         if (temp_y < 0xf0) {
-            // "spikeball" should be changed to part of an enemy_anim array at some point.
-            oam_meta_spr(temp_x, temp_y, spikeball);
+            // These should be changed to part of an enemy_anim array at some point.
+            
+            // This bit of code will need to be refactored when animations arrive...
+            switch (GET_ENEMY_TYPE(y)) {
+                case 1: // Korbat
+                    temp3 = ENEMY_DIRECTION(y) >> 6;
+                    temppointer = korbat_sprite_lookup_table[temp3];
+                    oam_meta_spr(temp_x, temp_y, temppointer);
+                    break;
+                case 6: // Spikeball
+                    oam_meta_spr(temp_x, temp_y, spikeball);
+                    break;
+                default:
+                    oam_meta_spr(temp_x, temp_y, spikeball);
+                    break;
+            }
         }
 
     }
@@ -678,7 +727,7 @@ void bg_collision(void){
 }
 
 void bg_collision_sub(void) {
-    coordinates = (temp1 >> 4) + (temp3 & 0xf0); // upper left
+    coordinates = (temp1 >> 4) + (temp3 & 0xf0); 
     
     map = temp2&1;
     
@@ -693,10 +742,12 @@ void bg_collision_sub(void) {
         temp5 = (unsigned int)&(c_map2[coordinates]);
     }
     
-    collision = (temp4 < 0x17 && temp4 > 0x03); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
+    collision = METATILE_IS_SOLID(temp4); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
     // At some point we should figure out what else should be calculated here
     
-    // Did we touch any special tiles?
+    if (collision) return; // Uh, we might need to do something special about conveyor tiles in the future. Hmm.
+
+    // Did we touch any special (non-colliding) tiles?
     switch (temp4) {
         case 0:
         case 1:
@@ -810,8 +861,7 @@ void check_spr_objects(void) {
 
     // Check enemies...
     for (x = 0; x < MAX_ENEMIES; ++x) {
-        temp1 = enemies.flags_type[x] & 0x0f;
-        if (temp1 == 0) continue; 
+        if (GET_ENEMY_TYPE(x) == 0 /*ENEMY_NONE*/) continue; 
         // Check to see where this enemy is supposed to be.
         temp5 = (enemies.nt[x] << 8) + enemies.actual_y[x];
 
@@ -846,3 +896,183 @@ void check_spr_objects(void) {
     if (high_byte(temp5)) return 0;
     return 1;
 }*/
+
+// Check for sprite collisions with the player.
+void sprite_collisions(void) {
+    // hitbox == the player's hitbox.
+    hitbox.x = high_byte(valrigard.x);
+    hitbox.y = high_byte(valrigard.y);
+    hitbox.width = VALRIGARD_WIDTH;
+    hitbox.height = VALRIGARD_HEIGHT;
+
+    // hitbox2 == an enemy's hitbox.
+    // The width and height of this will actually be different depending on the enemy's type.
+
+    for (x = 0; x < MAX_ENEMIES; ++x) {
+        if(IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+
+            // Determine the enemy hitbox size.
+            if (temp1 <= 8 /*ENEMY_BOSS*/) { // It's an enemy
+                hitbox2.width = ENEMY_WIDTH;
+                hitbox2.height = ENEMY_HEIGHT;
+            } else { // It's a projectile
+                hitbox2.width = PROJECTILE_WIDTH;
+                hitbox2.height = PROJECTILE_HEIGHT;
+            }
+
+            hitbox2.x = enemies.x[x];
+            hitbox2.y = enemies.y[x];
+
+            if (check_collision(&hitbox, &hitbox2)) {
+                // Did collide with enemy. For now, just set our status to dead...
+                SET_STATUS_DEAD();
+            }
+
+        }
+    }
+
+}
+
+// Enemy AI.
+void enemy_movement(void) {
+    // This one's a bit of an uncharted realm. 
+    // I'm thinking we'll want to optimize this one somehow...
+
+    for (x = 0; x < MAX_ENEMIES; ++x) {
+        if (IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+
+            // Method 1: Big switch block
+            switch (temp1) {
+                case 1: // ENEMY_KORBAT
+                    korbat_ai();
+                    break;
+                case 2: // ENEMY_GRARRL
+                case 6: // ENEMY_SPIKEBALL
+                    spikeball_ai();
+                    break;
+                default: // Unimplemented
+                    break;
+            }
+
+            // Method 2: Lookup table of function pointers
+            // (enemy_movement_lookup[temp1])();
+
+        }
+    }
+
+}
+
+void korbat_ai(void) {
+    // Look to see if the metatile ahead of me is solid. If it is, turn around.
+    // Then, move forward.
+
+    // Convert the coords of this enemy to metatile coords.
+
+    temp3 = ENEMY_DIRECTION(x) >> 6;
+
+    temp1 = enemies.x[x];
+
+    // If we're going right, we actually want to look to the right of us.
+    temp1 += leftright_movement_offset_lookup_table[temp3];
+
+    temp2 = enemies.actual_y[x] + 6; // center y
+    coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
+
+    // Which cmap should I look at?
+    if (enemies.nt[x] & 1) { // Even or odd?
+        collision = c_map2[coordinates];
+    } else {
+        collision = c_map[coordinates];
+    }
+    
+    if (METATILE_IS_SOLID(collision)) {
+        ENEMY_FLIP_DIRECTION(x);
+        temp3 ^= 1;
+    }
+
+    temp1 = leftright_movement_moving_lookup_table[temp3];
+    enemies.x[x] += temp1;
+
+}
+
+void spikeball_ai(void) {
+    // Look to see if the metatile beneath me is solid. If it isn't, turn around.
+    // Look to see if the metatile in front of me is solid. If it is, turn around.
+    // Then, move forward.
+
+    // Should also be used for Grarrls.
+
+    // TODO: Consider the case of us being on the exact edge of a nametable.
+    // (i.e we're in nt 1, y tile = 0xD; below us should be nt 2, y tile = 0x0)
+    
+    temp3 = ENEMY_DIRECTION(x) >> 6;
+
+    temp1 = enemies.x[x];
+
+    // If we're going right, we actually want to look to the right of us.
+    temp1 += leftright_movement_offset_lookup_table[temp3];
+
+    // First, check beneath us.
+
+    temp2 = enemies.actual_y[x] + 18; // Y beneath us
+    coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
+
+    // Account for being on the edge of a nametable...
+    temp4 = (temp2 & 0xf0) >> 4;
+
+    // ...by checking. 
+    // If temp4 == 0xe, then we were on the bottom of a nametable and should look at the other one.
+    if (temp4 == 0xe) {
+        temp4 = enemies.nt[x] + 1;
+    } else {
+        temp4 = enemies.nt[x];
+    }
+
+    // Which cmap should I look at?
+    if (temp4 & 1) { // Even or odd?
+        collision = c_map2[coordinates];
+    } else {
+        collision = c_map[coordinates];
+    }
+    
+    if (!METATILE_IS_SOLID(collision)) {
+        ENEMY_FLIP_DIRECTION(x);
+        temp3 ^= 1;
+    }
+
+    // Now, check ahead of us.
+
+    temp2 = enemies.actual_y[x] + 6; // center y
+    coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
+
+    // Which cmap should I look at?
+    if (enemies.nt[x] & 1) { // Even or odd?
+        collision = c_map2[coordinates];
+    } else {
+        collision = c_map[coordinates];
+    }
+    
+    if (METATILE_IS_SOLID(collision)) {
+        ENEMY_FLIP_DIRECTION(x);
+        temp3 ^= 1;
+    }
+
+    temp1 = leftright_movement_moving_lookup_table[temp3];
+    enemies.x[x] += temp1;
+
+}
+
+void cannon_ai(void) {
+    // Todo.
+}
+
+void acid_ai(void) {
+    // Todo.
+}
+
+void acid_drop_ai(void) {
+    // If I'm touching a solid metatile, die.
+    // todo.
+}
