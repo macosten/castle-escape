@@ -30,7 +30,7 @@ Automatic generation of FCEUX symbols requires python3, but the build should sti
 
 ## Future Ideas:
 
-cc65 is not that great, but there are a couple of threads on the NESDev forums regarding newer C compilers. How difficult would it be to move over to one of these? If there's a speedup and I'm running out of CPU cycles, it'd probably be worth the hassle.
+cc65 is not that great (as far as code speed is concerned), but there are a couple of threads on the NESDev forums regarding newer C compilers. How difficult would it be to move over to one of these? If there's a speedup and I'm running out of CPU cycles, it'd probably be worth the hassle.
 
 ## Thanks to...
 

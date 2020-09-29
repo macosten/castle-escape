@@ -16,12 +16,11 @@ export nesemupath="mednafen"
 export CC65_HOME="/usr/local/share/cc65"
 # Important; otherwise, CC65 will not know where to find its includes.
 
-# cc65 -Oirs $name.c --add-source
-cc65 -O $name.c --add-source
+cc65 -Oirs $name.c --add-source
+# cc65 -O $name.c --add-source # The game has advanced far enough that this is now definitely slower than -Oirs
 ca65 crt0.s
 ca65 $name.s -g
 
-#ld65 -C nrom_32k_vert.cfg -o $name.nes crt0.o $name.o nes.lib -Ln labels.txt
 ld65 -C nrom_32k_horz.cfg -o $name.nes crt0.o $name.o nes.lib -Ln labels.txt
 
 #rm *.o
