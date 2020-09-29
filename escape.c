@@ -1065,14 +1065,25 @@ void spikeball_ai(void) {
 }
 
 void cannon_ai(void) {
+    // Wait a while. Turn towards Valrigard. Fire a cannonball in his direction.
+    // Todo.
+}
+
+void cannonball_ai(void) {
+    // Continue moving forward in the direction fired. If I hit a solid metatile, die.
+
+    // There is a second type of cannonball in the original game that is beholden to gravity but also faster.
+    // I'm not going to prioritize it...
+
     // Todo.
 }
 
 void acid_ai(void) {
+    // Wait a while, then drop an acid drop.
     // Todo.
 }
 
 void acid_drop_ai(void) {
-    // If I'm touching a solid metatile, die.
+    // If I'm touching a solid metatile, die. Otherwise, go down.
     // todo.
 }
