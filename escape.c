@@ -204,8 +204,14 @@ void check_spr_objects(void);
 void sprite_collisions(void);
 void enemy_movement(void);
 
-void korbat_ai();
-void spikeball_ai();
+void korbat_ai(void);
+void spikeball_ai(void);
+void cannon_ai(void);
+void cannonball_ai(void);
+void acid_ai(void);
+void acid_drop_ai(void);
+void splyke_ai(void);
+void sun_ai(void);
 
 // MARK: Lookup Tables
 
@@ -226,6 +232,7 @@ const unsigned char * const korbat_sprite_lookup_table[] = {korbat_left, korbat_
 // Actually, this doesn't work whatsoever - we'll try again later...
 // typedef void (* const VoidFunctionLookupTable)(void);
 // const VoidFunctionLookupTable enemy_movement_lookup[] = {&korbat_ai, &spikeball_ai};
+
 
 void main (void) {
         
@@ -939,6 +946,21 @@ void enemy_movement(void) {
     // This one's a bit of an uncharted realm. 
     // I'm thinking we'll want to optimize this one somehow...
 
+    // Is a jump table like this faster?
+    /*static const void * const enemy_ai_jump_table[] = {
+        &&no_ai,
+        &&korbat_ai,
+        &&spikeball_ai,
+        &&splyke_ai,
+        &&cannon_ai,
+        &&acid_ai,
+        &&spikeball_ai,
+        &&sun_ai,
+        &&no_ai,
+        &&cannonball_ai,
+        &&acid_drop_ai
+    };*/
+
     for (x = 0; x < MAX_ENEMIES; ++x) {
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
@@ -952,12 +974,41 @@ void enemy_movement(void) {
                 case 6: // ENEMY_SPIKEBALL
                     spikeball_ai();
                     break;
+                case 7: // ENEMY_SUN
+                    // Technically these guys are called "Flamers"
+                    // but I always called them Suns growing up, so they're Suns
+                    sun_ai();
+                    break;
                 default: // Unimplemented
                     break;
             }
 
-            // Method 2: Lookup table of function pointers
+            // Method 2: Jump table
             // (enemy_movement_lookup[temp1])();
+            // goto *enemy_ai_jump_table[temp1];
+
+            /*no_ai:
+                continue;
+            korbat_ai:
+                korbat_ai();
+                continue;
+            spikeball_ai:
+                spikeball_ai();
+                continue;
+            splyke_ai:
+                continue;
+            cannon_ai:
+                continue;
+            acid_ai:
+                continue;
+            sun_ai:
+                continue;
+            cannonball_ai:
+                continue;
+            acid_drop_ai:
+                continue;*/
+
+
 
         }
     }
@@ -1020,11 +1071,11 @@ void spikeball_ai(void) {
     coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
 
     // Account for being on the edge of a nametable...
-    temp4 = (temp2 & 0xf0) >> 4;
+    temp4 = temp2 >> 4;
 
     // ...by checking. 
-    // If temp4 == 0xe, then we were on the bottom of a nametable and should look at the other one.
-    if (temp4 == 0xe) {
+    // If temp4 == 0xf, then we were on the bottom of a nametable and should look at the other one.
+    if (temp4 == 0xf) {
         temp4 = enemies.nt[x] + 1;
     } else {
         temp4 = enemies.nt[x];
@@ -1081,9 +1132,70 @@ void cannonball_ai(void) {
 void acid_ai(void) {
     // Wait a while, then drop an acid drop.
     // Todo.
+    // We will probably need to use "x" in this function.
 }
 
 void acid_drop_ai(void) {
     // If I'm touching a solid metatile, die. Otherwise, go down.
     // todo.
+
+}
+
+void splyke_ai(void) {
+
+}
+
+void sun_ai(void) {
+    // Look to see if the metatile in front of me is solid. If so, turn around.
+    // Then, move vertically (depending on direction)
+
+    temp3 = ENEMY_DIRECTION(x) >> 6;
+
+    // Find the metatile coords.
+
+    temp1 = enemies.x[x]; 
+
+    temp2 = enemies.actual_y[x];
+
+    // We might want to use a different lookup table,
+    // but for now, we'll use the same one as the Spikeball/Korbat AI...
+    temp2 += leftright_movement_offset_lookup_table[temp3];
+
+    coordinates = (temp1 >> 4) + (temp2 & 0xf0);
+
+    // Are we crossing the boundary of a nametable?
+    // Let's check.
+
+    // Temp4 will be metatile y.
+    temp4 = temp2 >> 4;
+
+    // If temp4 == 0xf, then we were on the edge of a nametable and should look at the other one.
+    if (temp4 == 0xf) {
+        temp4 = enemies.nt[x] + 1;
+    } else {
+        temp4 = enemies.nt[x];
+    }
+
+    // Which cmap should I look at?
+    if (enemies.nt[x] & 1) { // Even or odd?
+        collision = c_map2[coordinates];
+    } else {
+        collision = c_map[coordinates];
+    }    
+
+    if (METATILE_IS_SOLID(collision)) {
+        ENEMY_FLIP_DIRECTION(x);
+        temp3 ^= 1;
+    }
+    
+    temp1 = leftright_movement_moving_lookup_table[temp3];
+    enemies.actual_y[x] += temp1;
+    // ...but if actual_y >= 0xf0, then we should move this enemy to the next
+    // nt and truncate the actual_y value.
+    if (enemies.actual_y[x] >= 0xf0) {
+        // Lower Y is up, so...
+        enemies.nt[x] += temp1; // It just so happens that these values would be identical anyway.
+        enemies.actual_y[x] -= 0xf0;
+    }
+
 }
