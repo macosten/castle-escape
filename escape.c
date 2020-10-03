@@ -57,6 +57,8 @@ unsigned char player_flags; // All of these flags should be such that the defaul
 #define SET_DIRECTION_RIGHT() (player_flags |= 1) // Set the lsb
 #define LEFT 0
 #define RIGHT 1
+#define UP 0
+#define DOWN 1
 
 #define STATUS_DEAD (player_flags & 2)
 #define SET_STATUS_ALIVE() (player_flags &= 0b11111101)
@@ -194,8 +196,8 @@ void load_level(void);
 void load_room(void);
 void bg_collision(void); // For the player
 void bg_collision_sub(void);
-void draw_screen_U(void);
-void draw_screen_D(void);
+//void draw_screen_U(void);
+//void draw_screen_D(void);
 void draw_screen_sub(void);
 void new_cmap(void);
 
@@ -225,6 +227,7 @@ const unsigned char const draw_screen_sub_lookup_index_offset_1[] = {2, 6, 10, 1
 // The lookup tables for enemy_movement().
 const unsigned char const leftright_movement_offset_lookup_table[] = {0xff, 15};
 const unsigned char const leftright_movement_moving_lookup_table[] = {0xff, 1};
+const unsigned char const updown_movement_offset_lookup_table[] = {0xff, 15};
 
 // Lookup tables for enemy sprites (not yet animated).
 const unsigned char * const korbat_sprite_lookup_table[] = {korbat_left, korbat_right};
@@ -289,12 +292,16 @@ void main (void) {
         convert_to_decimal(score);
         draw_sprites();
 
-        if (valrigard.velocity_y < 0) {
-            draw_screen_U();
-        } else {
-            draw_screen_D();
-        }
-        
+        pseudo_scroll_y = sub_scroll_y(0x20, scroll_y);
+        if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
+            //draw_screen_D();
+            pseudo_scroll_y += 0xef;
+
+        } /* else {
+            //draw_screen_U();
+        }*/ 
+        draw_screen_sub();
+
         // debug:
         gray_line();
         if (pad1 & PAD_DOWN) {
@@ -804,19 +811,19 @@ void bg_collision_sub(void) {
 
 // At some point, I should probably inline these functions (manually).
 
-void draw_screen_U(void) {
+/*void draw_screen_U(void) {
     pseudo_scroll_y = sub_scroll_y(0x20, scroll_y);
     
     draw_screen_sub();
-}
+}*/
 
-void draw_screen_D(void) {
+/*void draw_screen_D(void) {
     pseudo_scroll_y = add_scroll_y(0x20, scroll_y) + 0xef; 
     // This 0xef (239, which is the height of the screen minus one) might possibly want to be either a 0xf0 (240) or a 
     // 0x100 (1 full nametable compensating for the fact that the last 16 values are masked off by add_scroll_y)
     
     draw_screen_sub();
-}
+}*/
 
 void draw_screen_sub(void) {
     temp1 = pseudo_scroll_y >> 8;
@@ -960,6 +967,8 @@ void enemy_movement(void) {
         &&cannonball_ai,
         &&acid_drop_ai
     };*/
+
+    temp4 = 0;
 
     for (x = 0; x < MAX_ENEMIES; ++x) {
         if (IS_ENEMY_ACTIVE(x)) {
@@ -1151,33 +1160,27 @@ void sun_ai(void) {
 
     temp3 = ENEMY_DIRECTION(x) >> 6;
 
-    // Find the metatile coords.
+    // We'll make use of the add_scroll_y and sub_scroll_y functions for this...
+
+    high_byte(temp5) = enemies.nt[x];
+    low_byte(temp5) = enemies.actual_y[x];
 
     temp1 = enemies.x[x]; 
 
     temp2 = enemies.actual_y[x];
 
-    // We might want to use a different lookup table,
-    // but for now, we'll use the same one as the Spikeball/Korbat AI...
-    temp2 += leftright_movement_offset_lookup_table[temp3];
-
-    coordinates = (temp1 >> 4) + (temp2 & 0xf0);
-
-    // Are we crossing the boundary of a nametable?
-    // Let's check.
-
-    // Temp4 will be metatile y.
-    temp4 = temp2 >> 4;
-
-    // If temp4 == 0xf, then we were on the edge of a nametable and should look at the other one.
-    if (temp4 == 0xf) {
-        temp4 = enemies.nt[x] + 1;
-    } else {
-        temp4 = enemies.nt[x];
+    temp2 += updown_movement_offset_lookup_table[temp3];
+    
+    if (temp3 == UP) { // subtracting from y
+        temp5 = sub_scroll_y(1, temp5);
+    } else { // DOWN (adding to y)
+        temp5 = add_scroll_y(1, temp5);
     }
 
+    coordinates = (temp1 >> 4) + (low_byte(temp5) & 0xf0);
+
     // Which cmap should I look at?
-    if (enemies.nt[x] & 1) { // Even or odd?
+    if (high_byte(temp5) & 1) { // Even or odd?
         collision = c_map2[coordinates];
     } else {
         collision = c_map[coordinates];
@@ -1187,15 +1190,9 @@ void sun_ai(void) {
         ENEMY_FLIP_DIRECTION(x);
         temp3 ^= 1;
     }
-    
-    temp1 = leftright_movement_moving_lookup_table[temp3];
-    enemies.actual_y[x] += temp1;
-    // ...but if actual_y >= 0xf0, then we should move this enemy to the next
-    // nt and truncate the actual_y value.
-    if (enemies.actual_y[x] >= 0xf0) {
-        // Lower Y is up, so...
-        enemies.nt[x] += temp1; // It just so happens that these values would be identical anyway.
-        enemies.actual_y[x] -= 0xf0;
-    }
+
+    // Update the actual enemy model itself.
+    enemies.nt[x] = high_byte(temp5);
+    enemies.actual_y[x] = low_byte(temp5);
 
 }
