@@ -1165,26 +1165,31 @@ void sun_ai(void) {
     high_byte(temp5) = enemies.nt[x];
     low_byte(temp5) = enemies.actual_y[x];
 
-    temp1 = enemies.x[x]; 
-
-    temp2 = enemies.actual_y[x];
-
-    temp2 += updown_movement_offset_lookup_table[temp3];
+    temp1 = enemies.x[x] + 6; 
     
     if (temp3 == UP) { // subtracting from y
         temp5 = sub_scroll_y(1, temp5);
+
+        temp2 = low_byte(temp5); // Y of tile of interest
+        temp4 = high_byte(temp5); // NT of tile of interest
     } else { // DOWN (adding to y)
         temp5 = add_scroll_y(1, temp5);
+        temp6 = add_scroll_y(15, temp5); // 15 being the cosmetic size of an enemy
+
+        temp2 = low_byte(temp6); // Y of tile of interest
+        temp4 = high_byte(temp6); // NT of tile of interest
     }
 
-    coordinates = (temp1 >> 4) + (low_byte(temp5) & 0xf0);
+    //temp2 += updown_movement_offset_lookup_table[temp3];
+
+    coordinates = (temp1 >> 4) + (temp2 & 0xf0);
 
     // Which cmap should I look at?
-    if (high_byte(temp5) & 1) { // Even or odd?
+    if (temp4 & 1) { // Even or odd?
         collision = c_map2[coordinates];
     } else {
         collision = c_map[coordinates];
-    }    
+    }
 
     if (METATILE_IS_SOLID(collision)) {
         ENEMY_FLIP_DIRECTION(x);
@@ -1194,5 +1199,7 @@ void sun_ai(void) {
     // Update the actual enemy model itself.
     enemies.nt[x] = high_byte(temp5);
     enemies.actual_y[x] = low_byte(temp5);
+
+    
 
 }
