@@ -51,3 +51,31 @@ const unsigned char const korbat_right[]= {
   128
 };
 
+const unsigned char const sun0[]= {
+      0xff, 0xff, 0x13,0,
+      0x07, 0xff, 0x13,0|OAM_FLIP_H,
+      0xff, 0x07, 0x14,0,
+      0x07, 0x07, 0x14,0|OAM_FLIP_H,
+  128
+};
+
+const unsigned char const sun1[]= {
+      0xff, 0xff, 0x15,0,
+      0x07, 0xff, 0x15,0|OAM_FLIP_H,
+      0xff, 0x07, 0x16,0,
+      0x07, 0x07, 0x16,0|OAM_FLIP_H,
+  128
+};
+
+
+#define ACIDDROP_SPRITE_OFFSET 0x17
+#define CANNONBALL_SPRITE_OFFSET 0x18
+/*const unsigned char const acid_drop[]= {
+      0xff, 0xff, 0x17,3,
+  128
+};
+
+const unsigned char const cannonball[]= {
+      0xff, 0xff, 0x18,2,
+  128
+};*/

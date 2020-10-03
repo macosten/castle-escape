@@ -471,6 +471,15 @@ void draw_sprites(void) {
                 case 6: // Spikeball
                     oam_meta_spr(temp_x, temp_y, spikeball);
                     break;
+                case 7: // Sun
+                    oam_meta_spr(temp_x, temp_y, sun0);
+                    break;
+                case 9: // Cannonball
+                    oam_spr(temp_x, temp_y, CANNONBALL_SPRITE_OFFSET, 1);
+                    break;
+                case 10: // Acid Drop
+                    oam_spr(temp_x, temp_y, ACIDDROP_SPRITE_OFFSET, 3);
+                    break;
                 default:
                     oam_meta_spr(temp_x, temp_y, spikeball);
                     break;
@@ -988,6 +997,10 @@ void enemy_movement(void) {
                     // but I always called them Suns growing up, so they're Suns
                     sun_ai();
                     break;
+                // case 9: // ENEMY_CANNONBALL
+                case 10: // ENEMY_ACIDDROP
+                    acid_drop_ai();
+                    break;
                 default: // Unimplemented
                     break;
             }
@@ -1023,6 +1036,8 @@ void enemy_movement(void) {
     }
 
 }
+
+// I reordered these to be listed in the order in which they were implemented.
 
 void korbat_ai(void) {
     // Look to see if the metatile ahead of me is solid. If it is, turn around.
@@ -1124,36 +1139,6 @@ void spikeball_ai(void) {
 
 }
 
-void cannon_ai(void) {
-    // Wait a while. Turn towards Valrigard. Fire a cannonball in his direction.
-    // Todo.
-}
-
-void cannonball_ai(void) {
-    // Continue moving forward in the direction fired. If I hit a solid metatile, die.
-
-    // There is a second type of cannonball in the original game that is beholden to gravity but also faster.
-    // I'm not going to prioritize it...
-
-    // Todo.
-}
-
-void acid_ai(void) {
-    // Wait a while, then drop an acid drop.
-    // Todo.
-    // We will probably need to use "x" in this function.
-}
-
-void acid_drop_ai(void) {
-    // If I'm touching a solid metatile, die. Otherwise, go down.
-    // todo.
-
-}
-
-void splyke_ai(void) {
-
-}
-
 void sun_ai(void) {
     // Look to see if the metatile in front of me is solid. If so, turn around.
     // Then, move vertically (depending on direction)
@@ -1200,6 +1185,59 @@ void sun_ai(void) {
     enemies.nt[x] = high_byte(temp5);
     enemies.actual_y[x] = low_byte(temp5);
 
-    
+}
+
+void acid_drop_ai(void) {
+    // If I'm touching a solid metatile, die. Otherwise, go down.
+
+    high_byte(temp5) = enemies.nt[x];
+    low_byte(temp5) = enemies.actual_y[x];
+
+    temp1 = enemies.x[x];
+
+    temp5 = add_scroll_y(1, temp5);
+    temp6 = add_scroll_y(6, temp5); // 8 being the cosmetic projectile height
+
+    coordinates = (temp1 >> 4) + (low_byte(temp6) & 0xf0);
+
+    if (high_byte(temp6) & 1) {
+        collision = c_map2[coordinates];        
+    } else {
+        collision = c_map[coordinates];
+    }
+
+    if (METATILE_IS_SOLID(collision)) {
+        // Clear the lower nibble, then return.
+        enemies.flags_type[x] = ENEMY_NONE;
+        return;
+    }
+
+    enemies.nt[x] = high_byte(temp5);
+    enemies.actual_y[x] = low_byte(temp5);
+
+}
+
+void cannon_ai(void) {
+    // Wait a while. Turn towards Valrigard. Fire a cannonball in his direction.
+    // Todo.
+}
+
+void cannonball_ai(void) {
+    // Continue moving forward in the direction fired. If I hit a solid metatile, die.
+
+    // There is a second type of cannonball in the original game that is beholden to gravity but also faster.
+    // I'm not going to prioritize it...
+
+    // Todo.
+}
+
+void acid_ai(void) {
+    // Wait a while, then drop an acid drop.
+    // Todo.
+    // We will probably need to use "x" in this function.
+}
+
+
+void splyke_ai(void) {
 
 }

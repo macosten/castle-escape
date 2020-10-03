@@ -63,7 +63,9 @@ const unsigned char const level10_2[]={
 	// 0x10 + type for right-facing, just type for left-facing
 
 const unsigned char const level10_enemy[]={
-	// 0x49, 2, 4,
+	//0x49, 2, 4,
+	0x49, 2, 9,  //debug
+	0x59, 2, 10, //debug
 	0x31, 2, 7, // ENEMY_CANNON, but temporarily an ENEMY_SUN 
 	0x24, 2, 6, // ENEMY_SPIKEBALL,
 	0x71, 2, 6, // ENEMY_SPIKEBALL, 
