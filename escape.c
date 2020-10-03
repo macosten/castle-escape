@@ -196,8 +196,8 @@ void load_level(void);
 void load_room(void);
 void bg_collision(void); // For the player
 void bg_collision_sub(void);
-//void draw_screen_U(void);
-//void draw_screen_D(void);
+void draw_screen_U(void);
+void draw_screen_D(void);
 void draw_screen_sub(void);
 void new_cmap(void);
 
@@ -231,6 +231,9 @@ const unsigned char const updown_movement_offset_lookup_table[] = {0xff, 15};
 
 // Lookup tables for enemy sprites (not yet animated).
 const unsigned char * const korbat_sprite_lookup_table[] = {korbat_left, korbat_right};
+
+// const unsigned char const enemy_contact_behavior_lookup_table[] = {0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1}
+
 
 // Actually, this doesn't work whatsoever - we'll try again later...
 // typedef void (* const VoidFunctionLookupTable)(void);
@@ -292,15 +295,12 @@ void main (void) {
         convert_to_decimal(score);
         draw_sprites();
 
-        pseudo_scroll_y = sub_scroll_y(0x20, scroll_y);
+        
         if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
-            //draw_screen_D();
-            pseudo_scroll_y += 0xef;
-
-        } /* else {
-            //draw_screen_U();
-        }*/ 
-        draw_screen_sub();
+            draw_screen_D();
+        }  else {
+            draw_screen_U();
+        } 
 
         // debug:
         gray_line();
@@ -467,6 +467,10 @@ void draw_sprites(void) {
                     temp3 = ENEMY_DIRECTION(y) >> 6;
                     temppointer = korbat_sprite_lookup_table[temp3];
                     oam_meta_spr(temp_x, temp_y, temppointer);
+                    break;
+                case 4: // Cannon
+                    // Figure out direction of cannon - todo
+                    oam_meta_spr(temp_x, temp_y, cannon_down_right);
                     break;
                 case 6: // Spikeball
                     oam_meta_spr(temp_x, temp_y, spikeball);
@@ -820,19 +824,19 @@ void bg_collision_sub(void) {
 
 // At some point, I should probably inline these functions (manually).
 
-/*void draw_screen_U(void) {
+void draw_screen_U(void) {
     pseudo_scroll_y = sub_scroll_y(0x20, scroll_y);
     
     draw_screen_sub();
-}*/
+}
 
-/*void draw_screen_D(void) {
+void draw_screen_D(void) {
     pseudo_scroll_y = add_scroll_y(0x20, scroll_y) + 0xef; 
     // This 0xef (239, which is the height of the screen minus one) might possibly want to be either a 0xf0 (240) or a 
     // 0x100 (1 full nametable compensating for the fact that the last 16 values are masked off by add_scroll_y)
     
     draw_screen_sub();
-}*/
+}
 
 void draw_screen_sub(void) {
     temp1 = pseudo_scroll_y >> 8;
