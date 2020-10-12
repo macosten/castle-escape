@@ -33,6 +33,8 @@ typedef struct EnemyDatabase {
     unsigned char nt[MAX_ENEMIES];
     unsigned char flags_type[MAX_ENEMIES]; 
     // high nibble is flags (including direction and active/inactive), low nibble is type
+    unsigned char extra[MAX_ENEMIES];
+    // Can probably be an animation frame counter for most enemies, but for some it'll contain other data.
 } Enemies;
 
 // NESDoug named this something I forgot because it wasn't as descriptive (imo) as Hitbox

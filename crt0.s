@@ -255,7 +255,8 @@ detectNTSC:
     ; ASM stuff has to be included here, I think.
     .include "lib/neslib.s"
     .include "lib/nesdoug.s"
-    .include "asm/bitwise.s"
+    ;.include "asm/bitwise.s"
+    .include "asm/math.s"
     .include "asm/score.s"
     .include "music/famitone2.s"
     

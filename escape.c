@@ -10,8 +10,9 @@
 #include "metatiles.h"
 #include "levels.h"
 #include "enemies.h"
-#include "asm/bitwise.h"
+// #include "asm/bitwise.h"
 #include "asm/score.h"
+#include "asm/math.h"
 
 #define SPEED 0x150
 
@@ -69,6 +70,15 @@ unsigned char player_flags; // All of these flags should be such that the defaul
 #define IS_SWINGING_SWORD (player_flags & 4)
 #define SET_STATUS_NOT_SWINGING_SWORD() (player_flags &= 0b11111011)
 #define SET_STATUS_SWINGING_SWORD() (player_flags |= 4)
+
+unsigned char game_mode;
+#define MODE_TITLE 0
+#define MODE_GAME 1
+#define MODE_PAUSE 2
+#define MODE_LEVEL_WELCOME_SCREEN 3
+#define MODE_GAME_OVER 4 
+// (Uh, do we actually want game overs?) 
+// Maybe we just nuke your score every N deaths...
 
 
 int address;
@@ -134,7 +144,7 @@ unsigned int score; // Is the score important enough to place in the zp?
 
 // Used for collisions.
 unsigned char c_map[240];
-unsigned char c_map2[240]; // not used in this example
+unsigned char c_map2[240];
 
 const unsigned char palette_bg[]={
     0x0f, 0x00, 0x10, 0x30, // black, gray, lt gray, white
@@ -164,7 +174,7 @@ const unsigned char const shuffle_array[]={
 };
 
 // X, Y
-Player valrigard = {20, 40}; // A width of 12 makes Valrigard's hitbox a bit more forgiving. It also happens to match up with his nose.
+Player valrigard; // A width of 12 makes Valrigard's hitbox a bit more forgiving. It also happens to match up with his nose.
 Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C stack is not preferable to using a global in this use case)
 // I renamed nesdoug's "Generic" to "Hitbox" to remind me of what purpose it serves.
 
@@ -177,11 +187,21 @@ Hitbox hitbox2;
 #define IS_ENEMY_ACTIVE(index) (enemies.flags_type[index] & 0b10000000) // Test if high bit is set.
 #define GET_ENEMY_TYPE(index) (enemies.flags_type[x] & 0x0f) // Bottom nibble == type
 
-
 #define ENEMY_SET_DIRECTION_LEFT(index) (enemies.flags_type[index] &= 0b10111111)
 #define ENEMY_SET_DIRECTION_RIGHT(index) (enemies.flags_type[index] |= 0b01000000)
 #define ENEMY_FLIP_DIRECTION(index) (enemies.flags_type[index] ^= 0b01000000)
 #define ENEMY_DIRECTION(index) (enemies.flags_type[index] & 0b01000000)
+
+
+// For cannonballs and other 2-axis projectiles.
+#define CANNONBALL_SET_NEG_X(index) (enemies.flags_type[index] &= 0b10111111)
+#define CANNONBALL_SET_POS_X(index) (enemies.flags_type[index] |= 0b01000000)
+
+#define CANNONBALL_SET_NEG_Y(index) (enemies.flags_type[index] &= 0b11011111)
+#define CANNONBALL_SET_POS_Y(index) (enemies.flags_type[index] |= 0b00100000)
+
+#define CANNONBALL_X_DIRECTION(index) (enemies.flags_type[index] & 0b01000000)
+#define CANNONBALL_Y_DIRECTION(index) (enemies.flags_type[index] & 0b00100000)
 
 // Debug variables - these will be removed in the future.
 unsigned char debug_tile_x;
@@ -192,8 +212,11 @@ unsigned char debug_tile_y;
 
 void draw_sprites(void);
 void movement(void);
+
+void begin_level(void);
 void load_level(void);
 void load_room(void);
+
 void bg_collision(void); // For the player
 void bg_collision_sub(void);
 void draw_screen_U(void);
@@ -215,6 +238,8 @@ void acid_drop_ai(void);
 void splyke_ai(void);
 void sun_ai(void);
 
+void load_title_screen(void);
+
 // MARK: Lookup Tables
 
 // The lookup tables for draw_screen_sub().
@@ -231,9 +256,14 @@ const unsigned char const updown_movement_offset_lookup_table[] = {0xff, 15};
 
 // Lookup tables for enemy sprites (not yet animated).
 const unsigned char * const korbat_sprite_lookup_table[] = {korbat_left, korbat_right};
+const unsigned char * const grarrl_sprite_lookup_table[] = {grarrl_left, grarrl_right};
 
 // const unsigned char const enemy_contact_behavior_lookup_table[] = {0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1}
 
+// Possibly a silly way to reuse the lost 4 * 16 bytes of RAM in each c_map:
+// List offsets from the beginning of the c_maps at (16 * n + 12)
+// Then, (c_map + extra_cmap_data_offsets[n]) can be used as 4 bytes of extra RAM.
+const unsigned char const extra_cmap_data_offsets[]={ 12, 28, 44, 60, 76, 92, 108, 124, 140, 156, 172, 188, 204, 220, 236 };
 
 // Actually, this doesn't work whatsoever - we'll try again later...
 // typedef void (* const VoidFunctionLookupTable)(void);
@@ -255,65 +285,154 @@ void main (void) {
     set_vram_buffer(); // do at least once, sets a pointer to a buffer
     clear_vram_buffer();
     
+    // Set the level index to the first level.
+    /*level_index = 0;
+
     load_level();
     load_room();
 
-    level_index = 0;
-
-    energy = MAX_ENERGY;
+    energy = MAX_ENERGY;*/
     
     //Debug: set the first half of the bitfield to FF.
     //for (temp1 = 0; temp1 < 128; ++temp1) { set_object_bit(temp1); }
         
+    // Set the level index to the first level.
+    level_index = 0;
+
+    load_title_screen();
+
+    temp1 = brads_lookup(0x36);//atan2(0, 120, 0, 120);
+    temp2 = sin_lookup(temp1);
+    temp3 = cos_lookup(temp1);
+    temp4 = abs_subtract(0x20, 0x20);
+
     ppu_on_all(); // turn on screen
-    
+
     while (1){
-        // infinite loop
-        ppu_wait_nmi(); // wait till beginning of the frame
-        // the sprites are pushed from a buffer to the OAM during nmi
 
-        pad1 = pad_poll(0); // read the first controller
-        pad1_new = get_pad_new(0);
-        
-        clear_vram_buffer();
-        
-        // Move the player
-        movement();
+        while (game_mode == MODE_TITLE) {
+            ppu_wait_nmi();
+            // set_music_speed, etc
 
-        // Check to see what's on-screen
-        check_spr_objects();
+            // Just listen for desired inputs.
+            pad1 = pad_poll(0); // read the first controller
+            pad1_new = get_pad_new(0);
+            
+            // Clear the VRAM buffer if it gets used for anything...
+            // clear_vram_buffer();
 
-        // Check sprite collisions
-        sprite_collisions();
+            // I suppose if we ever want the game to start immediately,
+            // We can just set this to if (1) for debugging.
+            if (pad1_new & PAD_UP) {
+                level_index = 0;
+                begin_level();
+            }
 
-        // Move enemies (todo)
-        enemy_movement();
-        
-        //set_scroll_x(0); // Yeah... this game won't need to scroll in the X direction.
-        set_scroll_y(scroll_y);
-
-        convert_to_decimal(score);
-        draw_sprites();
-
-        
-        if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
-            draw_screen_D();
-        }  else {
-            draw_screen_U();
-        } 
-
-        // debug:
-        gray_line();
-        if (pad1 & PAD_DOWN) {
-            SET_STATUS_ALIVE();
         }
+
+        // The game is active and we're drawing frames.
+        while (game_mode == MODE_GAME) {
+            ppu_wait_nmi(); // wait till beginning of the frame
+            // the sprites are pushed from a buffer to the OAM during nmi
+
+            // set_music_speed(???);
+
+            pad1 = pad_poll(0); // read the first controller
+            pad1_new = get_pad_new(0);
+            
+            clear_vram_buffer();
+            
+            // Move the player.
+            movement();
+
+            // Check to see what's on-screen
+            check_spr_objects();
+
+            // Check sprite collisions
+            sprite_collisions();
+
+            // Move enemies (todo)
+            enemy_movement();
+            
+            //set_scroll_x(0); // Yeah... this game won't need to scroll in the X direction.
+            set_scroll_y(scroll_y);
+
+            convert_to_decimal(score);
+            draw_sprites();
+
+            
+            if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
+                draw_screen_D();
+            }  else {
+                draw_screen_U();
+            } 
+
+            // debug:
+            gray_line();
+            if (pad1 & PAD_DOWN) {
+                SET_STATUS_ALIVE();
+            }
+        }
+
+        
         
     }
     
 }
 
+
+const char title_string[] = "Castle Escape Alpha";
+const char author_string[] = "By macosten";
+const char instruction_string[] = "Press Up to start";
+
+void load_title_screen(void) {
+    // Eventually we'll want to make a nicer title screen and vram_unrle it, but for now, a simple one:
+    
+    vram_adr(NTADR_A(3, 2));
+
+    x = 0;
+    while(title_string[x]) {
+        vram_put(title_string[x]);
+        ++x;
+    }
+
+    vram_adr(NTADR_A(3, 4));
+
+    x = 0;
+    while(author_string[x]) {
+        vram_put(author_string[x]);
+        ++x;
+    }
+
+    vram_adr(NTADR_A(3, 6));
+
+    x = 0;
+    while(instruction_string[x]) {
+        vram_put(instruction_string[x]);
+        ++x;
+    }
+
+}
+
+void begin_level(void) {
+    ppu_off(); // We're going to make big changes to VRAM so we need to turn it off.
+    
+    // Set the game mode properly.
+    game_mode = MODE_GAME;
+
+    // Load the level information.
+    load_level();
+    load_room();
+
+    // Reset Valrigard's energy.
+    energy = MAX_ENERGY;
+
+    // Turn the PPU back on.
+    ppu_on_all();
+}
+
+// The following two functions... may possibly get stuck together. We'll see.
 void load_level(void) {
-    clear_object_bitfield(); // Clear all object destruction flags
     player_flags = 0; // Clear the player flags
     
     nt_max = level_starting_nt[level_index+1];
@@ -378,7 +497,7 @@ void load_room(void) {
     clear_vram_buffer();
     
     //copy the room to the collision map
-    memcpy(c_map, level_nametables[nt_current], 240);
+    new_cmap();
 
     max_scroll_y = scroll_y;
 
@@ -410,6 +529,17 @@ void load_room(void) {
         temp1 = pointer[y]; // the direction+type byte.
         enemies.flags_type[x] = temp1; 
         // The high nibble will is direction; the low one will be type.
+
+        temp1 = GET_ENEMY_TYPE(x);
+        if (temp1 == 4) { // ENEMY_CANNON
+            // Load in the next enemy as a cannonball.
+            ++x;
+            enemies.flags_type[x] = ENEMY_CANNONBALL;
+        } else if (temp1 == 5) { // ENEMY_ACIDPOOL
+            // Load in the next enemy as an acid drop.
+            ++x;
+            enemies.flags_type[x] = ENEMY_ACIDDROP;
+        }
 
         ++y; // Next byte.
         
@@ -466,6 +596,11 @@ void draw_sprites(void) {
                 case 1: // Korbat
                     temp3 = ENEMY_DIRECTION(y) >> 6;
                     temppointer = korbat_sprite_lookup_table[temp3];
+                    oam_meta_spr(temp_x, temp_y, temppointer);
+                    break;
+                case 2: // Grarrl
+                    temp3 = ENEMY_DIRECTION(y) >> 6;
+                    temppointer = grarrl_sprite_lookup_table[temp3];
                     oam_meta_spr(temp_x, temp_y, temppointer);
                     break;
                 case 4: // Cannon
@@ -816,8 +951,6 @@ void bg_collision_sub(void) {
 
     // debug_tile_x = temp1 >> 4;
     // debug_tile_y = temp3 >> 4;
-
-
 }
 
 // MARK: -- Screen Buffering Functions
@@ -862,8 +995,6 @@ void draw_screen_sub(void) {
     
     ++scroll_count;
     scroll_count &= 3; //mask off top bits, keep it 0-3
-
-
 }
 
 // (adapted from nesdoug): copy a new collision map to one of the 2 c_map arrays.
@@ -936,6 +1067,7 @@ void sprite_collisions(void) {
     // The width and height of this will actually be different depending on the enemy's type.
 
     for (x = 0; x < MAX_ENEMIES; ++x) {
+
         if(IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
 
@@ -996,12 +1128,21 @@ void enemy_movement(void) {
                 case 6: // ENEMY_SPIKEBALL
                     spikeball_ai();
                     break;
+                case 4: // ENEMY_CANNON;
+                    cannon_ai();
+                    break;
+                case 5: // ENEMY_ACIDPOOL;
+                    acid_ai();
+                    break;
                 case 7: // ENEMY_SUN
                     // Technically these guys are called "Flamers"
                     // but I always called them Suns growing up, so they're Suns
                     sun_ai();
                     break;
-                // case 9: // ENEMY_CANNONBALL
+                // case 8: ENEMY_BOSS
+                case 9: // ENEMY_CANNONBALL
+                    cannonball_ai();
+                    break;
                 case 10: // ENEMY_ACIDDROP
                     acid_drop_ai();
                     break;
@@ -1011,9 +1152,9 @@ void enemy_movement(void) {
 
             // Method 2: Jump table
             // (enemy_movement_lookup[temp1])();
-            // goto *enemy_ai_jump_table[temp1];
-
-            /*no_ai:
+            //goto *enemy_ai_jump_table[temp1];
+            /*
+            no_ai:
                 continue;
             korbat_ai:
                 korbat_ai();
@@ -1032,8 +1173,8 @@ void enemy_movement(void) {
             cannonball_ai:
                 continue;
             acid_drop_ai:
-                continue;*/
-
+                continue;
+            */
 
 
         }
@@ -1224,6 +1365,8 @@ void acid_drop_ai(void) {
 void cannon_ai(void) {
     // Wait a while. Turn towards Valrigard. Fire a cannonball in his direction.
     // Todo.
+
+
 }
 
 void cannonball_ai(void) {
@@ -1233,6 +1376,7 @@ void cannonball_ai(void) {
     // I'm not going to prioritize it...
 
     // Todo.
+
 }
 
 void acid_ai(void) {

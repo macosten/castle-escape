@@ -32,6 +32,12 @@ const unsigned char * const level_names[] = {
     "Null"
 };
 
+// Max of 32 enemies.
+// Be aware that cannons and acid blobs functionally take up 2 slots
+// because they also have a projectile loaded directly after them in RAM.
+// This also means you should prevent either of these things from being 
+// loaded into the MAX_ENEMIES-th slot, since the projectile will be
+// loaded into RAM that overlaps with other RAM.
 const unsigned char * const level_enemy_data[] = {
     level10_enemy
 };
