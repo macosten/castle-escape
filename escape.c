@@ -239,6 +239,9 @@ void splyke_ai(void);
 void sun_ai(void);
 
 void load_title_screen(void);
+void load_game_over_screen(void);
+
+void clear_screen(void);
 
 // MARK: Lookup Tables
 
@@ -377,14 +380,42 @@ void main (void) {
             if (pad1 & PAD_DOWN) {
                 SET_STATUS_ALIVE();
             }
+
+            if (game_mode == MODE_GAME_OVER) {
+                load_game_over_screen();
+            }
         }
 
+        // For now, "game over" is "you win"
+        while (game_mode == MODE_GAME_OVER) {
+            ppu_wait_nmi();
+
+            pad1 = pad_poll(0);
+            pad1_new = get_pad_new(0);
+
+            if (pad1_new & PAD_DOWN) {
+                level_index = 0;
+                begin_level();
+            }
+
+        }
         
         
     }
     
 }
 
+// In the literal sense, clear the screen. 
+// You should call ppu_off() before calling this function.
+void clear_screen(void) {
+    oam_clear();
+    clear_vram_buffer();
+    set_scroll_y(0);
+
+    // Clear VRAM.
+    vram_adr(NAMETABLE_A);
+    vram_fill(0,1024);
+}
 
 const char title_string[] = "Castle Escape Alpha";
 const char author_string[] = "By macosten";
@@ -417,6 +448,25 @@ void load_title_screen(void) {
         ++x;
     }
 
+}
+
+const char game_over_string[] = "Demo Over! Down to restart.";
+void load_game_over_screen(void) {
+    ppu_off();
+    clear_screen();
+    // Set the game mode properly.
+    game_mode = MODE_GAME_OVER;
+
+    // Write the message.
+    vram_adr(NTADR_A(3, 6));
+    x = 0;
+    while (game_over_string[x]) {
+        vram_put(game_over_string[x]);
+        ++x;
+    }
+
+    // Turn the PPU back on.
+    ppu_on_all();
 }
 
 void begin_level(void) {
@@ -922,6 +972,14 @@ void bg_collision_sub(void) {
         case 3:
             // Set the dead flag.
             SET_STATUS_DEAD();
+            break;
+        case 23: // Yellow Door tiles:
+        case 24:
+        case 25:
+            // For now, end the game.
+            if (pad1 & PAD_UP) {
+                game_mode = MODE_GAME_OVER;
+            }
             break;
         case STAR_TILE:
             // Touched a star: Let's collect it
