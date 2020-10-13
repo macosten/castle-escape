@@ -6,12 +6,13 @@
 //
 
 // Format: 4 tile indices (upper left, upper right, lower left, lower right), then the palette index.
-const unsigned char metatiles[]={
+const unsigned char const metatiles[]={
     // Solid Tiles
     160, 160, 176, 176,  0, // Upward Spikes
     161, 161, 177, 177,  0, // Downward Spikes
     162, 163, 162, 163,  0, // Rightward Spikes
     178, 179, 178, 179,  0, // Leftward Spikes
+
     230, 231, 246, 247,  0, // Regular Block No Edge
     132, 229, 246, 247,  0, // Regular Block U Edge
     230, 227, 246, 243,  0, // Regular Block R Edge
@@ -24,12 +25,15 @@ const unsigned char metatiles[]={
     132, 229, 148, 245,  0, // Reg. Block, U+D Edge
     226, 227, 242, 243,  0, // Reg. Block, L+R Edge
     224, 141, 240, 157,  0, // Reg, Block, All Edges
+
+    // I reserve the right to make these into conveyor-related tiles.
     128, 129, 144, 145,  0, // Left Ledge
     132, 133, 148, 149,  0, // Right Ledge
     134, 129, 150, 145,  0, // Left Circular Platform
     132, 137, 148, 153,  0, // Right Circular Platform
     138, 129, 154, 145,  0, // Left Square Platform
     132, 141, 148, 157,  0, // Right Square Platform
+
     236, 237, 252, 253,  3, // ? Block
     // 22 (0x16)
     
@@ -66,3 +70,82 @@ const unsigned char metatiles[]={
 #define STAR_TILE 42
 #define ENERGY_REFILL_TILE 43
 #define EMPTY_TILE 44
+
+
+#define METATILE_NO_EFFECT      0 // No collisions, or anything else
+#define METATILE_SOLID          0b00000001
+#define METATILE_SPIKES         0b00000010
+#define METATILE_CONVEYOR_LEFT  0b00000100
+#define METATILE_CONVEYOR_RIGHT 0b00001000
+#define METATILE_YELLOW_DOOR    0b00010000
+#define METATILE_RED_DOOR       0b00100000
+#define METATILE_POWERUP        0b01000000
+// One more possible optionset member
+
+
+// Generally speaking, metatiles will only have one or two properties set to 1
+// ...and if it's two, one of them is METATILE_SOLID.
+const unsigned char const metatile_property_lookup_table[]={
+    // Spikes
+    METATILE_SPIKES,
+    METATILE_SPIKES,
+    METATILE_SPIKES,
+    METATILE_SPIKES,
+
+    // Solid castle blocks
+    METATILE_SOLID,
+    METATILE_SOLID,
+    METATILE_SOLID,
+    METATILE_SOLID,
+    METATILE_SOLID,
+    METATILE_SOLID,
+    METATILE_SOLID,
+    METATILE_SOLID,
+    METATILE_SOLID,
+    METATILE_SOLID,
+    METATILE_SOLID,
+    METATILE_SOLID,
+
+    // These next 6 may or may not be made into conveyor blocks at some point
+    METATILE_SOLID,
+    METATILE_SOLID,
+    METATILE_SOLID|METATILE_CONVEYOR_LEFT,
+    METATILE_SOLID|METATILE_CONVEYOR_RIGHT,
+    METATILE_SOLID,
+    METATILE_SOLID,
+
+    // Question Block
+    METATILE_SOLID,
+
+    // Doors
+    METATILE_YELLOW_DOOR,
+    METATILE_YELLOW_DOOR,
+    METATILE_YELLOW_DOOR,
+    METATILE_RED_DOOR,
+
+    // Prison Window
+    METATILE_NO_EFFECT, 
+    METATILE_NO_EFFECT,
+    METATILE_NO_EFFECT,
+    METATILE_NO_EFFECT,
+    METATILE_NO_EFFECT,
+
+    // Prison Door
+    METATILE_NO_EFFECT, 
+    METATILE_NO_EFFECT,
+    METATILE_NO_EFFECT,
+    METATILE_NO_EFFECT,
+
+    // Bone piles
+    METATILE_NO_EFFECT, 
+    METATILE_NO_EFFECT,
+    METATILE_NO_EFFECT,
+    METATILE_NO_EFFECT,
+
+    METATILE_NO_EFFECT, // Candle
+    METATILE_NO_EFFECT, // Skeleton
+    METATILE_POWERUP, // Star
+    METATILE_POWERUP, // Energy Refill
+
+    METATILE_NO_EFFECT, // Empty Tile    
+};

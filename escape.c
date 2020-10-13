@@ -35,7 +35,7 @@ unsigned char collision_D;
 unsigned char coordinates;
 
 // Best to assume that the values of these temps are NOT stored between function calls.
-// unsigned char temp0;
+unsigned char temp0;
 unsigned char temp1;
 unsigned char temp2;
 unsigned char temp3;
@@ -45,6 +45,7 @@ unsigned int temp5;
 unsigned int temp6;
 
 const unsigned char * temppointer;
+unsigned char * temp_mutablepointer;
 
 unsigned char eject_L; // from the left
 unsigned char eject_R; // remember these from the collision sub routine
@@ -116,7 +117,6 @@ unsigned char energy;
 
 // At 100, you should get an extra life!
 unsigned char stars;
-const unsigned char * pointer;
 
 // 255 frames / 60 fps (NTSC) = 4.25 seconds
 
@@ -136,7 +136,7 @@ unsigned char nt_current; // The nametable Valrigard is currently in. This shoul
 #define VALRIGARD_WIDTH 11
 #define VALRIGARD_HEIGHT 13
 
-#define METATILE_IS_SOLID(mtid) (mtid < 0x17 && mtid > 0x03)
+#define METATILE_IS_SOLID(mtid) (metatile_property_lookup_table[mtid] & METATILE_SOLID)
 
 #pragma bss-name(push, "BSS")
 
@@ -562,12 +562,12 @@ void load_room(void) {
     // sprite_obj_init / Load Enemies
 
     // Load the enemy data for the current level.
-    pointer = level_enemy_data[level_index];
+    temppointer = level_enemy_data[level_index];
 
     for (x = 0, y = 0; x < MAX_ENEMIES; ++x){
 
         enemies.y[x] = 0;
-        temp1 = pointer[y]; // Get a byte of data - the bitpacked coords.
+        temp1 = temppointer[y]; // Get a byte of data - the bitpacked coords.
 
         if (temp1 == 0xff) break; // 0xff terminates the enemy data.
 
@@ -576,12 +576,12 @@ void load_room(void) {
 
         ++y; // Next byte:
 
-        temp1 = pointer[y]; // the namtetable byte.
+        temp1 = temppointer[y]; // the namtetable byte.
         enemies.nt[x] = temp1;
 
         ++y; // Next byte:
 
-        temp1 = pointer[y]; // the direction+type byte.
+        temp1 = temppointer[y]; // the direction+type byte.
         enemies.flags_type[x] = temp1; 
         // The high nibble will is direction; the low one will be type.
 
@@ -951,65 +951,59 @@ void bg_collision_sub(void) {
     // Select the correct collision map based on the high byte of y.
     if (!map) {
         temp4 = c_map[coordinates];
-        temp5 = (unsigned int)&(c_map[coordinates]); 
+        temp_mutablepointer = &(c_map[coordinates]); 
         // temp5 is now a pointer to the tile in memory that we're checking.
     }
     else {
         temp4 = c_map2[coordinates];
-        temp5 = (unsigned int)&(c_map2[coordinates]);
+        temp_mutablepointer = &(c_map2[coordinates]);
     }
     
+    // Fetch all the properties about this tile.
+    temp0 = metatile_property_lookup_table[temp4];
+
     collision = METATILE_IS_SOLID(temp4); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
     // At some point we should figure out what else should be calculated here
     
-    if (collision) return; // Uh, we might need to do something special about conveyor tiles in the future. Hmm.
+    // If the collision is with a tile that is solid but has no other properties, return.
+    if (temp0 == METATILE_NO_EFFECT || temp0 == METATILE_SOLID) { return; }
+    // if (collision <= METATILE_SOLID)
 
-    // Did we touch any special (non-colliding) tiles?
-    switch (temp4) {
-        case 0:
-        case 1:
-        case 2:
-        case 3:
-            // Set the dead flag.
-            SET_STATUS_DEAD();
-            break;
-        case 23: // Yellow Door tiles:
-        case 24:
-        case 25:
-            // For now, end the game.
-            if (pad1 & PAD_UP) {
-                game_mode = MODE_GAME_OVER;
-            }
-            break;
-        case STAR_TILE:
-            // Touched a star: Let's collect it
-            *(unsigned char *)temp5 = EMPTY_TILE;
-            // Increment the score.
-            score += 1;
+    // No? We must have touched a special tile, then.
+    if (temp0 & METATILE_SPIKES) {
+        SET_STATUS_DEAD();
+    } else if (temp0 & METATILE_POWERUP) {
+        // Collect the powerup.
+        *temp_mutablepointer = EMPTY_TILE;
+
+        // But what powerup was it?
+        if (temp4 == STAR_TILE) { score += 1; }
+        else if (temp4 == ENERGY_REFILL_TILE) { energy = MAX_ENERGY; }
+
+        // Shouldn't really need to change the palette, but:
+        // address = get_at_addr(nt, (temp1>>4), (temp2 & 0xf0));
+        // one_vram_buffer(0, address); Set to the 0th palette
             
-            // Shouldn't really need to change the palette, but:
-            // address = get_at_addr(nt, (temp1>>4), (temp2 & 0xf0));
-            // one_vram_buffer(0, address); Set to the 0th palette
-            
-            // Bug: stars don't consistently get cleared.
-            // They are collected in memory (and thus only collided with once),
-            // but the metatiles are not always actually set to EMPTY_TILE.
-            address = get_ppu_addr(nt, temp1, temp3 & 0xf0);
-            buffer_1_mt(address, EMPTY_TILE);
+        // Bug: stars don't consistently get cleared.
+        // They are collected in memory (and thus only collided with once),
+        // but the metatiles are not always actually set to EMPTY_TILE.
+        address = get_ppu_addr(nt, temp1, temp3 & 0xf0);
+        buffer_1_mt(address, EMPTY_TILE);
 
-            break;
-        case ENERGY_REFILL_TILE:
-            // Touched an energy refill tile: Let's collect it.
-            *(unsigned char *)temp5 = EMPTY_TILE;
-            // Refill the energy.
-            energy = MAX_ENERGY;
-
-            // Set the metatile to the Empty Tile... once we figure out the right way.
-
-            break;
-        default:
-            
-            break;
+    } else if (temp0 & METATILE_CONVEYOR_LEFT) {
+        // Can confirm that this works, though I need to add
+        // checks to ensure the movement only occurs when Valrigard
+        // is standing (and not when he's just touching or flying into these tiles).
+        valrigard.x -= 0x0080;
+    } else if (temp0 & METATILE_CONVEYOR_RIGHT) {
+        valrigard.x += 0x0080;
+    } else if (temp0 & METATILE_YELLOW_DOOR) {
+        // For now, end the game.
+        if (pad1 & PAD_UP) {
+            game_mode = MODE_GAME_OVER;
+        }
+    } else if (temp0 & METATILE_RED_DOOR) {
+        game_mode = MODE_GAME_OVER;
     }
 
     // debug_tile_x = temp1 >> 4;
