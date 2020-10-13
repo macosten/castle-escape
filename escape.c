@@ -83,11 +83,11 @@ unsigned char game_mode;
 
 int address;
 
-// load_room variables
 unsigned char x;
 unsigned char y;
-unsigned char nt;
 unsigned char index;
+
+unsigned char nt;
 unsigned char map;
 
 unsigned int scroll_x;
@@ -260,10 +260,15 @@ const unsigned char * const grarrl_sprite_lookup_table[] = {grarrl_left, grarrl_
 
 // const unsigned char const enemy_contact_behavior_lookup_table[] = {0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1}
 
-// Possibly a silly way to reuse the lost 4 * 16 bytes of RAM in each c_map:
+// Possibly a silly way to reuse the lost 4 * 15 (or 2 * 35) bytes of RAM in each c_map:
 // List offsets from the beginning of the c_maps at (16 * n + 12)
-// Then, (c_map + extra_cmap_data_offsets[n]) can be used as 4 bytes of extra RAM.
-const unsigned char const extra_cmap_data_offsets[]={ 12, 28, 44, 60, 76, 92, 108, 124, 140, 156, 172, 188, 204, 220, 236 };
+// Then, (c_map + extra_cmap_data_offsets[n]) can be used as 2 bytes of extra RAM.
+const unsigned char const extra_cmap_data_offsets[]={ 
+    12, 14, 28, 30, 44, 46, 60, 62, 
+    76, 78, 92, 94,108,110,124,126,
+   140,142,156,158,172,174,188,190,
+   204,206,220,222,236,238
+};
 
 // Actually, this doesn't work whatsoever - we'll try again later...
 // typedef void (* const VoidFunctionLookupTable)(void);
@@ -1366,6 +1371,16 @@ void cannon_ai(void) {
     // Wait a while. Turn towards Valrigard. Fire a cannonball in his direction.
     // Todo.
 
+    // High byte of extra should be 
+
+    // The next enemy should be a cannonball. If it's active, don't do anything.
+    if (!IS_ENEMY_ACTIVE(x+1)) {
+        // Subtract from a (randomly-seeded?) timer of some sort.
+        // If that timer == 0, turn to valrigard, then "fire a new cannonball" 
+        // (i.e set the cannonball's x to my x, y to my y, etc).
+        // Don't forget to tell it what direction it should be going in as well.
+
+    }
 
 }
 
@@ -1376,6 +1391,132 @@ void cannonball_ai(void) {
     // I'm not going to prioritize it...
 
     // Todo.
+
+    // brads
+    temp1 = brads_lookup(enemies.extra[x]);
+    
+    // add/sub this to x
+    temp2 = cos_lookup(temp1);
+
+    // add/sub this to y
+    temp3 = sin_lookup(temp1);
+
+    // Among enemies, only cannonballs will really have sub_x and sub_y.
+    // they'll be held in the spare areas in c_map and/or c_map2...
+
+    // (It's possible I'm prematurely optimizing for RAM space. Not sure.)
+    // (If there's enough space, perhaps a sub_x and a sub_y array are appropriate
+    // as additional properties of "enemies" - but at the same time, I've only got
+    // 2k of RAM in total...)
+
+    // Since there will only ever be a maximum of MAX_ENEMIES/2 cannonballs onscreen
+    // at once (as for each cannonball there must also be a cannon), 
+    // as long as MAX_ENEMIES <= 60, this solution should be fine:
+
+    temp4 = x >> 1;
+
+    // Deal with the x-direction first.
+
+    high_byte(temp5) = enemies.x[x];
+    low_byte(temp5) = c_map2[temp4];
+
+    if (CANNONBALL_X_DIRECTION(x)) {
+        // Positive X - add temp2
+        temp5 += temp2;
+        // temp1 will be the x coordinate at which we check for a collision.
+        temp1 = high_byte(temp5) + 7;
+    } else {
+        // Negative X - subtract temp2
+        temp5 -= temp2;
+        // temp1 will be the x coordinate at which we check for a collision.
+        temp1 = high_byte(temp5) + 0xff;
+    }
+    // Save the high and low bytes.
+    enemies.x[x] = high_byte(temp5);
+    c_map2[temp4] = low_byte(temp5);
+
+    // It's a bit strange because we have a sub_y and a super_y (nt) in this case, 
+    // but we'll take care of the sub_y first...
+    high_byte(temp6) = enemies.actual_y[x];
+    low_byte(temp6) = c_map2[temp4 + 1];
+
+    
+    if (CANNONBALL_Y_DIRECTION(x)) {
+        // Positive Y - add.
+        temp6 += temp3;
+
+        // Return the low byte to the appropriate place in c_map2.
+        c_map2[temp4 + 1] = low_byte(temp6);
+        
+        // Move the actual_y value into the low byte
+        low_byte(temp6) = high_byte(temp6);
+        // and make nt the new high byte.
+        high_byte(temp6) = enemies.nt[x];
+
+        // Using add_scroll_y(0, ___) will 
+        // correct the value if the low byte is > 0xef.
+        // Clamp the value. 
+        temp6 = add_scroll_y(0x00, temp6);
+
+        // Save the corrected nt.
+        enemies.nt[x] = high_byte(temp6);
+
+        // Save the actual_y value.
+        enemies.actual_y[x] = low_byte(temp6);
+
+        // Figure out where the collision should be detected.
+        temp5 = add_scroll_y(7, temp6);
+
+    } else {
+        // Negative Y - subtract.
+        temp6 -= temp3;
+
+        // Return the low byte to the appropriate place in c_map2.
+        c_map2[temp4 + 1] = low_byte(temp6);
+
+        // Move the actual_y value into the low byte
+        low_byte(temp6) = high_byte(temp6);
+        // and make nt the new high byte.
+        high_byte(temp6) = enemies.nt[x];
+
+        // Clamp the value. 
+        temp6 = sub_scroll_y(0x00, temp6);
+
+        // Save the corrected nt.
+        enemies.nt[x] = high_byte(temp6);
+
+        // Save the actual_y value.
+        enemies.actual_y[x] = low_byte(temp6);
+        
+        // Figure out where the collision should be detected.
+        temp5 = sub_scroll_y(1, temp6);
+    }
+
+    // Now that we know where we are, it's time to check to see if this cannonball
+    // is colliding with any tiles - if it is, it should disappear.
+    
+    // The collision nt is in high_byte(temp5).
+    // The y value we're looking at is in low_byte(temp5).
+    // The x value we're looking at is in temp1.
+
+    coordinates = (temp1 >> 4) + (low_byte(temp5) & 0xf0);
+
+    // Check for a collision in the center.
+    if (high_byte(temp5) & 1) {
+        collision = c_map2[coordinates];        
+    } else {
+        collision = c_map[coordinates];
+    }
+
+    if (METATILE_IS_SOLID(collision)) {
+        // Clear the lower nibble, then return.
+        enemies.flags_type[x] = ENEMY_NONE;
+        // It's possible we might want to play a sound effect or animation here.
+    }
+
+    // Yeah, my ordering here was a little different
+    // but this enemy has by far the most complicated AI so far...
+    // so I'm going to cut myself a little bit of slack.
 
 }
 
