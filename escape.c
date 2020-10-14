@@ -172,12 +172,6 @@ unsigned char debug_tile_y;
 
 #pragma bss-name(push, "BSS")
 
-// Used for collisions.
-// We could save some RAM by coming up with a system
-// to convert from the current bitpacked coords to
-// one that functions with rows of 12 instead of 16...
-// But we don't currently have enough space in RAM to store 
-// 6 c_maps of size 180 anyway, so there's not much point.
 unsigned char c_map[240];
 unsigned char c_map2[240];
 
@@ -275,7 +269,6 @@ void bg_collision_sub(void);
 void draw_screen_U(void);
 void draw_screen_D(void);
 void draw_screen_sub(void);
-void new_cmap(void);
 
 void check_spr_objects(void);
 void sprite_collisions(void);
@@ -316,16 +309,6 @@ const unsigned char * const grarrl_sprite_lookup_table[] = {grarrl_left, grarrl_
 
 const unsigned char * const cannon_sprite_lookup_table[] = {cannon_up, cannon_up_left, cannon_left, cannon_down_left, cannon_down, cannon_down_right, cannon_right, cannon_up_right};
 // const unsigned char const enemy_contact_behavior_lookup_table[] = {0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1}
-
-// Possibly a silly way to reuse the lost 4 * 15 (or 2 * 35) bytes of RAM in each c_map:
-// List offsets from the beginning of the c_maps at (16 * n + 12)
-// Then, (c_map + extra_cmap_data_offsets[n]) can be used as 2 bytes of extra RAM.
-const unsigned char const extra_cmap_data_offsets[]={ 
-    12, 14, 28, 30, 44, 46, 60, 62, 
-    76, 78, 92, 94,108,110,124,126,
-   140,142,156,158,172,174,188,190,
-   204,206,220,222,236,238
-};
 
 void main (void) {
         
@@ -530,9 +513,6 @@ void begin_level(void) {
     SET_STATUS_ALIVE();
 
     // Load the level information.
-    //load_level();
-    //load_room();
-
     load_level_new();
 
     // Let's seed the RNG...
@@ -543,38 +523,6 @@ void begin_level(void) {
 
     // Turn the PPU back on.
     ppu_on_all();
-}
-
-// The following two functions... may possibly get stuck together. We'll see.
-void load_level(void) {
-    // Reset a few variables related to the player
-    player_flags = 0; 
-    scroll_count = 0; 
-    
-    nt_max = level_starting_nt[level_index+1];
-    nt_current = valrigard_starting_nt[level_index];
-    high_byte(scroll_y) = nt_current; // The high byte of scroll_y is the nametable we're currently in (0-255).
-    low_byte(scroll_y) = 2;
-    
-    high_byte(max_scroll_y) = nt_max - 1; // bottom of this level
-    low_byte(max_scroll_y) = 0xef;
-    
-    // nt_min = level_starting_nt[level_index]
-    high_byte(min_scroll_y) = level_starting_nt[level_index]; // Min Scroll
-    low_byte(min_scroll_y) = 0x02;
-    
-    initial_scroll = ((nt_current * 0x100) - 0x11);
-    
-    // Set inital coordinates
-    temp4 = valrigard_inital_coords[level_index];
-
-    // This combination of (uncommented) lines results in the smallest code... bytewise.
-    // Still not sure what cc65 makes the fastest.
-    //valrigard.x = ((temp4 >> 4) * 16) << 8;
-    //valrigard.y = (temp4 & 0x0f) << 12;
-    valrigard.x = (temp4 & 0xf0) << 8;
-    valrigard.y = ((temp4 & 0x0f) * 16) << 8;
-
 }
 
 void load_level_new(void) {
@@ -645,9 +593,6 @@ void load_level_new(void) {
         if (x == 0xe0) break;
     }
     clear_vram_buffer();
-    
-    //copy the room to the collision map
-    new_cmap();
 
     // todo: check this following line for correctness...
     max_scroll_y = scroll_y;
@@ -718,101 +663,6 @@ void load_room_new(void) {
 
     temppointer = level_nametables[x];
     memcpy(cmaps[x], temppointer, 240);
-}
-
-void load_room(void) {
-    set_data_pointer(level_nametables[nt_current]);
-    set_mt_pointer(metatiles);
-    temp1 = (initial_scroll >> 8) + 1;
-    temp1 = (temp1 & 1) << 1;
-    for(y=0; ;y+=0x20){
-        for(x=0; ;x+=0x20){
-            clear_vram_buffer(); // do each frame, and before putting anything in the buffer
-            
-            address = get_ppu_addr(temp1, x, y);
-            index = (y & 0xf0) + (x >> 4);
-            buffer_4_mt(address, index); // ppu_address, index to the data
-            flush_vram_update_nmi();
-            if (x == 0xe0) break;
-        }
-        if (y == 0xe0) break;
-    }
-    
-    
-    temp1 = temp1 ^ 2; // flip that 0000 0010 bit
-    // a little bit in the other room
-    set_data_pointer(level_nametables[(char)nt_current-1]); // NOTE: Don't call if nt_current = 0, or who really knows what will happen
-    for(x=0; ;x+=0x20){
-        y = 0xe0;
-        clear_vram_buffer(); // do each frame, and before putting anything in the buffer
-        address = get_ppu_addr(temp1, x, y);
-        index = (y & 0xf0) + (x >> 4);
-        buffer_4_mt(address, index); // ppu_address, index to the data
-        flush_vram_update_nmi();
-        if (x == 0xe0) break;
-    }
-    clear_vram_buffer();
-    
-    //copy the room to the collision map
-    new_cmap();
-
-    max_scroll_y = scroll_y;
-
-    // Load the enemy data.
-    // ... todo.
-
-    // sprite_obj_init / Load Enemies
-
-    // Clear the enemy database.
-    memfill(&enemies, 0, sizeof(enemies));
-
-    // Load the enemy data for the current level.
-    temppointer = level_enemy_data[level_index];
-
-    for (x = 0, y = 0; x < MAX_ENEMIES; ++x){
-
-        enemies.y[x] = 0;
-        temp1 = temppointer[y]; // Get a byte of data - the bitpacked coords.
-
-        if (temp1 == 0xff) break; // 0xff terminates the enemy data.
-
-        enemies.x[x] = temp1 & 0xf0;
-        enemies.actual_y[x] = (temp1 & 0x0f) << 4;
-
-        ++y; // Next byte:
-
-        temp1 = temppointer[y]; // the namtetable byte.
-        enemies.nt[x] = temp1;
-
-        ++y; // Next byte:
-
-        temp1 = temppointer[y]; // the direction+type byte.
-        enemies.flags_type[x] = temp1; 
-        // The high nibble will is direction; the low one will be type.
-
-        temp1 = GET_ENEMY_TYPE(x);
-        if (temp1 == 4) { // ENEMY_CANNON
-            // Load in the next enemy as a cannonball.
-            ++x;
-            enemies.flags_type[x] = ENEMY_CANNONBALL;
-        } else if (temp1 == 5) { // ENEMY_ACIDPOOL
-            // Load in the next enemy as an acid drop.
-            ++x;
-            enemies.flags_type[x] = ENEMY_ACIDDROP;
-        }
-
-        ++y; // Next byte.
-        
-    }
-
-    // Save the number of loaded enemies.
-    enemies.count = x+1;
-    
-    // Set all the other enemies to be NONEs.
-    for(++x; x < MAX_ENEMIES; ++x) {
-        enemies.flags_type[x] = ENEMY_NONE;
-    }
-    
 }
 
 void draw_sprites(void) {
@@ -1049,21 +899,7 @@ void movement(void) {
         scroll_y = add_scroll_y(temp1, scroll_y);
         valrigard.y -= (temp1 << 8);
     }
-    
-    // Do we need a new collision map? (Did we scroll into a new room/nametable?)
-    
-    // This portion of the code can definitely be optimized into just one function, but I'm tired, so for now:
-    if (valrigard.velocity_y <= 0) {
-        if ((scroll_y & 0xff) >= 0xec) {
-            nt_current = (scroll_y >> 8);
-            new_cmap();
-        }
-    } else {
-        if ((scroll_y & 0xff) <= 0x02) {
-            nt_current = (scroll_y >> 8) + 1;
-            new_cmap();
-        }
-    }   
+
 }
 
 
@@ -1071,14 +907,11 @@ void bg_collision(void){
     // note, !0 = collision
     // sprite collision with backgrounds
     // load the object's x,y,width,height to hitbox, then call this
-    
 
     collision_L = 0;
     collision_R = 0;
     collision_U = 0;
     collision_D = 0;
-    
-    
     
     temp3 = hitbox.y;
     if(L_R_switch) temp3 += 2; // fix bug, walking through walls
@@ -1088,7 +921,6 @@ void bg_collision(void){
     // Upper left... 
 
     temp5 = add_scroll_y(temp3, scroll_y); // upper left
-    temp2 = temp5 >> 8; // high byte y
     temp3 = temp5 & 0xff; // low byte y
 
     temp1 = hitbox.x; // x left
@@ -1109,7 +941,7 @@ void bg_collision(void){
     
     eject_R = (temp1 + 1) & 0x0f;
     
-    // temp2,temp3 is unchanged
+    // temp2,temp3 (high and low byte of 7) are unchanged
     bg_collision_sub();
     
     if(collision){ // find a corner in the collision map
@@ -1125,7 +957,6 @@ void bg_collision(void){
     temp3 = hitbox.y + hitbox.height; // y bottom
     if(L_R_switch) temp3 -= 2; // fix bug, walking through walls
     temp5 = add_scroll_y(temp3, scroll_y); // upper left
-    temp2 = temp5 >> 8; // high byte y
     temp3 = temp5 & 0xff; // low byte y
     
     eject_D = (temp3 + 1) & 0x0f;
@@ -1154,18 +985,11 @@ void bg_collision(void){
 void bg_collision_sub(void) {
     coordinates = (temp1 >> 4) + (temp3 & 0xf0); 
     
-    map = temp2&1;
-    
-    // Select the correct collision map based on the high byte of y.
-    if (!map) {
-        temp4 = c_map[coordinates];
-        temp_mutablepointer = &(c_map[coordinates]); 
-        // temp5 is now a pointer to the tile in memory that we're checking.
-    }
-    else {
-        temp4 = c_map2[coordinates];
-        temp_mutablepointer = &(c_map2[coordinates]);
-    }
+    // Instead of selecting from one of two c_maps, select from one of the many cmaps.
+    // The index is stored in the high byte of temp5 right now.
+    temppointer = cmaps[high_byte(temp5)];
+    temp4 = temppointer[coordinates];
+    temp_mutablepointer = (char *)&(temppointer[coordinates]);
     
     // Fetch all the properties about this tile.
     temp0 = metatile_property_lookup_table[temp4];
@@ -1239,7 +1063,8 @@ void draw_screen_D(void) {
 void draw_screen_sub(void) {
     temp1 = pseudo_scroll_y >> 8;
     
-    set_data_pointer(level_nametables[temp1]);
+    //set_data_pointer(level_nametables[temp1]);
+    set_data_pointer(cmaps[temp1]); // TODO: clamp this value to 6.
     nt = (temp1 & 1) << 1; // 0 or 2
     y = pseudo_scroll_y & 0xff;
     
@@ -1260,19 +1085,6 @@ void draw_screen_sub(void) {
     
     ++scroll_count;
     scroll_count &= 3; //mask off top bits, keep it 0-3
-}
-
-// (adapted from nesdoug): copy a new collision map to one of the 2 c_map arrays.
-// In this version, nt_current should be set before this function is called.
-void new_cmap(void) {
-    // copy a new collision map to one of the 2 c_map arrays
-    map = nt_current & 1; //even or odd?
-    if (!map) {
-        memcpy(c_map, level_nametables[nt_current], 240);
-    }
-    else {
-        memcpy(c_map2, level_nametables[nt_current], 240);
-    }
 }
 
 // Check to see what's on-screen.
@@ -1419,6 +1231,7 @@ void enemy_movement(void) {
         }
     }
 
+    debug_tile_x = nt_current;
 }
 
 // I reordered these to be listed in the order in which they were implemented.
@@ -1440,11 +1253,9 @@ void korbat_ai(void) {
     coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
 
     // Which cmap should I look at?
-    if (enemies.nt[x] & 1) { // Even or odd?
-        collision = c_map2[coordinates];
-    } else {
-        collision = c_map[coordinates];
-    }
+    temp0 = enemies.nt[x];
+    temppointer = cmaps[temp0];
+    collision = temppointer[coordinates];
     
     if (METATILE_IS_SOLID(collision)) {
         ENEMY_FLIP_DIRECTION(x);
@@ -1490,11 +1301,8 @@ void spikeball_ai(void) {
     }
 
     // Which cmap should I look at?
-    if (temp4 & 1) { // Even or odd?
-        collision = c_map2[coordinates];
-    } else {
-        collision = c_map[coordinates];
-    }
+    temppointer = cmaps[temp4];
+    collision = temppointer[coordinates];
     
     if (!METATILE_IS_SOLID(collision)) {
         ENEMY_FLIP_DIRECTION(x);
@@ -1507,11 +1315,9 @@ void spikeball_ai(void) {
     coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
 
     // Which cmap should I look at?
-    if (enemies.nt[x] & 1) { // Even or odd?
-        collision = c_map2[coordinates];
-    } else {
-        collision = c_map[coordinates];
-    }
+    temp4 = enemies.nt[x];
+    temppointer = cmaps[temp4];
+    collision = temppointer[coordinates];
     
     if (METATILE_IS_SOLID(collision)) {
         ENEMY_FLIP_DIRECTION(x);
@@ -1554,11 +1360,8 @@ void sun_ai(void) {
     coordinates = (temp1 >> 4) + (temp2 & 0xf0);
 
     // Which cmap should I look at?
-    if (temp4 & 1) { // Even or odd?
-        collision = c_map2[coordinates];
-    } else {
-        collision = c_map[coordinates];
-    }
+    temppointer = cmaps[temp4];
+    collision = temppointer[coordinates];
 
     if (METATILE_IS_SOLID(collision)) {
         ENEMY_FLIP_DIRECTION(x);
@@ -1584,11 +1387,9 @@ void acid_drop_ai(void) {
 
     coordinates = (temp1 >> 4) + (low_byte(temp6) & 0xf0);
 
-    if (high_byte(temp6) & 1) {
-        collision = c_map2[coordinates];        
-    } else {
-        collision = c_map[coordinates];
-    }
+    // Which cmap should I look at?
+    temppointer = cmaps[high_byte(temp6)];
+    collision = temppointer[coordinates];
 
     if (METATILE_IS_SOLID(collision)) {
         // Clear the lower nibble, then return.
@@ -1647,7 +1448,6 @@ void cannonball_ai(void) {
     temp3 = sin_lookup(temp1);
 
     // Among enemies, only cannonballs will really have sub_x and sub_y.
-    // they'll be held in the spare areas in c_map and/or c_map2...
 
     // (It's possible I'm prematurely optimizing for RAM space. Not sure.)
     // (If there's enough space, perhaps a sub_x and a sub_y array are appropriate
@@ -1714,7 +1514,7 @@ void cannonball_ai(void) {
         // Negative Y - subtract.
         temp6 -= temp3;
 
-        // Return the low byte to the appropriate place in c_map2.
+        // Return the low byte to the appropriate place.
         enemies.extra2[x] = low_byte(temp6);
 
         // Move the actual_y value into the low byte
@@ -1745,11 +1545,8 @@ void cannonball_ai(void) {
     coordinates = (temp1 >> 4) + (low_byte(temp5) & 0xf0);
 
     // Check for a collision in the center.
-    if (high_byte(temp5) & 1) {
-        collision = c_map2[coordinates];        
-    } else {
-        collision = c_map[coordinates];
-    }
+    temppointer = cmaps[high_byte(temp5)];
+    collision = temppointer[coordinates];
 
     if (METATILE_IS_SOLID(collision)) {
         // Clear the lower nibble, then return.
