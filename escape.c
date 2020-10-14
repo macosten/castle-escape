@@ -138,22 +138,42 @@ unsigned char nt_current; // The nametable Valrigard is currently in. This shoul
 
 #define METATILE_IS_SOLID(mtid) (metatile_property_lookup_table[mtid] & METATILE_SOLID)
 
-#pragma bss-name(push, "BSS")
-
 unsigned int score; // Is the score important enough to place in the zp?
 
+Player valrigard; // A width of 12 makes Valrigard's hitbox a bit more forgiving. It also happens to match up with his nose.
+Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C stack is not preferable to using a global, generally speaking)
+// I renamed nesdoug's "Generic" to "Hitbox" to remind me of what purpose it serves.
+
+Hitbox hitbox2; // This hitbox is used for enemies.
+
+// Debug variables - these will be removed in the future.
+unsigned char debug_tile_x;
+unsigned char debug_tile_y;
+
+// ~101 zp bytes left?
+
+#pragma bss-name(push, "BSS")
+
 // Used for collisions.
+// We could save some RAM by coming up with a system
+// to convert from the current bitpacked coords to
+// one that functions with rows of 12 instead of 16...
+// But we don't currently have enough space in RAM to store 
+// 6 c_maps of size 180 anyway, so there's not much point.
 unsigned char c_map[240];
 unsigned char c_map2[240];
 
-const unsigned char palette_bg[]={
+// ~347 bytes of BSS ram left?
+
+
+const unsigned char const palette_bg[]={
     0x0f, 0x00, 0x10, 0x30, // black, gray, lt gray, white
     0x0f, 0x01, 0x11, 0x31, // Blues
     0x0f, 0x06, 0x16, 0x26, // Reds, like the Red Doors
     0x0f, 0x17, 0x27, 0x38, // Yellow(ish)s, like the main level exit doors
 };
 
-const unsigned char palette_sp[]={
+const unsigned char const palette_sp[]={
 0x0f, 0x16, 0x27, 0x37, // Red, Yellow, Light Yellow
 0x0f, 0x01, 0x0f, 0x32, // valrigard's palette
 0x0f, 0x04, 0x14, 0x24, // Purples.
@@ -173,14 +193,8 @@ const unsigned char const shuffle_array[]={
 30,28,26,24,22,20,18,16,14,12,10, 8, 6, 4, 2, 0,
 };
 
-// X, Y
-Player valrigard; // A width of 12 makes Valrigard's hitbox a bit more forgiving. It also happens to match up with his nose.
-Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C stack is not preferable to using a global in this use case)
-// I renamed nesdoug's "Generic" to "Hitbox" to remind me of what purpose it serves.
-
 // Enemy memory.
 Enemies enemies;
-Hitbox hitbox2; 
 
 #define ACTIVATE_ENEMY(index) (enemies.flags_type[index] |= 0b10000000) // Set high bit.
 #define DEACTIVATE_ENEMY(index) (enemies.flags_type[index] &= 0b01111111) // Unset high bit.
@@ -203,10 +217,6 @@ Hitbox hitbox2;
 #define CANNONBALL_X_DIRECTION(index) (enemies.flags_type[index] & 0b01000000)
 #define CANNONBALL_Y_DIRECTION(index) (enemies.flags_type[index] & 0b00100000)
 
-// Debug variables - these will be removed in the future.
-unsigned char debug_tile_x;
-unsigned char debug_tile_y;
-
 // MARK: Function Prototypes
 //void set_sprite_zero(void);
 
@@ -225,9 +235,9 @@ void draw_screen_sub(void);
 void new_cmap(void);
 
 void check_spr_objects(void);
-// char get_position(void);
 void sprite_collisions(void);
 void enemy_movement(void);
+void enemy_movement_sub(void);
 
 void korbat_ai(void);
 void spikeball_ai(void);
@@ -273,11 +283,6 @@ const unsigned char const extra_cmap_data_offsets[]={
    204,206,220,222,236,238
 };
 
-// Actually, this doesn't work whatsoever - we'll try again later...
-// typedef void (* const VoidFunctionLookupTable)(void);
-// const VoidFunctionLookupTable enemy_movement_lookup[] = {&korbat_ai, &spikeball_ai};
-
-
 void main (void) {
         
     ppu_off(); // screen off
@@ -292,15 +297,7 @@ void main (void) {
 
     set_vram_buffer(); // do at least once, sets a pointer to a buffer
     clear_vram_buffer();
-    
-    // Set the level index to the first level.
-    /*level_index = 0;
-
-    load_level();
-    load_room();
-
-    energy = MAX_ENERGY;*/
-    
+        
     //Debug: set the first half of the bitfield to FF.
     //for (temp1 = 0; temp1 < 128; ++temp1) { set_object_bit(temp1); }
         
@@ -384,6 +381,10 @@ void main (void) {
             if (game_mode == MODE_GAME_OVER) {
                 load_game_over_screen();
             }
+
+            // Debug
+            debug_tile_x = get_frame_count();
+
         }
 
         // For now, "game over" is "you win"
@@ -474,6 +475,9 @@ void begin_level(void) {
     
     // Set the game mode properly.
     game_mode = MODE_GAME;
+
+    // We're alive now, so let's make sure we're marked as such.
+    SET_STATUS_ALIVE();
 
     // Load the level information.
     load_level();
@@ -639,7 +643,7 @@ void draw_sprites(void) {
         
         // Not that we should have enemies ever in these X values, but...
         // (We may be able to optimize this away)
-        if (temp_x == 0) temp_x = 1; // Basing this off NESDoug's report of problems with temp_x = 0.
+        if (temp_x == 0) ++temp_x; // Basing this off NESDoug's report of problems with temp_x = 0.
         if (temp_x > 0xf0) continue;
 
         temp_y = enemies.y[y];
@@ -1103,15 +1107,6 @@ void check_spr_objects(void) {
     }
 }
 
-// A subroutine of check_spr_objects; if this sprite is in the screen's range, return 1.
-// The value of temp_y will change after this call.
-/*char get_position(void) {
-    temp5 -= scroll_y;
-    temp_y = temp5 & 0xff;
-    if (high_byte(temp5)) return 0;
-    return 1;
-}*/
-
 // Check for sprite collisions with the player.
 void sprite_collisions(void) {
     // hitbox == the player's hitbox.
@@ -1155,27 +1150,12 @@ void enemy_movement(void) {
     // This one's a bit of an uncharted realm. 
     // I'm thinking we'll want to optimize this one somehow...
 
-    // Is a jump table like this faster?
-    /*static const void * const enemy_ai_jump_table[] = {
-        &&no_ai,
-        &&korbat_ai,
-        &&spikeball_ai,
-        &&splyke_ai,
-        &&cannon_ai,
-        &&acid_ai,
-        &&spikeball_ai,
-        &&sun_ai,
-        &&no_ai,
-        &&cannonball_ai,
-        &&acid_drop_ai
-    };*/
-
     temp4 = 0;
 
     for (x = 0; x < MAX_ENEMIES; ++x) {
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
-
+            
             // Method 1: Big switch block
             switch (temp1) {
                 case 1: // ENEMY_KORBAT
@@ -1206,37 +1186,70 @@ void enemy_movement(void) {
                 default: // Unimplemented
                     break;
             }
-
-            // Method 2: Jump table
-            // (enemy_movement_lookup[temp1])();
-            //goto *enemy_ai_jump_table[temp1];
-            /*
-            no_ai:
-                continue;
-            korbat_ai:
-                korbat_ai();
-                continue;
-            spikeball_ai:
-                spikeball_ai();
-                continue;
-            splyke_ai:
-                continue;
-            cannon_ai:
-                continue;
-            acid_ai:
-                continue;
-            sun_ai:
-                continue;
-            cannonball_ai:
-                continue;
-            acid_drop_ai:
-                continue;
-            */
-
-
+            // enemy_movement_sub();
         }
     }
 
+}
+
+void enemy_movement_sub(void) {
+    // gray_line() implies that using this as a subroutine 
+    // is at least a couple of scanlines slower than the switch statement
+    // currently implemented, so I'm not convinced this is the way to go...
+    // but I'm still somehow not completely sure.
+    /*
+    // Is a jump table like this faster?
+    static const void * const enemy_ai_jump_table[] = {
+        &&no_ai,
+        &&korbat_ai,
+        &&spikeball_ai,
+        &&splyke_ai,
+        &&cannon_ai,
+        &&acid_ai,
+        &&spikeball_ai,
+        &&sun_ai,
+        &&boss_ai,
+        &&cannonball_ai,
+        &&acid_drop_ai
+    };
+
+    //continue;
+    // Method 2: Jump table
+    // (enemy_movement_lookup[temp1])();
+    goto *enemy_ai_jump_table[temp1];
+    // Bug: CC65 breaks when I try using this method.
+    // It just doesn't seem to like it... or I'm doing something wrong.
+    
+    
+    no_ai:
+        return;
+    korbat_ai:
+        korbat_ai();
+        return;
+    spikeball_ai:
+        spikeball_ai();
+        return;
+    splyke_ai:
+        splyke_ai();
+        return;
+    cannon_ai:
+        cannon_ai();
+        return;
+    acid_ai:
+        acid_ai();
+        return;
+    sun_ai:
+        sun_ai();
+        return;
+    boss_ai:
+        return;
+    cannonball_ai:
+        cannonball_ai();
+        return;
+    acid_drop_ai:
+        acid_drop_ai();
+        return;
+    */
 }
 
 // I reordered these to be listed in the order in which they were implemented.

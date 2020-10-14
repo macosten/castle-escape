@@ -5,6 +5,9 @@
 //  Created by Zaccari Silverman on 6/17/20.
 //
 
+// Idea: what if we used the useless 4 bytes at the end of each row
+// to encode a list of where this nametable's powerups/?blocks were?
+
 const unsigned char const level10_0[]={
 4,7,7,7,7,7,7,7,7,7,7,6,44,44,44,44,
 6,44,44,44,44,44,44,44,44,44,44,14,44,44,44,44,
