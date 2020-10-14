@@ -237,7 +237,6 @@ void new_cmap(void);
 void check_spr_objects(void);
 void sprite_collisions(void);
 void enemy_movement(void);
-void enemy_movement_sub(void);
 
 void korbat_ai(void);
 void spikeball_ai(void);
@@ -1186,70 +1185,9 @@ void enemy_movement(void) {
                 default: // Unimplemented
                     break;
             }
-            // enemy_movement_sub();
         }
     }
 
-}
-
-void enemy_movement_sub(void) {
-    // gray_line() implies that using this as a subroutine 
-    // is at least a couple of scanlines slower than the switch statement
-    // currently implemented, so I'm not convinced this is the way to go...
-    // but I'm still somehow not completely sure.
-    /*
-    // Is a jump table like this faster?
-    static const void * const enemy_ai_jump_table[] = {
-        &&no_ai,
-        &&korbat_ai,
-        &&spikeball_ai,
-        &&splyke_ai,
-        &&cannon_ai,
-        &&acid_ai,
-        &&spikeball_ai,
-        &&sun_ai,
-        &&boss_ai,
-        &&cannonball_ai,
-        &&acid_drop_ai
-    };
-
-    //continue;
-    // Method 2: Jump table
-    // (enemy_movement_lookup[temp1])();
-    goto *enemy_ai_jump_table[temp1];
-    // Bug: CC65 breaks when I try using this method.
-    // It just doesn't seem to like it... or I'm doing something wrong.
-    
-    
-    no_ai:
-        return;
-    korbat_ai:
-        korbat_ai();
-        return;
-    spikeball_ai:
-        spikeball_ai();
-        return;
-    splyke_ai:
-        splyke_ai();
-        return;
-    cannon_ai:
-        cannon_ai();
-        return;
-    acid_ai:
-        acid_ai();
-        return;
-    sun_ai:
-        sun_ai();
-        return;
-    boss_ai:
-        return;
-    cannonball_ai:
-        cannonball_ai();
-        return;
-    acid_drop_ai:
-        acid_drop_ai();
-        return;
-    */
 }
 
 // I reordered these to be listed in the order in which they were implemented.
