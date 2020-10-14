@@ -220,6 +220,16 @@ Enemies enemies;
 // MARK: Function Prototypes
 //void set_sprite_zero(void);
 
+#pragma bss-name(push, "PRGRAM")
+
+unsigned char xmap0[240];
+unsigned char xmap1[240];
+unsigned char xmap2[240];
+unsigned char xmap3[240];
+unsigned char xmap4[240];
+unsigned char xmap5[240];
+
+
 void draw_sprites(void);
 void movement(void);
 
@@ -311,6 +321,14 @@ void main (void) {
     temp2 = sin_lookup(temp1);
     temp3 = cos_lookup(temp1);
     temp4 = abs_subtract(0x20, 0x20);
+
+    // Clear the enemy database.
+    memfill(&xmap0, 0x69, 240);
+    memfill(&xmap1, 0xAA, 240);
+    memfill(&xmap2, 0xDE, 240);
+    memfill(&xmap3, 0x1F, 240);
+    memfill(&xmap4, 0xEE, 240);
+    memfill(&xmap5, 0xDA, 240);
 
     ppu_on_all(); // turn on screen
 
