@@ -8,6 +8,12 @@
 // Idea: what if we used the useless 4 bytes at the end of each row
 // to encode a list of where this nametable's powerups/?blocks were?
 
+// Do not try to use pointers from another bank while that bank isn't 
+// swapped in the correct place in RAM.
+// Otherwise, you'll get garbage data.
+
+// #pragma rodata-name(push, "BANK0")
+
 const unsigned char const level10_0[]={
 4,7,7,7,7,7,7,7,7,7,7,6,44,44,44,44,
 6,44,44,44,44,44,44,44,44,44,44,14,44,44,44,44,

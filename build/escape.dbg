@@ -1,6 +1,6 @@
 BreakPoint: startAddr=005E  endAddr=0000  flags=-CRW--  condition=""  desc="" 
 BreakPoint: startAddr=0037  endAddr=0000  flags=-CR-X-  condition=""  desc="" 
-BreakPoint: startAddr=9CDF  endAddr=0000  flags=-C--X-  condition=""  desc="Enemy Movement Start" 
+BreakPoint: startAddr=9CDF  endAddr=0000  flags=EC--X-  condition=""  desc="Enemy Movement Start" 
 BreakPoint: startAddr=9DE6  endAddr=9EF5  flags=-C--X-  condition="#0f==$003A"  desc="Sun AI" 
 BreakPoint: startAddr=9D27  endAddr=0000  flags=-C--X-  condition=""  desc="Enemy Movement End" 
 BreakPoint: startAddr=9D67  endAddr=0000  flags=-C--X-  condition=""  desc="" 

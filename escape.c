@@ -5,6 +5,10 @@
 
 #include "lib/neslib.h"
 #include "lib/nesdoug.h"
+
+#include "mmc1/bank_helpers.h"
+// #include "mmc1/bank_helpers.c" // ?
+
 #include "structs.h"
 #include "metasprites.h"
 #include "metatiles.h"
@@ -22,7 +26,19 @@
 #define MAX_FALL MAX_SPEED
 #define FLY_VEL -0x600
 
+enum {BANK_0, BANK_1, BANK_2, BANK_3, BANK_4, BANK_5, BANK_6};
+// 7 shouldn't be necessary since that's the fixed bank. 
+// We can just call it normally.
+
+// All the appropriate stuff below this (in this case, variables)
+// should be placed into the named segment.
+// This applies to all appropriate stuff between this pragma
+// and the next bss-name(pop) pragma.
 #pragma bss-name(push, "ZEROPAGE")
+
+// If we wanted to put code or rodata into another bank, we'd do something like:
+// #pragma rodata-name("BANK0")
+// This will probably happen for levels and any level decompression code.
 
 //MARK: Zero Page Globals
 unsigned char pad1;
@@ -139,7 +155,6 @@ unsigned char nt_current; // The nametable Valrigard is currently in. This shoul
 
 #define METATILE_IS_SOLID(mtid) (metatile_property_lookup_table[mtid] & METATILE_SOLID)
 
-unsigned int score; // Is the score important enough to place in the zp?
 
 Player valrigard; // A width of 12 makes Valrigard's hitbox a bit more forgiving. It also happens to match up with his nose.
 Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C stack is not preferable to using a global, generally speaking)
@@ -152,6 +167,8 @@ unsigned char debug_tile_x;
 unsigned char debug_tile_y;
 
 // ~101 zp bytes left?
+
+#pragma bss-name(pop)
 
 #pragma bss-name(push, "BSS")
 
@@ -166,7 +183,9 @@ unsigned char c_map2[240];
 
 // ~347 bytes of BSS ram left?
 
-
+// Likewise for RODATA.
+// Remember that RODATA is defined in the PRG (unswappable) segment.
+#pragma rodata-name ("RODATA")
 const unsigned char const palette_bg[]={
     0x0f, 0x00, 0x10, 0x30, // black, gray, lt gray, white
     0x0f, 0x01, 0x11, 0x31, // Blues
@@ -217,25 +236,39 @@ Enemies enemies;
 #define CANNONBALL_X_DIRECTION(index) (enemies.flags_type[index] & 0b01000000)
 #define CANNONBALL_Y_DIRECTION(index) (enemies.flags_type[index] & 0b00100000)
 
+
+#pragma bss-name(pop)
+
+#pragma bss-name(push, "XRAM")
+
+#define CMAP_COUNT 6
+
+unsigned int score = 0; // Is the score important enough to place in the zp?
+
+unsigned char cmap0[240];
+unsigned char cmap1[240];
+unsigned char cmap2[240];
+unsigned char cmap3[240];
+unsigned char cmap4[240];
+unsigned char cmap5[240];
+
+#pragma bss-name(pop)
+
+const unsigned char * const cmaps[] = {cmap0, cmap1, cmap2, cmap3, cmap4, cmap5, cmap0}; 
+// A mirror of the first one at the bottom to prevent a strange effect I remember happening once a while ago...
+
 // MARK: Function Prototypes
-//void set_sprite_zero(void);
 
-#pragma bss-name(push, "PRGRAM")
-
-unsigned char xmap0[240];
-unsigned char xmap1[240];
-unsigned char xmap2[240];
-unsigned char xmap3[240];
-unsigned char xmap4[240];
-unsigned char xmap5[240];
-
-
+#pragma code-name ("CODE")
 void draw_sprites(void);
 void movement(void);
 
 void begin_level(void);
 void load_level(void);
 void load_room(void);
+
+void load_level_new(void);
+void load_room_new(void);
 
 void bg_collision(void); // For the player
 void bg_collision_sub(void);
@@ -304,7 +337,12 @@ void main (void) {
 
     // use the second set of tiles for sprites
     // both bg and sprites are set to 0 by default
+    // Set the swappable bank like this:
+    set_prg_bank(0);
+    set_chr_bank_0(0);
+    //set_chr_bank_1(1);
     bank_spr(1);
+    
 
     set_vram_buffer(); // do at least once, sets a pointer to a buffer
     clear_vram_buffer();
@@ -322,19 +360,14 @@ void main (void) {
     temp3 = cos_lookup(temp1);
     temp4 = abs_subtract(0x20, 0x20);
 
-    // Clear the enemy database.
-    memfill(&xmap0, 0x69, 240);
-    memfill(&xmap1, 0xAA, 240);
-    memfill(&xmap2, 0xDE, 240);
-    memfill(&xmap3, 0x1F, 240);
-    memfill(&xmap4, 0xEE, 240);
-    memfill(&xmap5, 0xDA, 240);
-
     ppu_on_all(); // turn on screen
 
     while (1){
 
-        while (game_mode == MODE_TITLE) {
+        // For now, just set the same chr bank every frame
+        
+
+        while (game_mode == MODE_TITLE) { 
             ppu_wait_nmi();
             // set_music_speed, etc
 
@@ -356,11 +389,12 @@ void main (void) {
 
         // The game is active and we're drawing frames.
         while (game_mode == MODE_GAME) {
+
             ppu_wait_nmi(); // wait till beginning of the frame
             // the sprites are pushed from a buffer to the OAM during nmi
 
             // set_music_speed(???);
-
+            set_chr_bank_0(0);
             pad1 = pad_poll(0); // read the first controller
             pad1_new = get_pad_new(0);
             
@@ -496,8 +530,10 @@ void begin_level(void) {
     SET_STATUS_ALIVE();
 
     // Load the level information.
-    load_level();
-    load_room();
+    //load_level();
+    //load_room();
+
+    load_level_new();
 
     // Let's seed the RNG...
     seed_rng();
@@ -511,7 +547,9 @@ void begin_level(void) {
 
 // The following two functions... may possibly get stuck together. We'll see.
 void load_level(void) {
-    player_flags = 0; // Clear the player flags
+    // Reset a few variables related to the player
+    player_flags = 0; 
+    scroll_count = 0; 
     
     nt_max = level_starting_nt[level_index+1];
     nt_current = valrigard_starting_nt[level_index];
@@ -525,7 +563,36 @@ void load_level(void) {
     high_byte(min_scroll_y) = level_starting_nt[level_index]; // Min Scroll
     low_byte(min_scroll_y) = 0x02;
     
-    scroll_count = 0;
+    initial_scroll = ((nt_current * 0x100) - 0x11);
+    
+    // Set inital coordinates
+    temp4 = valrigard_inital_coords[level_index];
+
+    // This combination of (uncommented) lines results in the smallest code... bytewise.
+    // Still not sure what cc65 makes the fastest.
+    //valrigard.x = ((temp4 >> 4) * 16) << 8;
+    //valrigard.y = (temp4 & 0x0f) << 12;
+    valrigard.x = (temp4 & 0xf0) << 8;
+    valrigard.y = ((temp4 & 0x0f) * 16) << 8;
+
+}
+
+void load_level_new(void) {
+    // Reset a few variables related to the player
+    player_flags = 0; 
+    scroll_count = 0; 
+
+    nt_max = level_starting_nt[level_index+1];
+    nt_current = valrigard_starting_nt[level_index];
+    high_byte(scroll_y) = nt_current; // The high byte of scroll_y is the nametable we're currently in (0-255).
+    low_byte(scroll_y) = 2;
+    
+    high_byte(max_scroll_y) = nt_max - 1; // bottom of this level
+    low_byte(max_scroll_y) = 0xef;
+    
+    // nt_min = level_starting_nt[level_index]
+    high_byte(min_scroll_y) = 0; // Min Scroll
+    low_byte(min_scroll_y) = 0x02;
     
     initial_scroll = ((nt_current * 0x100) - 0x11);
     
@@ -539,6 +606,118 @@ void load_level(void) {
     valrigard.x = (temp4 & 0xf0) << 8;
     valrigard.y = ((temp4 & 0x0f) * 16) << 8;
 
+    // Load the level into RAM.
+    for (x = 0; x < nt_max; ++x) {
+        load_room_new();
+    }
+
+    // Load inital room data into the PPU.
+    set_data_pointer(cmaps[nt_current]);
+    set_mt_pointer(metatiles);
+    temp1 = (initial_scroll >> 8) + 1;
+    temp1 = (temp1 & 1) << 1;
+    for(y=0; ;y+=0x20){
+        for(x=0; ;x+=0x20){
+            clear_vram_buffer(); // do each frame, and before putting anything in the buffer
+            
+            address = get_ppu_addr(temp1, x, y);
+            index = (y & 0xf0) + (x >> 4);
+            buffer_4_mt(address, index); // ppu_address, index to the data
+            flush_vram_update_nmi();
+            if (x == 0xe0) break;
+        }
+        if (y == 0xe0) break;
+    }
+    
+    
+    temp1 = temp1 ^ 2; // flip that 0000 0010 bit
+    // a little bit in the other room
+
+    // Todo: test the case in which nt_current = 0 and figure out how to make it work
+    set_data_pointer(cmaps[nt_current-1]); // NOTE: Don't call if nt_current = 0, or who really knows what will happen
+    for(x=0; ;x+=0x20){
+        y = 0xe0;
+        clear_vram_buffer(); // do each frame, and before putting anything in the buffer
+        address = get_ppu_addr(temp1, x, y);
+        index = (y & 0xf0) + (x >> 4);
+        buffer_4_mt(address, index); // ppu_address, index to the data
+        flush_vram_update_nmi();
+        if (x == 0xe0) break;
+    }
+    clear_vram_buffer();
+    
+    //copy the room to the collision map
+    new_cmap();
+
+    // todo: check this following line for correctness...
+    max_scroll_y = scroll_y;
+
+
+    // Load Enemies
+
+    // Clear the enemy database.
+    memfill(&enemies, 0, sizeof(enemies));
+
+    // Load the enemy data for the current level.
+    temppointer = level_enemy_data[level_index];
+
+    for (x = 0, y = 0; x < MAX_ENEMIES; ++x){
+
+        enemies.y[x] = 0;
+        temp1 = temppointer[y]; // Get a byte of data - the bitpacked coords.
+
+        if (temp1 == 0xff) break; // 0xff terminates the enemy data.
+
+        enemies.x[x] = temp1 & 0xf0;
+        enemies.actual_y[x] = (temp1 & 0x0f) << 4;
+
+        ++y; // Next byte:
+
+        temp1 = temppointer[y]; // the namtetable byte.
+        enemies.nt[x] = temp1;
+
+        ++y; // Next byte:
+
+        temp1 = temppointer[y]; // the direction+type byte.
+        enemies.flags_type[x] = temp1; 
+        // The high nibble will is direction; the low one will be type.
+
+        temp1 = GET_ENEMY_TYPE(x);
+        if (temp1 == 4) { // ENEMY_CANNON
+            // Load in the next enemy as a cannonball.
+            ++x;
+            enemies.flags_type[x] = ENEMY_CANNONBALL;
+        } else if (temp1 == 5) { // ENEMY_ACIDPOOL
+            // Load in the next enemy as an acid drop.
+            ++x;
+            enemies.flags_type[x] = ENEMY_ACIDDROP;
+        }
+
+        ++y; // Next byte.
+        
+    }
+
+    // Save the number of loaded enemies.
+    enemies.count = x+1;
+    
+    // Set all the other enemies to be NONEs.
+    for(++x; x < MAX_ENEMIES; ++x) {
+        enemies.flags_type[x] = ENEMY_NONE;
+    }
+
+}
+
+void load_room_new(void) {
+    // Load a cmap.
+    // In the future, we'll probably do something like un-LZ77 the room,
+    // but for now we'll just do a simple memcpy.
+
+    // NOTE: In the future, this should be something like:
+    // temppointer = level_nametable_lists[level_index][x];
+    // as a sort of double dereference, or something to that effect.
+
+    temppointer = level_nametables[x];
+    memcpy(cmaps[x], temppointer, 240);
 }
 
 void load_room(void) {

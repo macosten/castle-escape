@@ -5,7 +5,10 @@
 ;nesdoug version, 2019-09
 ;minor change %%, added ldx #0 to functions returning char
 ;removed sprid from c functions to speed them up
+;music and nmi changed for mmc1
 
+;SOUND_BANK is defined at the top of crt0.s
+;and needs to match the bank where the music is
 
 
 
@@ -44,6 +47,14 @@ nmi:
 	jmp	@skipAll
 
 @doUpdate:
+
+;for split screens with different CHR bank at top	
+	lda nmiChrTileBank
+	cmp #NO_CHR_BANK 
+	beq @no_chr_chg
+	jsr _set_chr_bank_0
+@no_chr_chg:
+
 
 	lda #>OAM_BUF		;update OAM
 	sta PPU_OAM_DMA
@@ -131,7 +142,15 @@ nmi:
 
 @skipNtsc:
 
+;switch the music into the prg bank first
+	lda BP_BANK ;save current prg bank
+	pha
+	lda #SOUND_BANK
+	jsr _set_prg_bank
 	jsr FamiToneUpdate
+	pla
+	sta BP_BANK ;restore prg bank
+	jsr _set_prg_bank
 
 	pla
 	tay
@@ -798,20 +817,57 @@ _vram_write:
 
 
 ;void __fastcall__ music_play(unsigned char song);
+;a = song #
 
-_music_play=FamiToneMusicPlay
-
+_music_play:
+	tax
+	lda BP_BANK ;save current prg bank
+	pha
+	lda #SOUND_BANK
+	jsr _set_prg_bank
+	txa ;song number
+	jsr FamiToneMusicPlay
+	
+	pla
+	sta BP_BANK ;restore prg bank
+	jmp _set_prg_bank
+	;rts
 
 
 ;void __fastcall__ music_stop(void);
 
-_music_stop=FamiToneMusicStop
+_music_stop:
+	lda BP_BANK ;save current prg bank
+	pha
+	lda #SOUND_BANK
+	jsr _set_prg_bank
+	jsr FamiToneMusicStop
+	
+	pla
+	sta BP_BANK ;restore prg bank
+	jmp _set_prg_bank
+	;rts
 
 
 
 ;void __fastcall__ music_pause(unsigned char pause);
+;a = pause or not
 
-_music_pause=FamiToneMusicPause
+_music_pause:
+	tax
+	lda BP_BANK ;save current prg bank
+	pha
+	lda #SOUND_BANK
+	jsr _set_prg_bank
+	txa ;song number
+	jsr FamiToneMusicPause
+	
+	pla
+	sta BP_BANK ;restore prg bank
+	jmp _set_prg_bank
+	;rts
+
+	
 
 
 
@@ -820,13 +876,25 @@ _music_pause=FamiToneMusicPause
 _sfx_play:
 
 .if(FT_SFX_ENABLE)
-
+; a = channel
 	and #$03
 	tax
 	lda @sfxPriority,x
 	tax
-	jsr popa
-	jmp FamiToneSfxPlay
+	
+	lda BP_BANK ;save current prg bank
+	pha
+	lda #SOUND_BANK
+	jsr _set_prg_bank
+	
+	jsr popa ;a = sound
+	;x = channel offset
+	jsr FamiToneSfxPlay
+	
+	pla
+	sta BP_BANK ;restore prg bank
+	jmp _set_prg_bank
+	;rts
 
 @sfxPriority:
 
@@ -838,9 +906,23 @@ _sfx_play:
 
 
 ;void __fastcall__ sample_play(unsigned char sample);
+;a = sample #
 
 .if(FT_DPCM_ENABLE)
-_sample_play=FamiToneSamplePlay
+_sample_play:
+	tax
+	lda BP_BANK ;save current prg bank
+	pha
+	lda #SOUND_BANK
+	jsr _set_prg_bank
+	txa ;sample number
+	jsr FamiToneSamplePlay
+	
+	pla
+	sta BP_BANK ;restore prg bank
+	jmp _set_prg_bank
+	;rts
+
 .else
 _sample_play:
 	rts

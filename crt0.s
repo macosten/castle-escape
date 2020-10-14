@@ -1,7 +1,8 @@
 ; Startup code for cc65 and Shiru's NES library
 ; based on code by Groepaz/Hitmen <groepaz@gmx.net>, Ullrich von Bassewitz <uz@cc65.org>
 
-
+; Edited to work with MMC1 code
+.define SOUND_BANK 6
 
 FT_BASE_ADR        = $0100        ;page in RAM, should be $xx00
 FT_DPCM_OFF        = $f000        ;$c000..$ffc0, 64-byte steps
@@ -117,9 +118,19 @@ DATA_PTR:            .res 2
     .byte <NES_CHR_BANKS
     .byte <NES_MIRRORING|(<NES_MAPPER<<4)
     .byte <NES_MAPPER&$f0
-    .res 8,0
+    .byte 1 ;8k of PRG RAM
+    .res 7,0
 
 
+; linker complains if I don't have at least one mention of each bank
+.segment "ONCE"
+.segment "BANK0"
+.segment "BANK1"
+.segment "BANK2"
+.segment "BANK3"
+.segment "BANK4"
+.segment "BANK5"
+.segment "BANK6"
 
 .segment "STARTUP"
 
@@ -136,6 +147,32 @@ _exit:
     stx PPU_MASK
     stx DMC_FREQ
     stx PPU_CTRL        ;no NMI
+    
+    
+; MMC1 reset
+
+    lda #$80 ; reset all latches
+    sta $8000
+    sta $a000
+    sta $c000
+    sta $e000
+    
+    lda #$1f    ; set control to horizontal mirroring, 
+                ; last bank $c000, $8000 swappable
+                ; CHR in 4k and 4k mode
+    jsr _set_mmc1_ctrl
+    
+    lda #$00 ;CHR bank #0 for first tileset
+    jsr _set_chr_bank_0
+    
+    lda #$01 ;CHR bank #1 for second tileset
+    jsr _set_chr_bank_1
+    
+    lda #$00 ;PRG bank #0 at $8000
+    jsr _set_prg_bank
+    
+    
+    ;x is still zero
 
 initPPU:
     bit PPU_STATUS
@@ -189,15 +226,15 @@ clearRAM:
     jsr _pal_clear
     jsr _oam_clear
 
-    jsr    zerobss
-    jsr    copydata
+    jsr zerobss
+    jsr copydata
 
     lda #<(__STACK_START__+__STACKSIZE__) ;changed
-    sta    sp
-    lda    #>(__STACK_START__+__STACKSIZE__)
-    sta    sp+1            ; Set argument stack ptr
+    sta sp
+    lda #>(__STACK_START__+__STACKSIZE__)
+    sta sp+1            ; Set argument stack ptr
 
-;    jsr    initlib
+;   jsr initlib
 ; removed. this called the CONDES function
 
     lda #%10000000
@@ -213,7 +250,7 @@ waitSync3:
     beq @1
 
 detectNTSC:
-    ldx #52                ;blargg's code
+    ldx #52             ;blargg's code
     ldy #24
 @1:
     dex
@@ -231,17 +268,6 @@ detectNTSC:
     ldx #0
     jsr _set_vram_update
 
-    ldx #<music_data
-    ldy #>music_data
-    lda <NTSC_MODE
-    jsr FamiToneInit
-
-    .if(FT_SFX_ENABLE)
-    ldx #<sounds_data
-    ldy #>sounds_data
-    jsr FamiToneSfxInit
-    .endif
-
     lda #$fd
     sta <RAND_SEED
     sta <RAND_SEED+1
@@ -249,33 +275,56 @@ detectNTSC:
     lda #0
     sta PPU_SCROLL
     sta PPU_SCROLL
+    
+    
+    
+    lda #SOUND_BANK ;PRG bank where all the music stuff is there
+                    ;SOUND_BANK is defined above
+    jsr _set_prg_bank
+    
+    ldx #<music_data
+    ldy #>music_data
+    lda <NTSC_MODE
+    jsr FamiToneInit
 
-    jmp _main            ;no parameters
+    ldx #<sounds_data
+    ldy #>sounds_data
+    jsr FamiToneSfxInit
+    
+    lda #$00 ;PRG bank #0 at $8000, back to basic
+    jsr _set_prg_bank
+    
+    ;for split screens with different CHR bank at top... disable it
+    jsr _unset_nmi_chr_tile_bank
 
-    ; ASM stuff has to be included here, I think.
+    jmp _main           ;no parameters
+
+    ; PRG Bank stuff has to be included here.
+    .include "mmc1/mmc1_macros.asm"
+    .include "mmc1/bank_helpers.asm"
     .include "lib/neslib.s"
     .include "lib/nesdoug.s"
     ;.include "asm/bitwise.s"
     .include "asm/math.s"
     .include "asm/score.s"
-    .include "music/famitone2.s"
     
     
     
-.segment "RODATA"
+    
+; Just going to follow what nesdoug did for music data and jam it into bank 6
+; If the game ends up being smaller, we can move the music bank.
+.segment "BANK6"
+    .include "music/famitone2.s" ; or whatever music code we end up using
 
 music_data:
 ;    .include "music.s"
 
-
-
-    .if(FT_SFX_ENABLE)
 sounds_data:
 ;    .include "sounds.s"
-    .endif
 
-    
-    
+
+
+
 .segment "SAMPLES"
 ;    .incbin "music_dpcm.bin"
 
