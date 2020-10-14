@@ -46,6 +46,7 @@ unsigned int temp6;
 
 const unsigned char * temppointer;
 unsigned char * temp_mutablepointer;
+void (* temp_funcpointer)(void);
 
 unsigned char eject_L; // from the left
 unsigned char eject_R; // remember these from the collision sub routine
@@ -245,6 +246,7 @@ void acid_ai(void);
 void acid_drop_ai(void);
 void splyke_ai(void);
 void sun_ai(void);
+void boss_ai(void);
 
 void load_title_screen(void);
 void load_game_over_screen(void);
@@ -269,6 +271,7 @@ const unsigned char const updown_movement_offset_lookup_table[] = {0xff, 15};
 const unsigned char * const korbat_sprite_lookup_table[] = {korbat_left, korbat_right};
 const unsigned char * const grarrl_sprite_lookup_table[] = {grarrl_left, grarrl_right};
 
+const unsigned char * const cannon_sprite_lookup_table[] = {cannon_up, cannon_up_left, cannon_left, cannon_down_left, cannon_down, cannon_down_right, cannon_right, cannon_up_right};
 // const unsigned char const enemy_contact_behavior_lookup_table[] = {0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1}
 
 // Possibly a silly way to reuse the lost 4 * 15 (or 2 * 35) bytes of RAM in each c_map:
@@ -478,6 +481,9 @@ void begin_level(void) {
     load_level();
     load_room();
 
+    // Let's seed the RNG...
+    seed_rng();
+
     // Reset Valrigard's energy.
     energy = MAX_ENERGY;
 
@@ -560,6 +566,9 @@ void load_room(void) {
 
     // sprite_obj_init / Load Enemies
 
+    // Clear the enemy database.
+    memfill(&enemies, 0, sizeof(enemies));
+
     // Load the enemy data for the current level.
     temppointer = level_enemy_data[level_index];
 
@@ -599,6 +608,7 @@ void load_room(void) {
         
     }
 
+    // Save the number of loaded enemies.
     enemies.count = x+1;
     
     // Set all the other enemies to be NONEs.
@@ -651,17 +661,17 @@ void draw_sprites(void) {
             switch (GET_ENEMY_TYPE(y)) {
                 case 1: // Korbat
                     temp3 = ENEMY_DIRECTION(y) >> 6;
-                    temppointer = korbat_sprite_lookup_table[temp3];
-                    oam_meta_spr(temp_x, temp_y, temppointer);
+                    //temppointer = ...;
+                    oam_meta_spr(temp_x, temp_y, korbat_sprite_lookup_table[temp3]);
                     break;
                 case 2: // Grarrl
                     temp3 = ENEMY_DIRECTION(y) >> 6;
-                    temppointer = grarrl_sprite_lookup_table[temp3];
-                    oam_meta_spr(temp_x, temp_y, temppointer);
+                    oam_meta_spr(temp_x, temp_y, grarrl_sprite_lookup_table[temp3]);
                     break;
                 case 4: // Cannon
                     // Figure out direction of cannon - todo
-                    oam_meta_spr(temp_x, temp_y, cannon_down_right);
+                    temp3 = enemies.extra2[y] & 0x0f;
+                    oam_meta_spr(temp_x, temp_y, cannon_sprite_lookup_table[temp3]);
                     break;
                 case 6: // Spikeball
                     oam_meta_spr(temp_x, temp_y, spikeball);
@@ -1142,6 +1152,20 @@ void sprite_collisions(void) {
 
 }
 
+/*const void (* ai_pointers[])(void) = {
+    korbat_ai, // 0;
+    korbat_ai, // 1;
+    spikeball_ai,
+    splyke_ai,
+    cannon_ai,
+    acid_ai,
+    spikeball_ai,
+    sun_ai,
+    boss_ai,
+    cannonball_ai,
+    acid_drop_ai
+};*/
+
 // Enemy AI.
 void enemy_movement(void) {
     // This one's a bit of an uncharted realm. 
@@ -1154,6 +1178,8 @@ void enemy_movement(void) {
             temp1 = GET_ENEMY_TYPE(x);
             
             // Method 1: Big switch block
+            // Not sure why, but counting cycles with FCEUX tells me that
+            // this is *faster* than Method 2.
             switch (temp1) {
                 case 1: // ENEMY_KORBAT
                     korbat_ai();
@@ -1161,6 +1187,9 @@ void enemy_movement(void) {
                 case 2: // ENEMY_GRARRL
                 case 6: // ENEMY_SPIKEBALL
                     spikeball_ai();
+                    break;
+                case 3:
+                    splyke_ai();
                     break;
                 case 4: // ENEMY_CANNON;
                     cannon_ai();
@@ -1173,7 +1202,9 @@ void enemy_movement(void) {
                     // but I always called them Suns growing up, so they're Suns
                     sun_ai();
                     break;
-                // case 8: ENEMY_BOSS
+                case 8:
+                    boss_ai();
+                    break;
                 case 9: // ENEMY_CANNONBALL
                     cannonball_ai();
                     break;
@@ -1183,6 +1214,11 @@ void enemy_movement(void) {
                 default: // Unimplemented
                     break;
             }
+            // Method 2: using a lookup table to call another function.
+            // This is somehow up to 200-300 cycles slower. How?
+            // Is it a cc65 optimizer thing?
+            //temp_funcpointer = (void *)ai_pointers[temp1];
+            //temp_funcpointer();
         }
     }
 
@@ -1372,16 +1408,26 @@ void cannon_ai(void) {
     // Wait a while. Turn towards Valrigard. Fire a cannonball in his direction.
     // Todo.
 
-    // High byte of extra should be 
+    // extra[x] should be the bitpacked dydx.
+    // extra2[x] should be the specific sprite we should be showing in the low nibble.
+    // and a timer in the high nibble.
 
     // The next enemy should be a cannonball. If it's active, don't do anything.
-    if (!IS_ENEMY_ACTIVE(x+1)) {
-        // Subtract from a (randomly-seeded?) timer of some sort.
-        // If that timer == 0, turn to valrigard, then "fire a new cannonball" 
-        // (i.e set the cannonball's x to my x, y to my y, etc).
-        // Don't forget to tell it what direction it should be going in as well.
+    if (IS_ENEMY_ACTIVE(x+1)) { return; }
 
-    }
+    temp0 = get_frame_count() & 63;
+
+    // Increment the timer nibble if a new 64-frame period has elapsed.
+    // That'll be *slightly* longer than 1 second on NTSC systems, and
+    // it'll be more like 1.28 seconds on PAL systems.
+    if (temp0 == 0) { enemies.extra2[x] += 0x10; } 
+
+    // Subtract from a (randomly-seeded?) timer of some sort.
+    // If that timer == 0, turn to valrigard, then "fire a new cannonball" 
+    // (i.e set the cannonball's x to my x, y to my y, etc).
+    // Don't forget to tell it what direction it should be going in as well.
+
+    
 
 }
 
@@ -1391,10 +1437,11 @@ void cannonball_ai(void) {
     // There is a second type of cannonball in the original game that is beholden to gravity but also faster.
     // I'm not going to prioritize it...
 
-    // Todo.
+    // extra[x] should be the sub_x.
+    // extra2[x] should be the sub_y.
 
     // brads
-    temp1 = brads_lookup(enemies.extra[x]);
+    temp1 = brads_lookup(enemies.extra[x - 1]);
     
     // add/sub this to x
     temp2 = cos_lookup(temp1);
@@ -1414,12 +1461,10 @@ void cannonball_ai(void) {
     // at once (as for each cannonball there must also be a cannon), 
     // as long as MAX_ENEMIES <= 60, this solution should be fine:
 
-    temp4 = x >> 1;
-
     // Deal with the x-direction first.
 
     high_byte(temp5) = enemies.x[x];
-    low_byte(temp5) = c_map2[temp4];
+    low_byte(temp5) = enemies.extra[x];
 
     if (CANNONBALL_X_DIRECTION(x)) {
         // Positive X - add temp2
@@ -1434,20 +1479,20 @@ void cannonball_ai(void) {
     }
     // Save the high and low bytes.
     enemies.x[x] = high_byte(temp5);
-    c_map2[temp4] = low_byte(temp5);
+    enemies.extra[x] = low_byte(temp5);
 
     // It's a bit strange because we have a sub_y and a super_y (nt) in this case, 
     // but we'll take care of the sub_y first...
     high_byte(temp6) = enemies.actual_y[x];
-    low_byte(temp6) = c_map2[temp4 + 1];
+    low_byte(temp6) = enemies.extra2[x];
 
     
     if (CANNONBALL_Y_DIRECTION(x)) {
         // Positive Y - add.
         temp6 += temp3;
 
-        // Return the low byte to the appropriate place in c_map2.
-        c_map2[temp4 + 1] = low_byte(temp6);
+        // Save the low byte to the appropriate place.
+        enemies.extra2[x] = low_byte(temp6);
         
         // Move the actual_y value into the low byte
         low_byte(temp6) = high_byte(temp6);
@@ -1473,7 +1518,7 @@ void cannonball_ai(void) {
         temp6 -= temp3;
 
         // Return the low byte to the appropriate place in c_map2.
-        c_map2[temp4 + 1] = low_byte(temp6);
+        enemies.extra2[x] = low_byte(temp6);
 
         // Move the actual_y value into the low byte
         low_byte(temp6) = high_byte(temp6);
@@ -1529,5 +1574,9 @@ void acid_ai(void) {
 
 
 void splyke_ai(void) {
+
+}
+
+void boss_ai(void) {
 
 }

@@ -34,6 +34,7 @@ typedef struct EnemyDatabase {
     unsigned char flags_type[MAX_ENEMIES]; 
     // high nibble is flags (including direction and active/inactive), low nibble is type
     unsigned char extra[MAX_ENEMIES];
+    unsigned char extra2[MAX_ENEMIES];
     // Can probably be an animation frame counter for most enemies, but for some it'll contain other data.
     unsigned char count; // How many enemies are actually loaded into RAM.
 } Enemies;

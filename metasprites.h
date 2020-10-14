@@ -80,6 +80,40 @@ const unsigned char const cannonball[]= {
   128
 };*/
 
+// Cannons
+
+const unsigned char const cannon_up[] = {
+      0xff, 0xff, 0x1A,0|OAM_FLIP_V,
+      0x07, 0xff, 0x1A,0|OAM_FLIP_H|OAM_FLIP_V,
+      0xff, 0x07, 0x19,0|OAM_FLIP_V,
+      0x07, 0x07, 0x19,0|OAM_FLIP_V|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const cannon_up_left[] = {
+    0xff, 0xff, 0x1E,0|OAM_FLIP_H|OAM_FLIP_V,
+    0xff, 0x07, 0x1D,0|OAM_FLIP_H|OAM_FLIP_V,
+    0x07, 0xff, 0x1C,0|OAM_FLIP_H|OAM_FLIP_V,
+    0x07, 0x07, 0x1B,0|OAM_FLIP_H|OAM_FLIP_V,
+  128
+};
+
+const unsigned char const cannon_left[] = {
+      0xff, 0xff, 0x2F,0|OAM_FLIP_H,
+      0x07, 0xff, 0x1F,0|OAM_FLIP_H,
+      0xff, 0x07, 0x2F,0|OAM_FLIP_H|OAM_FLIP_V,
+      0x07, 0x07, 0x1F,0|OAM_FLIP_H|OAM_FLIP_V,
+    128
+};
+
+const unsigned char const cannon_down_left[] = {
+      0xff, 0xff, 0x1D,0|OAM_FLIP_H,
+      0x07, 0xff, 0x1B,0|OAM_FLIP_H,
+      0xff, 0x07, 0x1E,0|OAM_FLIP_H,
+      0x07, 0x07, 0x1C,0|OAM_FLIP_H,
+    128
+};
+
 const unsigned char const cannon_down[] = {
       0xff, 0xff, 0x19,0,
       0x07, 0xff, 0x19,0|OAM_FLIP_H,
@@ -95,6 +129,24 @@ const unsigned char const cannon_down_right[] = {
       0x07, 0x07, 0x1E,0,
     128
 };
+
+const unsigned char const cannon_right[] = {
+      0xff, 0xff, 0x1F,0,
+      0x07, 0xff, 0x2F,0,
+      0xff, 0x07, 0x1F,0|OAM_FLIP_V,
+      0x07, 0x07, 0x2F,0|OAM_FLIP_V,
+    128
+};
+
+const unsigned char const cannon_up_right[] = {
+      0xff, 0xff, 0x1C,0|OAM_FLIP_V,
+      0x07, 0xff, 0x1E,0|OAM_FLIP_V,
+      0xff, 0x07, 0x1B,0|OAM_FLIP_V,
+      0x07, 0x07, 0x1D,0|OAM_FLIP_V,
+    128
+};
+
+// Grarrls
 
 const unsigned char const grarrl_left[] = {
       0xff, 0xff, 0x40,2,
