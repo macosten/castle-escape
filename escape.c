@@ -174,23 +174,22 @@ const unsigned char const palette_bg[]={
 };
 
 const unsigned char const palette_sp[]={
-0x0f, 0x16, 0x27, 0x37, // Red, Yellow, Light Yellow
-0x0f, 0x01, 0x0f, 0x32, // valrigard's palette
-0x0f, 0x04, 0x14, 0x24, // Purples.
-0x0f, 0x30, 0x16, 0x00, // HUD(?) and Spikeball/Acid
+    0x0f, 0x16, 0x27, 0x37, // Red, Yellow, Light Yellow
+    0x0f, 0x01, 0x0f, 0x32, // valrigard's palette
+    0x0f, 0x04, 0x14, 0x24, // Purples.
+    0x0f, 0x30, 0x16, 0x00, // HUD(?) and Spikeball/Acid
 };
 
 // For shuffling 32 enemies...
 const unsigned char const shuffle_array[]={
- 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15, 
-16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
-31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,
-15,14,13,12,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
-
- 0, 2, 4, 6, 8,10,12,14,16,18,20,22,24,26,28,30,
- 1, 3, 5, 7, 9,11,13,15,17,19,21,23,25,27,29,31,
-31,29,27,25,23,21,19,17,15,13,11, 9, 7, 5, 3, 1,
-30,28,26,24,22,20,18,16,14,12,10, 8, 6, 4, 2, 0,
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15, 
+    16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
+    31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,
+    15,14,13,12,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
+    0, 2, 4, 6, 8,10,12,14,16,18,20,22,24,26,28,30,
+    1, 3, 5, 7, 9,11,13,15,17,19,21,23,25,27,29,31,
+    31,29,27,25,23,21,19,17,15,13,11, 9, 7, 5, 3, 1,
+    30,28,26,24,22,20,18,16,14,12,10, 8, 6, 4, 2, 0,
 };
 
 // Enemy memory.
@@ -380,9 +379,6 @@ void main (void) {
             if (game_mode == MODE_GAME_OVER) {
                 load_game_over_screen();
             }
-
-            // Debug
-            debug_tile_x = get_frame_count();
 
         }
 
@@ -602,6 +598,8 @@ void load_room(void) {
         ++y; // Next byte.
         
     }
+
+    enemies.count = x+1;
     
     // Set all the other enemies to be NONEs.
     for(++x; x < MAX_ENEMIES; ++x) {
@@ -628,7 +626,7 @@ void draw_sprites(void) {
     // draw enemies.
     temp1 = get_frame_count() & 3;
     temp1 = temp1 << 8; // * 32, since that's the size of our shuffle array.
-    for (x = 0; x < MAX_ENEMIES; ++x) {
+    for (x = 0; x < enemies.count; ++x) {
         y = shuffle_array[temp1];
         ++temp1;
         
@@ -1078,7 +1076,7 @@ void check_spr_objects(void) {
     nt_current = high_byte(scroll_y);
 
     // Check enemies...
-    for (x = 0; x < MAX_ENEMIES; ++x) {
+    for (x = 0; x < enemies.count; ++x) {
         if (GET_ENEMY_TYPE(x) == 0 /*ENEMY_NONE*/) continue; 
         // Check to see where this enemy is supposed to be.
         temp5 = (enemies.nt[x] << 8) + enemies.actual_y[x];
@@ -1117,7 +1115,7 @@ void sprite_collisions(void) {
     // hitbox2 == an enemy's hitbox.
     // The width and height of this will actually be different depending on the enemy's type.
 
-    for (x = 0; x < MAX_ENEMIES; ++x) {
+    for (x = 0; x < enemies.count; ++x) {
 
         if(IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
@@ -1151,7 +1149,7 @@ void enemy_movement(void) {
 
     temp4 = 0;
 
-    for (x = 0; x < MAX_ENEMIES; ++x) {
+    for (x = 0; x < enemies.count; ++x) {
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
             

@@ -67,9 +67,9 @@ const unsigned char const level10_2[]={
 
 const unsigned char const level10_enemy[]={
 	0x49, 2, 4, // ENEMY_CANNON,
-	//0x59, 2, 9,  //debug
-	//0x69, 2, 10, //debug
-	//0x31, 2, 7,  //debug 
+	0x59, 2, 7,  //debug
+	0x69, 2, 7, //debug
+	0x79, 2, 7,  //debug 
 	0x24, 2, 6, // ENEMY_SPIKEBALL,
 	0x71, 2, 6, // ENEMY_SPIKEBALL, 
 	0x91, 2, 2, // ENEMY_GRARRL,
