@@ -24,8 +24,7 @@ const unsigned char const valrigard_inital_coords[] = {
 
 const unsigned char * const level_nametables[] = {
     level10_0, level10_1, level10_2,
-    level10_0 // a buffer -- this prevents graphical glitching when at the bottom of a level
-};
+ };
 
 const unsigned char * const level_names[] = {
     "Mockup Level 10",
@@ -41,28 +40,3 @@ const unsigned char * const level_names[] = {
 const unsigned char * const level_enemy_data[] = {
     level10_enemy
 };
-
-/* Notes related to storing initial state of objects:
- There is OBJECT_BITFIELD which will allow up to 255 destructible objects (stars, killable enemies, etc) to have their states kept track of.
- If need be, perhaps we can expand this to allow for a separate STAR_BITFIELD and ENEMY_BITFIELD, but I'm not sure we'll need more than 255 things in a (non user-designed) level.
- 
- We shouldn't really need to store what the object is in the data since there will be a source tile at that area (a star, an Enemy Source Tile, etc)
- 
- What if we store objects like this:
-    0xAAXY
- 
- Where (1 letter = 1 hex digit/4 bits):
-    AA is a nametable ID - 8 bits - the nametable in which this object lives.
-    X is its X coordinate (metatile)
-    Y is its Y coordinate (metatile)
- 
- Or perhaps we could store objects in two tables:
-    Table 1 could be the number of objects in each nametable, and
-    Table 2 could be the coordinates of each object (0xXY).
- 
- When copying cmaps to memory, we will check to see if an object should be loaded or if it should be replaced with an empty tile.
- 
- We can store compacted coordinates of objects somewhere in RAM in a hash map of some sort...
- 
- This also means that an enemy in RAM should keep track of what bit in the OBJECT_BITFIELD it's supposed to modify.
-*/

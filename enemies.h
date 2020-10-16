@@ -2,6 +2,7 @@
 #define enemies_h
 
 // Also the equivalent of TURN_OFF.
+// An enemy will not be rendered in this case.
 #define ENEMY_NONE 0;
 
 #define ENEMY_KORBAT 1;

@@ -40,17 +40,20 @@ enum {BANK_0, BANK_1, BANK_2, BANK_3, BANK_4, BANK_5, BANK_6};
 // #pragma rodata-name("BANK0")
 // This will probably happen for levels and any level decompression code.
 
-//MARK: Zero Page Globals
-unsigned char pad1;
-unsigned char pad1_new;
-unsigned char collision;
+// MARK: Zero Page Globals
+unsigned char pad1; // Stores the state of the game controller.
+unsigned char pad1_new; // Stores the state of the game controller.
+unsigned char collision; // Used in collision routines.
 unsigned char collision_L;
 unsigned char collision_R;
 unsigned char collision_U;
 unsigned char collision_D;
-unsigned char coordinates;
+unsigned char coordinates; // Used to index the collision maps.
 
+// Temporary variables, used for a multitude of things.
+// Since we don't have many registers in the actual CPU, these sort of act as the next best thing.
 // Best to assume that the values of these temps are NOT stored between function calls.
+// If the values of the temps *does* matter at the end, then the function name should end in "_sub".
 unsigned char temp0;
 unsigned char temp1;
 unsigned char temp2;
@@ -64,10 +67,10 @@ const unsigned char * temppointer;
 unsigned char * temp_mutablepointer;
 void (* temp_funcpointer)(void);
 
-unsigned char eject_L; // from the left
-unsigned char eject_R; // remember these from the collision sub routine
-unsigned char eject_D; // from below
-unsigned char eject_U; // from up
+unsigned char eject_L; // Used in the collision routine(s).
+unsigned char eject_R;
+unsigned char eject_D;
+unsigned char eject_U; 
 
 
 unsigned char player_flags; // All of these flags should be such that the default value for this byte when starting a level is 0
@@ -83,13 +86,15 @@ unsigned char player_flags; // All of these flags should be such that the defaul
 #define SET_STATUS_ALIVE() (player_flags &= 0b11111101)
 #define SET_STATUS_DEAD() (player_flags |= 2) // set bit 1
 #define ALIVE 0
-#define DEAD 2
+#define DEAD 2 // 0b10
 
 #define IS_SWINGING_SWORD (player_flags & 4)
 #define SET_STATUS_NOT_SWINGING_SWORD() (player_flags &= 0b11111011)
 #define SET_STATUS_SWINGING_SWORD() (player_flags |= 4)
 
 unsigned char game_mode;
+// Generally preferring defines like this over enums as enums are ints
+// under the hood, and ints are 2 bytes (which makes them slower). 
 #define MODE_TITLE 0
 #define MODE_GAME 1
 #define MODE_PAUSE 2
@@ -98,15 +103,13 @@ unsigned char game_mode;
 // (Uh, do we actually want game overs?) 
 // Maybe we just nuke your score every N deaths...
 
+int address; // Used with get_ppu_addr and buffer_4_mt.
 
-int address;
+unsigned char x; // Used as a loop index.
+unsigned char y; // Used as a loop index.
+unsigned char index; // Used as an index, for loops and otherwise.
 
-unsigned char x;
-unsigned char y;
-unsigned char index;
-
-unsigned char nt;
-unsigned char map;
+unsigned char nt; // nametable index (though it's only used in 1 place, so...)
 
 unsigned int scroll_x;
 unsigned int pseudo_scroll_y;
@@ -115,9 +118,8 @@ unsigned int min_scroll_y;
 unsigned int max_scroll_y;
 unsigned int initial_scroll;
 unsigned char scroll_count;
-#define MAX_UP 0x4000
-#define MIN_DOWN 0x8000
-#define MIN_SCROLL 2
+#define MAX_UP 0x4000 // The lowest Y value the player can have before the screen attempts to scroll up.
+#define MIN_DOWN 0x8000 // The highest Y value the player can have before the screen attempts to scroll down.
 
 unsigned char L_R_switch;
 unsigned int old_x;
@@ -129,18 +131,22 @@ unsigned char temp_y;
 unsigned char level_index;
 
 unsigned char energy;
-#define MAX_ENERGY 0x70 // 144: 9 (number of tiles of flight height with no tapping) * 16(height of [meta]tile in pixels)?
+#define MAX_ENERGY 0x70 // 144: 9 (rough number of tiles of flight height with no tapping) * 16(height of [meta]tile in pixels)?
 // Or should this be the number of frames which we should be able to fly for?
+
+// Max score of 65535. That feels like it should be enough.
+unsigned int score = 0;
 
 // At 100, you should get an extra life!
 unsigned char stars;
 
 // 255 frames / 60 fps (NTSC) = 4.25 seconds
+// Should we also take PAL machines into account and try to change frame counts in these cases?
 
 unsigned char timer;
-#define TITLE_SCREEN_LENGTH 120
+#define TITLE_SCREEN_LENGTH 120 // ~2 seconds on NTSC machines.
 
-#define SONGS 0
+#define SONGS 0 // No songs yet. I might look into FamiStudio...
 unsigned char song;
 // enum {SONG_NAME1, SONG_NAME2};
 // enum {SFX_FLAP, ...};
@@ -162,20 +168,19 @@ Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C
 
 Hitbox hitbox2; // This hitbox is used for enemies.
 
-// Debug variables - these will be removed in the future.
+// Debug variables that get rendered to the screen each frame.
+// These will be removed in the future.
 unsigned char debug_tile_x;
 unsigned char debug_tile_y;
 
-// ~101 zp bytes left?
+// ~100 zp bytes left?
 
 #pragma bss-name(pop)
 
 #pragma bss-name(push, "BSS")
 
-unsigned char c_map[240];
-unsigned char c_map2[240];
-
-// ~347 bytes of BSS ram left?
+// ~781 bytes of regular RAM left?
+// What can we put here?
 
 // Likewise for RODATA.
 // Remember that RODATA is defined in the PRG (unswappable) segment.
@@ -235,9 +240,8 @@ Enemies enemies;
 
 #pragma bss-name(push, "XRAM")
 
+// Collision maps.
 #define CMAP_COUNT 6
-
-unsigned int score = 0; // Is the score important enough to place in the zp?
 
 unsigned char cmap0[240];
 unsigned char cmap1[240];
@@ -246,10 +250,11 @@ unsigned char cmap3[240];
 unsigned char cmap4[240];
 unsigned char cmap5[240];
 
+// There's space for more, but I'm leaving it at this for now.
+
 #pragma bss-name(pop)
 
-const unsigned char * const cmaps[] = {cmap0, cmap1, cmap2, cmap3, cmap4, cmap5, cmap0}; 
-// A mirror of the first one at the bottom to prevent a strange effect I remember happening once a while ago...
+const unsigned char * const cmaps[] = {cmap0, cmap1, cmap2, cmap3, cmap4, cmap5}; 
 
 // MARK: Function Prototypes
 
@@ -258,19 +263,17 @@ void draw_sprites(void);
 void movement(void);
 
 void begin_level(void);
-void load_level(void);
-void load_room(void);
-
 void load_level_new(void);
 void load_room_new(void);
 
 void bg_collision(void); // For the player
 void bg_collision_sub(void);
+
 void draw_screen_U(void);
 void draw_screen_D(void);
 void draw_screen_sub(void);
 
-void check_spr_objects(void);
+void check_spr_objects(void); // For enemies
 void sprite_collisions(void);
 void enemy_movement(void);
 
@@ -326,19 +329,17 @@ void main (void) {
     //set_chr_bank_1(1);
     bank_spr(1);
     
-
     set_vram_buffer(); // do at least once, sets a pointer to a buffer
     clear_vram_buffer();
-        
-    //Debug: set the first half of the bitfield to FF.
-    //for (temp1 = 0; temp1 < 128; ++temp1) { set_object_bit(temp1); }
         
     // Set the level index to the first level.
     level_index = 0;
 
     load_title_screen();
 
-    temp1 = brads_lookup(0x36);//atan2(0, 120, 0, 120);
+    // Debug: fastcall functions. 
+    // (RAM can be monitored in many NES emulators, so nothing else is necessary here)
+    temp1 = brads_lookup(0x36); // atan2(0, 120, 0, 120);
     temp2 = sin_lookup(temp1);
     temp3 = cos_lookup(temp1);
     temp4 = abs_subtract(0x20, 0x20);
@@ -346,9 +347,6 @@ void main (void) {
     ppu_on_all(); // turn on screen
 
     while (1){
-
-        // For now, just set the same chr bank every frame
-        
 
         while (game_mode == MODE_TITLE) { 
             ppu_wait_nmi();
@@ -377,6 +375,8 @@ void main (void) {
             // the sprites are pushed from a buffer to the OAM during nmi
 
             // set_music_speed(???);
+            // For now, just set the same chr bank every frame
+        
             set_chr_bank_0(0);
             pad1 = pad_poll(0); // read the first controller
             pad1_new = get_pad_new(0);
@@ -408,15 +408,17 @@ void main (void) {
                 draw_screen_U();
             } 
 
-            // debug:
-            gray_line();
+            if (game_mode == MODE_GAME_OVER) {
+                load_game_over_screen();
+            }
+
+            // Debug: clear death status.
             if (pad1 & PAD_DOWN) {
                 SET_STATUS_ALIVE();
             }
 
-            if (game_mode == MODE_GAME_OVER) {
-                load_game_over_screen();
-            }
+            // debug:
+            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
         }
 
@@ -648,6 +650,21 @@ void load_level_new(void) {
     // Set all the other enemies to be NONEs.
     for(++x; x < MAX_ENEMIES; ++x) {
         enemies.flags_type[x] = ENEMY_NONE;
+    }
+
+    // This can probably be clumped with the above code, but for clarity,
+    // we'll now initialize the extra[x] and extra2[x] values for enemies.
+
+    for (x = 0; x < enemies.count; ++x) {
+        switch (GET_ENEMY_TYPE(x)) {
+            case 4: // ENEMY_CANNON
+                break;
+            case 5: // ENEMY_ACIDPOOL
+                break;
+            default:
+                // Most enemies do not need special initialization here.
+                break;
+        }
     }
 
 }
@@ -1161,6 +1178,9 @@ void sprite_collisions(void) {
 
 }
 
+// The idea behind this is that you can call an appropriate AI function like so:
+// temp_funcpointer = ai_pointers[GET_ENEMY_TYPE(x)];
+// temp_functpointer();
 /*const void (* ai_pointers[])(void) = {
     korbat_ai, // 0;
     korbat_ai, // 1;
@@ -1187,7 +1207,8 @@ void enemy_movement(void) {
             temp1 = GET_ENEMY_TYPE(x);
             
             // Method 1: Big switch block
-            // Not sure why, but counting cycles with FCEUX tells me that
+            // Not sure why, but from what I can tell by 
+            // counting cycles with FCEUX,
             // this is *faster* than Method 2.
             switch (temp1) {
                 case 1: // ENEMY_KORBAT
@@ -1226,12 +1247,12 @@ void enemy_movement(void) {
             // Method 2: using a lookup table to call another function.
             // This is somehow up to 200-300 cycles slower. How?
             // Is it a cc65 optimizer thing?
+            // Or am I just missing something?
             //temp_funcpointer = (void *)ai_pointers[temp1];
             //temp_funcpointer();
         }
     }
 
-    debug_tile_x = nt_current;
 }
 
 // I reordered these to be listed in the order in which they were implemented.
@@ -1418,7 +1439,16 @@ void cannon_ai(void) {
     // Increment the timer nibble if a new 64-frame period has elapsed.
     // That'll be *slightly* longer than 1 second on NTSC systems, and
     // it'll be more like 1.28 seconds on PAL systems.
-    if (temp0 == 0) { enemies.extra2[x] += 0x10; } 
+    if (temp0 == 0) { 
+        // Decrement the timer.
+        enemies.extra2[x] -= 0x10;
+
+        // If the high nibble is 0...
+        if (!(enemies.extra2[x] & 0xf0)) {
+            // Turn to Valrigard.
+
+        }
+    } 
 
     // Subtract from a (randomly-seeded?) timer of some sort.
     // If that timer == 0, turn to valrigard, then "fire a new cannonball" 
@@ -1557,6 +1587,8 @@ void cannonball_ai(void) {
     // Yeah, my ordering here was a little different
     // but this enemy has by far the most complicated AI so far...
     // so I'm going to cut myself a little bit of slack.
+
+
 
 }
 
