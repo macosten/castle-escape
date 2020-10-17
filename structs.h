@@ -30,7 +30,8 @@ typedef struct EnemyDatabase {
     unsigned char flags_type[MAX_ENEMIES]; // high nibble is flags (including direction and active/inactive), low nibble is type.
     unsigned char extra[MAX_ENEMIES]; // The use of this depends on the enemy.
     unsigned char extra2[MAX_ENEMIES]; // The use of this depends on the enemy.
-    // Examples of what the extra bytes will contain: timers, animation frame numbers, cached return values...
+    // Examples of what the extra bytes will contain: animation frame numbers, cached return values, subpixel values...
+    unsigned char timer[MAX_ENEMIES]; // A timer value - most likely an animation timer. Probably gets decremented once per frame.
     unsigned char count; // How many enemies are actually loaded into RAM.
 } Enemies;
 

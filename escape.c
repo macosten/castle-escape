@@ -657,9 +657,13 @@ void load_level_new(void) {
 
     for (x = 0; x < enemies.count; ++x) {
         switch (GET_ENEMY_TYPE(x)) {
-            case 4: // ENEMY_CANNON
-                break;
             case 5: // ENEMY_ACIDPOOL
+                // Add a random timer from 128 to 255 frames.
+                enemies.timer[x] = 0b10000000;
+                // fallthrough
+            case 4: // ENEMY_CANNON
+                // Add a random timer from 0 to 127 frames.
+                enemies.timer[x] += rand8() & 0b01111111;
                 break;
             default:
                 // Most enemies do not need special initialization here.
@@ -1200,8 +1204,6 @@ void enemy_movement(void) {
     // This one's a bit of an uncharted realm. 
     // I'm thinking we'll want to optimize this one somehow...
 
-    temp4 = 0;
-
     for (x = 0; x < enemies.count; ++x) {
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
@@ -1427,29 +1429,75 @@ void cannon_ai(void) {
     // Wait a while. Turn towards Valrigard. Fire a cannonball in his direction.
     // Todo.
 
-    // extra[x] should be the bitpacked dydx.
-    // extra2[x] should be the specific sprite we should be showing in the low nibble.
-    // and a timer in the high nibble.
+    switch (temp0) {
+        case BANK_4:
+            ++temp0;
+            break;
+        default:
+            break;
+    }
+
+    // extra[x] should be the brads_lookup result for the bitpacked dydx
+    // extra2[x] should be the specific sprite we should be showing.
 
     // The next enemy should be a cannonball. If it's active, don't do anything.
     if (IS_ENEMY_ACTIVE(x+1)) { return; }
 
-    temp0 = get_frame_count() & 63;
-
-    // Increment the timer nibble if a new 64-frame period has elapsed.
+    // Decrement the timer this frame.
     // That'll be *slightly* longer than 1 second on NTSC systems, and
     // it'll be more like 1.28 seconds on PAL systems.
-    if (temp0 == 0) { 
-        // Decrement the timer.
-        enemies.extra2[x] -= 0x10;
+    if (--enemies.timer[x] == 20) { 
 
         // If the high nibble is 0...
         if (!(enemies.extra2[x] & 0xf0)) {
-            // Turn to Valrigard.
+            // Calculate the dydx between my center and Valrigard's center.
+            temp0 = valrigard.x + (VALRIGARD_WIDTH/2); 
+            temp1 = valrigard.y + (VALRIGARD_HEIGHT/2);
+
+            temp2 = enemies.x[x] + 6; // ENEMY_WIDTH/2
+            temp3 = enemies.y[x] + 6; // ENEMY_HEIGHT/2
+
+            // dx
+            temp0 = abs_subtract(temp0, temp2);
+
+            // dy
+            temp1 = abs_subtract(temp1, temp3);
+
+            // bitpack the dydx (thus converting it into metatile coords)
+            // Then look it up in brads_lookup.
+
+            enemies.extra[x] = brads_lookup((temp1 & 0xf0) + (temp0 >> 4));
+
+            // Let's figure out if Valrigard to our left or right.
+            if (temp0 < temp2) {
+                // if Valrigard's center X is less, then the cannonball will go in the negative X direction.
+                CANNONBALL_SET_NEG_X(x+1);
+            } else {
+                // ...otherwise, it'll go in the positive x direction.
+                CANNONBALL_SET_POS_X(x+1);
+            }
+
+            // ...and now we'll figure out if Valrigard is above or below us.
+
+            if (temp1 < temp3) {
+                // Above - go in -Y
+                CANNONBALL_SET_NEG_Y(x+1);
+            } else {
+                // Below - go in +Y
+                CANNONBALL_SET_POS_Y(x+1);
+            }
+
+            // If it's between 0x10 and 0x30, choose the diagonal sprite
+
+            // 
 
         }
     } 
 
+    if (enemies.timer[x] == 0) {
+        // Fire the cannonball.
+        enemies.timer[x] = 120;
+    }
     // Subtract from a (randomly-seeded?) timer of some sort.
     // If that timer == 0, turn to valrigard, then "fire a new cannonball" 
     // (i.e set the cannonball's x to my x, y to my y, etc).
@@ -1588,14 +1636,17 @@ void cannonball_ai(void) {
     // but this enemy has by far the most complicated AI so far...
     // so I'm going to cut myself a little bit of slack.
 
-
-
 }
 
 void acid_ai(void) {
     // Wait a while, then drop an acid drop.
     // Todo.
     // We will probably need to use "x" in this function.
+
+    // The next enemy should be an acid drop. If it's active, don't do anything.
+    if (IS_ENEMY_ACTIVE(x+1)) { return; }
+
+
 }
 
 
