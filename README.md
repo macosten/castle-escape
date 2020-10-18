@@ -8,6 +8,8 @@ This project used [NESDoug's platformer](https://nesdoug.com) series as a starti
 
 While I lack experience with cc65 and NES development in general, I imagine this isn't a terrible start...
 
+Be warned that C targeted at cc65 (due to the nature of the 6502) is often abnormal: globals are encouraged (because the C stack is considered slow), lookup tables are commonplace (because multiplication/division except by powers of 2 is slow)... I could go on, but [this page](https://github.com/ilmenit/CC65-Advanced-Optimizations) will do a better job of documenting optimizations for cc65 than I can.
+
 ## Building
 
 (If you're just looking to download the ROM, just go to the `build` folder and grab it from there.)
@@ -22,17 +24,11 @@ Automatic generation of FCEUX symbols requires python3, but the build should sti
 
 ## Future Challenges/Worries:
 
-* Speed. gray_line() is too close to the bottom for my liking. Optimizations, either in C or in assembly, will need to happen more...
-* So far I'm not using a mapper, but there's not *that* much space for level data. A mapper might be nice simply to offer way more space for levels; that, or I compress the level data somehow, which might be tricky...
+* Speed. cc65 isn't terrible, but it's not always the most performant. Some functions may be more performant if I compile them in an alternate compiler, or if I manually optimize them.
 * Cannons in particular feel like they'll be tricky to implement fully.
-* Stars currently don't really work properly (they're background tiles that are supposed to clear when you touch them, but this doesn't happen consistently). Furthermore, they're supposed to also remain collected even when they are unloaded from memory, but I can't think of a very good way to implement this... but I also can't really make them sprites, because I'll run into the 8 sprites per scanline limit very quickly.
-
-
-## Future Ideas:
-
-cc65 is not that great (as far as code speed is concerned), but there are a couple of threads on the NESDev forums regarding newer C compilers. How difficult would it be to move over to one of these? If there's a speedup and I'm running out of CPU cycles, it'd probably be worth the hassle.
+* Stars/Collectables don't always disappear immediately when collected. I suspect this is because I'm missing something small/fundamental, but I haven't figured out what it is yet.
 
 ## Thanks to...
 
-* nesdoug (For the walkthrough!)
+* nesdoug (For the documentation!)
 * rainwarrior (For originally writing `fceux_symbols.py`)
