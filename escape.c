@@ -311,6 +311,12 @@ const unsigned char * const korbat_sprite_lookup_table[] = {korbat_left, korbat_
 const unsigned char * const grarrl_sprite_lookup_table[] = {grarrl_left, grarrl_right};
 
 const unsigned char * const cannon_sprite_lookup_table[] = {cannon_up, cannon_up_left, cannon_left, cannon_down_left, cannon_down, cannon_down_right, cannon_right, cannon_up_right};
+
+const unsigned char const cannon_ul_sprite_lookup_table[] = {6, 7, 0};
+const unsigned char const cannon_ur_sprite_lookup_table[] = {2, 1, 0};
+const unsigned char const cannon_dr_sprite_lookup_table[] = {2, 3, 4};
+const unsigned char const cannon_dl_sprite_lookup_table[] = {6, 5, 4};
+const unsigned char * const cannon_sprite_quadrant_lookup_table[] = {cannon_ul_sprite_lookup_table, cannon_ur_sprite_lookup_table, cannon_dl_sprite_lookup_table, cannon_dr_sprite_lookup_table};
 // const unsigned char const enemy_contact_behavior_lookup_table[] = {0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1}
 
 void main (void) {
@@ -339,7 +345,8 @@ void main (void) {
 
     // Debug: fastcall functions. 
     // (RAM can be monitored in many NES emulators, so nothing else is necessary here)
-    temp1 = brads_lookup(0x36); // atan2(0, 120, 0, 120);
+    temp0 = 0x69;
+    temp1 = brads_lookup(0x31); // dydx
     temp2 = sin_lookup(temp1);
     temp3 = cos_lookup(temp1);
     temp4 = abs_subtract(0x20, 0x20);
@@ -738,7 +745,7 @@ void draw_sprites(void) {
                     break;
                 case 4: // Cannon
                     // Figure out direction of cannon - todo
-                    temp3 = enemies.extra2[y] & 0x0f;
+                    temp3 = enemies.extra2[y];
                     oam_meta_spr(temp_x, temp_y, cannon_sprite_lookup_table[temp3]);
                     break;
                 case 6: // Spikeball
@@ -1427,15 +1434,6 @@ void acid_drop_ai(void) {
 
 void cannon_ai(void) {
     // Wait a while. Turn towards Valrigard. Fire a cannonball in his direction.
-    // Todo.
-
-    switch (temp0) {
-        case BANK_4:
-            ++temp0;
-            break;
-        default:
-            break;
-    }
 
     // extra[x] should be the brads_lookup result for the bitpacked dydx
     // extra2[x] should be the specific sprite we should be showing.
@@ -1451,30 +1449,23 @@ void cannon_ai(void) {
         // If the high nibble is 0...
         if (!(enemies.extra2[x] & 0xf0)) {
             // Calculate the dydx between my center and Valrigard's center.
-            temp0 = valrigard.x + (VALRIGARD_WIDTH/2); 
-            temp1 = valrigard.y + (VALRIGARD_HEIGHT/2);
+            temp0 = high_byte(valrigard.x) + (VALRIGARD_WIDTH/2);
+            temp1 = high_byte(valrigard.y) + 4; // Tweaked for maximum accuracy - may need to be tweaked more.
 
             temp2 = enemies.x[x] + 6; // ENEMY_WIDTH/2
             temp3 = enemies.y[x] + 6; // ENEMY_HEIGHT/2
 
-            // dx
-            temp0 = abs_subtract(temp0, temp2);
-
-            // dy
-            temp1 = abs_subtract(temp1, temp3);
-
-            // bitpack the dydx (thus converting it into metatile coords)
-            // Then look it up in brads_lookup.
-
-            enemies.extra[x] = brads_lookup((temp1 & 0xf0) + (temp0 >> 4));
-
             // Let's figure out if Valrigard to our left or right.
+            // temp4 will be used as an index for cannon_sprite_quadrant_lookup_table.
+
+            temp4 = 0;
             if (temp0 < temp2) {
                 // if Valrigard's center X is less, then the cannonball will go in the negative X direction.
                 CANNONBALL_SET_NEG_X(x+1);
             } else {
                 // ...otherwise, it'll go in the positive x direction.
                 CANNONBALL_SET_POS_X(x+1);
+                ++temp4;
             }
 
             // ...and now we'll figure out if Valrigard is above or below us.
@@ -1485,11 +1476,40 @@ void cannon_ai(void) {
             } else {
                 // Below - go in +Y
                 CANNONBALL_SET_POS_Y(x+1);
+                temp4 += 0b10;
             }
 
-            // If it's between 0x10 and 0x30, choose the diagonal sprite
+            // If this is too much work to do in one frame, we *could* use
+            // enemies.timer[x] to ensure the rest of this happens next frame.
 
-            // 
+            // dx
+            temp0 = abs_subtract(temp0, temp2);
+            if ((temp0 & 0x0f) > 8) { temp0 += 0x10; } // Round metatile x up.
+            // This increases the accuracy somewhat.
+
+            // dy
+            temp1 = abs_subtract(temp1, temp3);
+
+            // bitpack the dydx (thus converting it into metatile coords)
+            // Then look it up in brads_lookup.
+            coordinates = (temp1 & 0xf0) + (temp0 >> 4);
+
+            temp2 = brads_lookup(coordinates);
+
+            enemies.extra[x] = temp2;
+
+            // temppointer will be a pointer to the correct sprite lookup table.
+            temppointer = cannon_sprite_quadrant_lookup_table[temp4];
+
+            // Within the sprite lookup table, figure out the sprite.
+            if (temp2 > 0x30) { // over 0x30 brads
+                temp3 = temppointer[2]; // y-axis aligned
+            } else if (temp2 > 0x10) { // over 0x10 brads
+                temp3 = temppointer[1]; // diagonal
+            } else { // 0x10 or fewer brads
+                temp3 = temppointer[0]; // x-axis aligned
+            }
+            enemies.extra2[x] = temp3;
 
         }
     } 
@@ -1497,13 +1517,23 @@ void cannon_ai(void) {
     if (enemies.timer[x] == 0) {
         // Fire the cannonball.
         enemies.timer[x] = 120;
+
+        // Move the cannonball into place.
+        temp0 = enemies.x[x] + 3;
+        temp1 = enemies.actual_y[x] + 3;
+        temp2 = enemies.nt[x];
+
+        enemies.x[x+1] = temp0;
+        enemies.actual_y[x+1] = temp1;
+        enemies.nt[x+1] = temp2;
+
+        enemies.flags_type[x+1] |= ENEMY_CANNONBALL;
+
     }
     // Subtract from a (randomly-seeded?) timer of some sort.
     // If that timer == 0, turn to valrigard, then "fire a new cannonball" 
     // (i.e set the cannonball's x to my x, y to my y, etc).
     // Don't forget to tell it what direction it should be going in as well.
-
-    
 
 }
 
@@ -1517,7 +1547,7 @@ void cannonball_ai(void) {
     // extra2[x] should be the sub_y.
 
     // brads
-    temp1 = brads_lookup(enemies.extra[x - 1]);
+    temp1 = enemies.extra[x - 1];
     
     // add/sub this to x
     temp2 = cos_lookup(temp1);
@@ -1631,10 +1661,6 @@ void cannonball_ai(void) {
         enemies.flags_type[x] = ENEMY_NONE;
         // It's possible we might want to play a sound effect or animation here.
     }
-
-    // Yeah, my ordering here was a little different
-    // but this enemy has by far the most complicated AI so far...
-    // so I'm going to cut myself a little bit of slack.
 
 }
 
