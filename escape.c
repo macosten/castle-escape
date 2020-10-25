@@ -17,6 +17,7 @@
 // #include "asm/bitwise.h"
 #include "asm/score.h"
 #include "asm/math.h"
+#include "asm/macros.h"
 
 #define SPEED 0x150
 
@@ -214,26 +215,26 @@ const unsigned char const shuffle_array[]={
 // Enemy memory.
 Enemies enemies;
 
-#define ACTIVATE_ENEMY(index) (enemies.flags_type[index] |= 0b10000000) // Set high bit.
-#define DEACTIVATE_ENEMY(index) (enemies.flags_type[index] &= 0b01111111) // Unset high bit.
-#define IS_ENEMY_ACTIVE(index) (enemies.flags_type[index] & 0b10000000) // Test if high bit is set.
-#define GET_ENEMY_TYPE(index) (enemies.flags_type[x] & 0x0f) // Bottom nibble == type
+#define ACTIVATE_ENEMY(index) (enemies.flags[index] |= 0b10000000) // Set high bit.
+#define DEACTIVATE_ENEMY(index) (enemies.flags[index] &= 0b01111111) // Unset high bit.
+#define IS_ENEMY_ACTIVE(index) (enemies.flags[index] & 0b10000000) // Test if high bit is set.
+#define GET_ENEMY_TYPE(index) (enemies.type[x])
 
-#define ENEMY_SET_DIRECTION_LEFT(index) (enemies.flags_type[index] &= 0b10111111)
-#define ENEMY_SET_DIRECTION_RIGHT(index) (enemies.flags_type[index] |= 0b01000000)
-#define ENEMY_FLIP_DIRECTION(index) (enemies.flags_type[index] ^= 0b01000000)
-#define ENEMY_DIRECTION(index) (enemies.flags_type[index] & 0b01000000)
+#define ENEMY_SET_DIRECTION_LEFT(index) (enemies.flags[index] &= 0b10111111)
+#define ENEMY_SET_DIRECTION_RIGHT(index) (enemies.flags[index] |= 0b01000000)
+#define ENEMY_FLIP_DIRECTION(index) (enemies.flags[index] ^= 0b01000000)
+#define ENEMY_DIRECTION(index) (enemies.flags[index] & 0b01000000)
 
 
 // For cannonballs and other 2-axis projectiles.
-#define CANNONBALL_SET_NEG_X(index) (enemies.flags_type[index] &= 0b10111111)
-#define CANNONBALL_SET_POS_X(index) (enemies.flags_type[index] |= 0b01000000)
+#define CANNONBALL_SET_NEG_X(index) (enemies.flags[index] &= 0b10111111)
+#define CANNONBALL_SET_POS_X(index) (enemies.flags[index] |= 0b01000000)
 
-#define CANNONBALL_SET_NEG_Y(index) (enemies.flags_type[index] &= 0b11011111)
-#define CANNONBALL_SET_POS_Y(index) (enemies.flags_type[index] |= 0b00100000)
+#define CANNONBALL_SET_NEG_Y(index) (enemies.flags[index] &= 0b11011111)
+#define CANNONBALL_SET_POS_Y(index) (enemies.flags[index] |= 0b00100000)
 
-#define CANNONBALL_X_DIRECTION(index) (enemies.flags_type[index] & 0b01000000)
-#define CANNONBALL_Y_DIRECTION(index) (enemies.flags_type[index] & 0b00100000)
+#define CANNONBALL_X_DIRECTION(index) (enemies.flags[index] & 0b01000000)
+#define CANNONBALL_Y_DIRECTION(index) (enemies.flags[index] & 0b00100000)
 
 
 #pragma bss-name(pop)
@@ -343,14 +344,6 @@ void main (void) {
 
     load_title_screen();
 
-    // Debug: fastcall functions. 
-    // (RAM can be monitored in many NES emulators, so nothing else is necessary here)
-    temp0 = 0x69;
-    temp1 = brads_lookup(0x31); // dydx
-    temp2 = sin_lookup(temp1);
-    temp3 = cos_lookup(temp1);
-    temp4 = abs_subtract(0x20, 0x20);
-
     ppu_on_all(); // turn on screen
 
     while (1){
@@ -425,7 +418,7 @@ void main (void) {
             }
 
             // debug:
-            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
         }
 
@@ -632,19 +625,18 @@ void load_level_new(void) {
 
         ++y; // Next byte:
 
-        temp1 = temppointer[y]; // the direction+type byte.
-        enemies.flags_type[x] = temp1; 
-        // The high nibble will is direction; the low one will be type.
+        temp1 = temppointer[y]; // the type byte.
+        enemies.type[x] = temp1; 
 
         temp1 = GET_ENEMY_TYPE(x);
         if (temp1 == 4) { // ENEMY_CANNON
             // Load in the next enemy as a cannonball.
             ++x;
-            enemies.flags_type[x] = ENEMY_CANNONBALL;
+            enemies.type[x] = ENEMY_CANNONBALL;
         } else if (temp1 == 5) { // ENEMY_ACIDPOOL
             // Load in the next enemy as an acid drop.
             ++x;
-            enemies.flags_type[x] = ENEMY_ACIDDROP;
+            enemies.type[x] = ENEMY_ACIDDROP;
         }
 
         ++y; // Next byte.
@@ -656,7 +648,7 @@ void load_level_new(void) {
     
     // Set all the other enemies to be NONEs.
     for(++x; x < MAX_ENEMIES; ++x) {
-        enemies.flags_type[x] = ENEMY_NONE;
+        enemies.type[x] = ENEMY_NONE;
     }
 
     // This can probably be clumped with the above code, but for clarity,
@@ -715,9 +707,9 @@ void draw_sprites(void) {
         y = shuffle_array[temp1];
         ++temp1;
         
-        temp2 = enemies.flags_type[y];
+        temp2 = enemies.flags[y];
         // 0 == ENEMY_NONE (cc65 complained when I used ENEMY_NONE... I wish I knew why...)
-        if (temp2 == 0) continue;
+        //if (temp2 == 0) continue;
         
         if (!IS_ENEMY_ACTIVE(y)) continue;
 
@@ -1189,22 +1181,20 @@ void sprite_collisions(void) {
 
 }
 
-// The idea behind this is that you can call an appropriate AI function like so:
-// temp_funcpointer = ai_pointers[GET_ENEMY_TYPE(x)];
-// temp_functpointer();
-/*const void (* ai_pointers[])(void) = {
-    korbat_ai, // 0;
-    korbat_ai, // 1;
-    spikeball_ai,
-    splyke_ai,
-    cannon_ai,
-    acid_ai,
-    spikeball_ai,
-    sun_ai,
-    boss_ai,
-    cannonball_ai,
-    acid_drop_ai
-};*/
+// A lookup table for enemy AI functions.
+const void (* ai_pointers[])(void) = {
+    korbat_ai,      // 0 - ENEMY_NONE;
+    korbat_ai,      // 1 - ENEMY_KORBAT;
+    spikeball_ai,   // 2 - ENEMY_GRARRL;
+    splyke_ai,      // 3 - ENEMY_SPLYKE;
+    cannon_ai,      // 4 - ENEMY_CANNON;
+    acid_ai,        // 5 - ENEMY_ACIDPOOL;
+    spikeball_ai,   // 6 - ENEMY_SPIKEBALL;
+    sun_ai,         // 7 - ENEMY_SUN;
+    boss_ai,        // 8 - ENEMY_BOSS;
+    cannonball_ai,  // 9 - ENEMY_CANNONBALL;
+    acid_drop_ai    // 10 - ENEMY_ACIDDROP;
+};
 
 // Enemy AI.
 void enemy_movement(void) {
@@ -1214,51 +1204,13 @@ void enemy_movement(void) {
     for (x = 0; x < enemies.count; ++x) {
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
-            
-            // Method 1: Big switch block
-            // Not sure why, but from what I can tell by 
-            // counting cycles with FCEUX,
-            // this is *faster* than Method 2.
-            switch (temp1) {
-                case 1: // ENEMY_KORBAT
-                    korbat_ai();
-                    break;
-                case 2: // ENEMY_GRARRL
-                case 6: // ENEMY_SPIKEBALL
-                    spikeball_ai();
-                    break;
-                case 3:
-                    splyke_ai();
-                    break;
-                case 4: // ENEMY_CANNON;
-                    cannon_ai();
-                    break;
-                case 5: // ENEMY_ACIDPOOL;
-                    acid_ai();
-                    break;
-                case 7: // ENEMY_SUN
-                    // Technically these guys are called "Flamers"
-                    // but I always called them Suns growing up, so they're Suns
-                    sun_ai();
-                    break;
-                case 8:
-                    boss_ai();
-                    break;
-                case 9: // ENEMY_CANNONBALL
-                    cannonball_ai();
-                    break;
-                case 10: // ENEMY_ACIDDROP
-                    acid_drop_ai();
-                    break;
-                default: // Unimplemented
-                    break;
-            }
-            // Method 2: using a lookup table to call another function.
-            // This is somehow up to 200-300 cycles slower. How?
-            // Is it a cc65 optimizer thing?
-            // Or am I just missing something?
-            //temp_funcpointer = (void *)ai_pointers[temp1];
-            //temp_funcpointer();
+
+            // An assembly macro (defined in asm/macros.h) is used here to ensure that this is efficient.
+            AsmSet2ByteFromPtrAtIndexVar(temp_funcpointer, ai_pointers, temp1);
+            // temp_funcpointer now points to the correct enemy ai function. Call it.
+            temp_funcpointer();
+            // Do we want to delete (set type to ENEMY_NONE) any projectiles (CANNONBALL/ACIDDROP) that go offscreen?
+
         }
     }
 
@@ -1422,8 +1374,8 @@ void acid_drop_ai(void) {
     collision = temppointer[coordinates];
 
     if (METATILE_IS_SOLID(collision)) {
-        // Clear the lower nibble, then return.
-        enemies.flags_type[x] = ENEMY_NONE;
+        // Clear the type, then return.
+        enemies.type[x] = ENEMY_NONE;
         return;
     }
 
@@ -1527,7 +1479,7 @@ void cannon_ai(void) {
         enemies.actual_y[x+1] = temp1;
         enemies.nt[x+1] = temp2;
 
-        enemies.flags_type[x+1] |= ENEMY_CANNONBALL;
+        enemies.type[x+1] = ENEMY_CANNONBALL;
 
     }
     // Subtract from a (randomly-seeded?) timer of some sort.
@@ -1640,7 +1592,7 @@ void cannonball_ai(void) {
         enemies.actual_y[x] = low_byte(temp6);
         
         // Figure out where the collision should be detected.
-        temp5 = sub_scroll_y(1, temp6);
+        temp5 = add_scroll_y(1, temp6);
     }
 
     // Now that we know where we are, it's time to check to see if this cannonball
@@ -1658,19 +1610,45 @@ void cannonball_ai(void) {
 
     if (METATILE_IS_SOLID(collision)) {
         // Clear the lower nibble, then return.
-        enemies.flags_type[x] = ENEMY_NONE;
-        // It's possible we might want to play a sound effect or animation here.
+
+        // Clear the enemy type and flags. (Both are necessary.)
+        enemies.type[x] = ENEMY_NONE;
+        enemies.flags[x] = 0; 
+
+        // Note: These will turn into Spikeballs (with id 0, because that's the AI+Sprite combo I chose for id 0 at the moment)
+        // on impact if the flags byte is not set to zero.
+        // This could be used to make a new type of cannon if we're really looking to expand what we're doing.
+
+        // It's possible we want to play a sound effect or animation here.
     }
 
 }
 
 void acid_ai(void) {
     // Wait a while, then drop an acid drop.
-    // Todo.
-    // We will probably need to use "x" in this function.
+
+    // extra[x] should be number of frames this acid blob will wait after its previous drop went away before making another. (Between 128 and 255)
+    // extra2[x] should be the specific sprite we should be showing.
 
     // The next enemy should be an acid drop. If it's active, don't do anything.
     if (IS_ENEMY_ACTIVE(x+1)) { return; }
+
+    if (--enemies.timer[x] == 0) {
+        // Reset our timer.
+        temp0 = enemies.extra[x];
+        enemies.timer[x] = temp0;
+
+        // Move the acid drop into place.
+        temp0 = rand8() & 0b111; // Bottom 3 bits, 0 - 7
+        temp1 = enemies.x[x] + temp0; 
+        temp2 = enemies.actual_y[x];
+        temp3 = enemies.nt[x];
+
+        enemies.x[x+1] = temp1;
+        enemies.actual_y[x+1] = temp2;
+        enemies.nt[x+1] = temp3;
+
+    }
 
 
 }

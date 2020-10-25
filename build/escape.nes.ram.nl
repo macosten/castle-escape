@@ -5,8 +5,9 @@ $0000#NES_MIRRORING#
 $0008#NES_PRG_BANKS#
 $0061#_L_R_switch#
 $004E#_address#
-$0308#_bankBuffer#
-$0307#_bankLevel#
+$0302#_ai_pointers#
+$031E#_bankBuffer#
+$031D#_bankLevel#
 $6000#_cmap0#
 $60F0#_cmap1#
 $61E0#_cmap2#
@@ -25,7 +26,7 @@ $004A#_eject_D#
 $0048#_eject_L#
 $0049#_eject_R#
 $004B#_eject_U#
-$0312#_enemies#
+$0328#_enemies#
 $0069#_energy#
 $004D#_game_mode#
 $0078#_hitbox#
@@ -46,7 +47,7 @@ $0032#_pad1_new#
 $004C#_player_flags#
 $0056#_pseudo_scroll_y#
 $0300#_score#
-$0302#_score_string#
+$0318#_score_string#
 $0060#_scroll_count#
 $0054#_scroll_x#
 $0058#_scroll_y#

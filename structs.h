@@ -27,7 +27,8 @@ typedef struct EnemyDatabase {
     unsigned char actual_y[MAX_ENEMIES]; // The "actual" y value of this enemy, in absolute terms.
     unsigned char nt[MAX_ENEMIES]; // The nametable this lives in. Sort of like a high byte of actual_y.
     // Todo: Now that we have lots of extra RAM, should flags_type[] be separated into flags[] and type[]?
-    unsigned char flags_type[MAX_ENEMIES]; // high nibble is flags (including direction and active/inactive), low nibble is type.
+    unsigned char flags[MAX_ENEMIES]; // high nibble is flags (including direction and active/inactive), low nibble is type.
+    unsigned char type[MAX_ENEMIES];
     unsigned char extra[MAX_ENEMIES]; // The use of this depends on the enemy.
     unsigned char extra2[MAX_ENEMIES]; // The use of this depends on the enemy.
     // Examples of what the extra bytes will contain: animation frame numbers, cached return values, subpixel values...
