@@ -320,6 +320,12 @@ const unsigned char const cannon_dl_sprite_lookup_table[] = {6, 5, 4};
 const unsigned char * const cannon_sprite_quadrant_lookup_table[] = {cannon_ul_sprite_lookup_table, cannon_ur_sprite_lookup_table, cannon_dl_sprite_lookup_table, cannon_dr_sprite_lookup_table};
 // const unsigned char const enemy_contact_behavior_lookup_table[] = {0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1}
 
+// Frames here are in reverse order so that they can be array-indexed and then have the index decremented.
+const unsigned char * const acidblob_sprite_lookup_table[] = {acidblob0, acidblob3, acidblob0, acidblob1, acidblob2, acidblob1, acidblob0};
+
+
+const unsigned char * const sun_sprite_lookup_table[] = {sun0, sun1};
+
 void main (void) {
         
     ppu_off(); // screen off
@@ -637,6 +643,10 @@ void load_level_new(void) {
             // Load in the next enemy as an acid drop.
             ++x;
             enemies.type[x] = ENEMY_ACIDDROP;
+            // extra[x] for this enemy should be a number of frames to wait between acid drops.
+            // This varied from drop to drop in the original so I'll make it somewhat random.
+            enemies.extra[x] = rand8() & 0b01111111;
+            enemies.extra[x] += 128;
         }
 
         ++y; // Next byte.
@@ -736,15 +746,25 @@ void draw_sprites(void) {
                     oam_meta_spr(temp_x, temp_y, grarrl_sprite_lookup_table[temp3]);
                     break;
                 case 4: // Cannon
-                    // Figure out direction of cannon - todo
+                    // Figure out direction of cannon
                     temp3 = enemies.extra2[y];
                     oam_meta_spr(temp_x, temp_y, cannon_sprite_lookup_table[temp3]);
+                    break;
+                case 5: // Acid Blob
+                    // Tweak these numbers (and the number this is set to in acid_blob_ai) 
+                    // to adjust the animation speed.
+                    temp3 = enemies.extra2[y];
+                    temp3 = temp3 >> 1; 
+                    oam_meta_spr(temp_x, temp_y, acidblob_sprite_lookup_table[temp3]);
                     break;
                 case 6: // Spikeball
                     oam_meta_spr(temp_x, temp_y, spikeball);
                     break;
                 case 7: // Sun
-                    oam_meta_spr(temp_x, temp_y, sun0);
+                    // Tweak these numbers to adjust the flashing speed
+                    temp3 = enemies.actual_y[y] & 15;
+                    temp3 = temp3 >> 3;
+                    oam_meta_spr(temp_x, temp_y, sun_sprite_lookup_table[temp3]);
                     break;
                 case 9: // Cannonball
                     oam_spr(temp_x, temp_y, CANNONBALL_SPRITE_OFFSET, 1);
@@ -1374,8 +1394,9 @@ void acid_drop_ai(void) {
     collision = temppointer[coordinates];
 
     if (METATILE_IS_SOLID(collision)) {
-        // Clear the type, then return.
+        // Clear the type and flags, then return.
         enemies.type[x] = ENEMY_NONE;
+        enemies.flags[x] = 0;
         return;
     }
 
@@ -1630,6 +1651,12 @@ void acid_ai(void) {
     // extra[x] should be number of frames this acid blob will wait after its previous drop went away before making another. (Between 128 and 255)
     // extra2[x] should be the specific sprite we should be showing.
 
+    // Animations for this won't yet be implemented, but for now:
+    // Animate this enemy.
+    if (enemies.extra2[x] > 0) {
+        --enemies.extra2[x];
+    }
+
     // The next enemy should be an acid drop. If it's active, don't do anything.
     if (IS_ENEMY_ACTIVE(x+1)) { return; }
 
@@ -1647,6 +1674,11 @@ void acid_ai(void) {
         enemies.x[x+1] = temp1;
         enemies.actual_y[x+1] = temp2;
         enemies.nt[x+1] = temp3;
+
+        // Set the enemy in motion.
+        enemies.type[x+1] = ENEMY_ACIDDROP;
+
+        enemies.extra2[x] = 12; // ACIDBLOB_ANIMATION_FRAME_COUNT
 
     }
 

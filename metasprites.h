@@ -163,3 +163,28 @@ const unsigned char const grarrl_right[] = {
       0xff, 0x07, 0x51,2|OAM_FLIP_H,
   128
 };
+
+// Acid Blobs
+const unsigned char const acidblob0[] = {
+      0xff, 0xff, 0x28,3,
+      0x07, 0xff, 0x28,3|OAM_FLIP_H,
+  128
+};
+
+const unsigned char const acidblob1[] = {
+      0xff, 0xff, 0x29,3,
+      0x07, 0xff, 0x29,3|OAM_FLIP_H,
+  128
+};
+
+const unsigned char const acidblob2[] = {
+      0xff, 0xff, 0x2A,3,
+      0x07, 0xff, 0x2A,3|OAM_FLIP_H,
+  128
+};
+
+const unsigned char const acidblob3[] = {
+      0xff, 0xff, 0x2B,3,
+      0x07, 0xff, 0x2B,3|OAM_FLIP_H,
+  128
+};
