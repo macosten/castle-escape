@@ -220,10 +220,10 @@ Enemies enemies;
 #define IS_ENEMY_ACTIVE(index) (enemies.flags[index] & 0b10000000) // Test if high bit is set.
 #define GET_ENEMY_TYPE(index) (enemies.type[x])
 
-#define ENEMY_SET_DIRECTION_LEFT(index) (enemies.flags[index] &= 0b10111111)
-#define ENEMY_SET_DIRECTION_RIGHT(index) (enemies.flags[index] |= 0b01000000)
-#define ENEMY_FLIP_DIRECTION(index) (enemies.flags[index] ^= 0b01000000)
-#define ENEMY_DIRECTION(index) (enemies.flags[index] & 0b01000000)
+#define ENEMY_SET_DIRECTION_LEFT(index)     (enemies.flags[index] &= 0b11111110)
+#define ENEMY_SET_DIRECTION_RIGHT(index)    (enemies.flags[index] |= 0b00000001)
+#define ENEMY_FLIP_DIRECTION(index)         (enemies.flags[index] ^= 0b00000001)
+#define ENEMY_DIRECTION(index)              (enemies.flags[index] &  0b00000001)
 
 
 // For cannonballs and other 2-axis projectiles.
@@ -236,6 +236,11 @@ Enemies enemies;
 #define CANNONBALL_X_DIRECTION(index) (enemies.flags[index] & 0b01000000)
 #define CANNONBALL_Y_DIRECTION(index) (enemies.flags[index] & 0b00100000)
 
+// For Splykes.
+
+#define SPLYKE_SET_STANDING_STILL(index) (enemies.flags[index] &= 0b11011111)
+#define SPLYKE_SET_MOVING_AROUND(index)  (enemies.flags[index] |= 0b00100000) 
+#define SPLYKE_IS_MOVING_AROUND(index)   (enemies.flags[index] &  0b00100000)
 
 #pragma bss-name(pop)
 
@@ -325,6 +330,9 @@ const unsigned char * const acidblob_sprite_lookup_table[] = {acidblob0, acidblo
 
 
 const unsigned char * const sun_sprite_lookup_table[] = {sun0, sun1};
+
+const unsigned char * const splyke_tornado_sprite_lookup_table[] = {splyke_tornado0, splyke_tornado1, splyke_tornado2, splyke_tornado1};
+
 
 void main (void) {
         
@@ -424,7 +432,7 @@ void main (void) {
             }
 
             // debug:
-            // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
         }
 
@@ -700,8 +708,8 @@ void draw_sprites(void) {
     oam_clear();
     //set_sprite_zero(); // Ensure sprite 0 exists
 
-    temp1 = valrigard.x >> 8;
-    temp2 = valrigard.y >> 8;
+    temp1 = high_byte(valrigard.x);
+    temp2 = high_byte(valrigard.y);
     
     // draw valrigard
     if (DIRECTION == LEFT) {
@@ -711,8 +719,11 @@ void draw_sprites(void) {
     }
     
     // draw enemies.
-    temp1 = get_frame_count() & 3;
-    temp1 = temp1 << 8; // * 32, since that's the size of our shuffle array.
+    //temp1 = get_frame_count() & 3;
+    //temp1 = temp1 << 5; // * 32, since that's the size of our shuffle array.
+    // The shuffle array stuff above doesn't actually work; it'll need to be refactored/fixed.
+
+    temp1 = 0;
     for (x = 0; x < enemies.count; ++x) {
         y = shuffle_array[temp1];
         ++temp1;
@@ -737,13 +748,17 @@ void draw_sprites(void) {
             // This bit of code will need to be refactored when animations arrive...
             switch (GET_ENEMY_TYPE(y)) {
                 case 1: // Korbat
-                    temp3 = ENEMY_DIRECTION(y) >> 6;
+                    temp3 = ENEMY_DIRECTION(y);
                     //temppointer = ...;
                     oam_meta_spr(temp_x, temp_y, korbat_sprite_lookup_table[temp3]);
                     break;
                 case 2: // Grarrl
-                    temp3 = ENEMY_DIRECTION(y) >> 6;
+                    temp3 = ENEMY_DIRECTION(y);
                     oam_meta_spr(temp_x, temp_y, grarrl_sprite_lookup_table[temp3]);
+                    break;
+                case 3: // Splyke
+                    temp3 = enemies.extra2[y] >> 1;
+                    oam_meta_spr(temp_x, temp_y, splyke_tornado_sprite_lookup_table[temp3]);
                     break;
                 case 4: // Cannon
                     // Figure out direction of cannon
@@ -1244,7 +1259,7 @@ void korbat_ai(void) {
 
     // Convert the coords of this enemy to metatile coords.
 
-    temp3 = ENEMY_DIRECTION(x) >> 6;
+    temp3 = ENEMY_DIRECTION(x);
 
     temp1 = enemies.x[x];
 
@@ -1279,7 +1294,7 @@ void spikeball_ai(void) {
     // TODO: Consider the case of us being on the exact edge of a nametable.
     // (i.e we're in nt 1, y tile = 0xD; below us should be nt 2, y tile = 0x0)
     
-    temp3 = ENEMY_DIRECTION(x) >> 6;
+    temp3 = ENEMY_DIRECTION(x);
 
     temp1 = enemies.x[x];
 
@@ -1335,7 +1350,7 @@ void sun_ai(void) {
     // Look to see if the metatile in front of me is solid. If so, turn around.
     // Then, move vertically (depending on direction)
 
-    temp3 = ENEMY_DIRECTION(x) >> 6;
+    temp3 = ENEMY_DIRECTION(x);
 
     // We'll make use of the add_scroll_y and sub_scroll_y functions for this...
 
@@ -1687,6 +1702,39 @@ void acid_ai(void) {
 
 
 void splyke_ai(void) {
+    // Two things happen somewhat randomly when it comes to this enemy:
+    // 1: Switch between tornado (unkillable) and regular forms.
+    // 2: Move forward (Splyke doesn't move forward every frame).
+
+    // When colliding with a Splyke, the player only dies if they're not swinging their sword.
+    // When the Splyke collides with a player, the Splyke only dies if it's not in its Tornado form.
+
+    // timer[x] can be...
+    // extra[x] can be...
+    // extra2[x] can be a frame counter of some description. (Splykes were not very animated in the original game.)
+
+    temp0 = rand8() & 0x0f; // random from 0 to 15
+    temp1 = SPLYKE_IS_MOVING_AROUND(x);
+
+    // Increment the animation counter...
+    ++enemies.extra2[x];
+    enemies.extra2[x] &= 7; // Crop the animation counter to 7. (this will get >> 1'd in draw_sprites)
+
+    if (temp0 == 0 && temp1 == 0) {
+        // If we're standing still and we roll a 0...
+        SPLYKE_SET_MOVING_AROUND(x); // Start moving.
+    } else if (temp1){
+        // Should we stop moving?
+        if (temp0 == 0) {
+            SPLYKE_SET_STANDING_STILL(x);
+        }
+
+        // Move. 
+
+        spikeball_ai();
+        spikeball_ai(); // Move 2 pixels. (This should probably be optimized+inlined.)
+
+    }
 
 }
 
