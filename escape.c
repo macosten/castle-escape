@@ -332,6 +332,7 @@ const unsigned char const updown_movement_offset_lookup_table[] = {0xff, 15};
 const unsigned char * const korbat_sprite_lookup_table[] = {korbat_left, korbat_right};
 const unsigned char * const grarrl_sprite_lookup_table[] = {grarrl_left, grarrl_right};
 
+// Cannon lookup tables.
 const unsigned char * const cannon_sprite_lookup_table[] = {cannon_up, cannon_up_left, cannon_left, cannon_down_left, cannon_down, cannon_down_right, cannon_right, cannon_up_right};
 
 const unsigned char const cannon_ul_sprite_lookup_table[] = {6, 7, 0};
@@ -344,15 +345,16 @@ const unsigned char * const cannon_sprite_quadrant_lookup_table[] = {cannon_ul_s
 // Frames here are in reverse order so that they can be array-indexed and then have the index decremented.
 const unsigned char * const acidblob_sprite_lookup_table[] = {acidblob0, acidblob3, acidblob0, acidblob1, acidblob2, acidblob1, acidblob0};
 
-
 const unsigned char * const sun_sprite_lookup_table[] = {sun0, sun1};
 
-const unsigned char * const splyke_tornado_sprite_lookup_table[] = {splyke_tornado0, splyke_tornado1, splyke_tornado2, splyke_tornado1};
-const unsigned char * const splyke_idle_left_sprite_lookup_table[] = {splyke_idle_left0, splyke_idle_left1};
-const unsigned char * const splyke_idle_right_sprite_lookup_table[] = {splyke_idle_right0, splyke_idle_right1};
-
-const unsigned char * const * const splyke_idle_meta_lookup_table[] = {splyke_idle_left_sprite_lookup_table, splyke_idle_right_sprite_lookup_table};
-
+// Indexed by a 4-bit number with bits arranged as follows:
+// [Moving (idle/tornado)][Frame Number MSB][Frame Number LSB][Direction (left/right)]
+const unsigned char * const splyke_sprite_lookup_table[] = {
+    splyke_idle_left0,  splyke_idle_right0,     splyke_idle_left0,  splyke_idle_right0,
+    splyke_idle_left1,  splyke_idle_right1,     splyke_idle_left1,  splyke_idle_right1,
+    splyke_tornado0,    splyke_tornado0,        splyke_tornado1,    splyke_tornado1,
+    splyke_tornado2,    splyke_tornado2,        splyke_tornado1,    splyke_tornado1
+};
 
 void main (void) {
         
@@ -855,23 +857,16 @@ void draw_acid_drop(void) {
 }
 
 void draw_splyke(void) {
-    
+    // Assemble an index with which to find the correct sprite.
+    // 16 possible values.
+    // lsb is the direction.
+    // msb is if this splyke is moving around or not (tornado if set or idle if not).
+    // The middle two bits are the frame number in the respective animation.
+    temp3 = enemies.extra2[y] & 0b110; // Mask the frame number.
+    temp4 = ENEMY_DIRECTION(y) | temp3;
+    temp4 = temp4 | SPLYKE_IS_MOVING_AROUND(y) >> 2;
 
-    // Assemble an index with which to find the correct sprite...
-    // temp4 = SPLYKE_IS_MOVING_AROUND(y) >> 4 | ENEMY_DIRECTION(y);
-
-    // Optimization potential: Make heavier use of Lookup Tables here somehow.
-    if (SPLYKE_IS_MOVING_AROUND(y)) {
-        temp3 = enemies.extra2[y] >> 1; // Frame
-        AsmSet2ByteFromPtrAtIndexVar(temppointer, splyke_tornado_sprite_lookup_table, temp3);
-    } else {
-        temp0 = ENEMY_DIRECTION(y);
-        temp3 = enemies.extra2[y] >> 2; // Frame
-        temppointer = splyke_idle_meta_lookup_table[temp0][temp3];
-    }
-
-    //oam_meta_spr(temp_x, temp_y, [temp4][temp3]);
-    oam_meta_spr(temp_x, temp_y, temppointer);
+    oam_meta_spr(temp_x, temp_y, splyke_sprite_lookup_table[temp4]);
 }
 
 void draw_sun(void) {
@@ -1762,7 +1757,6 @@ void acid_ai(void) {
 
     }
 
-
 }
 
 
@@ -1794,10 +1788,62 @@ void splyke_ai(void) {
             SPLYKE_SET_STANDING_STILL(x);
         }
 
-        // Move. 
+        // Move. This is identical to a spikeball_ai that 2 x-units instead of one.
 
-        spikeball_ai();
-        spikeball_ai(); // Move 2 pixels. (This should probably be optimized+inlined.)
+        temp3 = ENEMY_DIRECTION(x);
+
+        temp1 = enemies.x[x];
+
+        // If we're going right, we actually want to look to the right of us.
+        temp1 += leftright_movement_offset_lookup_table[temp3];
+        // Look another pixel in the appropriate direction since we'll be moving two pixels.
+        temp1 += leftright_movement_moving_lookup_table[temp3];
+
+        // First, check beneath us.
+
+        temp2 = enemies.actual_y[x] + 18; // Y beneath us
+        coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
+
+        // Account for being on the edge of a nametable...
+        temp4 = temp2 >> 4;
+
+        // ...by checking. 
+        // If temp4 == 0xf, then we were on the bottom of a nametable and should look at the other one.
+        if (temp4 == 0xf) {
+            temp4 = enemies.nt[x] + 1;
+        } else {
+            temp4 = enemies.nt[x];
+        }
+
+        // Which cmap should I look at?
+        temppointer = cmaps[temp4];
+        collision = temppointer[coordinates];
+        
+        if (!METATILE_IS_SOLID(collision)) {
+            ENEMY_FLIP_DIRECTION(x);
+            temp3 ^= 1;
+        }
+
+        // Now, check ahead of us.
+
+        temp2 = enemies.actual_y[x] + 6; // center y
+        coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
+
+        // Which cmap should I look at?
+        temp4 = enemies.nt[x];
+        temppointer = cmaps[temp4];
+        collision = temppointer[coordinates];
+        
+        if (METATILE_IS_SOLID(collision)) {
+            ENEMY_FLIP_DIRECTION(x);
+            temp3 ^= 1;
+        }
+
+        // Move 2 pixels instead of 1.
+        temp1 = leftright_movement_moving_lookup_table[temp3];
+        temp1 += temp1;
+
+        enemies.x[x] += temp1;
 
     }
 
