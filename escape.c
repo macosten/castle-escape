@@ -14,6 +14,7 @@
 #include "metatiles.h"
 #include "levels.h"
 #include "enemies.h"
+
 // #include "asm/bitwise.h"
 #include "asm/score.h"
 #include "asm/math.h"
@@ -265,19 +266,39 @@ const unsigned char * const cmaps[] = {cmap0, cmap1, cmap2, cmap3, cmap4, cmap5}
 // MARK: Function Prototypes
 
 #pragma code-name ("CODE")
+
+// Drawing functions.
 void draw_sprites(void);
-void movement(void);
+
+void draw_korbat(void);
+void draw_grarrl(void);
+void draw_spikeball(void);
+void draw_cannon(void);
+void draw_cannonball(void);
+void draw_acid(void);
+void draw_acid_drop(void);
+void draw_splyke(void);
+void draw_sun(void);
+void draw_boss(void);
+
+void draw_screen_U(void);
+void draw_screen_D(void);
+void draw_screen_sub(void);
 
 void begin_level(void);
 void load_level_new(void);
 void load_room_new(void);
 
+void load_title_screen(void);
+void load_game_over_screen(void);
+
+void clear_screen(void);
+
+// Physics/Logic functions.
+void movement(void);
+
 void bg_collision(void); // For the player
 void bg_collision_sub(void);
-
-void draw_screen_U(void);
-void draw_screen_D(void);
-void draw_screen_sub(void);
 
 void check_spr_objects(void); // For enemies
 void sprite_collisions(void);
@@ -292,11 +313,6 @@ void acid_drop_ai(void);
 void splyke_ai(void);
 void sun_ai(void);
 void boss_ai(void);
-
-void load_title_screen(void);
-void load_game_over_screen(void);
-
-void clear_screen(void);
 
 // MARK: Lookup Tables
 
@@ -332,6 +348,10 @@ const unsigned char * const acidblob_sprite_lookup_table[] = {acidblob0, acidblo
 const unsigned char * const sun_sprite_lookup_table[] = {sun0, sun1};
 
 const unsigned char * const splyke_tornado_sprite_lookup_table[] = {splyke_tornado0, splyke_tornado1, splyke_tornado2, splyke_tornado1};
+const unsigned char * const splyke_idle_left_sprite_lookup_table[] = {splyke_idle_left0, splyke_idle_left1};
+const unsigned char * const splyke_idle_right_sprite_lookup_table[] = {splyke_idle_right0, splyke_idle_right1};
+
+const unsigned char * const * const splyke_idle_meta_lookup_table[] = {splyke_idle_left_sprite_lookup_table, splyke_idle_right_sprite_lookup_table};
 
 
 void main (void) {
@@ -703,6 +723,21 @@ void load_room_new(void) {
     memcpy(cmaps[x], temppointer, 240);
 }
 
+// A lookup table for enemy draw functions.
+const void (* draw_func_pointers[])(void) = {
+    draw_korbat,      // 0 - ENEMY_NONE;
+    draw_korbat,      // 1 - ENEMY_KORBAT;
+    draw_grarrl,      // 2 - ENEMY_GRARRL;
+    draw_splyke,      // 3 - ENEMY_SPLYKE;
+    draw_cannon,      // 4 - ENEMY_CANNON;
+    draw_acid,        // 5 - ENEMY_ACIDPOOL;
+    draw_spikeball,   // 6 - ENEMY_SPIKEBALL;
+    draw_sun,         // 7 - ENEMY_SUN;
+    draw_boss,        // 8 - ENEMY_BOSS;
+    draw_cannonball,  // 9 - ENEMY_CANNONBALL;
+    draw_acid_drop    // 10 - ENEMY_ACIDDROP;
+};
+
 void draw_sprites(void) {
     // clear all sprites from sprite buffer
     oam_clear();
@@ -743,54 +778,13 @@ void draw_sprites(void) {
 
         temp_y = enemies.y[y];
         if (temp_y < 0xf0) {
-            // These should be changed to part of an enemy_anim array at some point.
-            
-            // This bit of code will need to be refactored when animations arrive...
-            switch (GET_ENEMY_TYPE(y)) {
-                case 1: // Korbat
-                    temp3 = ENEMY_DIRECTION(y);
-                    //temppointer = ...;
-                    oam_meta_spr(temp_x, temp_y, korbat_sprite_lookup_table[temp3]);
-                    break;
-                case 2: // Grarrl
-                    temp3 = ENEMY_DIRECTION(y);
-                    oam_meta_spr(temp_x, temp_y, grarrl_sprite_lookup_table[temp3]);
-                    break;
-                case 3: // Splyke
-                    temp3 = enemies.extra2[y] >> 1;
-                    oam_meta_spr(temp_x, temp_y, splyke_tornado_sprite_lookup_table[temp3]);
-                    break;
-                case 4: // Cannon
-                    // Figure out direction of cannon
-                    temp3 = enemies.extra2[y];
-                    oam_meta_spr(temp_x, temp_y, cannon_sprite_lookup_table[temp3]);
-                    break;
-                case 5: // Acid Blob
-                    // Tweak these numbers (and the number this is set to in acid_blob_ai) 
-                    // to adjust the animation speed.
-                    temp3 = enemies.extra2[y];
-                    temp3 = temp3 >> 1; 
-                    oam_meta_spr(temp_x, temp_y, acidblob_sprite_lookup_table[temp3]);
-                    break;
-                case 6: // Spikeball
-                    oam_meta_spr(temp_x, temp_y, spikeball);
-                    break;
-                case 7: // Sun
-                    // Tweak these numbers to adjust the flashing speed
-                    temp3 = enemies.actual_y[y] & 15;
-                    temp3 = temp3 >> 3;
-                    oam_meta_spr(temp_x, temp_y, sun_sprite_lookup_table[temp3]);
-                    break;
-                case 9: // Cannonball
-                    oam_spr(temp_x, temp_y, CANNONBALL_SPRITE_OFFSET, 1);
-                    break;
-                case 10: // Acid Drop
-                    oam_spr(temp_x, temp_y, ACIDDROP_SPRITE_OFFSET, 3);
-                    break;
-                default:
-                    oam_meta_spr(temp_x, temp_y, spikeball);
-                    break;
-            }
+
+            temp0 = GET_ENEMY_TYPE(x);
+            // An assembly macro (defined in asm/macros.h) is used here to ensure that this is efficient.
+            AsmSet2ByteFromPtrAtIndexVar(temp_funcpointer, draw_func_pointers, temp0);
+            // temp_funcpointer now points to the correct enemy draw function. Call it.
+            temp_funcpointer();
+
         }
 
     }
@@ -819,6 +813,77 @@ void draw_sprites(void) {
     oam_spr(224, 50, debug_tile_y >> 4, 1);
     oam_spr(232, 50, debug_tile_y & 0x0f, 1);
 
+}
+
+// For all the draw_ functions, temp_x and temp_y are important
+
+void draw_korbat(void) {
+    temp3 = ENEMY_DIRECTION(y);
+    //temppointer = ...;
+    oam_meta_spr(temp_x, temp_y, korbat_sprite_lookup_table[temp3]);
+}
+
+void draw_grarrl(void) {
+    temp3 = ENEMY_DIRECTION(y);
+    oam_meta_spr(temp_x, temp_y, grarrl_sprite_lookup_table[temp3]);
+}
+
+void draw_spikeball(void) {
+    oam_meta_spr(temp_x, temp_y, spikeball);
+}
+
+void draw_cannon(void) {
+    // Figure out direction of cannon
+    temp3 = enemies.extra2[y];
+    oam_meta_spr(temp_x, temp_y, cannon_sprite_lookup_table[temp3]);
+}
+
+void draw_cannonball(void) {
+    oam_spr(temp_x, temp_y, CANNONBALL_SPRITE_OFFSET, 1);
+}
+
+void draw_acid(void) {
+    // Tweak these numbers (and the number this is set to in acid_blob_ai) 
+    // to adjust the animation speed.
+    temp3 = enemies.extra2[y];
+    temp3 = temp3 >> 1; 
+    oam_meta_spr(temp_x, temp_y, acidblob_sprite_lookup_table[temp3]);
+}
+
+void draw_acid_drop(void) {
+    oam_spr(temp_x, temp_y, ACIDDROP_SPRITE_OFFSET, 3);
+}
+
+void draw_splyke(void) {
+    
+
+    // Assemble an index with which to find the correct sprite...
+    // temp4 = SPLYKE_IS_MOVING_AROUND(y) >> 4 | ENEMY_DIRECTION(y);
+
+    // Optimization potential: Make heavier use of Lookup Tables here somehow.
+    if (SPLYKE_IS_MOVING_AROUND(y)) {
+        temp3 = enemies.extra2[y] >> 1; // Frame
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, splyke_tornado_sprite_lookup_table, temp3);
+    } else {
+        temp0 = ENEMY_DIRECTION(y);
+        temp3 = enemies.extra2[y] >> 2; // Frame
+        temppointer = splyke_idle_meta_lookup_table[temp0][temp3];
+    }
+
+    //oam_meta_spr(temp_x, temp_y, [temp4][temp3]);
+    oam_meta_spr(temp_x, temp_y, temppointer);
+}
+
+void draw_sun(void) {
+    // Tweak these numbers to adjust the flashing speed
+    temp3 = enemies.actual_y[y] & 15;
+    temp3 = temp3 >> 3;
+    oam_meta_spr(temp_x, temp_y, sun_sprite_lookup_table[temp3]);
+}
+
+void draw_boss(void) {
+    // Dummied out.
+    oam_spr(temp_x, temp_y, 0x10, 3);
 }
 
 // MARK: -- Movement.
