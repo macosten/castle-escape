@@ -75,6 +75,10 @@ unsigned char eject_D;
 unsigned char eject_U; 
 
 
+unsigned char player_frame_timer;
+unsigned char player_sword_timer;
+//unsigned char player_timer;
+
 unsigned char player_flags; // All of these flags should be such that the default value for this byte when starting a level is 0
 #define DIRECTION (player_flags & 1) //facing left or right? (lsb of player_flags)
 #define SET_DIRECTION_LEFT() (player_flags &= 0b11111110) // Un-set the lsb
@@ -160,6 +164,10 @@ unsigned char nt_current; // The nametable Valrigard is currently in. This shoul
 
 #define VALRIGARD_WIDTH 11
 #define VALRIGARD_HEIGHT 13
+
+// The swinging hitbox should be expanded slightly.
+#define VALRIGARD_SWINGING_WIDTH 15
+#define VALRIGARD_SWINGING_HEIGHT 15
 
 #define METATILE_IS_SOLID(mtid) (metatile_property_lookup_table[mtid] & METATILE_SOLID)
 
@@ -270,6 +278,8 @@ const unsigned char * const cmaps[] = {cmap0, cmap1, cmap2, cmap3, cmap4, cmap5}
 // Drawing functions.
 void draw_sprites(void);
 
+void draw_player(void);
+
 void draw_korbat(void);
 void draw_grarrl(void);
 void draw_spikeball(void);
@@ -296,6 +306,8 @@ void clear_screen(void);
 
 // Physics/Logic functions.
 void movement(void);
+
+void swing_sword(void);
 
 void bg_collision(void); // For the player
 void bg_collision_sub(void);
@@ -327,6 +339,27 @@ const unsigned char const draw_screen_sub_lookup_index_offset_1[] = {2, 6, 10, 1
 const unsigned char const leftright_movement_offset_lookup_table[] = {0xff, 15};
 const unsigned char const leftright_movement_moving_lookup_table[] = {0xff, 1};
 const unsigned char const updown_movement_offset_lookup_table[] = {0xff, 15};
+
+// Lookup tables for valrigard's sprite.
+
+const unsigned char * const valrigard_idle_sprite_lookup_table[] = {
+    valrigard_idle_left, valrigard_idle_right
+};
+
+const unsigned char * const valrigard_sword_swing_sprite_lookup_table[] = {
+    // Animation for swinging (reversed): (Left, Right)
+    valrigard_swing_left_followthrough, valrigard_swing_right_followthrough,              
+    valrigard_swing_left_followthrough, valrigard_swing_right_followthrough,
+    valrigard_swing_left_followthrough, valrigard_swing_right_followthrough,
+    valrigard_idle_left,                valrigard_idle_right,               
+    valrigard_swing_left_high,          valrigard_swing_right_high,
+    valrigard_swing_left_mid,           valrigard_swing_right_mid,           
+    valrigard_swing_left_low,           valrigard_swing_right_low,
+    valrigard_swing_left_low,           valrigard_swing_right_low,
+};
+
+
+
 
 // Lookup tables for enemy sprites (not yet animated).
 const unsigned char * const korbat_sprite_lookup_table[] = {korbat_left, korbat_right};
@@ -415,7 +448,11 @@ void main (void) {
         
             set_chr_bank_0(0);
             pad1 = pad_poll(0); // read the first controller
-            pad1_new = get_pad_new(0);
+            pad1_new = get_pad_new(0); 
+
+            // pad1 contains buttons that are currently pressed.
+            // pad1_new contains newly-pressed buttons - they won't be designated here in the next frame.
+            // It's useful for times we don't want button holds to retrigger something (say, pausing and unpausing).
             
             clear_vram_buffer();
             
@@ -425,10 +462,13 @@ void main (void) {
             // Check to see what's on-screen
             check_spr_objects();
 
+            // Check the status of the sword swing.
+            swing_sword();
+
             // Check sprite collisions
             sprite_collisions();
 
-            // Move enemies (todo)
+            // Move enemies.
             enemy_movement();
             
             //set_scroll_x(0); // Yeah... this game won't need to scroll in the X direction.
@@ -745,15 +785,8 @@ void draw_sprites(void) {
     oam_clear();
     //set_sprite_zero(); // Ensure sprite 0 exists
 
-    temp1 = high_byte(valrigard.x);
-    temp2 = high_byte(valrigard.y);
-    
     // draw valrigard
-    if (DIRECTION == LEFT) {
-        oam_meta_spr(temp1, temp2, valrigardIdleLeft);
-    } else {
-        oam_meta_spr(temp1, temp2, valrigardIdleRight);
-    }
+    draw_player();
     
     // draw enemies.
     //temp1 = get_frame_count() & 3;
@@ -765,9 +798,9 @@ void draw_sprites(void) {
         y = shuffle_array[temp1];
         ++temp1;
         
-        temp2 = enemies.flags[y];
+        // temp2 = enemies.flags[y];
         // 0 == ENEMY_NONE (cc65 complained when I used ENEMY_NONE... I wish I knew why...)
-        //if (temp2 == 0) continue;
+        // if (temp2 == 0) continue;
         
         if (!IS_ENEMY_ACTIVE(y)) continue;
 
@@ -775,8 +808,8 @@ void draw_sprites(void) {
         
         // Not that we should have enemies ever in these X values, but...
         // (We may be able to optimize this away)
-        if (temp_x == 0) ++temp_x; // Basing this off NESDoug's report of problems with temp_x = 0.
-        if (temp_x > 0xf0) continue;
+        //if (temp_x == 0) ++temp_x; // Basing this off NESDoug's report of problems with temp_x = 0.
+        //if (temp_x > 0xf0) continue;
 
         temp_y = enemies.y[y];
         if (temp_y < 0xf0) {
@@ -814,6 +847,30 @@ void draw_sprites(void) {
     
     oam_spr(224, 50, debug_tile_y >> 4, 1);
     oam_spr(232, 50, debug_tile_y & 0x0f, 1);
+
+}
+
+void draw_player(void) {
+
+    temp1 = high_byte(valrigard.x);
+    temp2 = high_byte(valrigard.y);
+
+    if (IS_SWINGING_SWORD) {
+
+        temp0 = (player_frame_timer & 0b11111110) | DIRECTION;
+
+        debug_tile_x = temp0;
+        debug_tile_y = 0xff;
+        oam_meta_spr(temp1, temp2, valrigard_sword_swing_sprite_lookup_table[temp0]);
+    } else {
+        oam_meta_spr(temp1, temp2, valrigard_idle_sprite_lookup_table[DIRECTION]);
+        debug_tile_y = 0x00;
+    }
+
+    // Decrement the player frame timer if it's nonzero.
+    if (player_frame_timer) { 
+        --player_frame_timer;
+    }
 
 }
 
@@ -1017,6 +1074,20 @@ void movement(void) {
 
 }
 
+void swing_sword(void) {
+    if ((pad1 & PAD_A) && !player_sword_timer && !(pad1 & PAD_UP)) {
+        player_sword_timer = 37;
+        player_frame_timer = 14;
+        SET_STATUS_SWINGING_SWORD();
+    }
+
+    if (player_sword_timer) { 
+        --player_sword_timer;
+    } else {
+        SET_STATUS_NOT_SWINGING_SWORD();
+    }
+
+}
 
 void bg_collision(void){
     // note, !0 = collision
@@ -1238,11 +1309,43 @@ void check_spr_objects(void) {
     }
 }
 
+// Widths and heights for enemies.
+const unsigned char const enemy_hitbox_width_lookup_table[] = {
+    0,  // None
+    13, // Korbat 
+    13, // Grarrl
+    13, // Splyke
+    13, // Cannon
+    0,  // Acidpool
+    13, // Spikeball
+    13, // Sun
+    13, // Boss
+    6,  // Cannonball
+    6,  // Aciddrop
+    0,  // ...Particle effect of some sort? 
+};
+
+const unsigned char const enemy_hitbox_height_lookup_table[] = {
+    0,  // None
+    13, // Korbat 
+    13, // Grarrl
+    13, // Splyke
+    13, // Cannon
+    0,  // Acidpool
+    13, // Spikeball
+    13, // Sun
+    13, // Boss
+    6,  // Cannonball
+    6,  // Aciddrop
+    0,  // ...Particle effect of some sort? 
+};
+
 // Check for sprite collisions with the player.
 void sprite_collisions(void) {
     // hitbox == the player's hitbox.
     hitbox.x = high_byte(valrigard.x);
     hitbox.y = high_byte(valrigard.y);
+    
     hitbox.width = VALRIGARD_WIDTH;
     hitbox.height = VALRIGARD_HEIGHT;
 
@@ -1255,20 +1358,16 @@ void sprite_collisions(void) {
             temp1 = GET_ENEMY_TYPE(x);
 
             // Determine the enemy hitbox size.
-            if (temp1 <= 8 /*ENEMY_BOSS*/) { // It's an enemy
-                hitbox2.width = ENEMY_WIDTH;
-                hitbox2.height = ENEMY_HEIGHT;
-            } else { // It's a projectile
-                hitbox2.width = PROJECTILE_WIDTH;
-                hitbox2.height = PROJECTILE_HEIGHT;
-            }
-
+            hitbox2.width = enemy_hitbox_width_lookup_table[temp1];
+            hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
+            
             hitbox2.x = enemies.x[x];
             hitbox2.y = enemies.y[x];
 
             if (check_collision(&hitbox, &hitbox2)) {
                 // Did collide with enemy. For now, just set our status to dead...
                 SET_STATUS_DEAD();
+                // More realistically this will eventually call a function from an array of pointers.
             }
 
         }
@@ -1299,13 +1398,11 @@ void enemy_movement(void) {
     for (x = 0; x < enemies.count; ++x) {
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
-
             // An assembly macro (defined in asm/macros.h) is used here to ensure that this is efficient.
             AsmSet2ByteFromPtrAtIndexVar(temp_funcpointer, ai_pointers, temp1);
             // temp_funcpointer now points to the correct enemy ai function. Call it.
             temp_funcpointer();
             // Do we want to delete (set type to ENEMY_NONE) any projectiles (CANNONBALL/ACIDDROP) that go offscreen?
-
         }
     }
 

@@ -11,7 +11,7 @@
 // Each line corresponds to one hardware sprite, and the following information is in each line:
 // X offset, Y offset, sprite/tile ID, palette (| OAM flip)
 // 128 terminates (I think).
-const unsigned char const valrigardIdleLeft[] = {
+const unsigned char const valrigard_idle_left[] = {
       0xfe, 0xfd,   0xe0,   1,
       6,    0xfd,   0xe1,   1,
       0xfe,    5,   0xf0,   1,
@@ -19,11 +19,75 @@ const unsigned char const valrigardIdleLeft[] = {
     128
 };
 
-const unsigned char const valrigardIdleRight[] = {
+const unsigned char const valrigard_idle_right[] = {
          6,  0xfd,  0xe0,1|OAM_FLIP_H,
       0xfe,  0xfd,  0xe1,1|OAM_FLIP_H,
          6,     5,  0xf0,1|OAM_FLIP_H,
       0xfe,     5,  0xf1,1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const valrigard_swing_left_high[] = {
+      0xfe, 0xfd,   0xe2,   1,
+      6,    0xfd,   0xe1,   1,
+      0xfe,    5,   0xf2,   1,
+      6,       5,   0xf3,   1,
+    128
+};
+
+const unsigned char const valrigard_swing_right_high[] = {
+         6, 0xfd,   0xe2,   1|OAM_FLIP_H,
+      0xfe, 0xfd,   0xe1,   1|OAM_FLIP_H,
+         6,    5,   0xf2,   1|OAM_FLIP_H,
+      0xfe,    5,   0xf3,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const valrigard_swing_left_mid[] = {
+      0xfe, 0xfd,   0xe4,   1,
+      6,    0xfd,   0xe1,   1,
+      0xfe,    5,   0xf4,   1,
+      6,       5,   0xf3,   1,
+    128
+};
+
+const unsigned char const valrigard_swing_right_mid[] = {
+      6,    0xfd,   0xe4,   1|OAM_FLIP_H,
+      0xfe, 0xfd,   0xe1,   1|OAM_FLIP_H,
+      6,       5,   0xf4,   1|OAM_FLIP_H,
+      0xfe,    5,   0xf3,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const valrigard_swing_left_low[] = {
+      0xfe, 0xfd,   0xe5,   1,
+      6,    0xfd,   0xe1,   1,
+      0xfe,    5,   0xf5,   1,
+      6,       5,   0xf6,   1,
+    128
+};
+
+const unsigned char const valrigard_swing_right_low[] = {
+      6,    0xfd,   0xe5,   1|OAM_FLIP_H,
+      0xfe, 0xfd,   0xe1,   1|OAM_FLIP_H,
+      6,       5,   0xf5,   1|OAM_FLIP_H,
+      0xfe,    5,   0xf6,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const valrigard_swing_left_followthrough[] = {
+      0xfe, 0xfd,   0xe7,   1,
+      6,    0xfd,   0xe8,   1,
+      0xfe,    5,   0xf7,   1,
+      6,       5,   0xf8,   1,
+    128
+};
+
+const unsigned char const valrigard_swing_right_followthrough[] = {
+      6,    0xfd,   0xe7,   1|OAM_FLIP_H,
+      0xfe, 0xfd,   0xe8,   1|OAM_FLIP_H,
+      6,       5,   0xf7,   1|OAM_FLIP_H,
+      0xfe,    5,   0xf8,   1|OAM_FLIP_H,
     128
 };
 
