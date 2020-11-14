@@ -8,12 +8,7 @@ $0055#_address#
 $03B6#_ai_pointers#
 $03D6#_bankBuffer#
 $03D5#_bankLevel#
-$6000#_cmap0#
-$60F0#_cmap1#
-$61E0#_cmap2#
-$62D0#_cmap3#
-$63C0#_cmap4#
-$64B0#_cmap5#
+$6000#_cmap#
 $0038#_collision#
 $003C#_collision_D#
 $0039#_collision_L#

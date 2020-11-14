@@ -259,18 +259,14 @@ Enemies enemies;
 // Collision maps.
 #define CMAP_COUNT 6
 
-unsigned char cmap0[240];
-unsigned char cmap1[240];
-unsigned char cmap2[240];
-unsigned char cmap3[240];
-unsigned char cmap4[240];
-unsigned char cmap5[240];
+unsigned char cmap[240 * CMAP_COUNT];
 
 // There's space for more, but I'm leaving it at this for now.
 
 #pragma bss-name(pop)
 
-const unsigned char * const cmaps[] = {cmap0, cmap1, cmap2, cmap3, cmap4, cmap5}; 
+// Maps the big cmap to nametable-sized chunks.
+const unsigned char * const cmaps[] = {cmap, cmap + 240, cmap+240*2, cmap+240*3, cmap+240*4, cmap+240*5}; 
 
 // MARK: Function Prototypes
 

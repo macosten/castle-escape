@@ -138,12 +138,7 @@ al 00C85A ._check_collision
 al 00DA78 ._check_spr_objects
 al 00D643 ._clear_screen
 al 00C840 ._clear_vram_buffer
-al 006000 ._cmap0
-al 0060F0 ._cmap1
-al 0061E0 ._cmap2
-al 0062D0 ._cmap3
-al 0063C0 ._cmap4
-al 0064B0 ._cmap5
+al 006000 ._cmap
 al 00ECF6 ._cmaps
 al 000038 ._collision
 al 00003C ._collision_D
