@@ -831,10 +831,7 @@ void draw_sprites(void) {
 
             temp0 = GET_ENEMY_TYPE(x);
             // An assembly macro (defined in asm/macros.h) is used here to ensure that this is efficient.
-            AsmSet2ByteFromPtrAtIndexVar(temp_funcpointer, draw_func_pointers, temp0);
-            // temp_funcpointer now points to the correct enemy draw function. Call it.
-            temp_funcpointer();
-
+            AsmCallFunctionAtPtrOffsetByIndexVar(draw_func_pointers, temp0);
         }
 
     }
@@ -1026,10 +1023,10 @@ void movement(void) {
         valrigard.x = old_x;
     }
     else if (collision_L) {
-        valrigard.x -= (eject_L << 8);
+        high_byte(valrigard.x) -= eject_L;
     }
     else if (collision_R) {
-        valrigard.x -= (eject_R << 8);
+        high_byte(valrigard.x) -= eject_R;
     }
     
     // MARK: Handle Y.
@@ -1068,12 +1065,10 @@ void movement(void) {
     // if (collision_U && collision_D) valrigard.y = old_y;
     
     if(collision_U) {
-        //valrigard.y -= (eject_U << 8);
         high_byte(valrigard.y) -= eject_U;
         // Play head_hit sound
     }
     else if (collision_D) {
-        //valrigard.y -= (eject_D << 8);
         high_byte(valrigard.y) -= eject_D;
         // if ... (something was here, but I removed it)
         
@@ -1087,14 +1082,13 @@ void movement(void) {
     if (valrigard.y < MAX_UP && scroll_y > min_scroll_y) {
         temp1 = (MAX_UP - valrigard.y + 0x80) >> 8; // "the numbers work better with +80 (like 0.5)". I'll take his word for it.
         scroll_y = sub_scroll_y(temp1, scroll_y);
-        valrigard.y += (temp1 << 8);
+        high_byte(valrigard.y) += temp1;
     }
     
     if (valrigard.y > MIN_DOWN && scroll_y < max_scroll_y) {
         temp1 = (MIN_DOWN + valrigard.y + 0x80) >> 8;
-        // temp1 = (MIN_DOWN + valrigard.y + 0x80) >> 8;
         scroll_y = add_scroll_y(temp1, scroll_y);
-        valrigard.y -= (temp1 << 8);
+        high_byte(valrigard.y) -= temp1;
     }
 
 }
@@ -1309,19 +1303,18 @@ void check_spr_objects(void) {
     for (x = 0; x < enemies.count; ++x) {
         if (GET_ENEMY_TYPE(x) == 0 /*ENEMY_NONE*/) continue; 
         // Check to see where this enemy is supposed to be.
-        temp5 = (enemies.nt[x] << 8) + enemies.actual_y[x];
 
-        // temp1 = get_position(); Just going to inline this for now.
-        // If we end up having to make stars/energy powerups into sprites,
-        // then we can revisit this...
-
+        //temp5 = (enemies.nt[x] << 8) + enemies.actual_y[x];
+        high_byte(temp5) = enemies.nt[x];
+        low_byte(temp5) = enemies.actual_y[x];
+        
         temp5 -= scroll_y;
         if (high_byte(temp5)) {
             // This enemy isn't on-screen, deactivate it...
             DEACTIVATE_ENEMY(x);
             continue;
         }
-        // temp_y = 10;
+        
         ACTIVATE_ENEMY(x); // This enemy is active if it's on-screen.
         enemies.y[x] = temp5 & 0xff;
 
@@ -1415,9 +1408,7 @@ void sprite_collisions(void) {
             hitbox2.y = enemies.y[x];
 
             if (check_collision(&hitbox, &hitbox2)) {
-                AsmSet2ByteFromPtrAtIndexVar(temp_funcpointer, collision_functions, temp1);
-                // temp_funcpointer now points to the correct collision function. Call it.
-                temp_funcpointer();
+                AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
             }
         }
         // Todo: Loop Unrolling?
@@ -1497,10 +1488,8 @@ void enemy_movement(void) {
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
             // An assembly macro (defined in asm/macros.h) is used here to ensure that this is efficient.
-            AsmSet2ByteFromPtrAtIndexVar(temp_funcpointer, ai_pointers, temp1);
-            // temp_funcpointer now points to the correct enemy ai function. Call it.
-            temp_funcpointer();
             // Do we want to delete (set type to ENEMY_NONE) any projectiles (CANNONBALL/ACIDDROP) that go offscreen?
+            AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
         }
     }
 
