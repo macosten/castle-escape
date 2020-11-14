@@ -60,21 +60,23 @@
 
 .segment "ZEROPAGE"
 
+	; In addition to using all (11 bytes of) of TEMP, 6 zeropage bytes are used.
+
 	_in: .res 2	; 16 bits (compressed data)
 	_out: .res 2 ; 16 bits (decompressed data)
 
 	; Local variables for this routine
-	_inEnd = TEMP	
-	_offset = TEMP+2
-	_length = TEMP+4 
+	_inEnd = TEMP    ; 2 bytes
+	_offset = TEMP+2 ; 2 bytes
+	_length = TEMP+4 ; 2 bytes
 
-	_symbol = TEMP+5
+	_symbol = TEMP+6
+	_marker1 = TEMP+7
+	_marker2 = TEMP+8
+	_marker3 = TEMP+9
+	_marker4 = TEMP+10
 
-	_marker1 = TEMP+6
-	_marker2 = TEMP+7
-	_marker3 = TEMP+8
-	_marker4 = TEMP+9
-	_copy = TEMP+10
+	_copy: .res 2 ; 2 bytes
 
 .segment "CODE"
 
