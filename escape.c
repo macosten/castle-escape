@@ -209,8 +209,9 @@ const unsigned char const palette_sp[]={
     0x0f, 0x30, 0x16, 0x00, // HUD(?) and Spikeball/Acid
 };
 
-// For shuffling 32 enemies...
-const unsigned char const shuffle_array[]={
+// For shuffling 32 enemies.
+// Todo: make this calculated at the start of a level.
+unsigned char shuffle_array[]={
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15, 
     16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
     31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,
@@ -250,6 +251,8 @@ Enemies enemies;
 #define SPLYKE_SET_STANDING_STILL(index) (enemies.flags[index] &= 0b11011111)
 #define SPLYKE_SET_MOVING_AROUND(index)  (enemies.flags[index] |= 0b00100000) 
 #define SPLYKE_IS_MOVING_AROUND(index)   (enemies.flags[index] &  0b00100000)
+
+
 
 #pragma bss-name(pop)
 
@@ -630,15 +633,14 @@ void load_level_new(void) {
     player_flags = 0; 
     scroll_count = 0; 
 
-    nt_max = level_starting_nt[level_index+1];
+    nt_max = level_nt_length[level_index];
     nt_current = valrigard_starting_nt[level_index];
     high_byte(scroll_y) = nt_current; // The high byte of scroll_y is the nametable we're currently in (0-255).
     low_byte(scroll_y) = 2;
     
     high_byte(max_scroll_y) = nt_max - 1; // bottom of this level
-    low_byte(max_scroll_y) = 0xef;
+    low_byte(max_scroll_y) = 2;
     
-    // nt_min = level_starting_nt[level_index]
     high_byte(min_scroll_y) = 0; // Min Scroll
     low_byte(min_scroll_y) = 0x02;
     
@@ -647,14 +649,11 @@ void load_level_new(void) {
     // Set inital coordinates
     temp4 = valrigard_inital_coords[level_index];
 
-    // This combination of (uncommented) lines results in the smallest code... bytewise.
-    // Still not sure what cc65 makes the fastest.
-    //valrigard.x = ((temp4 >> 4) * 16) << 8;
-    //valrigard.y = (temp4 & 0x0f) << 12;
-    valrigard.x = (temp4 & 0xf0) << 8;
-    valrigard.y = ((temp4 & 0x0f) * 16) << 8;
+    high_byte(valrigard.x) = (temp4 & 0xf0);
+    high_byte(valrigard.y) = ((temp4 & 0x0f) * 16);
 
     // Load the level into RAM.
+    set_prg_bank(level_nametable_banks[level_index]);
     for (x = 0; x < nt_max; ++x) {
         load_room_new();
     }
@@ -662,7 +661,7 @@ void load_level_new(void) {
     // Load inital room data into the PPU.
     set_data_pointer(cmaps[nt_current]);
     set_mt_pointer(metatiles);
-    temp1 = (initial_scroll >> 8) + 1;
+    temp1 = high_byte(initial_scroll) + 1;
     temp1 = (temp1 & 1) << 1;
     for(y=0; ;y+=0x20){
         for(x=0; ;x+=0x20){
@@ -677,12 +676,13 @@ void load_level_new(void) {
         if (y == 0xe0) break;
     }
     
-    
     temp1 = temp1 ^ 2; // flip that 0000 0010 bit
-    // a little bit in the other room
 
-    // Todo: test the case in which nt_current = 0 and figure out how to make it work
-    set_data_pointer(cmaps[nt_current-1]); // NOTE: Don't call if nt_current = 0, or who really knows what will happen
+    // Load a little bit of the next room.
+
+    temp0 = nt_current == 0 ? nt_current + 1 : nt_current - 1;
+
+    set_data_pointer(cmaps[temp0]);
     for(x=0; ;x+=0x20){
         y = 0xe0;
         clear_vram_buffer(); // do each frame, and before putting anything in the buffer
@@ -693,9 +693,6 @@ void load_level_new(void) {
         if (x == 0xe0) break;
     }
     clear_vram_buffer();
-
-    // todo: check this following line for correctness...
-    max_scroll_y = scroll_y;
 
 
     // Load Enemies
@@ -783,7 +780,7 @@ void load_room_new(void) {
     // temppointer = level_nametable_lists[level_index][x];
     // as a sort of double dereference, or something to that effect.
 
-    temppointer = level_nametables[x];
+    temppointer = level_nametable_pointers[level_index][x];
     memcpy(cmaps[x], temppointer, 240);
 }
 

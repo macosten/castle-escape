@@ -5,10 +5,11 @@
 //  Created by Zaccari Silverman on 6/17/20.
 //
 
-#include "tilemaps/level10.c"
+#include "tilemaps/level10.h"
 
-const unsigned char const level_starting_nt[] = {
-    0, 3 // Test level starts a nt 0 and is 3 nt long (incidentally, the next level would start at nt 3... etc)
+// Length of a level in nametables.
+const unsigned char const level_nt_length[] = {
+    3 
 };
 
 const unsigned char const valrigard_starting_nt[] = {
@@ -22,9 +23,15 @@ const unsigned char const valrigard_inital_coords[] = {
     0x4d // x,y; 0x4d -> (4 [0x4], 13 [0xd] - starts at that metatile)
 };
 
-const unsigned char * const level_nametables[] = {
-    level10_0, level10_1, level10_2,
- };
+// Pointers to level data. Each pointer points to the level's array of nametables.
+const unsigned char * const * const level_nametable_pointers[] = {
+    level10_ordered_nts
+};
+
+// The banks in which each level's data is actually located.
+const unsigned char const level_nametable_banks[] = {
+    0
+};
 
 const unsigned char * const level_names[] = {
     "Mockup Level 10",
@@ -40,3 +47,4 @@ const unsigned char * const level_names[] = {
 const unsigned char * const level_enemy_data[] = {
     level10_enemy
 };
+

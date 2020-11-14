@@ -9,15 +9,21 @@ typedef struct PlayerSprite {
     signed int velocity_y;
 } Player;
 
+// I think "Hitbox" is a better name for this than "Generic" because it feels more descriptive
+// as to what the actual role of this struct will actually end up being
+typedef struct Hitbox_t {
+    unsigned char x;
+    unsigned char y;
+    unsigned char width;
+    unsigned char height;
+} Hitbox;
+// Technically speaking, the same hitbox will be used to check the collisions of multiple things in one frame.
+
 
 // Counting possible cannonballs and acid droplets as individual enemies separate from the entities that spawn them,
 // If I counted correctly, there should be no more than 32 enemies on any of the original levels.
 // I'll set that as the hard cap for now...
 #define MAX_ENEMIES 32
-
-// Idea: projectile shooters (Cannons/Acid Blobs) can always have their projectiles located exactly 1 position after them
-// in the enemy database. (This is viable because there should only be a maximum of 1 projectile per shooter in the game)
-
 // The Struct of Arrays pattern plays much nicer with cc65 than an array of structs would.
 // In other words, this design decision is another concession to the compiler.
 typedef struct EnemyDatabase {
@@ -35,15 +41,5 @@ typedef struct EnemyDatabase {
     unsigned char timer[MAX_ENEMIES]; // A timer value - most likely an animation timer. Probably gets decremented once per frame.
     unsigned char count; // How many enemies are actually loaded into RAM.
 } Enemies;
-
-// I think "Hitbox" is a better name for this than "Generic" because it feels more descriptive
-// as to what the actual role of this struct will actually end up being
-typedef struct Hitbox_t {
-    unsigned char x;
-    unsigned char y;
-    unsigned char width;
-    unsigned char height;
-} Hitbox;
-// Technically speaking, the same hitbox will be used to check the collisions of multiple things in one frame.
 
 #endif

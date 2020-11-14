@@ -1,18 +1,26 @@
-//
-//  levels.h
-//  Castle Escape
-//
-//  Created by Zaccari Silverman on 6/17/20.
-//
-
-// Idea: what if we used the useless 4 bytes at the end of each row
-// to encode a list of where this nametable's powerups/?blocks were?
-
 // Do not try to use pointers from another bank while that bank isn't 
 // swapped in the correct place in RAM.
 // Otherwise, you'll get garbage data.
 
-// #pragma rodata-name(push, "BANK0")
+#pragma rodata-name(push, "BANK0")
+
+// bitpacked coords (0xXY), nt, direction (or other info) + type
+// 0x10 + type for right-facing, just type for left-facing
+// 0xff terminates
+
+const unsigned char const level10_enemy[]={
+	0x49, 2, 4, // ENEMY_CANNON,
+	0x57, 2, 5,  //debug
+	0x69, 2, 7, //debug
+	//0x79, 2, 7,  //debug 
+	//0x24, 2, 6, // ENEMY_SPIKEBALL,
+	0x24, 2, 3, //debug
+	0x71, 2, 6, // ENEMY_SPIKEBALL, 
+	0x91, 2, 2, // ENEMY_GRARRL,
+	0x2A, 1, 6, // ENEMY_SPIKEBALL,
+	0x9C, 0, 1, // ENEMY_KORBAT,
+	0xFF
+};
 
 const unsigned char const level10_0[]={
 4,7,7,7,7,7,7,7,7,7,7,6,44,44,44,44,
@@ -68,19 +76,9 @@ const unsigned char const level10_2[]={
 4,5,5,5,5,5,4,4,4,5,5,9,44,44,44,44,
 };
 
-	// bitpacked coords (0xXY), nt, direction (or other info) + type
-	// 0x10 + type for right-facing, just type for left-facing
-
-const unsigned char const level10_enemy[]={
-	0x49, 2, 4, // ENEMY_CANNON,
-	0x57, 2, 5,  //debug
-	0x69, 2, 7, //debug
-	//0x79, 2, 7,  //debug 
-	//0x24, 2, 6, // ENEMY_SPIKEBALL,
-	0x24, 2, 3, //debug
-	0x71, 2, 6, // ENEMY_SPIKEBALL, 
-	0x91, 2, 2, // ENEMY_GRARRL,
-	0x2A, 1, 6, // ENEMY_SPIKEBALL,
-	0x9C, 0, 1, // ENEMY_KORBAT,
-	0xFF
+const unsigned char * const level10_ordered_nts[] = {
+	level10_0, level10_1, level10_2,
 };
+
+#pragma rodata-name(pop)
+
