@@ -18,6 +18,11 @@
 #define ENEMY_CANNONBALL 9;
 #define ENEMY_ACIDDROP 10;
 
+// These are "enemies" in a programming sense, but not in a gameplay sense.
+#define ENEMY_PURPLE_DEATH_EFFECT 11;
+#define ENEMY_SPLYKE_DEATH_EFFECT 12;
+// #define ENEMY_CANNONBALL_PARTICLE_EFFECT 13;
+
 // Do not to go over 16 types; 
 // I do some bitpacking that requires that "type" fit in a nibble.
 

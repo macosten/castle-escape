@@ -91,6 +91,8 @@ const unsigned char const valrigard_swing_right_followthrough[] = {
     128
 };
 
+// Enemies
+
 const unsigned char const spikeball[] = {
       0xff,  0xff,  0x12,3,
          7,  0xff,  0x12,3|OAM_FLIP_H,
@@ -309,4 +311,38 @@ const unsigned char const splyke_idle_right1[] = {
       0xff, 0x07, 0x75,0|OAM_FLIP_H,
       0x07, 0x07, 0x76,0|OAM_FLIP_H,
   128 
+};
+
+// Enemy death effects
+
+const unsigned char const purple_death_effect0[] = {
+      0xff, 0xff, 0x2C,2,
+      0x07, 0xff, 0x2C,2|OAM_FLIP_H,
+      0xff, 0x07, 0x2C,2|OAM_FLIP_V,
+      0x07, 0x07, 0x2C,2|OAM_FLIP_H|OAM_FLIP_V,
+  128
+};
+
+const unsigned char const purple_death_effect1[] = {
+      0xff, 0xff, 0x2D,2,
+      0x07, 0xff, 0x2D,2|OAM_FLIP_H,
+      0xff, 0x07, 0x2D,2|OAM_FLIP_V,
+      0x07, 0x07, 0x2D,2|OAM_FLIP_H|OAM_FLIP_V,
+  128
+};
+
+const unsigned char const splyke_death_effect0[] = {
+      0xff, 0xff, 0x2C,0,
+      0x07, 0xff, 0x2C,0|OAM_FLIP_H,
+      0xff, 0x07, 0x2C,0|OAM_FLIP_V,
+      0x07, 0x07, 0x2C,0|OAM_FLIP_H|OAM_FLIP_V,
+  128
+};
+
+const unsigned char const splyke_death_effect1[] = {
+      0xff, 0xff, 0x2E,0,
+      0x07, 0xff, 0x2E,0|OAM_FLIP_H,
+      0xff, 0x07, 0x2E,0|OAM_FLIP_V,
+      0x07, 0x07, 0x2E,0|OAM_FLIP_H|OAM_FLIP_V,
+  128
 };

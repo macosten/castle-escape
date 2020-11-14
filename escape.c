@@ -290,6 +290,8 @@ void draw_acid_drop(void);
 void draw_splyke(void);
 void draw_sun(void);
 void draw_boss(void);
+void draw_purple_death_effect(void);
+void draw_splyke_death_effect(void);
 
 void draw_screen_U(void);
 void draw_screen_D(void);
@@ -312,8 +314,18 @@ void swing_sword(void);
 void bg_collision(void); // For the player
 void bg_collision_sub(void);
 
+
 void check_spr_objects(void); // For enemies
 void sprite_collisions(void);
+
+void collision_with_inert(void);
+void collision_with_killable_slashable(void);
+void collision_with_inert_slashable(void);
+void collision_with_unkillable_unslashable(void);
+void collision_with_splyke(void);
+void collision_with_boss(void);
+
+
 void enemy_movement(void);
 
 void korbat_ai(void);
@@ -325,6 +337,8 @@ void acid_drop_ai(void);
 void splyke_ai(void);
 void sun_ai(void);
 void boss_ai(void);
+
+void death_effect_timer_ai(void);
 
 // MARK: Lookup Tables
 
@@ -387,6 +401,14 @@ const unsigned char * const splyke_sprite_lookup_table[] = {
     splyke_idle_left1,  splyke_idle_right1,     splyke_idle_left1,  splyke_idle_right1,
     splyke_tornado0,    splyke_tornado0,        splyke_tornado1,    splyke_tornado1,
     splyke_tornado2,    splyke_tornado2,        splyke_tornado1,    splyke_tornado1
+};
+
+const unsigned char * const purple_death_effect_sprite_lookup_table[] = {
+    purple_death_effect1, purple_death_effect1, purple_death_effect0
+};
+
+const unsigned char * const splyke_death_effect_sprite_lookup_table[] = {
+    splyke_death_effect1, splyke_death_effect1, splyke_death_effect0
 };
 
 void main (void) {
@@ -777,7 +799,9 @@ const void (* draw_func_pointers[])(void) = {
     draw_sun,         // 7 - ENEMY_SUN;
     draw_boss,        // 8 - ENEMY_BOSS;
     draw_cannonball,  // 9 - ENEMY_CANNONBALL;
-    draw_acid_drop    // 10 - ENEMY_ACIDDROP;
+    draw_acid_drop,   // 10 - ENEMY_ACIDDROP;
+    draw_purple_death_effect, // 11 - ENEMY_PURPLE_DEATH_EFFECT;
+    draw_splyke_death_effect, // 12 - ENEMY_SPLYKE_DEATH_EFFECT;
 };
 
 void draw_sprites(void) {
@@ -855,16 +879,15 @@ void draw_player(void) {
     temp1 = high_byte(valrigard.x);
     temp2 = high_byte(valrigard.y);
 
+    // I'm less worried about flattening (into one lookup table)/optimizing Valrigard's sprites
+    // if only because this will only be called once per frame while the others may be called
+    // more than once per frame.
+
     if (IS_SWINGING_SWORD) {
-
         temp0 = (player_frame_timer & 0b11111110) | DIRECTION;
-
-        debug_tile_x = temp0;
-        debug_tile_y = 0xff;
         oam_meta_spr(temp1, temp2, valrigard_sword_swing_sprite_lookup_table[temp0]);
     } else {
         oam_meta_spr(temp1, temp2, valrigard_idle_sprite_lookup_table[DIRECTION]);
-        debug_tile_y = 0x00;
     }
 
     // Decrement the player frame timer if it's nonzero.
@@ -937,6 +960,17 @@ void draw_boss(void) {
     // Dummied out.
     oam_spr(temp_x, temp_y, 0x10, 3);
 }
+
+void draw_purple_death_effect(void) {
+    temp3 = enemies.timer[y] >> 2; // 12 frames -> 3 valid positions
+    oam_meta_spr(temp_x, temp_y, purple_death_effect_sprite_lookup_table[temp3]);
+}
+
+void draw_splyke_death_effect(void) {
+    temp3 = enemies.timer[y] >> 2; // 12 frames -> 3 valid positions
+    oam_meta_spr(temp_x, temp_y, splyke_death_effect_sprite_lookup_table[temp3]);
+}
+
 
 // MARK: -- Movement.
 
@@ -1340,14 +1374,37 @@ const unsigned char const enemy_hitbox_height_lookup_table[] = {
     0,  // ...Particle effect of some sort? 
 };
 
+const void (* collision_functions[])(void) = {
+    collision_with_inert,                   // None
+    collision_with_killable_slashable,      // Korbat
+    collision_with_killable_slashable,      // Grarrl
+    collision_with_splyke,                  // Splyke
+    collision_with_inert_slashable,    // Cannon
+    collision_with_inert,                   // Acidpool
+    collision_with_unkillable_unslashable,  // Spikeball
+    collision_with_unkillable_unslashable,  // Sun
+    collision_with_boss,                    // Boss
+    collision_with_unkillable_unslashable,  // Cannonball
+    collision_with_unkillable_unslashable,  // Aciddrop
+    collision_with_inert,                   // Purple Death Effect
+    collision_with_inert,                   // Splyke Death Effect
+};
+
 // Check for sprite collisions with the player.
 void sprite_collisions(void) {
     // hitbox == the player's hitbox.
     hitbox.x = high_byte(valrigard.x);
     hitbox.y = high_byte(valrigard.y);
+
+    if (IS_SWINGING_SWORD) {
+        // The hitbox should be a little bigger if the sword is swinging.
+        hitbox.width = VALRIGARD_SWINGING_WIDTH;
+        hitbox.height = VALRIGARD_SWINGING_HEIGHT;
+    } else {
+        hitbox.width = VALRIGARD_WIDTH;
+        hitbox.height = VALRIGARD_HEIGHT;    
+    }
     
-    hitbox.width = VALRIGARD_WIDTH;
-    hitbox.height = VALRIGARD_HEIGHT;
 
     // hitbox2 == an enemy's hitbox.
     // The width and height of this will actually be different depending on the enemy's type.
@@ -1359,35 +1416,85 @@ void sprite_collisions(void) {
 
             // Determine the enemy hitbox size.
             hitbox2.width = enemy_hitbox_width_lookup_table[temp1];
+            if (!hitbox2.width) { continue; } // Continue if width of the hitbox is 0.
+
             hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
             
             hitbox2.x = enemies.x[x];
             hitbox2.y = enemies.y[x];
 
             if (check_collision(&hitbox, &hitbox2)) {
-                // Did collide with enemy. For now, just set our status to dead...
-                SET_STATUS_DEAD();
-                // More realistically this will eventually call a function from an array of pointers.
+                AsmSet2ByteFromPtrAtIndexVar(temp_funcpointer, collision_functions, temp1);
+                // temp_funcpointer now points to the correct collision function. Call it.
+                temp_funcpointer();
             }
-
         }
+        // Todo: Loop Unrolling?
     }
+
+}
+
+// A collision with something that doesn't inherently react.
+// It's possible that calls to this can be optimized away.
+// (i.e skip if a certain condition?)
+void collision_with_inert(void) { }
+
+void collision_with_killable_slashable(void) {
+    if (!IS_SWINGING_SWORD) { 
+        SET_STATUS_DEAD();
+    }
+    else {
+        // Turn this into a particle effect.
+        enemies.type[x] = ENEMY_PURPLE_DEATH_EFFECT;
+        enemies.timer[x] = 12;
+        score += 1; // Add to the score 
+        // (todo: make a counter of total active enemies to mimic scoring from original)
+    }
+}
+
+void collision_with_inert_slashable(void) {
+    if (IS_SWINGING_SWORD) { }
+    // If swinging:
+    // - If not slashed yet, mark this as slashed and add points.
+}
+
+void collision_with_unkillable_unslashable(void) {
+    // Just die.
+    SET_STATUS_DEAD();
+}
+
+void collision_with_splyke(void) {
+    if (!IS_SWINGING_SWORD) { // Not swinging the sword?
+        // Die.
+        SET_STATUS_DEAD();
+    } else if (!SPLYKE_IS_MOVING_AROUND(x)){ // Not tornado:
+        // Kill this.
+        enemies.type[x] = ENEMY_SPLYKE_DEATH_EFFECT;
+        enemies.timer[x] = 12;
+        score += 1;
+    }
+    // Yes tornado, Yes swinging: do nothing.
+}
+
+void collision_with_boss(void) {
 
 }
 
 // A lookup table for enemy AI functions.
 const void (* ai_pointers[])(void) = {
-    korbat_ai,      // 0 - ENEMY_NONE;
-    korbat_ai,      // 1 - ENEMY_KORBAT;
-    spikeball_ai,   // 2 - ENEMY_GRARRL;
-    splyke_ai,      // 3 - ENEMY_SPLYKE;
-    cannon_ai,      // 4 - ENEMY_CANNON;
-    acid_ai,        // 5 - ENEMY_ACIDPOOL;
-    spikeball_ai,   // 6 - ENEMY_SPIKEBALL;
-    sun_ai,         // 7 - ENEMY_SUN;
-    boss_ai,        // 8 - ENEMY_BOSS;
-    cannonball_ai,  // 9 - ENEMY_CANNONBALL;
-    acid_drop_ai    // 10 - ENEMY_ACIDDROP;
+    korbat_ai,          // 0 - ENEMY_NONE;
+    korbat_ai,          // 1 - ENEMY_KORBAT;
+    spikeball_ai,       // 2 - ENEMY_GRARRL;
+    splyke_ai,          // 3 - ENEMY_SPLYKE;
+    cannon_ai,          // 4 - ENEMY_CANNON;
+    acid_ai,            // 5 - ENEMY_ACIDPOOL;
+    spikeball_ai,       // 6 - ENEMY_SPIKEBALL;
+    sun_ai,             // 7 - ENEMY_SUN;
+    boss_ai,            // 8 - ENEMY_BOSS;
+    cannonball_ai,      // 9 - ENEMY_CANNONBALL;
+    acid_drop_ai,       // 10 - ENEMY_ACIDDROP;
+    death_effect_timer_ai, // 11 - ENEMY_PURPLE_DEATH_EFFECT;
+    death_effect_timer_ai, // 12 - ENEMY_SPLYKE_DEATH_EFFECT;
 };
 
 // Enemy AI.
@@ -1948,4 +2055,13 @@ void splyke_ai(void) {
 
 void boss_ai(void) {
 
+}
+
+void death_effect_timer_ai(void) {
+    // Decrement this thing's timer, then check if it's zero.
+    if (--enemies.timer[x] == 0){
+        // If it's zero, turn this into a None and clear its flags.
+        enemies.type[x] = ENEMY_NONE;
+        enemies.flags[x] = 0;
+    }
 }
