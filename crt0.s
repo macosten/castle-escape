@@ -84,7 +84,7 @@ PPU_MASK_VAR:         .res 1
 RAND_SEED:             .res 2
 FT_TEMP:             .res 3
 
-TEMP:                 .res 11
+TEMP:                 .res 12
 SPRID:                .res 1
 
 PAD_BUF        =TEMP+1
@@ -304,12 +304,12 @@ detectNTSC:
     .include "mmc1/bank_helpers.asm"
     .include "lib/neslib.s"
     .include "lib/nesdoug.s"
-    ;.include "asm/bitwise.s"
     .include "asm/math.s"
     .include "asm/score.s"
     
-    
-    
+; For every bank in which there should be level data, it's worth putting a 
+.segment "BANK0"
+    .include "lib/lzgmini_6502.s"    
     
 ; Just going to follow what nesdoug did for music data and jam it into bank 6
 ; If the game ends up being smaller, we can move the music bank.

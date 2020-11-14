@@ -7,7 +7,6 @@
 #include "lib/nesdoug.h"
 
 #include "mmc1/bank_helpers.h"
-// #include "mmc1/bank_helpers.c" // ?
 
 #include "structs.h"
 #include "metasprites.h"
@@ -15,10 +14,11 @@
 #include "levels.h"
 #include "enemies.h"
 
-// #include "asm/bitwise.h"
 #include "asm/score.h"
 #include "asm/math.h"
 #include "asm/macros.h"
+
+#include "lib/lzgmini_6502.h"
 
 #define SPEED 0x150
 
@@ -27,10 +27,6 @@
 #define MAX_SPEED 0x150
 #define MAX_FALL MAX_SPEED
 #define FLY_VEL -0x600
-
-enum {BANK_0, BANK_1, BANK_2, BANK_3, BANK_4, BANK_5, BANK_6};
-// 7 shouldn't be necessary since that's the fixed bank. 
-// We can just call it normally.
 
 // All the appropriate stuff below this (in this case, variables)
 // should be placed into the named segment.
@@ -65,8 +61,10 @@ unsigned char temp4;
 unsigned int temp5;
 unsigned int temp6;
 
+// Pointers. These first two 
 const unsigned char * temppointer;
 unsigned char * temp_mutablepointer;
+
 void (* temp_funcpointer)(void);
 
 unsigned char eject_L; // Used in the collision routine(s).
@@ -183,13 +181,13 @@ Hitbox hitbox2; // This hitbox is used for enemies.
 unsigned char debug_tile_x;
 unsigned char debug_tile_y;
 
-// ~100 zp bytes left?
+// ~95 zp bytes left?
 
 #pragma bss-name(pop)
 
 #pragma bss-name(push, "BSS")
 
-// ~781 bytes of regular RAM left?
+// ~717 bytes of regular RAM left?
 // What can we put here?
 
 // Likewise for RODATA.
@@ -554,9 +552,9 @@ void clear_screen(void) {
     vram_fill(0,1024);
 }
 
-const char title_string[] = "Castle Escape Alpha";
-const char author_string[] = "By macosten";
-const char instruction_string[] = "Press Up to start";
+const char const title_string[] = "Castle Escape Alpha";
+const char const author_string[] = "By macosten";
+const char const instruction_string[] = "Press Up to start";
 
 void load_title_screen(void) {
     // Eventually we'll want to make a nicer title screen and vram_unrle it, but for now, a simple one:
@@ -587,7 +585,7 @@ void load_title_screen(void) {
 
 }
 
-const char game_over_string[] = "Demo Over! Down to restart.";
+const char const game_over_string[] = "Demo Over! Down to restart.";
 void load_game_over_screen(void) {
     ppu_off();
     clear_screen();
