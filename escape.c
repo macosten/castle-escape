@@ -138,8 +138,9 @@ unsigned char energy;
 #define MAX_ENERGY 0x70 // 144: 9 (rough number of tiles of flight height with no tapping) * 16(height of [meta]tile in pixels)?
 // Or should this be the number of frames which we should be able to fly for?
 
-// Max score of 65535. That feels like it should be enough.
-unsigned int score = 0;
+// Max score of 65535. That feels like it should be enough, right?
+unsigned int score;
+unsigned char enemy_score;
 
 // At 100, you should get an extra life!
 unsigned char stars;
@@ -176,6 +177,9 @@ Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C
 
 Hitbox hitbox2; // This hitbox is used for enemies.
 
+unsigned char shuffle_offset;
+unsigned char shuffle_maximum;
+
 // Debug variables that get rendered to the screen each frame.
 // These will be removed in the future.
 unsigned char debug_tile_x;
@@ -207,9 +211,29 @@ const unsigned char const palette_sp[]={
     0x0f, 0x30, 0x16, 0x00, // HUD(?) and Spikeball/Acid
 };
 
-// For shuffling 32 enemies.
+// For shuffling MAX_ENEMIES enemies, plus HUD elements (score, energy).
 // Todo: make this calculated at the start of a level.
-unsigned char shuffle_array[]={
+#define SHUFFLE_ARRAY_LEG (MAX_ENEMIES)
+#define SHUFFLE_ARRAY_SIZE (4 * SHUFFLE_ARRAY_LEG)
+
+#if SHUFFLE_ARRAY_SIZE>256
+    #warning "Careful: the shuffle array is larger than 256 bytes."
+#endif
+
+unsigned char shuffle_array[SHUFFLE_ARRAY_SIZE]; /*[] = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15, 
+    16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
+    // 32, 33
+};*/
+
+/*
+The function describing the values might be something like:
+    n = (MAX_ENEMIES + 3)
+    0 <= x < n:  x
+    n <= x < 2n: 2n - x
+    2n<= x < 3n: (ascending: all even elements, then all odd elements)
+    3n<= x < 4n: (descending: all odd elements, then all even elements) 
+Example pattern:
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15, 
     16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
     31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,
@@ -218,7 +242,8 @@ unsigned char shuffle_array[]={
     1, 3, 5, 7, 9,11,13,15,17,19,21,23,25,27,29,31,
     31,29,27,25,23,21,19,17,15,13,11, 9, 7, 5, 3, 1,
     30,28,26,24,22,20,18,16,14,12,10, 8, 6, 4, 2, 0,
-};
+I don't really know what the ideal pattern will be, though.
+*/
 
 // Enemy memory.
 Enemies enemies;
@@ -250,7 +275,11 @@ Enemies enemies;
 #define SPLYKE_SET_MOVING_AROUND(index)  (enemies.flags[index] |= 0b00100000) 
 #define SPLYKE_IS_MOVING_AROUND(index)   (enemies.flags[index] &  0b00100000)
 
+// For enemies that can be slashed for points, but don't die when slashed.
 
+#define SLASHABLE_UNKILLABLE_SET_UNSLASHED(index)   (enemies.flags[index] &= 0b11011111) // Not that this makes sense, but...
+#define SLASHABLE_UNKILLABLE_SET_SLASHED(index)     (enemies.flags[index] |= 0b00100000)
+#define SLASHABLE_UNKILLABLE_IS_SLASHED(index)      (enemies.flags[index] &  0b00100000)
 
 #pragma bss-name(pop)
 
@@ -290,6 +319,9 @@ void draw_boss(void);
 void draw_purple_death_effect(void);
 void draw_splyke_death_effect(void);
 
+void draw_score(void);
+void draw_energy(void);
+
 void draw_screen_U(void);
 void draw_screen_D(void);
 void draw_screen_sub(void);
@@ -297,6 +329,8 @@ void draw_screen_sub(void);
 void begin_level(void);
 void load_level_new(void);
 void load_room_new(void);
+
+void calculate_shuffle_array(void);
 
 void load_title_screen(void);
 void load_game_over_screen(void);
@@ -451,6 +485,7 @@ void main (void) {
             // We can just set this to if (1) for debugging.
             if (pad1_new & PAD_UP) {
                 level_index = 0;
+                score = 0; // Reset the score.
                 begin_level();
             }
 
@@ -526,6 +561,7 @@ void main (void) {
 
             if (pad1_new & PAD_DOWN) {
                 level_index = 0;
+                score = 0; // Reset the score.
                 begin_level();
             }
 
@@ -614,6 +650,9 @@ void begin_level(void) {
 
     // Let's seed the RNG...
     seed_rng();
+
+    // ...and calculate this level's shuffle_array.
+    calculate_shuffle_array();
 
     // Reset Valrigard's energy.
     energy = MAX_ENERGY;
@@ -778,6 +817,50 @@ void load_room_new(void) {
     memcpy(cmaps[x], temppointer, 240);
 }
 
+void calculate_shuffle_array(void) {
+    temp0 = 0; // Index in the shuffle array
+    // First quarter: 0...n
+    for (x = 0; x < enemies.count; ++x) {
+        shuffle_array[temp0] = x;
+        ++temp0;
+    }
+    // Second quarter: n...0
+    for (x = enemies.count - 1; ; --x) {
+        shuffle_array[temp0] = x;
+        ++temp0;
+        if (x == 0) { break; }
+    }
+
+    // Third quarter: ascending evens from 0 to n, then odds from 0 to n
+    for (x = 0; x < enemies.count; x += 2){
+        shuffle_array[temp0] = x;
+        ++temp0;
+    } 
+    for (x = 1; x < enemies.count; x += 2){
+        shuffle_array[temp0] = x;
+        ++temp0;
+    }
+
+    // Fourth quarter: descending odds from n to 0, then evens from n to 0
+    // ...or switch odds and evens here (it depends on the parity of enemies.count).
+    // It shouldn't really matter either way.
+    for (x = enemies.count - 1; ; x -= 2) {
+        shuffle_array[temp0] = x;
+        ++temp0;
+        if (x < 2) { break; }
+    }
+    for (x = enemies.count - 2; ; x -= 2) {
+        shuffle_array[temp0] = x;
+        ++temp0;
+        if (x < 2) { break; }
+    }
+    
+    // Let's also deal with the other shuffling variables here.
+    shuffle_offset = 0; 
+    shuffle_maximum = 4 * enemies.count; // Set the size of the calculated portion of the shuffle array.
+
+}
+
 // A lookup table for enemy draw functions.
 const void (* draw_func_pointers[])(void) = {
     draw_korbat,      // 0 - ENEMY_NONE;
@@ -798,35 +881,24 @@ const void (* draw_func_pointers[])(void) = {
 void draw_sprites(void) {
     // clear all sprites from sprite buffer
     oam_clear();
-    //set_sprite_zero(); // Ensure sprite 0 exists
 
     // draw valrigard
     draw_player();
     
     // draw enemies.
-    //temp1 = get_frame_count() & 3;
-    //temp1 = temp1 << 5; // * 32, since that's the size of our shuffle array.
-    // The shuffle array stuff above doesn't actually work; it'll need to be refactored/fixed.
+    for (y = 0; y < enemies.count; ++y) {
+        x = shuffle_array[y + shuffle_offset];
 
-    temp1 = 0;
-    for (x = 0; x < enemies.count; ++x) {
-        y = shuffle_array[temp1];
-        ++temp1;
-        
-        // temp2 = enemies.flags[y];
-        // 0 == ENEMY_NONE (cc65 complained when I used ENEMY_NONE... I wish I knew why...)
-        // if (temp2 == 0) continue;
-        
-        if (!IS_ENEMY_ACTIVE(y)) continue;
+        if (!IS_ENEMY_ACTIVE(x)) { continue; }
 
-        temp_x = enemies.x[y];
+        temp_x = enemies.x[x];
         
-        // Not that we should have enemies ever in these X values, but...
-        // (We may be able to optimize this away)
+        // Not that we should have enemies ever in these X values, 
+        // but if we do someday, these lines will be here, waiting to be uncommented.
         //if (temp_x == 0) ++temp_x; // Basing this off NESDoug's report of problems with temp_x = 0.
         //if (temp_x > 0xf0) continue;
 
-        temp_y = enemies.y[y];
+        temp_y = enemies.y[x];
         if (temp_y < 0xf0) {
 
             temp0 = GET_ENEMY_TYPE(x);
@@ -836,20 +908,20 @@ void draw_sprites(void) {
 
     }
 
+    // Handle the shuffle offset.
+    shuffle_offset += enemies.count;
+    if (shuffle_offset >= shuffle_maximum) { shuffle_offset = 0; }
+
     // Draw the energy level as sprites.
-    
-    temp1 = energy >> 4; 
-    oam_spr(200, 28, temp1, 1);
-    temp1 = energy & 0x0f;
-    oam_spr(208, 28, temp1, 1);
+    draw_energy();
     
     // Draw the score.
-    y = 4;
-    for (x = 200; x <= 232; x+=8) {
-        oam_spr(x, 20, score_string[y], 3);
-        --y;
-        // if (x == 232) break; //Is this more efficient, or is it more efficient to have the condition in the loop's head?
-    }
+    // This doesn't really interact with the metasprite system yet, so
+    // this can result in a sprite getting hidden in the score somewhere.
+    // We could address this by making the score take up a "slot" in the shuffle array.
+    // Maybe by doing something like "if x > enemies.count, then draw the score" in the loop above?
+    // Same could go for the energy.
+    draw_score();
 
     // Debug HUD, drawn last because it's the least important.
     oam_spr(232, 42, STATUS_DEAD, 2);
@@ -885,16 +957,34 @@ void draw_player(void) {
 
 }
 
+void draw_score(void) {
+    y = 4;
+    for (x = 200; x <= 232; x+=8) {
+        if (score_string[y] != 0 || y == 0){
+            oam_spr(x, 20, score_string[y], 3);
+        }
+        --y;
+        // if (x == 232) break; //Is this more efficient, or is it more efficient to have the condition in the loop's head?
+    }
+}
+
+void draw_energy(void) {
+    temp1 = energy >> 4; 
+    oam_spr(200, 28, temp1, 1);
+    temp1 = energy & 0x0f;
+    oam_spr(208, 28, temp1, 1);
+}
+
 // For all the draw_ functions, temp_x and temp_y are important
 
 void draw_korbat(void) {
-    temp3 = ENEMY_DIRECTION(y);
+    temp3 = ENEMY_DIRECTION(x);
     //temppointer = ...;
     oam_meta_spr(temp_x, temp_y, korbat_sprite_lookup_table[temp3]);
 }
 
 void draw_grarrl(void) {
-    temp3 = ENEMY_DIRECTION(y);
+    temp3 = ENEMY_DIRECTION(x);
     oam_meta_spr(temp_x, temp_y, grarrl_sprite_lookup_table[temp3]);
 }
 
@@ -904,7 +994,7 @@ void draw_spikeball(void) {
 
 void draw_cannon(void) {
     // Figure out direction of cannon
-    temp3 = enemies.extra2[y];
+    temp3 = enemies.extra2[x];
     oam_meta_spr(temp_x, temp_y, cannon_sprite_lookup_table[temp3]);
 }
 
@@ -915,7 +1005,7 @@ void draw_cannonball(void) {
 void draw_acid(void) {
     // Tweak these numbers (and the number this is set to in acid_blob_ai) 
     // to adjust the animation speed.
-    temp3 = enemies.extra2[y];
+    temp3 = enemies.extra2[x];
     temp3 = temp3 >> 1; 
     oam_meta_spr(temp_x, temp_y, acidblob_sprite_lookup_table[temp3]);
 }
@@ -930,16 +1020,16 @@ void draw_splyke(void) {
     // lsb is the direction.
     // msb is if this splyke is moving around or not (tornado if set or idle if not).
     // The middle two bits are the frame number in the respective animation.
-    temp3 = enemies.extra2[y] & 0b110; // Mask the frame number.
-    temp4 = ENEMY_DIRECTION(y) | temp3;
-    temp4 = temp4 | SPLYKE_IS_MOVING_AROUND(y) >> 2;
+    temp3 = enemies.extra2[x] & 0b110; // Mask the frame number.
+    temp4 = ENEMY_DIRECTION(x) | temp3;
+    temp4 = temp4 | SPLYKE_IS_MOVING_AROUND(x) >> 2;
 
     oam_meta_spr(temp_x, temp_y, splyke_sprite_lookup_table[temp4]);
 }
 
 void draw_sun(void) {
     // Tweak these numbers to adjust the flashing speed
-    temp3 = enemies.actual_y[y] & 15;
+    temp3 = enemies.actual_y[x] & 15;
     temp3 = temp3 >> 3;
     oam_meta_spr(temp_x, temp_y, sun_sprite_lookup_table[temp3]);
 }
@@ -950,12 +1040,12 @@ void draw_boss(void) {
 }
 
 void draw_purple_death_effect(void) {
-    temp3 = enemies.timer[y] >> 2; // 12 frames -> 3 valid positions
+    temp3 = enemies.timer[x] >> 2; // 12 frames -> 3 valid positions
     oam_meta_spr(temp_x, temp_y, purple_death_effect_sprite_lookup_table[temp3]);
 }
 
 void draw_splyke_death_effect(void) {
-    temp3 = enemies.timer[y] >> 2; // 12 frames -> 3 valid positions
+    temp3 = enemies.timer[x] >> 2; // 12 frames -> 3 valid positions
     oam_meta_spr(temp_x, temp_y, splyke_death_effect_sprite_lookup_table[temp3]);
 }
 
@@ -1435,9 +1525,11 @@ void collision_with_killable_slashable(void) {
 }
 
 void collision_with_inert_slashable(void) {
-    if (IS_SWINGING_SWORD) { }
-    // If swinging:
-    // - If not slashed yet, mark this as slashed and add points.
+    if (IS_SWINGING_SWORD && !SLASHABLE_UNKILLABLE_IS_SLASHED(x)) { 
+        // If swinging and unslashed:
+        SLASHABLE_UNKILLABLE_SET_SLASHED(x);
+        score += 1;
+    }
 }
 
 void collision_with_unkillable_unslashable(void) {
