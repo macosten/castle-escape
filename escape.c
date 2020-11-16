@@ -679,9 +679,13 @@ void load_level_new(void) {
 
     // Load the level into RAM.
     set_prg_bank(level_nametable_banks[level_index]);
-    for (x = 0; x < nt_max; ++x) {
+    
+    /*for (x = 0; x < nt_max; ++x) {
         load_room_new();
-    }
+    }*/
+
+    // New: decompress level data.
+    LZG_decode(level_compressed_nametable_pointers[level_index], cmap);
 
     // Load inital room data into the PPU.
     set_data_pointer(cmaps[nt_current]);

@@ -1,0 +1,9 @@
+This program fills the niche of CSV2C.py, but it compresses the data using liblzg before outputting it.
+Castle Escape uses liblzg to compress level data.
+
+You will (probably) need to compile liblzg yourself before you can compile this. 
+You can just navigate to the ./lib folder in this directory and run `make` to do so.
+Then, compile `csv2c_lzg` by running `make` in this directory.
+
+If you're using this in your CC65 NES game, be sure to also use the liblzg decompressor. 
+A version of it I modified to work with cc65 can be found in the /lib folder of the Castle Escape repository.

@@ -28,6 +28,10 @@ const unsigned char * const * const level_nametable_pointers[] = {
     level10_ordered_nts
 };
 
+const unsigned char * const level_compressed_nametable_pointers[] = {
+    level10_compressed
+};
+
 // The banks in which each level's data is actually located.
 const unsigned char const level_nametable_banks[] = {
     0
