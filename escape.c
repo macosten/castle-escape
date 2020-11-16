@@ -36,7 +36,7 @@
 
 // If we wanted to put code or rodata into another bank, we'd do something like:
 // #pragma rodata-name("BANK0")
-// This will probably happen for levels and any level decompression code.
+// This will happen for level data and potentially other data we don't need often too.
 
 // MARK: Zero Page Globals
 unsigned char pad1; // Stores the state of the game controller.
@@ -61,7 +61,7 @@ unsigned char temp4;
 unsigned int temp5;
 unsigned int temp6;
 
-// Pointers. These first two 
+// Pointers.
 const unsigned char * temppointer;
 unsigned char * temp_mutablepointer;
 
@@ -191,8 +191,6 @@ unsigned char debug_tile_y;
 
 #pragma bss-name(push, "BSS")
 
-// ~717 bytes of regular RAM left?
-// What can we put here?
 
 // Likewise for RODATA.
 // Remember that RODATA is defined in the PRG (unswappable) segment.
@@ -220,11 +218,7 @@ const unsigned char const palette_sp[]={
     #warning "Careful: the shuffle array is larger than 256 bytes."
 #endif
 
-unsigned char shuffle_array[SHUFFLE_ARRAY_SIZE]; /*[] = {
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15, 
-    16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
-    // 32, 33
-};*/
+unsigned char shuffle_array[SHUFFLE_ARRAY_SIZE];
 
 /*
 The function describing the values might be something like:
@@ -234,15 +228,11 @@ The function describing the values might be something like:
     2n<= x < 3n: (ascending: all even elements, then all odd elements)
     3n<= x < 4n: (descending: all odd elements, then all even elements) 
 Example pattern:
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15, 
-    16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
-    31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,
+     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15, 
     15,14,13,12,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
-    0, 2, 4, 6, 8,10,12,14,16,18,20,22,24,26,28,30,
-    1, 3, 5, 7, 9,11,13,15,17,19,21,23,25,27,29,31,
-    31,29,27,25,23,21,19,17,15,13,11, 9, 7, 5, 3, 1,
-    30,28,26,24,22,20,18,16,14,12,10, 8, 6, 4, 2, 0,
-I don't really know what the ideal pattern will be, though.
+     0, 2, 4, 6, 8,10,12,14, 1, 3, 5, 7, 9,11,13,15,
+    15,13,11, 9, 7, 5, 3, 1,14,12,10, 8, 6, 4, 2, 0,
+I don't really know what the ideal pattern would be, though.
 */
 
 // Enemy memory.
@@ -403,7 +393,9 @@ const unsigned char * const valrigard_sword_swing_sprite_lookup_table[] = {
     valrigard_swing_left_low,           valrigard_swing_right_low,
 };
 
-
+const unsigned char * const valrigard_dead_sprite_lookup_table[] = {
+    valrigard_dead_left, valrigard_dead_right
+};
 
 
 // Lookup tables for enemy sprites (not yet animated).
@@ -942,6 +934,11 @@ void draw_player(void) {
     // I'm less worried about flattening (into one lookup table)/optimizing Valrigard's sprites
     // if only because this will only be called once per frame while the others may be called
     // more than once per frame.
+
+    if (STATUS_DEAD) {
+        oam_meta_spr(temp1, temp2, valrigard_dead_sprite_lookup_table[DIRECTION]);
+        return;
+    }
 
     if (IS_SWINGING_SWORD) {
         temp0 = (player_frame_timer & 0b11111110) | DIRECTION;

@@ -91,6 +91,18 @@ const unsigned char const valrigard_swing_right_followthrough[] = {
     128
 };
 
+const unsigned char const valrigard_dead_left[] = {
+      6,    5,  0xd1,  1,
+      0xfe, 5,  0xd0,  1,
+    128
+};
+
+const unsigned char const valrigard_dead_right[] = {
+      0xfe, 5, 0xd1, 1|OAM_FLIP_H,
+      6,    5, 0xd0, 1|OAM_FLIP_H,
+    128
+};
+
 // Enemies
 
 const unsigned char const spikeball[] = {
