@@ -23,11 +23,7 @@ const unsigned char const valrigard_inital_coords[] = {
     0x4d // x,y; 0x4d -> (4 [0x4], 13 [0xd] - starts at that metatile)
 };
 
-// Pointers to level data. Each pointer points to the level's array of nametables.
-const unsigned char * const * const level_nametable_pointers[] = {
-    level10_ordered_nts
-};
-
+// Pointers to compressed level data.
 const unsigned char * const level_compressed_nametable_pointers[] = {
     level10_compressed
 };

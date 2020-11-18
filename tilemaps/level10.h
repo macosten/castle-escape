@@ -41,6 +41,7 @@ const unsigned char const level10_compressed[] = {
 	3,3,141,
 };
 
+/*
 const unsigned char const level10_0[]={
 4,7,7,7,7,7,7,7,7,7,7,6,44,44,44,44,
 6,44,44,44,44,44,44,44,44,44,44,14,44,44,44,44,
@@ -98,6 +99,7 @@ const unsigned char const level10_2[]={
 const unsigned char * const level10_ordered_nts[] = {
 	level10_0, level10_1, level10_2,
 };
+*/
 
 #pragma rodata-name(pop)
 

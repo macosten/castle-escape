@@ -96,6 +96,7 @@ unsigned char player_flags; // All of these flags should be such that the defaul
 #define SET_STATUS_NOT_SWINGING_SWORD() (player_flags &= 0b11111011)
 #define SET_STATUS_SWINGING_SWORD() (player_flags |= 4)
 
+
 unsigned char game_mode;
 // Generally preferring defines like this over enums as enums are ints
 // under the hood, and ints are 2 bytes (which makes them slower). 
@@ -318,7 +319,6 @@ void draw_screen_sub(void);
 
 void begin_level(void);
 void load_level_new(void);
-void load_room_new(void);
 
 void calculate_shuffle_array(void);
 
@@ -542,6 +542,11 @@ void main (void) {
             // debug:
             gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
+            debug_tile_x = high_byte(valrigard.velocity_y);
+            debug_tile_y = low_byte(valrigard.velocity_y);
+
+
+
         }
 
         // For now, "game over" is "you win"
@@ -679,10 +684,6 @@ void load_level_new(void) {
 
     // Load the level into RAM.
     set_prg_bank(level_nametable_banks[level_index]);
-    
-    /*for (x = 0; x < nt_max; ++x) {
-        load_room_new();
-    }*/
 
     // New: decompress level data.
     LZG_decode(level_compressed_nametable_pointers[level_index], cmap);
@@ -800,19 +801,6 @@ void load_level_new(void) {
 
 }
 
-void load_room_new(void) {
-    // Load a cmap.
-    // In the future, we'll probably do something like un-LZ77 the room,
-    // but for now we'll just do a simple memcpy.
-
-    // NOTE: In the future, this should be something like:
-    // temppointer = level_nametable_lists[level_index][x];
-    // as a sort of double dereference, or something to that effect.
-
-    temppointer = level_nametable_pointers[level_index][x];
-    memcpy(cmaps[x], temppointer, 240);
-}
-
 void calculate_shuffle_array(void) {
     temp0 = 0; // Index in the shuffle array
     // First quarter: 0...n
@@ -920,7 +908,7 @@ void draw_sprites(void) {
     draw_score();
 
     // Debug HUD, drawn last because it's the least important.
-    oam_spr(232, 42, STATUS_DEAD, 2);
+    oam_spr(232, 42, collision_D, 2);
     
     oam_spr(200, 50, debug_tile_x >> 4, 1);
     oam_spr(208, 50, debug_tile_x & 0x0f, 1);
@@ -1318,12 +1306,11 @@ void bg_collision_sub(void) {
         address = get_ppu_addr(nt, temp1, temp3 & 0xf0);
         buffer_1_mt(address, EMPTY_TILE);
 
-    } else if (temp0 & METATILE_CONVEYOR_LEFT) {
-        // Can confirm that this works, though I need to add
-        // checks to ensure the movement only occurs when Valrigard
-        // is standing (and not when he's just touching or flying into these tiles).
+    } else if (temp0 & METATILE_CONVEYOR_LEFT && collision_D) {
+        // this could behave a little strangely if Valrigard specifically walks into a
+        // conveyor block from the side. Let's deal with that later, I guess.
         valrigard.x -= 0x0080;
-    } else if (temp0 & METATILE_CONVEYOR_RIGHT) {
+    } else if (temp0 & METATILE_CONVEYOR_RIGHT && collision_D) {
         valrigard.x += 0x0080;
     } else if (temp0 & METATILE_YELLOW_DOOR) {
         // For now, end the game.

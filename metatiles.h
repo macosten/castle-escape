@@ -14,25 +14,27 @@ const unsigned char const metatiles[]={
     178, 179, 178, 179,  0, // Leftward Spikes
 
     230, 231, 246, 247,  0, // Regular Block No Edge
-    132, 229, 246, 247,  0, // Regular Block U Edge
+    130, 229, 246, 247,  0, // Regular Block U Edge
     230, 227, 246, 243,  0, // Regular Block R Edge
-    230, 231, 148, 245,  0, // Regular Block D Edge
+    230, 231, 146, 245,  0, // Regular Block D Edge
     226, 231, 242, 247,  0, // Regular Block L Edge
-    132, 141, 246, 243,  0, // Reg. Block, U+R Edge
-    230, 227, 148, 157,  0, // Reg. Block, D+R Edge
+    130, 225, 246, 243,  0, // Reg. Block, U+R Edge
+    230, 227, 146, 241,  0, // Reg. Block, D+R Edge
     226, 231, 240, 245,  0, // Reg. Block, D+L Edge
     224, 229, 242, 247,  0, // Reg. Block, U+L Edge
-    132, 229, 148, 245,  0, // Reg. Block, U+D Edge
+    130, 229, 146, 245,  0, // Reg. Block, U+D Edge
     226, 227, 242, 243,  0, // Reg. Block, L+R Edge
-    224, 141, 240, 157,  0, // Reg, Block, All Edges
+    224, 225, 240, 241,  0, // Reg, Block, All Edges
 
     // I reserve the right to make these into conveyor-related tiles.
-    128, 129, 144, 145,  0, // Left Ledge
-    132, 133, 148, 149,  0, // Right Ledge
-    134, 129, 150, 145,  0, // Left Circular Platform
-    132, 137, 148, 153,  0, // Right Circular Platform
-    138, 129, 154, 145,  0, // Left Square Platform
-    132, 141, 148, 157,  0, // Right Square Platform
+    128, 129, 144, 145,  0, // Left Conveyor Left Edge
+    130, 131, 146, 147,  0, // Left Conveyor Right Eedge
+    134, 129, 150, 145,  0, // Right Conveyor Left Edge
+    130, 137, 146, 153,  0, // Right Conveyor Right Edge
+
+    // These will probably remain normal tiles, though.
+    224, 129, 240, 145,  0, // Left Square Platform (U+L+D Edges)
+    130, 225, 146, 241,  0, // Right Square Platform (U+R+D Edges)
 
     236, 237, 252, 253,  3, // ? Block
     // 22 (0x16)
@@ -40,14 +42,14 @@ const unsigned char const metatiles[]={
     // Non-Solid Tiles, starting at 0x17
     164, 165, 180, 181,  3, // Door
     166, 165, 182, 181,  3,
-    166, 169, 182, 185,  3,
+    166, 167, 182, 183,  3,
     170, 171, 186, 187,  2, // Red Door
     
-    142, 143, 158, 159,  0, // Prison Window
-    0, 0, 0, 142,  0,
-    0, 0, 143, 0,  0,
-    0, 158, 0, 0,  0,
-    159, 0, 0, 0,  0,
+    168, 169, 184, 185,  0, // Prison Window
+    0, 0, 0, 168,  0,
+    0, 0, 169, 0,  0,
+    0, 184, 0, 0,  0,
+    185, 0, 0, 0,  0,
     
     172, 173, 188, 189,  0, // Prison Door (32)
     174, 175, 190, 191,  0, //
@@ -65,6 +67,8 @@ const unsigned char const metatiles[]={
     234, 235, 250, 251,  1, // Energy Refill
     
     0,   0,   0,   0,    0, // Empty
+
+    // Unfortunately I didn't have the foresight to 
 };
 
 #define STAR_TILE 42
@@ -106,11 +110,13 @@ const unsigned char const metatile_property_lookup_table[]={
     METATILE_SOLID,
     METATILE_SOLID,
 
-    // These next 6 may or may not be made into conveyor blocks at some point
-    METATILE_SOLID,
-    METATILE_SOLID,
+    // These next 4 may or may not be made into conveyor blocks at some point
     METATILE_SOLID|METATILE_CONVEYOR_LEFT,
     METATILE_SOLID|METATILE_CONVEYOR_RIGHT,
+    METATILE_SOLID|METATILE_CONVEYOR_LEFT,
+    METATILE_SOLID|METATILE_CONVEYOR_RIGHT,
+
+
     METATILE_SOLID,
     METATILE_SOLID,
 
