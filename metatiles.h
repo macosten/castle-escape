@@ -27,10 +27,10 @@ const unsigned char const metatiles[]={
     224, 225, 240, 241,  0, // Reg, Block, All Edges
 
     // I reserve the right to make these into conveyor-related tiles.
-    128, 129, 144, 145,  0, // Left Conveyor Left Edge
-    130, 131, 146, 147,  0, // Left Conveyor Right Eedge
-    134, 129, 150, 145,  0, // Right Conveyor Left Edge
-    130, 137, 146, 153,  0, // Right Conveyor Right Edge
+    132, 133, 148, 149,  1, // Left Conveyor Left Edge
+    136, 137, 152, 153,  1, // Left Conveyor Right Eedge
+    134, 135, 150, 151,  1, // Right Conveyor Left Edge
+    138, 139, 154, 155,  1, // Right Conveyor Right Edge
 
     // These will probably remain normal tiles, though.
     224, 129, 240, 145,  0, // Left Square Platform (U+L+D Edges)
@@ -68,7 +68,8 @@ const unsigned char const metatiles[]={
     
     0,   0,   0,   0,    0, // Empty
 
-    // Unfortunately I didn't have the foresight to 
+    // Unfortunately I didn't have the foresight to make Empty the absolute last tile, so:
+
 };
 
 #define STAR_TILE 42
@@ -112,8 +113,8 @@ const unsigned char const metatile_property_lookup_table[]={
 
     // These next 4 may or may not be made into conveyor blocks at some point
     METATILE_SOLID|METATILE_CONVEYOR_LEFT,
-    METATILE_SOLID|METATILE_CONVEYOR_RIGHT,
     METATILE_SOLID|METATILE_CONVEYOR_LEFT,
+    METATILE_SOLID|METATILE_CONVEYOR_RIGHT,
     METATILE_SOLID|METATILE_CONVEYOR_RIGHT,
 
 

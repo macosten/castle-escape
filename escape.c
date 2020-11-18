@@ -96,7 +96,6 @@ unsigned char player_flags; // All of these flags should be such that the defaul
 #define SET_STATUS_NOT_SWINGING_SWORD() (player_flags &= 0b11111011)
 #define SET_STATUS_SWINGING_SWORD() (player_flags |= 4)
 
-
 unsigned char game_mode;
 // Generally preferring defines like this over enums as enums are ints
 // under the hood, and ints are 2 bytes (which makes them slower). 
@@ -186,6 +185,11 @@ unsigned char shuffle_maximum;
 unsigned char debug_tile_x;
 unsigned char debug_tile_y;
 
+// Added to valrigard.x when standing on a conveyor belt.
+#define LEFT_CONVEYOR_DELTA -127
+#define RIGHT_CONVEYOR_DELTA 127
+signed char conveyor_delta;
+
 // ~95 zp bytes left?
 
 #pragma bss-name(pop)
@@ -196,9 +200,10 @@ unsigned char debug_tile_y;
 // Likewise for RODATA.
 // Remember that RODATA is defined in the PRG (unswappable) segment.
 #pragma rodata-name ("RODATA")
-const unsigned char const palette_bg[]={
+
+unsigned char palette_bg[]={
     0x0f, 0x00, 0x10, 0x30, // black, gray, lt gray, white
-    0x0f, 0x01, 0x11, 0x31, // Blues
+    0x0f, 0x17, 0x27, 0x38, // Animated. Probably yellow.
     0x0f, 0x06, 0x16, 0x26, // Reds, like the Red Doors
     0x0f, 0x17, 0x27, 0x38, // Yellow(ish)s, like the main level exit doors
 };
@@ -916,6 +921,18 @@ void draw_sprites(void) {
     oam_spr(224, 50, debug_tile_y >> 4, 1);
     oam_spr(232, 50, debug_tile_y & 0x0f, 1);
 
+    // Animate the animated palette.
+
+    // 5->6, 6->7, 7->5;
+    temp0 = get_frame_count() & 7;
+    if (!temp0) {
+        temp0 = palette_bg[7];
+        palette_bg[7] = palette_bg[6];
+        palette_bg[6] = palette_bg[5];
+        palette_bg[5] = temp0;
+        pal_bg(palette_bg);
+    }
+
 }
 
 void draw_player(void) {
@@ -1043,6 +1060,9 @@ void draw_splyke_death_effect(void) {
 
 void movement(void) {
     
+    // Reset the conveyor delta.
+    conveyor_delta = 0;
+
     // Handle X.
     old_x = valrigard.x;
     
@@ -1150,7 +1170,9 @@ void movement(void) {
     else if (collision_D) {
         high_byte(valrigard.y) -= eject_D;
         // if ... (something was here, but I removed it)
-        
+        // Apply the conveyor delta.
+        valrigard.x += conveyor_delta;
+
         energy += 4;
         if (energy > MAX_ENERGY) energy = MAX_ENERGY;
     }
@@ -1306,12 +1328,12 @@ void bg_collision_sub(void) {
         address = get_ppu_addr(nt, temp1, temp3 & 0xf0);
         buffer_1_mt(address, EMPTY_TILE);
 
-    } else if (temp0 & METATILE_CONVEYOR_LEFT && collision_D) {
+    } else if (temp0 & METATILE_CONVEYOR_LEFT) {
         // this could behave a little strangely if Valrigard specifically walks into a
         // conveyor block from the side. Let's deal with that later, I guess.
-        valrigard.x -= 0x0080;
-    } else if (temp0 & METATILE_CONVEYOR_RIGHT && collision_D) {
-        valrigard.x += 0x0080;
+        conveyor_delta = LEFT_CONVEYOR_DELTA;
+    } else if (temp0 & METATILE_CONVEYOR_RIGHT) {
+        conveyor_delta = RIGHT_CONVEYOR_DELTA;
     } else if (temp0 & METATILE_YELLOW_DOOR) {
         // For now, end the game.
         if (pad1 & PAD_UP) {
