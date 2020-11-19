@@ -306,6 +306,7 @@ detectNTSC:
     .include "lib/nesdoug.s"
     .include "asm/math.s"
     .include "asm/score.s"
+    .include "asm/helper.s"
     
 ; For every bank in which there should be level data, it's worth putting a 
 .segment "BANK0"

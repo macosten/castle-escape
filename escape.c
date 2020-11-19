@@ -17,6 +17,7 @@
 #include "asm/score.h"
 #include "asm/math.h"
 #include "asm/macros.h"
+#include "asm/helper.h"
 
 #include "lib/lzgmini_6502.h"
 
@@ -190,7 +191,9 @@ unsigned char debug_tile_y;
 #define RIGHT_CONVEYOR_DELTA 127
 signed char conveyor_delta;
 
-// ~95 zp bytes left?
+unsigned char menu_index;
+
+// ~93 zp bytes left?
 
 #pragma bss-name(pop)
 
@@ -331,6 +334,7 @@ void load_title_screen(void);
 void load_game_over_screen(void);
 
 void clear_screen(void);
+void put_str(unsigned int adr, const char * str);
 
 // Physics/Logic functions.
 void movement(void);
@@ -470,21 +474,42 @@ void main (void) {
         while (game_mode == MODE_TITLE) { 
             ppu_wait_nmi();
             // set_music_speed, etc
+    
+            
 
             // Just listen for desired inputs.
             pad1 = pad_poll(0); // read the first controller
             pad1_new = get_pad_new(0);
             
             // Clear the VRAM buffer if it gets used for anything...
-            // clear_vram_buffer();
+            clear_vram_buffer();
 
             // I suppose if we ever want the game to start immediately,
             // We can just set this to if (1) for debugging.
             if (pad1_new & PAD_UP) {
-                level_index = 0;
+                // level_index = 0;
                 score = 0; // Reset the score.
                 begin_level();
             }
+
+            if (pad1_new & PAD_LEFT && level_index != 0) {
+                --level_index;
+                
+                temp0 = strlen(level_names[level_index]);
+                multi_vram_buffer_horz(level_names[level_index], temp0, NTADR_A(3, 8));
+
+            }
+
+            if (pad1_new & PAD_RIGHT && level_index < NUMBER_OF_LEVELS-1) {
+                ++level_index;
+
+                // Update the level name shown on the screen.
+                temp0 = strlen(level_names[level_index]);
+                multi_vram_buffer_horz(level_names[level_index], temp0, NTADR_A(3, 8));
+
+            }
+
+
 
         }
 
@@ -562,9 +587,7 @@ void main (void) {
             pad1_new = get_pad_new(0);
 
             if (pad1_new & PAD_DOWN) {
-                level_index = 0;
-                score = 0; // Reset the score.
-                begin_level();
+                load_title_screen();
             }
 
         }
@@ -586,37 +609,36 @@ void clear_screen(void) {
     vram_fill(0,1024);
 }
 
+// Prints a string to the specified place. (Assumes the characters are correctly placed for ASCII.)
+void put_str(unsigned int adr, const char *str) {
+    vram_adr(adr);
+    while (*str) {
+        vram_put(*str);
+        ++str;
+    }
+}
+
 const char const title_string[] = "Castle Escape Alpha";
 const char const author_string[] = "By macosten";
 const char const instruction_string[] = "Press Up to start";
 
+#define MENU_SELECTOR_SPRITE 0x10
+
 void load_title_screen(void) {
     // Eventually we'll want to make a nicer title screen and vram_unrle it, but for now, a simple one:
-    
-    vram_adr(NTADR_A(3, 2));
+    ppu_off();
+    clear_screen();
 
-    x = 0;
-    while(title_string[x]) {
-        vram_put(title_string[x]);
-        ++x;
-    }
+    game_mode = MODE_TITLE;
 
-    vram_adr(NTADR_A(3, 4));
+    //multi_vram_buffer_horz(title_string, sizeof(title_string), NTADR_A(3, 2));
+    put_str(NTADR_A(3, 2), title_string);
+    put_str(NTADR_A(3, 4), author_string);
+    put_str(NTADR_A(3, 6), instruction_string);
 
-    x = 0;
-    while(author_string[x]) {
-        vram_put(author_string[x]);
-        ++x;
-    }
+    put_str(NTADR_A(3, 8), level_names[level_index]);
 
-    vram_adr(NTADR_A(3, 6));
-
-    x = 0;
-    while(instruction_string[x]) {
-        vram_put(instruction_string[x]);
-        ++x;
-    }
-
+    ppu_on_all();
 }
 
 const char const game_over_string[] = "Demo Over! Down to restart.";
@@ -627,12 +649,7 @@ void load_game_over_screen(void) {
     game_mode = MODE_GAME_OVER;
 
     // Write the message.
-    vram_adr(NTADR_A(3, 6));
-    x = 0;
-    while (game_over_string[x]) {
-        vram_put(game_over_string[x]);
-        ++x;
-    }
+    multi_vram_buffer_horz(game_over_string, sizeof(game_over_string), NTADR_A(3, 6));
 
     // Turn the PPU back on.
     ppu_on_all();
@@ -913,7 +930,7 @@ void draw_sprites(void) {
     draw_score();
 
     // Debug HUD, drawn last because it's the least important.
-    oam_spr(232, 42, collision_D, 2);
+    //oam_spr(232, 42, collision_D, 2);
     
     oam_spr(200, 50, debug_tile_x >> 4, 1);
     oam_spr(208, 50, debug_tile_x & 0x0f, 1);
@@ -923,9 +940,7 @@ void draw_sprites(void) {
 
     // Animate the animated palette.
 
-    // 5->6, 6->7, 7->5;
-    temp0 = get_frame_count() & 7;
-    if (!temp0) {
+    if (!(get_frame_count() & 7)) {
         temp0 = palette_bg[7];
         palette_bg[7] = palette_bg[6];
         palette_bg[6] = palette_bg[5];
@@ -1185,8 +1200,7 @@ void movement(void) {
         scroll_y = sub_scroll_y(temp1, scroll_y);
         high_byte(valrigard.y) += temp1;
     }
-    
-    if (valrigard.y > MIN_DOWN && scroll_y < max_scroll_y) {
+    else if (valrigard.y > MIN_DOWN && scroll_y < max_scroll_y) {
         temp1 = (MIN_DOWN + valrigard.y + 0x80) >> 8;
         scroll_y = add_scroll_y(temp1, scroll_y);
         high_byte(valrigard.y) -= temp1;

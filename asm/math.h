@@ -3,8 +3,6 @@
 //	Castle Escape
 //
 
-unsigned char __fastcall__ atan2(unsigned char x1, unsigned char x2, unsigned char y1, unsigned char y2);
-
 // Bear in mind that "theta" here is in brad (binary radians)
 // 1 brad = (360/256) deg = ~1.4 deg
 unsigned char __fastcall__ sin_lookup(unsigned char theta);

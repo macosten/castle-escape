@@ -1,10 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <libgen.h>
 
 #include <lzg.h>
 #include <stretchy_buffer.h>
-
-
 
 int main(int argc, char * argv[]) {
 	// Not going to bother much with security or error checking.
@@ -14,6 +13,16 @@ int main(int argc, char * argv[]) {
 	}
 
 	FILE * infile = fopen(argv[1], "r"); // Input file.
+
+	// Figure out the filename without the extension.
+	const char * filename = basename(argv[1]);
+	
+	for (char * ptr = filename; *ptr != '\0'; ++ptr) {
+		if (*ptr == '.') { 
+			*ptr = '\0'; 
+			break;
+		}
+	}
 
 	if (!infile) {
 		fprintf(stderr, "Error reading input file.\n");
@@ -45,7 +54,7 @@ int main(int argc, char * argv[]) {
 	LZG_InitEncoderConfig(&config);
     config.fast = LZG_TRUE;
     config.level = LZG_LEVEL_9;
-    
+
 	// Determine the maximum size of the compressed data:
 	max_enc_size = LZG_MaxEncodedSize(sb_count(uncompressed_map));
 
@@ -56,7 +65,7 @@ int main(int argc, char * argv[]) {
 		enc_size = LZG_Encode(uncompressed_map, sb_count(uncompressed_map), enc_map_buf, max_enc_size, NULL);
 		if (enc_size) {
 			// Pretty-print out the map code.
-			printf("const unsigned char const mylevel[] = {\n\t");
+			printf("const unsigned char const %s[] = {\n\t", filename);
 			for (unsigned int i = 0; i < enc_size; ++i){
 				if (i > 0 && i % 16 == 0) { printf("\n\t"); }
 				printf("%u,", enc_map_buf[i]);

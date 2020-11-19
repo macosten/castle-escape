@@ -69,6 +69,10 @@ const unsigned char const metatiles[]={
     0,   0,   0,   0,    0, // Empty
 
     // Unfortunately I didn't have the foresight to make Empty the absolute last tile, so:
+    140, 140, 156, 156, 1, // Left Conveyor Middle (no wheel)
+    // 136, 133, 152, 149, 1, // Left Conveyor Middle (with wheel)
+    141, 141, 157, 157, 1, // Right Conveyor Middle (no wheel)
+    // 138, 135, 154, 151, 1, // Right Conveyor Middle (with wheel)
 
 };
 
@@ -112,9 +116,9 @@ const unsigned char const metatile_property_lookup_table[]={
     METATILE_SOLID,
 
     // These next 4 may or may not be made into conveyor blocks at some point
+    METATILE_SOLID|METATILE_CONVEYOR_LEFT, // Left Conveyor
     METATILE_SOLID|METATILE_CONVEYOR_LEFT,
-    METATILE_SOLID|METATILE_CONVEYOR_LEFT,
-    METATILE_SOLID|METATILE_CONVEYOR_RIGHT,
+    METATILE_SOLID|METATILE_CONVEYOR_RIGHT, // Right conveyor
     METATILE_SOLID|METATILE_CONVEYOR_RIGHT,
 
 
@@ -154,5 +158,9 @@ const unsigned char const metatile_property_lookup_table[]={
     METATILE_POWERUP, // Star
     METATILE_POWERUP, // Energy Refill
 
-    METATILE_NO_EFFECT, // Empty Tile    
+    METATILE_NO_EFFECT, // Empty Tile 
+
+    // Conveyor middle slices
+    METATILE_SOLID|METATILE_CONVEYOR_LEFT,
+    METATILE_SOLID|METATILE_CONVEYOR_RIGHT,  
 };
