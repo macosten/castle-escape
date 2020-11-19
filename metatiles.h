@@ -74,6 +74,10 @@ const unsigned char const metatiles[]={
     141, 141, 157, 157, 1, // Right Conveyor Middle (no wheel)
     // 138, 135, 154, 151, 1, // Right Conveyor Middle (with wheel)
 
+    224, 225, 242, 243, 0, // Top Square Platform (U+L+R Edges)
+    226, 227, 240, 241, 0, // Bottom Square Platform (D+L+R Edges)
+    '4', '9', '?', '?', 1, // Unused Tile (#49)
+    '5', '0', '?', '?', 1, // Unused Tile (#50)
 };
 
 #define STAR_TILE 42
@@ -163,4 +167,10 @@ const unsigned char const metatile_property_lookup_table[]={
     // Conveyor middle slices
     METATILE_SOLID|METATILE_CONVEYOR_LEFT,
     METATILE_SOLID|METATILE_CONVEYOR_RIGHT,  
+
+    // Additional Square Platforms
+    METATILE_SOLID,
+    METATILE_SOLID,
+
+    // The unused tiles don't have properties specified here -- so I guess they're "glitchy" that way.
 };

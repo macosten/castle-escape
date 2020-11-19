@@ -5,16 +5,12 @@
 #pragma rodata-name(push, "BANK0")
 
 // bitpacked coords (0xXY), nt, direction (or other info) + type
-// 0x10 + type for right-facing, just type for left-facing
 // 0xff terminates
 
 const unsigned char const level10_enemy[]={
 	0x49, 2, 4, // ENEMY_CANNON,
-	0x57, 2, 5,  //debug
-	0x69, 2, 7, //debug
-	//0x79, 2, 7,  //debug 
-	//0x24, 2, 6, // ENEMY_SPIKEBALL,
-	0x24, 2, 3, //debug
+	0x73, 2, 5, // ENEMY_ACIDPOOL,
+	0x24, 2, 6, // ENEMY_SPIKEBALL,
 	0x71, 2, 6, // ENEMY_SPIKEBALL, 
 	0x91, 2, 2, // ENEMY_GRARRL,
 	0x2A, 1, 6, // ENEMY_SPIKEBALL,
@@ -22,8 +18,8 @@ const unsigned char const level10_enemy[]={
 	0xFF
 };
 
-const unsigned char const level10_compressed[] = {
-	76,90,71,0,0,2,208,0,0,0,225,25,166,28,106,1,
+const unsigned char const level10[] = {
+	76,90,71,0,0,2,208,0,0,0,223,231,234,28,37,1,
 	2,3,8,16,4,7,16,7,6,44,16,1,16,131,16,4,
 	14,3,30,8,3,11,8,42,16,2,3,9,8,23,25,3,
 	12,8,24,24,3,11,8,4,13,16,4,21,3,12,72,1,
@@ -36,9 +32,8 @@ const unsigned char const level10_compressed[] = {
 	3,35,91,8,131,6,3,4,164,3,9,24,3,3,164,3,
 	8,136,3,35,51,9,3,8,8,3,36,52,3,2,156,3,
 	59,8,3,12,248,16,2,12,3,73,104,8,22,12,4,3,
-	75,120,12,7,7,10,8,200,40,32,33,3,6,37,8,216,
-	34,35,8,165,26,8,136,3,4,136,4,4,16,225,3,3,
-	141,
+	75,120,12,7,7,10,8,200,3,35,136,8,229,3,7,24,
+	8,101,26,8,130,3,4,136,4,4,16,225,3,3,141,
 };
 
 #pragma rodata-name(pop)

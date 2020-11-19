@@ -570,7 +570,7 @@ void main (void) {
             }
 
             // debug:
-            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            //gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
             debug_tile_x = high_byte(valrigard.velocity_y);
             debug_tile_y = low_byte(valrigard.velocity_y);
@@ -641,7 +641,8 @@ void load_title_screen(void) {
     ppu_on_all();
 }
 
-const char const game_over_string[] = "Demo Over! Down to restart.";
+const char const level_complete_string[] = "Level complete!";
+const char const down_to_restart_string[] = "Down to restart.";
 void load_game_over_screen(void) {
     ppu_off();
     clear_screen();
@@ -649,7 +650,8 @@ void load_game_over_screen(void) {
     game_mode = MODE_GAME_OVER;
 
     // Write the message.
-    multi_vram_buffer_horz(game_over_string, sizeof(game_over_string), NTADR_A(3, 6));
+    multi_vram_buffer_horz(level_complete_string, sizeof(level_complete_string), NTADR_A(3, 5));
+    multi_vram_buffer_horz(down_to_restart_string, sizeof(down_to_restart_string), NTADR_A(3, 7));
 
     // Turn the PPU back on.
     ppu_on_all();
