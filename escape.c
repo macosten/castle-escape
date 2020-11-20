@@ -193,6 +193,10 @@ signed char conveyor_delta;
 
 unsigned char menu_index;
 
+unsigned int tile_clear_queue[4]; // Each element is one result of get_ppu_addr
+unsigned char tile_clear_front;
+unsigned char tile_clear_back;
+
 // ~93 zp bytes left?
 
 #pragma bss-name(pop)
@@ -324,6 +328,8 @@ void draw_energy(void);
 void draw_screen_U(void);
 void draw_screen_D(void);
 void draw_screen_sub(void);
+
+void handle_tile_clear_queue(void);
 
 void begin_level(void);
 void load_level_new(void);
@@ -551,8 +557,10 @@ void main (void) {
             set_scroll_y(scroll_y);
 
             convert_to_decimal(score);
+            
             draw_sprites();
 
+            handle_tile_clear_queue();
             
             if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
                 draw_screen_D();
@@ -677,6 +685,10 @@ void begin_level(void) {
 
     // Reset Valrigard's energy.
     energy = MAX_ENERGY;
+
+    // Reset the tile clear queue.
+    tile_clear_front = 0;
+    tile_clear_back = 0;
 
     // Turn the PPU back on.
     ppu_on_all();
@@ -1309,26 +1321,23 @@ void bg_collision_sub(void) {
     
     // Instead of selecting from one of two c_maps, select from one of the many cmaps.
     // The index is stored in the high byte of temp5 right now.
-    temppointer = cmaps[high_byte(temp5)];
-    temp4 = temppointer[coordinates];
-    temp_mutablepointer = (char *)&(temppointer[coordinates]);
+    temp_mutablepointer = (unsigned char *)cmaps[high_byte(temp5)];
+    temp4 = temp_mutablepointer[coordinates];
     
     // Fetch all the properties about this tile.
     temp0 = metatile_property_lookup_table[temp4];
 
-    collision = METATILE_IS_SOLID(temp4); // 0x17 is the first non-solid tile, so if the tile is less than that, it's a collision
-    // At some point we should figure out what else should be calculated here
-    
+    collision = METATILE_IS_SOLID(temp4);
+
     // If the collision is with a tile that is solid but has no other properties, return.
     if (temp0 == METATILE_NO_EFFECT || temp0 == METATILE_SOLID) { return; }
-    // if (collision <= METATILE_SOLID)
 
     // No? We must have touched a special tile, then.
     if (temp0 & METATILE_SPIKES) {
         SET_STATUS_DEAD();
     } else if (temp0 & METATILE_POWERUP) {
         // Collect the powerup.
-        *temp_mutablepointer = EMPTY_TILE;
+        temp_mutablepointer[coordinates] = EMPTY_TILE;
 
         // But what powerup was it?
         if (temp4 == STAR_TILE) { score += 1; }
@@ -1341,8 +1350,14 @@ void bg_collision_sub(void) {
         // Bug: stars don't consistently get cleared.
         // They are collected in memory (and thus only collided with once),
         // but the metatiles are not always actually set to EMPTY_TILE.
-        address = get_ppu_addr(nt, temp1, temp3 & 0xf0);
-        buffer_1_mt(address, EMPTY_TILE);
+        //address = get_ppu_addr(nt, temp1, temp3 & 0xf0);
+
+        // Enqueue.
+        high_byte(tile_clear_queue[tile_clear_back]) = nt;
+        low_byte(tile_clear_queue[tile_clear_back]) = coordinates;
+
+        ++tile_clear_back;
+        tile_clear_back &= 0b11; // Clamp to <4 
 
     } else if (temp0 & METATILE_CONVEYOR_LEFT) {
         // this could behave a little strangely if Valrigard specifically walks into a
@@ -1367,6 +1382,34 @@ void bg_collision_sub(void) {
 
 // At some point, I should probably inline these functions (manually).
 
+void handle_tile_clear_queue(void) {
+    // Since the game sometimes goes a little crazy when you try to collect
+    // more than about one star in a frame or so, this queue will prevent any
+    // odd screen glitching or stars not going away (ideally).
+
+    // If the queue is empty, return.
+    if (tile_clear_front == tile_clear_back) { return; }
+
+    // Otherwise, dequeue and clear the tile.
+
+    // Dequeue
+    //temp5 = tile_clear_queue[tile_clear_front]; 
+
+    temp0 = high_byte(tile_clear_queue[tile_clear_front]);
+    coordinates = low_byte(tile_clear_queue[tile_clear_front]);
+    ++tile_clear_front;
+    tile_clear_front &= 0b11; // Clamp to <4
+
+    address = get_ppu_addr(temp0, coordinates << 4, coordinates & 0xf0);
+
+    // Buffer 1 mt.
+    //buffer_1_mt(address, EMPTY_TILE);
+
+    //coordinates = (high_byte(valrigard.x) >> 4) + (high_byte(valrigard.y) & 0xf0);
+    // Buffer 4 mt.
+    buffer_1_mt(address, EMPTY_TILE);
+}
+
 void draw_screen_U(void) {
     pseudo_scroll_y = sub_scroll_y(0x20, scroll_y);
     
@@ -1382,7 +1425,7 @@ void draw_screen_D(void) {
 }
 
 void draw_screen_sub(void) {
-    temp1 = pseudo_scroll_y >> 8;
+    temp1 = high_byte(pseudo_scroll_y);
     
     //set_data_pointer(level_nametables[temp1]);
     set_data_pointer(cmaps[temp1]); // TODO: clamp this value to 6.
@@ -1391,9 +1434,7 @@ void draw_screen_sub(void) {
     
     // Important that the main loop clears the vram_buffer.
     
-    //temp1 = draw_screen_sub_lookup_addr_0[scroll_count];
     temp2 = draw_screen_sub_lookup_index_offset_0[scroll_count];
-    //temp3 = draw_screen_sub_lookup_addr_1[scroll_count];
     temp4 = draw_screen_sub_lookup_index_offset_1[scroll_count];
 
     address = get_ppu_addr(nt, draw_screen_sub_lookup_addr_0[scroll_count], y);

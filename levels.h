@@ -7,6 +7,8 @@
 
 #include "tilemaps/level01.h"
 #include "tilemaps/level02.h"
+#include "tilemaps/level03.h"
+#include "tilemaps/level04.h"
 #include "tilemaps/level10.h"
 #include "tilemaps/level_debug_tiledump.h"
 
@@ -15,8 +17,10 @@
 // Length of a level in nametables.
 const unsigned char const level_nt_length[] = {
     3, 
-    3, 
     3,
+    3,
+    3, // Level 04
+    3, // Level 10
     1,
 };
 
@@ -24,7 +28,9 @@ const unsigned char const valrigard_starting_nt[] = {
     2,
     2, // The index of the nametable Valrigard starts in.
     2,
-    0,
+    2, // Level 04
+    2, // Level 10
+    0, // Tiledump
 };
 
 // It's awfully convenient that nametables are no more than 16 metatiles in dimension
@@ -35,12 +41,16 @@ const unsigned char const valrigard_inital_coords[] = {
     0x4d, 
     0x4d,
     0x4d,
+    0x4d, // 10
+    0x4d,
 };
 
 // Pointers to compressed level data.
 const unsigned char * const level_compressed_nametable_pointers[] = {
     level01,
     level02,
+    level03,
+    level04,
     level10, 
     level_debug_tiledump,
 };
@@ -51,17 +61,21 @@ const unsigned char const level_nametable_banks[] = {
     0, 
     0,
     0,
+    0,
+    0,
 };
 
 const char * const level_names[] = {
     "Level  1 ",
     "Level  2 ",
+    "Level  3 ",
+    "Level  4 ",
     "Level 10 ",
     "Tile Dump",
 };
 
 // Convenient ROM value that shows the number of levels implemented.
-#define NUMBER_OF_LEVELS 4
+#define NUMBER_OF_LEVELS 6
 
 // Max of 32 enemies.
 // Be aware that cannons and acid blobs functionally take up 2 slots
@@ -72,6 +86,8 @@ const char * const level_names[] = {
 const unsigned char * const level_enemy_data[] = {
     level01_enemy,
     level02_enemy,
+    level03_enemy,
+    level04_enemy,
     level10_enemy,
     level_debug_tiledump_enemy,
 };
