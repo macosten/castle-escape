@@ -742,9 +742,19 @@ void load_level_new(void) {
 
     // Load a little bit of the next room.
 
-    temp0 = nt_current == 0 ? nt_current + 1 : nt_current - 1;
+    // temp0 = nt_current == 0 ? nt_current + 1 : nt_current - 1;
+
+    // What nt should we load more of?
+    if (nt_current == 0) {
+        temp0 = nt_current + 1;
+    } else if (high_byte(valrigard.y) >= 0x80) {
+        temp0 = nt_current + 1;
+    } else {
+        temp0 = nt_current - 1;
+    }
 
     set_data_pointer(cmaps[temp0]);
+    
     for(x=0; ;x+=0x20){
         y = 0xe0;
         clear_vram_buffer(); // do each frame, and before putting anything in the buffer
@@ -755,7 +765,6 @@ void load_level_new(void) {
         if (x == 0xe0) break;
     }
     clear_vram_buffer();
-
 
     // Load Enemies
 
@@ -1160,9 +1169,15 @@ void movement(void) {
     // MARK: - Gravity
     
     if (pad1 & PAD_UP && energy > 0) { // If we're holding up on the DPad...
-        valrigard.velocity_y -= GRAVITY;
-        if (valrigard.velocity_y < -SPEED) valrigard.velocity_y = -SPEED;
-    
+        
+        if (collision_D) { // If grounded...
+            valrigard.velocity_y = -SPEED; // Top speed!
+        } else {
+            // Otherwise, movement is more nuanced.
+            valrigard.velocity_y -= GRAVITY;
+            if (valrigard.velocity_y < -SPEED) valrigard.velocity_y = -SPEED;
+        }
+        
         energy -= 1;
         
     } else {
@@ -1248,7 +1263,8 @@ void bg_collision(void){
 
     // if(L_R_switch) temp3 += 2; // fix bug, walking through walls
     // Removed this line and I'm not having any issues walking through walls.
-    // On the contrary, star collection is now more consistent.
+    // On the contrary, star collection is now more consistent - before, it would be a little messed up 
+    // the top of hitbox was on a different nametable than the bottom.
     // Keeping it here just in case...
 
     if(temp3 >= 0xf0) return; // This line will probably only really be relevant if there's no floor.
