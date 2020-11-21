@@ -46,7 +46,7 @@ const unsigned char const valrigard_inital_coords[] = {
     0x4d,
     0x4d, // 10
     0x4d,
-    0x4d,
+    0x90,
 };
 
 // Pointers to compressed level data.

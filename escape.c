@@ -578,7 +578,7 @@ void main (void) {
             }
 
             // debug:
-            //gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
 
         }
@@ -1245,14 +1245,19 @@ void bg_collision(void){
     collision_D = 0;
     
     temp3 = hitbox.y;
-    if(L_R_switch) temp3 += 2; // fix bug, walking through walls
-    
-    if(temp3 >= 0xf0) return;
-    
+
+    // if(L_R_switch) temp3 += 2; // fix bug, walking through walls
+    // Removed this line and I'm not having any issues walking through walls.
+    // On the contrary, star collection is now more consistent.
+    // Keeping it here just in case...
+
+    if(temp3 >= 0xf0) return; // This line will probably only really be relevant if there's no floor.
+    // There shouldn't really be no floor in this game, but maybe I'll want to reuse this code in
+    // another game, so I'll leave this line in.
 
     // For star pickup: recalculate nt_current.
-    temp5 = add_scroll_y(high_byte(valrigard.y), scroll_y);
-    nt_current = high_byte(temp5);
+    temp6 = add_scroll_y(hitbox.y, scroll_y);
+    nt_current = high_byte(temp6);
     // This value of nt_current is correct for the top of the player.
 
     // Upper left... 
@@ -1287,19 +1292,21 @@ void bg_collision(void){
     }
     
     // Now for the bottom.
-    temp5 = add_scroll_y(VALRIGARD_HEIGHT, temp5);
-    nt_current = high_byte(temp5);
+    temp6 = add_scroll_y(VALRIGARD_HEIGHT, temp6);
+    nt_current = high_byte(temp6);
     // This value of nt_current is correct for the bottom of the player.
     // Notice that it *could* be different.
     
     // bottom right, x hasn't changed
 
     temp3 = hitbox.y + hitbox.height; // y bottom
-    if(L_R_switch) temp3 -= 2; // fix bug, walking through walls
+    // if(L_R_switch) temp3 -= 2; // fix bug, walking through walls -- commented out for now.
+    
     temp5 = add_scroll_y(temp3, scroll_y); // upper left
     temp3 = temp5 & 0xff; // low byte y
     
     eject_D = (temp3 + 1) & 0x0f;
+    
     if(temp3 >= 0xf0) return;
     
     bg_collision_sub();
