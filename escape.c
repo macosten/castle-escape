@@ -1749,18 +1749,19 @@ void spikeball_ai(void) {
     // First, check beneath us.
 
     temp2 = enemies.actual_y[x] + 18; // Y beneath us
-    coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
 
-    // Account for being on the edge of a nametable...
-    temp4 = temp2 >> 4;
-
-    // ...by checking. 
+    // Account for being on the edge of a nametable by checking. 
     // If temp4 == 0xf, then we were on the bottom of a nametable and should look at the other one.
-    if (temp4 == 0xf) {
+    if (temp2 >> 4 == 0xf) {
         temp4 = enemies.nt[x] + 1;
+        temp2 = 0;
     } else {
         temp4 = enemies.nt[x];
     }
+
+    coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
+
+    
 
     // Which cmap should I look at?
     //temppointer = cmaps[temp4];
@@ -2206,22 +2207,25 @@ void splyke_ai(void) {
         // First, check beneath us.
 
         temp2 = enemies.actual_y[x] + 18; // Y beneath us
-        coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
-
-        // Account for being on the edge of a nametable...
-        temp4 = temp2 >> 4;
-
-        // ...by checking. 
+        
+        // Account for being on the edge of a nametable by checking. 
         // If temp4 == 0xf, then we were on the bottom of a nametable and should look at the other one.
-        if (temp4 == 0xf) {
+        if (temp2 >> 4 == 0xf) {
             temp4 = enemies.nt[x] + 1;
+            temp2 = 0;
         } else {
             temp4 = enemies.nt[x];
         }
 
+        coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
+
+
         // Which cmap should I look at?
-        temppointer = cmaps[temp4];
-        collision = temppointer[coordinates];
+        //temppointer = cmaps[temp4];
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp4);
+
+        //collision = temppointer[coordinates];
+        AsmSet1ByteFromZpPtrAtIndexVar(collision, temppointer, coordinates);
         
         if (!METATILE_IS_SOLID(collision)) {
             ENEMY_FLIP_DIRECTION(x);
@@ -2235,8 +2239,12 @@ void splyke_ai(void) {
 
         // Which cmap should I look at?
         temp4 = enemies.nt[x];
-        temppointer = cmaps[temp4];
-        collision = temppointer[coordinates];
+
+        //temppointer = cmaps[temp4];
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp4);
+
+        //collision = temppointer[coordinates];
+        AsmSet1ByteFromZpPtrAtIndexVar(collision, temppointer, coordinates);
         
         if (METATILE_IS_SOLID(collision)) {
             ENEMY_FLIP_DIRECTION(x);
@@ -2247,7 +2255,9 @@ void splyke_ai(void) {
         temp1 = leftright_movement_moving_lookup_table[temp3];
         temp1 += temp1;
 
-        enemies.x[x] += temp1;
+        temp0 = enemies.x[x] + temp1;
+
+        enemies.x[x] = temp0;
 
     }
 

@@ -16,5 +16,7 @@ $886A#_level10#
 $8854#_level10_enemy#
 $895A#_level_debug_tiledump#
 $8959#_level_debug_tiledump_enemy#
+$8A44#_level_enemies_test#
+$8A2B#_level_enemies_test_enemy#
 $89CD#_level_star_test#
 $89CC#_level_star_test_enemy#
