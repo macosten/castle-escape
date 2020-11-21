@@ -193,7 +193,7 @@ signed char conveyor_delta;
 
 unsigned char menu_index;
 
-unsigned int tile_clear_queue[4]; // Each element is one result of get_ppu_addr
+unsigned int tile_clear_queue[8]; // Each element is one result of get_ppu_addr
 unsigned char tile_clear_front;
 unsigned char tile_clear_back;
 
@@ -1235,9 +1235,6 @@ void swing_sword(void) {
 
 void bg_collision(void){
 
-    temp5 = add_scroll_y(high_byte(valrigard.y), scroll_y);
-    nt_current = high_byte(temp5);
-
     // note, !0 = collision
     // sprite collision with backgrounds
     // load the object's x,y,width,height to hitbox, then call this
@@ -1252,6 +1249,12 @@ void bg_collision(void){
     
     if(temp3 >= 0xf0) return;
     
+
+    // For star pickup: recalculate nt_current.
+    temp5 = add_scroll_y(high_byte(valrigard.y), scroll_y);
+    nt_current = high_byte(temp5);
+    // This value of nt_current is correct for the top of the player.
+
     // Upper left... 
 
     temp5 = add_scroll_y(temp3, scroll_y); // upper left
@@ -1283,8 +1286,11 @@ void bg_collision(void){
         ++collision_U;
     }
     
-    
-    // again, lower
+    // Now for the bottom.
+    temp5 = add_scroll_y(VALRIGARD_HEIGHT, temp5);
+    nt_current = high_byte(temp5);
+    // This value of nt_current is correct for the bottom of the player.
+    // Notice that it *could* be different.
     
     // bottom right, x hasn't changed
 
@@ -1351,6 +1357,10 @@ void bg_collision_sub(void) {
         tile_clear_queue[tile_clear_back] = address;
         ++tile_clear_back;
         tile_clear_back &= 0b11; // Clamp to <4 
+
+        // Debug: show the full coordinates.
+        debug_tile_x = nt_current;
+        debug_tile_y = coordinates;
 
     } else if (temp0 & METATILE_CONVEYOR_LEFT) {
         // this could behave a little strangely if Valrigard specifically walks into a
