@@ -553,7 +553,7 @@ void main (void) {
 
             // Move the player.
             movement();
-
+            
             // Check to see what's on-screen
             check_spr_objects();
 
@@ -570,7 +570,7 @@ void main (void) {
             set_scroll_y(scroll_y);
 
             convert_to_decimal(score);
-            
+
             draw_sprites();
 
             if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
@@ -996,16 +996,17 @@ void draw_player(void) {
     // more than once per frame.
 
     if (STATUS_DEAD) {
-        oam_meta_spr(temp1, temp2, valrigard_dead_sprite_lookup_table[DIRECTION]);
-        return;
+        temp0 = DIRECTION;
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, valrigard_dead_sprite_lookup_table, temp0);
+    } else if (IS_SWINGING_SWORD) {
+        temp0 = (player_frame_timer & 0b11111110) | DIRECTION;
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, valrigard_sword_swing_sprite_lookup_table, temp0);
+    } else {
+        temp0 = DIRECTION;
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, valrigard_idle_sprite_lookup_table, temp0);
     }
 
-    if (IS_SWINGING_SWORD) {
-        temp0 = (player_frame_timer & 0b11111110) | DIRECTION;
-        oam_meta_spr(temp1, temp2, valrigard_sword_swing_sprite_lookup_table[temp0]);
-    } else {
-        oam_meta_spr(temp1, temp2, valrigard_idle_sprite_lookup_table[DIRECTION]);
-    }
+    oam_meta_spr(temp1, temp2, temppointer);
 
     // Decrement the player frame timer if it's nonzero.
     if (player_frame_timer) { 
@@ -1036,13 +1037,14 @@ void draw_energy(void) {
 
 void draw_korbat(void) {
     temp3 = ENEMY_DIRECTION(x);
-    //temppointer = ...;
-    oam_meta_spr(temp_x, temp_y, korbat_sprite_lookup_table[temp3]);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, korbat_sprite_lookup_table, temp3); 
+    oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
 void draw_grarrl(void) {
     temp3 = ENEMY_DIRECTION(x);
-    oam_meta_spr(temp_x, temp_y, grarrl_sprite_lookup_table[temp3]);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, grarrl_sprite_lookup_table, temp3); 
+    oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
 void draw_spikeball(void) {
@@ -1052,7 +1054,8 @@ void draw_spikeball(void) {
 void draw_cannon(void) {
     // Figure out direction of cannon
     temp3 = enemies.extra2[x];
-    oam_meta_spr(temp_x, temp_y, cannon_sprite_lookup_table[temp3]);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cannon_sprite_lookup_table, temp3); 
+    oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
 void draw_cannonball(void) {
@@ -1062,9 +1065,9 @@ void draw_cannonball(void) {
 void draw_acid(void) {
     // Tweak these numbers (and the number this is set to in acid_blob_ai) 
     // to adjust the animation speed.
-    temp3 = enemies.extra2[x];
-    temp3 = temp3 >> 1; 
-    oam_meta_spr(temp_x, temp_y, acidblob_sprite_lookup_table[temp3]);
+    temp3 = enemies.extra2[x] >> 1;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, acidblob_sprite_lookup_table, temp3);
+    oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
 void draw_acid_drop(void) {
@@ -1080,15 +1083,15 @@ void draw_splyke(void) {
     temp3 = enemies.extra2[x] & 0b110; // Mask the frame number.
     temp4 = ENEMY_DIRECTION(x) | temp3;
     temp4 = temp4 | SPLYKE_IS_MOVING_AROUND(x) >> 2;
-
-    oam_meta_spr(temp_x, temp_y, splyke_sprite_lookup_table[temp4]);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, splyke_sprite_lookup_table, temp4);
+    oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
 void draw_sun(void) {
     // Tweak these numbers to adjust the flashing speed
-    temp3 = enemies.actual_y[x] & 15;
-    temp3 = temp3 >> 3;
-    oam_meta_spr(temp_x, temp_y, sun_sprite_lookup_table[temp3]);
+    temp3 = (enemies.actual_y[x] & 15) >> 3;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, sun_sprite_lookup_table, temp3);
+    oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
 void draw_boss(void) {
@@ -1098,12 +1101,14 @@ void draw_boss(void) {
 
 void draw_purple_death_effect(void) {
     temp3 = enemies.timer[x] >> 2; // 12 frames -> 3 valid positions
-    oam_meta_spr(temp_x, temp_y, purple_death_effect_sprite_lookup_table[temp3]);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, purple_death_effect_sprite_lookup_table, temp3);
+    oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
 void draw_splyke_death_effect(void) {
     temp3 = enemies.timer[x] >> 2; // 12 frames -> 3 valid positions
-    oam_meta_spr(temp_x, temp_y, splyke_death_effect_sprite_lookup_table[temp3]);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, splyke_death_effect_sprite_lookup_table, temp3);
+    oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
 
