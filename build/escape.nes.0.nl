@@ -10,3 +10,5 @@ $84EE#_level10#
 $84D8#_level10_enemy#
 $85DE#_level_debug_tiledump#
 $85DD#_level_debug_tiledump_enemy#
+$8651#_level_star_test#
+$8650#_level_star_test_enemy#

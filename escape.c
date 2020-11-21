@@ -537,7 +537,7 @@ void main (void) {
             // It's useful for times we don't want button holds to retrigger something (say, pausing and unpausing).
             
             clear_vram_buffer();
-            
+
             // Move the player.
             movement();
 
@@ -560,13 +560,13 @@ void main (void) {
             
             draw_sprites();
 
-            handle_tile_clear_queue();
-            
             if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
                 draw_screen_D();
             }  else {
                 draw_screen_U();
             } 
+
+            handle_tile_clear_queue();
 
             if (game_mode == MODE_GAME_OVER) {
                 load_game_over_screen();
@@ -579,10 +579,6 @@ void main (void) {
 
             // debug:
             //gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
-
-            debug_tile_x = high_byte(valrigard.velocity_y);
-            debug_tile_y = low_byte(valrigard.velocity_y);
-
 
 
         }
@@ -1238,10 +1234,14 @@ void swing_sword(void) {
 }
 
 void bg_collision(void){
+
+    temp5 = add_scroll_y(high_byte(valrigard.y), scroll_y);
+    nt_current = high_byte(temp5);
+
     // note, !0 = collision
     // sprite collision with backgrounds
     // load the object's x,y,width,height to hitbox, then call this
-
+    
     collision_L = 0;
     collision_R = 0;
     collision_U = 0;
@@ -1342,20 +1342,13 @@ void bg_collision_sub(void) {
         // But what powerup was it?
         if (temp4 == STAR_TILE) { score += 1; }
         else if (temp4 == ENERGY_REFILL_TILE) { energy = MAX_ENERGY; }
-
-        // Shouldn't really need to change the palette, but:
-        // address = get_at_addr(nt, (temp1>>4), (temp2 & 0xf0));
-        // one_vram_buffer(0, address); Set to the 0th palette
-            
-        // Bug: stars don't consistently get cleared.
-        // They are collected in memory (and thus only collided with once),
-        // but the metatiles are not always actually set to EMPTY_TILE.
-        //address = get_ppu_addr(nt, temp1, temp3 & 0xf0);
+    
+        // Enqueue a tile to the tile clear queue.
+        nt = (nt_current & 1) << 1;
+        address = get_ppu_addr(nt, temp1, temp3 & 0xf0);
 
         // Enqueue.
-        high_byte(tile_clear_queue[tile_clear_back]) = nt;
-        low_byte(tile_clear_queue[tile_clear_back]) = coordinates;
-
+        tile_clear_queue[tile_clear_back] = address;
         ++tile_clear_back;
         tile_clear_back &= 0b11; // Clamp to <4 
 
@@ -1374,8 +1367,6 @@ void bg_collision_sub(void) {
         game_mode = MODE_GAME_OVER;
     }
 
-    // debug_tile_x = temp1 >> 4;
-    // debug_tile_y = temp3 >> 4;
 }
 
 // MARK: -- Screen Buffering Functions
@@ -1391,23 +1382,17 @@ void handle_tile_clear_queue(void) {
     if (tile_clear_front == tile_clear_back) { return; }
 
     // Otherwise, dequeue and clear the tile.
+    address = tile_clear_queue[tile_clear_front]; 
 
-    // Dequeue
-    //temp5 = tile_clear_queue[tile_clear_front]; 
-
-    temp0 = high_byte(tile_clear_queue[tile_clear_front]);
-    coordinates = low_byte(tile_clear_queue[tile_clear_front]);
     ++tile_clear_front;
     tile_clear_front &= 0b11; // Clamp to <4
 
-    address = get_ppu_addr(temp0, coordinates << 4, coordinates & 0xf0);
-
-    // Buffer 1 mt.
-    //buffer_1_mt(address, EMPTY_TILE);
-
-    //coordinates = (high_byte(valrigard.x) >> 4) + (high_byte(valrigard.y) & 0xf0);
-    // Buffer 4 mt.
+    // Buffer 1 empty mt.
     buffer_1_mt(address, EMPTY_TILE);
+
+    // Shouldn't really need to change the palette, but:
+    // one_vram_buffer(0, address); Set to the 0th palette
+
 }
 
 void draw_screen_U(void) {
@@ -1479,7 +1464,7 @@ void check_spr_objects(void) {
         // not the enemy's native nametable, it'll be shifted down (positive y) by 16.
 
         // Let's counteract that...
-        if (nt_current != enemies.nt[x]) enemies.y[x] -= 16;
+        if (nt_current != enemies.nt[x]) { enemies.y[x] -= 16; }
 
     }
 }
