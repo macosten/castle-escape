@@ -197,7 +197,7 @@ unsigned int tile_clear_queue[8]; // Each element is one result of get_ppu_addr
 unsigned char tile_clear_front;
 unsigned char tile_clear_back;
 
-// ~93 zp bytes left?
+// ~?? zp bytes left?
 
 #pragma bss-name(pop)
 
@@ -250,19 +250,6 @@ I don't really know what the ideal pattern would be, though.
 
 // Enemy memory.
 Enemies enemies;
-
-unsigned char enemies_x[MAX_ENEMIES]; // The x value of this enemy.
-unsigned char enemies_y[MAX_ENEMIES]; // The y value this will be rendered at (after taking scrolling, etc into account)
-unsigned char enemies_actual_y[MAX_ENEMIES]; // The "actual" y value of this enemy, in absolute terms.
-unsigned char enemies_nt[MAX_ENEMIES]; // The nametable this lives in. Sort of like a high byte of actual_y.
-// Todo: Now that we have lots of extra RAM, should flags_type[] be separated into flags[] and type[]?
-unsigned char enemies_flags[MAX_ENEMIES]; // high nibble is flags (including direction and active/inactive), low nibble is type.
-unsigned char enemies_type[MAX_ENEMIES];
-unsigned char enemies_extra[MAX_ENEMIES]; // The use of this depends on the enemy.
-unsigned char enemies_extra2[MAX_ENEMIES]; // The use of this depends on the enemy.
-// Examples of what the extra bytes will contain: animation frame numbers, cached return values, subpixel values...
-unsigned char enemies_timer[MAX_ENEMIES]; // A timer value - most likely an animation timer. Probably gets decremented once per frame.
-unsigned char enemies_count; // How many enemies are actually loaded into RAM.
 
 #define ACTIVATE_ENEMY(index) (enemies.flags[index] |= 0b10000000) // Set high bit.
 #define DEACTIVATE_ENEMY(index) (enemies.flags[index] &= 0b01111111) // Unset high bit.
@@ -929,23 +916,25 @@ void draw_sprites(void) {
     
     // draw enemies.
     for (y = 0; y < enemies.count; ++y) {
-        x = shuffle_array[y + shuffle_offset];
+        // Unrolling this loop is a bit inconsistent from frame to frame, so I didn't.
 
-        if (!IS_ENEMY_ACTIVE(x)) { continue; }
+        //x = shuffle_array[y + shuffle_offset];
+        temp1 = y + shuffle_offset;
+        AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
 
-        temp_x = enemies.x[x];
-        
-        // Not that we should have enemies ever in these X values, 
-        // but if we do someday, these lines will be here, waiting to be uncommented.
-        //if (temp_x == 0) ++temp_x; // Basing this off NESDoug's report of problems with temp_x = 0.
-        //if (temp_x > 0xf0) continue;
+        if (IS_ENEMY_ACTIVE(x)) {  
+            temp_x = enemies.x[x];
+            // Not that we should have enemies ever in these X values, 
+            // but if we do someday, these lines will be here, waiting to be uncommented.
+            //if (temp_x == 0) ++temp_x; // Basing this off NESDoug's report of problems with temp_x = 0.
+            //if (temp_x > 0xf0) continue;
+            temp_y = enemies.y[x];
+            if (temp_y < 0xf0) {
 
-        temp_y = enemies.y[x];
-        if (temp_y < 0xf0) {
-
-            temp0 = GET_ENEMY_TYPE(x);
-            // An assembly macro (defined in asm/macros.h) is used here to ensure that this is efficient.
-            AsmCallFunctionAtPtrOffsetByIndexVar(draw_func_pointers, temp0);
+                temp0 = GET_ENEMY_TYPE(x);
+                // An assembly macro (defined in asm/macros.h) is used here to ensure that this is efficient.
+                AsmCallFunctionAtPtrOffsetByIndexVar(draw_func_pointers, temp0);
+            }
         }
 
     }
@@ -968,11 +957,11 @@ void draw_sprites(void) {
     // Debug HUD, drawn last because it's the least important.
     //oam_spr(232, 42, collision_D, 2);
     
-    oam_spr(200, 50, debug_tile_x >> 4, 1);
-    oam_spr(208, 50, debug_tile_x & 0x0f, 1);
+    //oam_spr(200, 50, debug_tile_x >> 4, 1);
+    //oam_spr(208, 50, debug_tile_x & 0x0f, 1);
     
-    oam_spr(224, 50, debug_tile_y >> 4, 1);
-    oam_spr(232, 50, debug_tile_y & 0x0f, 1);
+    //oam_spr(224, 50, debug_tile_y >> 4, 1);
+    //oam_spr(232, 50, debug_tile_y & 0x0f, 1);
 
     // Animate the animated palette.
 
@@ -1016,21 +1005,27 @@ void draw_player(void) {
 }
 
 void draw_score(void) {
+    if (score == 0){
+        oam_spr(232, 20, 0, 3);
+        return;
+    }
+
     y = 4;
+    temp0 = 0;
     for (x = 200; x <= 232; x+=8) {
-        if (score_string[y] != 0 || y == 0){
+        if (temp0) {
+            oam_spr(x, 20, score_string[y], 3);
+        } else if (score_string[y]) {
+            temp0 = 1;
             oam_spr(x, 20, score_string[y], 3);
         }
         --y;
-        // if (x == 232) break; //Is this more efficient, or is it more efficient to have the condition in the loop's head?
     }
 }
 
-void draw_energy(void) {
-    temp1 = energy >> 4; 
-    oam_spr(200, 28, temp1, 1);
-    temp1 = energy & 0x0f;
-    oam_spr(208, 28, temp1, 1);
+void draw_energy(void) { 
+    oam_spr(200, 28, energy >> 4, 1);
+    oam_spr(208, 28, energy & 0x0f, 1);
 }
 
 // For all the draw_ functions, temp_x and temp_y are important
@@ -1161,7 +1156,7 @@ void movement(void) {
     valrigard.x += valrigard.velocity_x;
     // The collision routine also requires an 8-bit value anyway.
 
-    if((valrigard.x < 0x100)||(valrigard.x > 0xf800)) { // make sure no wrap around to the other side
+    if((high_byte(valrigard.x) < 0x01)||(high_byte(valrigard.x) > 0xf8)) { // make sure no wrap around to the other side
         valrigard.x = 0x100;
     }
     
@@ -1212,8 +1207,8 @@ void movement(void) {
     valrigard.y += valrigard.velocity_y;
     
     // Make sure not to wrap around to the other side
-    if (valrigard.y < 0x100)  valrigard.y = 0x100;
-    if (valrigard.y > 0xf000) valrigard.y = 0xf000;
+    if (high_byte(valrigard.y) < 0x01) { valrigard.y = 0x100; }
+    else if (high_byte(valrigard.y) > 0xf0) { valrigard.y = 0xf000; }
     
     // MARK: - Collision
     L_R_switch = 0;
@@ -1294,14 +1289,14 @@ void bg_collision(void){
     // another game, so I'll leave this line in.
 
     // For star pickup: recalculate nt_current.
-    temp6 = add_scroll_y(hitbox.y, scroll_y);
+    temp6 = add_scroll_y(temp3, scroll_y);
     nt_current = high_byte(temp6);
     // This value of nt_current is correct for the top of the player.
 
     // Upper left... 
 
     temp5 = add_scroll_y(temp3, scroll_y); // upper left
-    temp3 = temp5 & 0xff; // low byte y
+    temp3 = low_byte(temp5); // low byte y
 
     temp1 = hitbox.x; // x left
     
@@ -1341,7 +1336,7 @@ void bg_collision(void){
     // if(L_R_switch) temp3 -= 2; // fix bug, walking through walls -- commented out for now.
     
     temp5 = add_scroll_y(temp3, scroll_y); // upper left
-    temp3 = temp5 & 0xff; // low byte y
+    temp3 = low_byte(temp5); // low byte y
     
     eject_D = (temp3 + 1) & 0x0f;
     
@@ -1372,9 +1367,13 @@ void bg_collision_sub(void) {
     
     // Instead of selecting from one of two c_maps, select from one of the many cmaps.
     // The index is stored in the high byte of temp5 right now.
-    temp_mutablepointer = (unsigned char *)cmaps[high_byte(temp5)];
-    temp4 = temp_mutablepointer[coordinates];
-    
+    // temp_mutablepointer = (unsigned char *)cmaps[high_byte(temp5)];
+    temp0 = high_byte(temp5);
+    AsmSet2ByteFromPtrAtIndexVar(temp_mutablepointer, cmaps, temp0);
+
+    //temp4 = temp_mutablepointer[coordinates];
+    AsmSet1ByteFromZpPtrAtIndexVar(temp4, temp_mutablepointer, coordinates);
+
     // Fetch all the properties about this tile.
     temp0 = metatile_property_lookup_table[temp4];
 
@@ -1498,28 +1497,84 @@ void check_spr_objects(void) {
 
     // Check enemies...
     for (x = 0; x < enemies.count; ++x) {
-        if (GET_ENEMY_TYPE(x) == 0 /*ENEMY_NONE*/) continue; 
-        // Check to see where this enemy is supposed to be.
+        // (Partially) unrolled loop.
+        if (GET_ENEMY_TYPE(x)) {
+            // Check to see where this enemy is supposed to be.
 
-        //temp5 = (enemies.nt[x] << 8) + enemies.actual_y[x];
-        high_byte(temp5) = enemies.nt[x];
-        low_byte(temp5) = enemies.actual_y[x];
-        
-        temp5 -= scroll_y;
-        if (high_byte(temp5)) {
-            // This enemy isn't on-screen, deactivate it...
-            DEACTIVATE_ENEMY(x);
-            continue;
+            //temp5 = (enemies.nt[x] << 8) + enemies.actual_y[x];
+            high_byte(temp5) = enemies.nt[x];
+            low_byte(temp5) = enemies.actual_y[x];
+            
+            temp5 -= scroll_y;
+            if (high_byte(temp5)) {
+                // This enemy isn't on-screen, deactivate it...
+                DEACTIVATE_ENEMY(x);
+                continue;
+            }
+            
+            ACTIVATE_ENEMY(x); // This enemy is active if it's on-screen.
+            enemies.y[x] = low_byte(temp5);
+
+            // If the topmost nametable currently on-screen (nt_current) is
+            // not the enemy's native nametable, it'll be shifted down (positive y) by 16.
+
+            // Let's counteract that...
+            if (nt_current != enemies.nt[x]) { 
+                temp0 = enemies.y[x] - 16;
+                enemies.y[x] = temp0;
+            }
         }
-        
-        ACTIVATE_ENEMY(x); // This enemy is active if it's on-screen.
-        enemies.y[x] = temp5 & 0xff;
+        ++x;
 
-        // If the topmost nametable currently on-screen (nt_current) is
-        // not the enemy's native nametable, it'll be shifted down (positive y) by 16.
+        if (GET_ENEMY_TYPE(x)) {
+            high_byte(temp5) = enemies.nt[x];
+            low_byte(temp5) = enemies.actual_y[x];
+            temp5 -= scroll_y;
+            if (high_byte(temp5)) {
+                DEACTIVATE_ENEMY(x);
+                continue;
+            }
+            ACTIVATE_ENEMY(x);
+            enemies.y[x] = low_byte(temp5);
+            if (nt_current != enemies.nt[x]) { 
+                temp0 = enemies.y[x] - 16;
+                enemies.y[x] = temp0;
+            }
+        }
+        ++x;
 
-        // Let's counteract that...
-        if (nt_current != enemies.nt[x]) { enemies.y[x] -= 16; }
+        if (GET_ENEMY_TYPE(x)) {
+            high_byte(temp5) = enemies.nt[x];
+            low_byte(temp5) = enemies.actual_y[x];
+            temp5 -= scroll_y;
+            if (high_byte(temp5)) {
+                DEACTIVATE_ENEMY(x);
+                continue;
+            }
+            ACTIVATE_ENEMY(x);
+            enemies.y[x] = low_byte(temp5);
+            if (nt_current != enemies.nt[x]) { 
+                temp0 = enemies.y[x] - 16;
+                enemies.y[x] = temp0;
+            }
+        }
+        ++x;
+
+        if (GET_ENEMY_TYPE(x)) {
+            high_byte(temp5) = enemies.nt[x];
+            low_byte(temp5) = enemies.actual_y[x];
+            temp5 -= scroll_y;
+            if (high_byte(temp5)) {
+                DEACTIVATE_ENEMY(x);
+                continue;
+            }
+            ACTIVATE_ENEMY(x);
+            enemies.y[x] = low_byte(temp5);
+            if (nt_current != enemies.nt[x]) { 
+                temp0 = enemies.y[x] - 16;
+                enemies.y[x] = temp0;
+            }
+        }
 
     }
 }
@@ -1591,7 +1646,7 @@ void sprite_collisions(void) {
     // The width and height of this will actually be different depending on the enemy's type.
 
     for (x = 0; x < enemies.count; ++x) {
-
+        // (Partially) unrolled loop.
         if(IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
 
@@ -1608,7 +1663,57 @@ void sprite_collisions(void) {
                 AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
             }
         }
-        // Todo: Loop Unrolling?
+        ++x;
+        if(IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+
+            // Determine the enemy hitbox size.
+            hitbox2.width = enemy_hitbox_width_lookup_table[temp1];
+            if (!hitbox2.width) { continue; } // Continue if width of the hitbox is 0.
+
+            hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
+            
+            hitbox2.x = enemies.x[x];
+            hitbox2.y = enemies.y[x];
+
+            if (check_collision(&hitbox, &hitbox2)) {
+                AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
+            }
+        }
+        ++x;
+        if(IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+
+            // Determine the enemy hitbox size.
+            hitbox2.width = enemy_hitbox_width_lookup_table[temp1];
+            if (!hitbox2.width) { continue; } // Continue if width of the hitbox is 0.
+
+            hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
+            
+            hitbox2.x = enemies.x[x];
+            hitbox2.y = enemies.y[x];
+
+            if (check_collision(&hitbox, &hitbox2)) {
+                AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
+            }
+        }
+        ++x;
+        if(IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+
+            // Determine the enemy hitbox size.
+            hitbox2.width = enemy_hitbox_width_lookup_table[temp1];
+            if (!hitbox2.width) { continue; } // Continue if width of the hitbox is 0.
+
+            hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
+            
+            hitbox2.x = enemies.x[x];
+            hitbox2.y = enemies.y[x];
+
+            if (check_collision(&hitbox, &hitbox2)) {
+                AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
+            }
+        }
     }
 
 }
@@ -1682,12 +1787,27 @@ const void (* ai_pointers[])(void) = {
 void enemy_movement(void) {
     // This one's a bit of an uncharted realm. 
     // I'm thinking we'll want to optimize this one somehow...
-
     for (x = 0; x < enemies.count; ++x) {
+        // (Partially) unrolled loop.
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
             // An assembly macro (defined in asm/macros.h) is used here to ensure that this is efficient.
             // Do we want to delete (set type to ENEMY_NONE) any projectiles (CANNONBALL/ACIDDROP) that go offscreen?
+            AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
+        }
+        ++x;
+        if (IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+            AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
+        }
+        ++x;
+        if (IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+            AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
+        }
+        ++x;
+        if (IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
             AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
         }
     }
@@ -1756,8 +1876,8 @@ void spikeball_ai(void) {
     temp2 = enemies.actual_y[x] + 18; // Y beneath us
 
     // Account for being on the edge of a nametable by checking. 
-    // If temp4 == 0xf, then we were on the bottom of a nametable and should look at the other one.
-    if (temp2 >> 4 == 0xf) {
+    // If temp2 >= 0xf0, then we were on the bottom of a nametable and should look at the other one.
+    if (temp2 >= 0xf0) {
         temp4 = enemies.nt[x] + 1;
         temp2 = 0;
     } else {
@@ -2186,8 +2306,8 @@ void splyke_ai(void) {
     temp1 = SPLYKE_IS_MOVING_AROUND(x);
 
     // Increment the animation counter...
-    ++enemies.extra2[x];
-    enemies.extra2[x] &= 7; // Crop the animation counter to 7. (this will get >> 1'd in draw_sprites)
+    temp2 = (enemies.extra2[x] + 1) & 7; // Bitmask the animation counter to 7. (this will get >> 1'd in draw_sprites)
+    enemies.extra2[x] = temp2;
 
     if (temp0 == 0 && temp1 == 0) {
         // If we're standing still and we roll a 0...
@@ -2214,8 +2334,8 @@ void splyke_ai(void) {
         temp2 = enemies.actual_y[x] + 18; // Y beneath us
         
         // Account for being on the edge of a nametable by checking. 
-        // If temp4 == 0xf, then we were on the bottom of a nametable and should look at the other one.
-        if (temp2 >> 4 == 0xf) {
+        // If temp2 >= 0xf0, then we were on the bottom of a nametable and should look at the other one.
+        if (temp2 >= 0xf0) {
             temp4 = enemies.nt[x] + 1;
             temp2 = 0;
         } else {
