@@ -10,9 +10,11 @@ $84EE#_level05#
 $84D8#_level05_enemy#
 $85F4#_level06#
 $85D8#_level06_enemy#
-$8702#_level10#
-$86EC#_level10_enemy#
-$87F2#_level_debug_tiledump#
-$87F1#_level_debug_tiledump_enemy#
-$8865#_level_star_test#
-$8864#_level_star_test_enemy#
+$8726#_level07#
+$86EC#_level07_enemy#
+$886A#_level10#
+$8854#_level10_enemy#
+$895A#_level_debug_tiledump#
+$8959#_level_debug_tiledump_enemy#
+$89CD#_level_star_test#
+$89CC#_level_star_test_enemy#

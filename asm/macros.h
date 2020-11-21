@@ -8,8 +8,7 @@
 
 // This ensures that a 1-byte copy from an array to a char variable takes only 3 instructions.
 // This can avoid scenarios in which cc65 will try to put something into (ptr) unnecessarily.
-#define AsmSet1ByteFromPtrAtIndexVar(variable, pointer, indexVariable) \
-{ \
+#define AsmSet1ByteFromPtrAtIndexVar(variable, pointer, indexVariable) { \
 	__asm__("ldy %v", indexVariable); \
 	__asm__("lda %v, %s", pointer, Y); \
 	__asm__("sta %v", variable); \
@@ -18,6 +17,12 @@
 // temp0 = array[i];
 // becomes:
 // AsmSetCharFromPtrAtIndexVar(temp0, array, i);
+
+#define AsmSet1ByteFromZpPtrAtIndexVar(variable, zppointer, indexVariable) { \
+	__asm__("ldy %v", indexVariable); \
+	__asm__("lda (%v), %s", zppointer, Y); \
+	__asm__("sta %v", variable); \
+}
 
 // This ensures that a 2-byte copy from an array to a pointer or int takes only a few instructions.
 // This can avoid scenarios in which cc65 will try to save the state of something irrelevant.

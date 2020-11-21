@@ -251,6 +251,19 @@ I don't really know what the ideal pattern would be, though.
 // Enemy memory.
 Enemies enemies;
 
+unsigned char enemies_x[MAX_ENEMIES]; // The x value of this enemy.
+unsigned char enemies_y[MAX_ENEMIES]; // The y value this will be rendered at (after taking scrolling, etc into account)
+unsigned char enemies_actual_y[MAX_ENEMIES]; // The "actual" y value of this enemy, in absolute terms.
+unsigned char enemies_nt[MAX_ENEMIES]; // The nametable this lives in. Sort of like a high byte of actual_y.
+// Todo: Now that we have lots of extra RAM, should flags_type[] be separated into flags[] and type[]?
+unsigned char enemies_flags[MAX_ENEMIES]; // high nibble is flags (including direction and active/inactive), low nibble is type.
+unsigned char enemies_type[MAX_ENEMIES];
+unsigned char enemies_extra[MAX_ENEMIES]; // The use of this depends on the enemy.
+unsigned char enemies_extra2[MAX_ENEMIES]; // The use of this depends on the enemy.
+// Examples of what the extra bytes will contain: animation frame numbers, cached return values, subpixel values...
+unsigned char enemies_timer[MAX_ENEMIES]; // A timer value - most likely an animation timer. Probably gets decremented once per frame.
+unsigned char enemies_count; // How many enemies are actually loaded into RAM.
+
 #define ACTIVATE_ENEMY(index) (enemies.flags[index] |= 0b10000000) // Set high bit.
 #define DEACTIVATE_ENEMY(index) (enemies.flags[index] &= 0b01111111) // Unset high bit.
 #define IS_ENEMY_ACTIVE(index) (enemies.flags[index] & 0b10000000) // Test if high bit is set.
@@ -578,7 +591,7 @@ void main (void) {
             }
 
             // debug:
-            // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
 
         }
@@ -761,6 +774,19 @@ void load_level_new(void) {
 
     // Clear the enemy database.
     memfill(&enemies, 0, sizeof(enemies));
+
+    /*memfill(&enemies.x, 0, MAX_ENEMIES);
+    memfill(&enemies.y, 0, MAX_ENEMIES);
+    memfill(&enemies.actual_y, 0, MAX_ENEMIES);
+    memfill(&enemies.nt, 0, MAX_ENEMIES);
+
+    memfill(&enemies.flags, 0, MAX_ENEMIES);
+    memfill(&enemies.type, 0, MAX_ENEMIES);
+    memfill(&enemies.extra, 0, MAX_ENEMIES);
+    memfill(&enemies.extra2, 0, MAX_ENEMIES);
+
+    memfill(&enemies.timer, 0, MAX_ENEMIES);
+    enemies.count = 0;*/
 
     // Load the enemy data for the current level.
     temppointer = level_enemy_data[level_index];
@@ -1683,8 +1709,12 @@ void korbat_ai(void) {
 
     // Which cmap should I look at?
     temp0 = enemies.nt[x];
-    temppointer = cmaps[temp0];
-    collision = temppointer[coordinates];
+
+    //temppointer = cmaps[temp0];
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp0);
+    
+    //collision = temppointer[coordinates];
+    AsmSet1ByteFromZpPtrAtIndexVar(collision, temppointer, coordinates);
     
     if (METATILE_IS_SOLID(collision)) {
         ENEMY_FLIP_DIRECTION(x);
@@ -1692,7 +1722,10 @@ void korbat_ai(void) {
     }
 
     temp1 = leftright_movement_moving_lookup_table[temp3];
-    enemies.x[x] += temp1;
+    
+    temp0 = enemies.x[x] + temp1;
+
+    enemies.x[x] = temp0;
 
 }
 
@@ -1730,8 +1763,11 @@ void spikeball_ai(void) {
     }
 
     // Which cmap should I look at?
-    temppointer = cmaps[temp4];
-    collision = temppointer[coordinates];
+    //temppointer = cmaps[temp4];
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp4);
+
+    //collision = temppointer[coordinates];
+    AsmSet1ByteFromZpPtrAtIndexVar(collision, temppointer, coordinates);
     
     if (!METATILE_IS_SOLID(collision)) {
         ENEMY_FLIP_DIRECTION(x);
@@ -1745,8 +1781,12 @@ void spikeball_ai(void) {
 
     // Which cmap should I look at?
     temp4 = enemies.nt[x];
-    temppointer = cmaps[temp4];
-    collision = temppointer[coordinates];
+
+    //temppointer = cmaps[temp4];
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp4);
+
+    //collision = temppointer[coordinates];
+    AsmSet1ByteFromZpPtrAtIndexVar(collision, temppointer, coordinates);
     
     if (METATILE_IS_SOLID(collision)) {
         ENEMY_FLIP_DIRECTION(x);
@@ -1754,7 +1794,10 @@ void spikeball_ai(void) {
     }
 
     temp1 = leftright_movement_moving_lookup_table[temp3];
-    enemies.x[x] += temp1;
+
+    temp0 = enemies.x[x] + temp1;
+
+    enemies.x[x] = temp0;
 
 }
 
@@ -1789,8 +1832,11 @@ void sun_ai(void) {
     coordinates = (temp1 >> 4) + (temp2 & 0xf0);
 
     // Which cmap should I look at?
-    temppointer = cmaps[temp4];
-    collision = temppointer[coordinates];
+    // temppointer = cmaps[temp4];
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp4);
+
+    // collision = temppointer[coordinates];
+    AsmSet1ByteFromZpPtrAtIndexVar(collision, temppointer, coordinates);
 
     if (METATILE_IS_SOLID(collision)) {
         ENEMY_FLIP_DIRECTION(x);
@@ -1809,26 +1855,27 @@ void acid_drop_ai(void) {
     high_byte(temp5) = enemies.nt[x];
     low_byte(temp5) = enemies.actual_y[x];
 
-    temp1 = enemies.x[x];
-
     temp5 = add_scroll_y(1, temp5);
     temp6 = add_scroll_y(6, temp5); // 8 being the cosmetic projectile height
 
-    coordinates = (temp1 >> 4) + (low_byte(temp6) & 0xf0);
+    coordinates = (enemies.x[x] >> 4) + (low_byte(temp6) & 0xf0);
 
     // Which cmap should I look at?
-    temppointer = cmaps[high_byte(temp6)];
-    collision = temppointer[coordinates];
+    //temppointer = cmaps[high_byte(temp6)];
+    temp0 = high_byte(temp6);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp0);
+    
+    //collision = temppointer[coordinates];
+    AsmSet1ByteFromZpPtrAtIndexVar(collision, temppointer, coordinates);
 
     if (METATILE_IS_SOLID(collision)) {
         // Clear the type and flags, then return.
         enemies.type[x] = ENEMY_NONE;
         enemies.flags[x] = 0;
-        return;
+    } else {
+        enemies.nt[x] = high_byte(temp5);
+        enemies.actual_y[x] = low_byte(temp5);
     }
-
-    enemies.nt[x] = high_byte(temp5);
-    enemies.actual_y[x] = low_byte(temp5);
 
 }
 
@@ -2053,8 +2100,13 @@ void cannonball_ai(void) {
     coordinates = (temp1 >> 4) + (low_byte(temp5) & 0xf0);
 
     // Check for a collision in the center.
-    temppointer = cmaps[high_byte(temp5)];
-    collision = temppointer[coordinates];
+    
+    temp4 = high_byte(temp5);
+    //temppointer = cmaps[temp4];
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp4);
+
+    //collision = temppointer[coordinates];
+    AsmSet1ByteFromZpPtrAtIndexVar(collision, temppointer, coordinates);
 
     if (METATILE_IS_SOLID(collision)) {
         // Clear the lower nibble, then return.
@@ -2080,7 +2132,7 @@ void acid_ai(void) {
 
     // Animations for this won't yet be implemented, but for now:
     // Animate this enemy.
-    if (enemies.extra2[x] > 0) {
+    if (enemies.extra2[x]) {
         --enemies.extra2[x];
     }
 

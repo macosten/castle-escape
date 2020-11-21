@@ -25,6 +25,16 @@ $004E#_eject_L#
 $004F#_eject_R#
 $0051#_eject_U#
 $03EE#_enemies#
+$054F#_enemies_actual_y#
+$062F#_enemies_count#
+$05CF#_enemies_extra#
+$05EF#_enemies_extra2#
+$058F#_enemies_flags#
+$056F#_enemies_nt#
+$060F#_enemies_timer#
+$05AF#_enemies_type#
+$050F#_enemies_x#
+$052F#_enemies_y#
 $0074#_enemy_score#
 $0071#_energy#
 $0055#_game_mode#
