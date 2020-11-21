@@ -1356,7 +1356,7 @@ void bg_collision_sub(void) {
         // Enqueue.
         tile_clear_queue[tile_clear_back] = address;
         ++tile_clear_back;
-        tile_clear_back &= 0b11; // Clamp to <4 
+        tile_clear_back &= 0b111; // Clamp to <8
 
         // Debug: show the full coordinates.
         debug_tile_x = nt_current;
@@ -1395,7 +1395,7 @@ void handle_tile_clear_queue(void) {
     address = tile_clear_queue[tile_clear_front]; 
 
     ++tile_clear_front;
-    tile_clear_front &= 0b11; // Clamp to <4
+    tile_clear_front &= 0b111; // Clamp to <8
 
     // Buffer 1 empty mt.
     buffer_1_mt(address, EMPTY_TILE);

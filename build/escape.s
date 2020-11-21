@@ -4713,10 +4713,10 @@ L14FC:	adc     #<(_tile_clear_queue)
 ;
 	inc     _tile_clear_front
 ;
-; tile_clear_front &= 0b11; // Clamp to <4
+; tile_clear_front &= 0b111; // Clamp to <8
 ;
 	lda     _tile_clear_front
-	and     #$03
+	and     #$07
 	sta     _tile_clear_front
 ;
 ; buffer_1_mt(address, EMPTY_TILE);
@@ -6878,10 +6878,10 @@ L154A:	adc     #<(_tile_clear_queue)
 ;
 	inc     _tile_clear_back
 ;
-; tile_clear_back &= 0b11; // Clamp to <4 
+; tile_clear_back &= 0b111; // Clamp to <8
 ;
 	lda     _tile_clear_back
-	and     #$03
+	and     #$07
 	sta     _tile_clear_back
 ;
 ; debug_tile_x = nt_current;
