@@ -96,12 +96,35 @@ void __fastcall__ oam_clear(void);
 
 void __fastcall__ oam_size(unsigned char size);
 
+// Exposing TEMP will help us avoid the stack.
+extern unsigned char TEMP[];
+#pragma zpsym("TEMP");
+
+#define SCRX (TEMP[5])
+#define SCRY (TEMP[6])
+
 //set sprite in OAM buffer, chrnum is tile, attr is attribute
 // Note: sprid removed for speed
 
-void __fastcall__ oam_spr(unsigned char x,unsigned char y,unsigned char chrnum,unsigned char attr);
+// An ugly way to get around having to use the stack for oam_spr or oam_meta_spr.
 
+void __fastcall__ oam_meta_spr_fast_sub(const unsigned char * data);
 
+// writing directly to SCRX, SCRY
+#define oam_meta_spr(x, y, data){\
+	SCRX = x;\
+	SCRY = y;\
+	oam_meta_spr_fast_sub(data);\
+}
+
+void __fastcall__ oam_spr_fast_sub(unsigned char attr);
+
+#define oam_spr(x, y, chrnum, attr) {\
+	TEMP[0] = x;\
+	TEMP[1] = y;\
+	TEMP[2] = chrnum;\
+	oam_spr_fast_sub(attr);\
+}
 
 //set metasprite in OAM buffer
 //meta sprite is a const unsigned char array, it contains four bytes per sprite
@@ -109,7 +132,7 @@ void __fastcall__ oam_spr(unsigned char x,unsigned char y,unsigned char chrnum,u
 //x=128 is end of a meta sprite
 // Note: sprid removed for speed
 
-void __fastcall__ oam_meta_spr(unsigned char x,unsigned char y,const unsigned char *data);
+//void __fastcall__ oam_meta_spr(unsigned char x,unsigned char y,const unsigned char *data);
 
 
 //hide all remaining sprites from given offset

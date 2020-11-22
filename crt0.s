@@ -107,7 +107,8 @@ VRAM_INDEX:            .res 1
 META_PTR:            .res 2
 DATA_PTR:            .res 2
 
-
+_TEMP = TEMP
+.export _TEMP
 
 
 

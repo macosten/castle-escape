@@ -450,7 +450,7 @@ const unsigned char * const splyke_death_effect_sprite_lookup_table[] = {
 };
 
 void main (void) {
-        
+
     ppu_off(); // screen off
     
     // load the palettes

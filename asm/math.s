@@ -1,4 +1,4 @@
-.export _sin_lookup,_cos_lookup,_brads_lookup,_abs_subtract
+.export _sin_lookup,_cos_lookup,_brads_table,_abs_subtract
 
 ; Subtract b from a. Negate the result if b > a.
 ; unsigned char __fastcall__ abs_subtract(unsigned char a, unsigned char b)
@@ -42,15 +42,7 @@ _cos_lookup:
 
 .segment "RODATA"
 
-; unsigned char brads_lookup(i)
-; If you're moving positive in this direction, add the rval. Else, subtract it.
-_brads_lookup:
-	tax
-	lda brads_table,x
-	rts
-	
-
-brads_table:
+_brads_table:
 	.byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 	.byte $40,$20,$13,$0d,$0a,$08,$07,$06,$05,$04,$04,$04,$03,$03,$03,$03
 	.byte $40,$2d,$20,$18,$13,$0f,$0d,$0b,$0a,$09,$08,$07,$07,$06,$06,$05
