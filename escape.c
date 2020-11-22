@@ -500,17 +500,13 @@ void main (void) {
                 // level_index = 0;
                 score = 0; // Reset the score.
                 begin_level();
-            }
-
-            if (pad1_new & PAD_LEFT && level_index != 0) {
+            } else if (pad1_new & PAD_LEFT && level_index != 0) {
                 --level_index;
                 
                 temp0 = strlen(level_names[level_index]);
                 multi_vram_buffer_horz(level_names[level_index], temp0, NTADR_A(3, 8));
 
-            }
-
-            if (pad1_new & PAD_RIGHT && level_index < NUMBER_OF_LEVELS-1) {
+            } else if (pad1_new & PAD_RIGHT && level_index < NUMBER_OF_LEVELS-1) {
                 ++level_index;
 
                 // Update the level name shown on the screen.
@@ -1403,7 +1399,7 @@ void bg_collision_sub(void) {
         tile_clear_attr_addr_queue[tile_clear_back] = 0; // Don't update an attribute.
 
         ++tile_clear_back;
-        tile_clear_back &= 0b11; // Clamp to <8
+        tile_clear_back &= 0b11; // Mask to <4
 
     } else if (temp0 & METATILE_CONVEYOR_LEFT) {
         // this could behave a little strangely if Valrigard specifically walks into a
@@ -1432,7 +1428,8 @@ void bg_collision_sub_question_block(void) {
     // Pull RNG!
     temp0 = rand8();
 
-    if (temp4 == QUESTION_BLOCK && (temp3 & 0x0f) == 0x0f && temp_mutablepointer[coordinates] == QUESTION_BLOCK) {
+    if (temp4 == QUESTION_BLOCK && (temp3 & 0x0f) == 0x0f 
+        && (temp1 & 0xf0) == ( (high_byte(valrigard.x) + VALRIGARD_HEIGHT/2 ) & 0xf0)) {
 
         temp_mutablepointer[coordinates] = QUAD_EDGE_STONE;
 
@@ -1488,7 +1485,7 @@ void handle_tile_clear_queue(void) {
     buffer_1_mt(address, temp0);
 
     ++tile_clear_front;
-    tile_clear_front &= 0b11; // Clamp to <8
+    tile_clear_front &= 0b11; // Mask to <4
 
 }
 
@@ -1509,8 +1506,7 @@ void draw_screen_D(void) {
 void draw_screen_sub(void) {
     temp1 = high_byte(pseudo_scroll_y);
     
-    //set_data_pointer(level_nametables[temp1]);
-    set_data_pointer(cmaps[temp1]); // TODO: clamp this value to 6.
+    set_data_pointer(cmaps[temp1]); // Should this value be clamped to the number of cmaps?
     nt = (temp1 & 1) << 1; // 0 or 2
     y = pseudo_scroll_y & 0xff;
     
