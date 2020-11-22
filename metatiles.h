@@ -80,6 +80,8 @@ const unsigned char const metatiles[]={
     '5', '0', '?', '?', 1, // Unused Tile (#50)
 };
 
+#define QUAD_EDGE_STONE 15
+#define QUESTION_BLOCK 22
 #define STAR_TILE 42
 #define ENERGY_REFILL_TILE 43
 #define EMPTY_TILE 44

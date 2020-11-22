@@ -1,6 +1,9 @@
 //NES hardware-dependent functions by Shiru (shiru@mail.ru)
 //Feel free to do anything you want with this code, consider it Public Domain
 
+// macosten's version, 2020-11
+// Removed stack usage from oam functions completely. They should be even faster now.
+
 // nesdoug version, 2019-09
 // changes, removed sprid from oam functions, oam_spr 11% faster, meta 5% faster
 
@@ -97,8 +100,14 @@ void __fastcall__ oam_clear(void);
 void __fastcall__ oam_size(unsigned char size);
 
 // Exposing TEMP will help us avoid the stack.
+#ifndef did_expose_temp
+#define did_expose_temp
+
 extern unsigned char TEMP[];
 #pragma zpsym("TEMP");
+
+#endif
+
 
 #define SCRX (TEMP[5])
 #define SCRY (TEMP[6])

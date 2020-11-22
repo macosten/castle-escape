@@ -44,7 +44,7 @@ const unsigned char const valrigard_starting_nt[] = {
     2,
     2, // Level 10
     0, // Tiledump
-    2, // Star Test
+    0, // Star Test
     2,
 };
 
@@ -61,7 +61,7 @@ const unsigned char const valrigard_inital_coords[] = {
     0x4d,
     0x4d, // 10
     0x4d,
-    0x90,
+    0x30,
     0x4d,
 };
 

@@ -66,8 +66,6 @@ unsigned int temp6;
 const unsigned char * temppointer;
 unsigned char * temp_mutablepointer;
 
-void (* temp_funcpointer)(void);
-
 unsigned char eject_L; // Used in the collision routine(s).
 unsigned char eject_R;
 unsigned char eject_D;
@@ -116,7 +114,7 @@ unsigned char index; // Used as an index, for loops and otherwise.
 
 unsigned char nt; // nametable index (though it's only used in 1 place, so...)
 
-unsigned int scroll_x;
+// unsigned int scroll_x;
 unsigned int pseudo_scroll_y;
 unsigned int scroll_y;
 unsigned int min_scroll_y;
@@ -193,11 +191,16 @@ signed char conveyor_delta;
 
 unsigned char menu_index;
 
-unsigned int tile_clear_queue[8]; // Each element is one result of get_ppu_addr
+unsigned int tile_clear_queue[4]; // Each element is one result of get_ppu_addr
+unsigned char tile_clear_to_type_queue[4]; // This is the tile ID to replace the cleared tile with.
+unsigned int tile_clear_attr_addr_queue[4]; // This is the palette ID to replace the cleared tile's palette with.
 unsigned char tile_clear_front;
 unsigned char tile_clear_back;
 
-// ~?? zp bytes left?
+// If nonzero, then valrigard should be jerked down (+Y) a bit this frame.
+unsigned char did_headbonk;
+
+// ~?? zp bytes left? (see ZP_LAST in labels.txt)
 
 #pragma bss-name(pop)
 
@@ -349,6 +352,7 @@ void swing_sword(void);
 
 void bg_collision(void); // For the player
 void bg_collision_sub(void);
+void bg_collision_sub_question_block(void);
 
 
 void check_spr_objects(void); // For enemies
@@ -762,19 +766,6 @@ void load_level_new(void) {
     // Clear the enemy database.
     memfill(&enemies, 0, sizeof(enemies));
 
-    /*memfill(&enemies.x, 0, MAX_ENEMIES);
-    memfill(&enemies.y, 0, MAX_ENEMIES);
-    memfill(&enemies.actual_y, 0, MAX_ENEMIES);
-    memfill(&enemies.nt, 0, MAX_ENEMIES);
-
-    memfill(&enemies.flags, 0, MAX_ENEMIES);
-    memfill(&enemies.type, 0, MAX_ENEMIES);
-    memfill(&enemies.extra, 0, MAX_ENEMIES);
-    memfill(&enemies.extra2, 0, MAX_ENEMIES);
-
-    memfill(&enemies.timer, 0, MAX_ENEMIES);
-    enemies.count = 0;*/
-
     // Load the enemy data for the current level.
     temppointer = level_enemy_data[level_index];
 
@@ -1111,8 +1102,9 @@ void draw_splyke_death_effect(void) {
 
 void movement(void) {
     
-    // Reset the conveyor delta.
+    // Reset the conveyor delta and headbonk status.
     conveyor_delta = 0;
+    did_headbonk = 0;
 
     // Handle X.
     old_x = valrigard.x;
@@ -1222,7 +1214,13 @@ void movement(void) {
     
     if(collision_U) {
         high_byte(valrigard.y) -= eject_U;
-        // Play head_hit sound
+
+        if (did_headbonk) { 
+            high_byte(valrigard.y) += 4;
+            valrigard.velocity_y = 0;
+            // Play head bonked sound?
+        }
+
     }
     else if (collision_D) {
         high_byte(valrigard.y) -= eject_D;
@@ -1308,6 +1306,7 @@ void bg_collision(void){
     if(collision){ // find a corner in the collision map
         ++collision_L;
         ++collision_U;
+        bg_collision_sub_question_block();
     }
 
     // Upper right...
@@ -1322,6 +1321,7 @@ void bg_collision(void){
     if(collision){ // find a corner in the collision map
         ++collision_R;
         ++collision_U;
+        bg_collision_sub_question_block();
     }
     
     // Now for the bottom.
@@ -1399,12 +1399,11 @@ void bg_collision_sub(void) {
 
         // Enqueue.
         tile_clear_queue[tile_clear_back] = address;
-        ++tile_clear_back;
-        tile_clear_back &= 0b111; // Clamp to <8
+        tile_clear_to_type_queue[tile_clear_back] = EMPTY_TILE;
+        tile_clear_attr_addr_queue[tile_clear_back] = 0; // Don't update an attribute.
 
-        // Debug: show the full coordinates.
-        debug_tile_x = nt_current;
-        debug_tile_y = coordinates;
+        ++tile_clear_back;
+        tile_clear_back &= 0b11; // Clamp to <8
 
     } else if (temp0 & METATILE_CONVEYOR_LEFT) {
         // this could behave a little strangely if Valrigard specifically walks into a
@@ -1423,6 +1422,45 @@ void bg_collision_sub(void) {
 
 }
 
+void bg_collision_sub_question_block(void) {
+    // If we just collided with a question block
+    // *and* if the bottom of our Y value is 15
+    // (otherwise we may have struck it from the side)...
+    // It's still *technically* possible to strike it from the side, 
+    // though I guess we'd have to check temp1 against something to try preventing it.
+    
+    // Pull RNG!
+    temp0 = rand8();
+
+    if (temp4 == QUESTION_BLOCK && (temp3 & 0x0f) == 0x0f && temp_mutablepointer[coordinates] == QUESTION_BLOCK) {
+
+        temp_mutablepointer[coordinates] = QUAD_EDGE_STONE;
+
+        // Figure out the correct bonus amount.
+        if (temp0 > 128) { score += 1; }
+        else if (temp0 > 86) { score += 2; }
+        else if (temp0 > 43) { score += 3; }
+        else if (temp0 > 2) { score += 4; }
+        else { score += 100; } /*if (temp0 < 3)*/ 
+
+        did_headbonk = 1;
+
+        // Calculate the correct address to update.
+        nt = (nt_current & 1) << 1;
+        address = get_ppu_addr(nt, temp1, temp3 & 0xf0);
+
+        // Enqueue a tile update.
+        tile_clear_queue[tile_clear_back] = address;
+        tile_clear_to_type_queue[tile_clear_back] = QUAD_EDGE_STONE;
+
+        address = get_at_addr(nt, temp1, temp3 & 0xf0);
+        tile_clear_attr_addr_queue[tile_clear_back] = address;
+        ++tile_clear_back;
+        tile_clear_back &= 0b11;
+
+    }
+}
+
 // MARK: -- Screen Buffering Functions
 
 // At some point, I should probably inline these functions (manually).
@@ -1436,16 +1474,21 @@ void handle_tile_clear_queue(void) {
     if (tile_clear_front == tile_clear_back) { return; }
 
     // Otherwise, dequeue and clear the tile.
-    address = tile_clear_queue[tile_clear_front]; 
+    
+    // Set the color palette (attribute in the attribute table).
+    AsmSet2ByteFromPtrAtIndexVar(address, tile_clear_attr_addr_queue, tile_clear_front);
+
+    // Since we could be changing a ? block to a regular block:
+    one_vram_buffer(0x00, address); // Set to the 0th palette
+
+    AsmSet2ByteFromPtrAtIndexVar(address, tile_clear_queue, tile_clear_front);
+    AsmSet1ByteFromPtrAtIndexVar(temp0, tile_clear_to_type_queue, tile_clear_front);
+
+    // Buffer 1 mt.
+    buffer_1_mt(address, temp0);
 
     ++tile_clear_front;
-    tile_clear_front &= 0b111; // Clamp to <8
-
-    // Buffer 1 empty mt.
-    buffer_1_mt(address, EMPTY_TILE);
-
-    // Shouldn't really need to change the palette, but:
-    // one_vram_buffer(0, address); Set to the 0th palette
+    tile_clear_front &= 0b11; // Clamp to <8
 
 }
 

@@ -39,6 +39,7 @@
 	__asm__("lda %v+1, %s", pointer, y); \
 	__asm__("sta %v+1", variable); \
 }
+
 // Something like this that supports cases of indexVariable > 127 will be more complicated.
 
 // Since I'm using a lot of lookup tables of function pointers: 
