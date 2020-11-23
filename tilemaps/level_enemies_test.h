@@ -16,6 +16,7 @@ const unsigned char const level_enemies_test_enemy[]={
 	0x20, 2, 3,
 	0x10, 1, 4,
 	0x1E, 0, 4,
+	0x19, 1, 4,
 	0x50, 2, 7,
 	0xFF
 };

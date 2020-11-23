@@ -26,7 +26,7 @@ $0052#_eject_D#
 $0050#_eject_L#
 $0051#_eject_R#
 $0053#_eject_U#
-$03EE#_enemies#
+$040E#_enemies#
 $0074#_enemy_score#
 $0071#_energy#
 $0057#_game_mode#

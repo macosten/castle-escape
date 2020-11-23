@@ -20,9 +20,11 @@ $8B66#_level10#
 $8B50#_level10_enemy#
 $8C6E#_level11#
 $8C55#_level11_enemy#
-$8DC7#_level_debug_tiledump#
-$8DC6#_level_debug_tiledump_enemy#
-$8EB4#_level_enemies_test#
-$8E98#_level_enemies_test_enemy#
-$8E3A#_level_star_test#
-$8E39#_level_star_test_enemy#
+$8E0F#_level12#
+$8DC6#_level12_enemy#
+$9030#_level_debug_tiledump#
+$902F#_level_debug_tiledump_enemy#
+$9120#_level_enemies_test#
+$9101#_level_enemies_test_enemy#
+$90A3#_level_star_test#
+$90A2#_level_star_test_enemy#

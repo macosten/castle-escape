@@ -578,7 +578,7 @@ void main (void) {
             }
 
             // debug:
-            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            //gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
 
         }
@@ -944,11 +944,11 @@ void draw_sprites(void) {
     // Debug HUD, drawn last because it's the least important.
     //oam_spr(232, 42, collision_D, 2);
     
-    //oam_spr(200, 50, debug_tile_x >> 4, 1);
-    //oam_spr(208, 50, debug_tile_x & 0x0f, 1);
+    oam_spr(200, 50, debug_tile_x >> 4, 1);
+    oam_spr(208, 50, debug_tile_x & 0x0f, 1);
     
-    //oam_spr(224, 50, debug_tile_y >> 4, 1);
-    //oam_spr(232, 50, debug_tile_y & 0x0f, 1);
+    oam_spr(224, 50, debug_tile_y >> 4, 1);
+    oam_spr(232, 50, debug_tile_y & 0x0f, 1);
 
     // Animate the animated palette.
 
@@ -2242,8 +2242,14 @@ void cannonball_ai(void) {
         // and make nt the new high byte.
         high_byte(temp6) = enemies.nt[x];
 
-        // Clamp the value. 
-        temp6 = sub_scroll_y(0x00, temp6);
+        // Bugfix: prevent the cannonball from getting stuck at the edge of a nametable.
+
+        // Clamp the value.
+        if (!low_byte(temp6)) {
+            temp6 = sub_scroll_y(0x01, temp6);
+        } else {
+            temp6 = sub_scroll_y(0x00, temp6);
+        }
 
         // Save the corrected nt.
         enemies.nt[x] = high_byte(temp6);

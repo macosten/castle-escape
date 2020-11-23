@@ -20,10 +20,7 @@ typedef struct Hitbox_t {
 // Technically speaking, the same hitbox will be used to check the collisions of multiple things in one frame.
 
 
-// Counting possible cannonballs and acid droplets as individual enemies separate from the entities that spawn them,
-// If I counted correctly, there should be no more than 32 enemies on any of the original levels.
-// I'll set that as the hard cap for now...
-#define MAX_ENEMIES 32
+#define MAX_ENEMIES 40
 // The Struct of Arrays pattern plays much nicer with cc65 than an array of structs would.
 // In other words, this design decision is another concession to the compiler.
 typedef struct EnemyDatabase {
