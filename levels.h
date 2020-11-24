@@ -17,6 +17,9 @@
 #include "tilemaps/level10.h"
 #include "tilemaps/level11.h"
 #include "tilemaps/level12.h"
+#include "tilemaps/level13.h"
+#include "tilemaps/level14.h"
+#include "tilemaps/level16.h"
 #include "tilemaps/level_debug_tiledump.h"
 #include "tilemaps/level_star_test.h"
 #include "tilemaps/level_enemies_test.h"
@@ -37,6 +40,10 @@ const unsigned char const level_nt_length[] = {
     3, // Level 10
     6, // Level 11
     6,
+    3, // Level 13
+    2,
+    // 15
+    1, // Level 16
     1, // tiledump
     3, // star test
     3, // enemies test
@@ -53,8 +60,12 @@ const unsigned char const valrigard_starting_nt[] = {
     2, // Level 08
     5,
     2, // Level 10
+    5, 
     5,
-    5,
+    2,
+    1, // Level 14
+    // 15
+    0, // Level 16
     0, // Tiledump
     0, // Star Test
     2,
@@ -77,6 +88,10 @@ const unsigned char const valrigard_inital_coords[] = {
     0x4d, // 11
     0x4d, // 12
     0x4d,
+    0x4d, // 14
+    // 15
+    0x4a, // 16
+    0x4d,
     0x30,
     0x4d,
 };
@@ -95,6 +110,10 @@ const unsigned char * const level_compressed_nametable_pointers[] = {
     level10, 
     level11,
     level12,
+    level13,
+    level14,
+    //level15,
+    level16,
     level_debug_tiledump,
     level_star_test,
     level_enemies_test,
@@ -104,6 +123,9 @@ const unsigned char * const level_compressed_nametable_pointers[] = {
 const unsigned char const level_nametable_banks[] = {
     0,
     0, 
+    0,
+    0,
+    0,
     0,
     0,
     0,
@@ -132,13 +154,17 @@ const char * const level_names[] = {
     "Level 10 ",
     "Level 11 ",
     "Level 12 ",
+    "Level 13 ",
+    "Level 14 ",
+    //"Level 15",
+    "Level 16 ",
     "Tile Dump",
     "Star Test",
     "EnemyTest",
 };
 
 // Convenient ROM value that shows the number of levels implemented.
-#define NUMBER_OF_LEVELS 15
+#define NUMBER_OF_LEVELS 18
 
 // Max of 32 enemies.
 // Be aware that cannons and acid blobs functionally take up 2 slots
@@ -146,6 +172,9 @@ const char * const level_names[] = {
 // This also means you should prevent either of these things from being 
 // loaded into the MAX_ENEMIES-th slot, since the projectile will be
 // loaded into RAM that overlaps with other RAM.
+
+const unsigned char const empty_enemy[]={ 0xFF };
+
 const unsigned char * const level_enemy_data[] = {
     level01_enemy,
     level02_enemy,
@@ -159,8 +188,12 @@ const unsigned char * const level_enemy_data[] = {
     level10_enemy,
     level11_enemy,
     level12_enemy,
+    level13_enemy,
+    level14_enemy,
+    //level15_enemy,
+    level16_enemy,
     level_debug_tiledump_enemy,
-    level_star_test_enemy,
+    empty_enemy,
     level_enemies_test_enemy,
 };
 

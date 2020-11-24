@@ -352,7 +352,8 @@ void swing_sword(void);
 
 void bg_collision(void); // For the player
 void bg_collision_sub(void);
-void bg_collision_sub_question_block(void);
+void bg_collision_sub_collision_u(void);
+void bg_collision_sub_collision_d(void);
 
 
 void check_spr_objects(void); // For enemies
@@ -1302,7 +1303,7 @@ void bg_collision(void){
     if(collision){ // find a corner in the collision map
         ++collision_L;
         ++collision_U;
-        bg_collision_sub_question_block();
+        bg_collision_sub_collision_u();
     }
 
     // Upper right...
@@ -1317,7 +1318,7 @@ void bg_collision(void){
     if(collision){ // find a corner in the collision map
         ++collision_R;
         ++collision_U;
-        bg_collision_sub_question_block();
+        bg_collision_sub_collision_u();
     }
     
     // Now for the bottom.
@@ -1343,6 +1344,7 @@ void bg_collision(void){
     if(collision){ // find a corner in the collision map
         ++collision_R;
         ++collision_D;
+        bg_collision_sub_collision_d();
     }
     
     // bottom left
@@ -1355,6 +1357,7 @@ void bg_collision(void){
     if(collision){ // find a corner in the collision map
         ++collision_L;
         ++collision_D;
+        bg_collision_sub_collision_d();
     }
 }
 
@@ -1407,18 +1410,13 @@ void bg_collision_sub(void) {
         conveyor_delta = LEFT_CONVEYOR_DELTA;
     } else if (temp0 & METATILE_CONVEYOR_RIGHT) {
         conveyor_delta = RIGHT_CONVEYOR_DELTA;
-    } else if (temp0 & METATILE_YELLOW_DOOR) {
-        // For now, end the game.
-        if (pad1 & PAD_UP) {
-            game_mode = MODE_GAME_OVER;
-        }
     } else if (temp0 & METATILE_RED_DOOR) {
         game_mode = MODE_GAME_OVER;
     }
 
 }
 
-void bg_collision_sub_question_block(void) {
+void bg_collision_sub_collision_u(void) {
     // If we just collided with a question block
     // *and* if the bottom of our Y value is 15
     // (otherwise we may have struck it from the side)...
@@ -1455,6 +1453,22 @@ void bg_collision_sub_question_block(void) {
         ++tile_clear_back;
         tile_clear_back &= 0b11;
 
+    }
+}
+
+void bg_collision_sub_collision_d(void) {
+    // Look at the tile above the one we're colliding with.
+    coordinates = (temp1 >> 4) + ((temp3 - 1) & 0xf0);
+    temp0 = high_byte(temp5);
+    AsmSet2ByteFromPtrAtIndexVar(temp_mutablepointer, cmaps, temp0);
+    AsmSet1ByteFromZpPtrAtIndexVar(temp4, temp_mutablepointer, coordinates);
+    temp0 = metatile_property_lookup_table[temp4];
+
+    if (temp0 & METATILE_YELLOW_DOOR) {
+        // For now, end the game if grounded. (This detection isn't *perfect*, but it's decent.)
+        if (pad1 & PAD_UP) {
+            game_mode = MODE_GAME_OVER;
+        }
     }
 }
 
@@ -1631,7 +1645,8 @@ const unsigned char const enemy_hitbox_width_lookup_table[] = {
     13, // Boss
     6,  // Cannonball
     6,  // Aciddrop
-    0,  // ...Particle effect of some sort? 
+    0,  // Purple Death Effect
+    0,  // Splyke Death Effect
 };
 
 const unsigned char const enemy_hitbox_height_lookup_table[] = {

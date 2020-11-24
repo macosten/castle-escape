@@ -7,10 +7,6 @@
 // bitpacked coords (0xXY), nt, direction (or other info) + type
 // 0xff terminates
 
-const unsigned char const level_star_test_enemy[]={
-	0xFF
-};
-
 const unsigned char const level_star_test[] = {
 	76,90,71,0,0,2,208,0,0,0,78,0,86,9,21,1,
 	0,1,2,3,4,7,3,7,6,44,3,1,6,42,23,25,
