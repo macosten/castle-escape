@@ -106,11 +106,11 @@ void __fastcall__ oam_size(unsigned char size);
 extern unsigned char TEMP[];
 #pragma zpsym("TEMP");
 
-#endif
-
-
 #define SCRX (TEMP[5])
 #define SCRY (TEMP[6])
+
+#endif
+
 
 //set sprite in OAM buffer, chrnum is tile, attr is attribute
 // Note: sprid removed for speed

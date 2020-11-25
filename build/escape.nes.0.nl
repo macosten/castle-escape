@@ -28,8 +28,10 @@ $9173#_level14#
 $9163#_level14_enemy#
 $922E#_level16#
 $9227#_level16_enemy#
-$92AD#_level_debug_tiledump#
-$92AC#_level_debug_tiledump_enemy#
-$939C#_level_enemies_test#
-$937D#_level_enemies_test_enemy#
-$931F#_level_star_test#
+$92D7#_level17#
+$92AC#_level17_enemy#
+$93F8#_level_debug_tiledump#
+$93F7#_level_debug_tiledump_enemy#
+$94E7#_level_enemies_test#
+$94C8#_level_enemies_test_enemy#
+$946A#_level_star_test#

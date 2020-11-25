@@ -554,7 +554,6 @@ void main (void) {
             // Move enemies.
             enemy_movement();
             
-            //set_scroll_x(0); // Yeah... this game won't need to scroll in the X direction.
             set_scroll_y(scroll_y);
 
             convert_to_decimal(score);
@@ -579,7 +578,7 @@ void main (void) {
             }
 
             // debug:
-            //gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
 
         }
@@ -679,6 +678,8 @@ void begin_level(void) {
 
     // ...and calculate this level's shuffle_array.
     calculate_shuffle_array();
+
+    //set_scroll_x(1); // Yeah... this game won't need to scroll in the X direction.
 
     // Reset Valrigard's energy.
     energy = MAX_ENERGY;
@@ -945,11 +946,11 @@ void draw_sprites(void) {
     // Debug HUD, drawn last because it's the least important.
     //oam_spr(232, 42, collision_D, 2);
     
-    oam_spr(200, 50, debug_tile_x >> 4, 1);
-    oam_spr(208, 50, debug_tile_x & 0x0f, 1);
+    //oam_spr(200, 50, debug_tile_x >> 4, 1);
+    //oam_spr(208, 50, debug_tile_x & 0x0f, 1);
     
-    oam_spr(224, 50, debug_tile_y >> 4, 1);
-    oam_spr(232, 50, debug_tile_y & 0x0f, 1);
+    //oam_spr(224, 50, debug_tile_y >> 4, 1);
+    //oam_spr(232, 50, debug_tile_y & 0x0f, 1);
 
     // Animate the animated palette.
 
@@ -1239,7 +1240,10 @@ void movement(void) {
     }
     else if (valrigard.y > MIN_DOWN && scroll_y < max_scroll_y) {
         temp1 = (MIN_DOWN + valrigard.y + 0x80) >> 8;
-        scroll_y = add_scroll_y(temp1, scroll_y);
+        
+        //scroll_y = add_scroll_y(temp1, scroll_y);
+        add_scroll_y(scroll_y, temp1, scroll_y);
+
         high_byte(valrigard.y) -= temp1;
     }
 
@@ -1284,13 +1288,13 @@ void bg_collision(void){
     // another game, so I'll leave this line in.
 
     // For star pickup: recalculate nt_current.
-    temp6 = add_scroll_y(temp3, scroll_y);
+    add_scroll_y(temp6, temp3, scroll_y);
     nt_current = high_byte(temp6);
     // This value of nt_current is correct for the top of the player.
 
     // Upper left... 
 
-    temp5 = add_scroll_y(temp3, scroll_y); // upper left
+    add_scroll_y(temp5, temp3, scroll_y); // upper left
     temp3 = low_byte(temp5); // low byte y
 
     temp1 = hitbox.x; // x left
@@ -1322,7 +1326,7 @@ void bg_collision(void){
     }
     
     // Now for the bottom.
-    temp6 = add_scroll_y(VALRIGARD_HEIGHT, temp6);
+    add_scroll_y(temp6, VALRIGARD_HEIGHT, temp6);
     nt_current = high_byte(temp6);
     // This value of nt_current is correct for the bottom of the player.
     // Notice that it *could* be different.
@@ -1332,7 +1336,7 @@ void bg_collision(void){
     temp3 = hitbox.y + hitbox.height; // y bottom
     // if(L_R_switch) temp3 -= 2; // fix bug, walking through walls -- commented out for now.
     
-    temp5 = add_scroll_y(temp3, scroll_y); // upper left
+    add_scroll_y(temp5, temp3, scroll_y); // upper left
     temp3 = low_byte(temp5); // low byte y
     
     eject_D = (temp3 + 1) & 0x0f;
@@ -1510,7 +1514,8 @@ void draw_screen_U(void) {
 }
 
 void draw_screen_D(void) {
-    pseudo_scroll_y = add_scroll_y(0x20, scroll_y) + 0xef; 
+    add_scroll_y(pseudo_scroll_y, 0x20, scroll_y);
+    pseudo_scroll_y += 0xef; 
     // This 0xef (239, which is the height of the screen minus one) might possibly want to be either a 0xf0 (240) or a 
     // 0x100 (1 full nametable compensating for the fact that the last 16 values are masked off by add_scroll_y)
     
@@ -1664,6 +1669,23 @@ const unsigned char const enemy_hitbox_height_lookup_table[] = {
     0,  // ...Particle effect of some sort? 
 };
 
+// In case the hitbox isn't quite centered in the sprite:
+const unsigned char const enemy_hitbox_x_offset_lookup_table[] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2, // Sun
+    0,
+    0,
+    0,
+    0,
+    0,
+};
+
 const void (* collision_functions[])(void) = {
     collision_with_inert,                   // None
     collision_with_killable_slashable,      // Korbat
@@ -1711,6 +1733,8 @@ void sprite_collisions(void) {
             hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
             
             hitbox2.x = enemies.x[x];
+            hitbox2.x += enemy_hitbox_x_offset_lookup_table[temp1];
+
             hitbox2.y = enemies.y[x];
 
             if (check_collision(&hitbox, &hitbox2)) {
@@ -2000,8 +2024,8 @@ void sun_ai(void) {
         temp2 = low_byte(temp5); // Y of tile of interest
         temp4 = high_byte(temp5); // NT of tile of interest
     } else { // DOWN (adding to y)
-        temp5 = add_scroll_y(1, temp5);
-        temp6 = add_scroll_y(15, temp5); // 15 being the cosmetic size of an enemy
+        add_scroll_y(temp5, 1, temp5);
+        add_scroll_y(temp6, 15, temp5); // 15 being the cosmetic size of an enemy
 
         temp2 = low_byte(temp6); // Y of tile of interest
         temp4 = high_byte(temp6); // NT of tile of interest
@@ -2035,8 +2059,8 @@ void acid_drop_ai(void) {
     high_byte(temp5) = enemies.nt[x];
     low_byte(temp5) = enemies.actual_y[x];
 
-    temp5 = add_scroll_y(1, temp5);
-    temp6 = add_scroll_y(6, temp5); // 8 being the cosmetic projectile height
+    add_scroll_y(temp5, 1, temp5);
+    add_scroll_y(temp6, 6, temp5); // 8 being the cosmetic projectile height
 
     coordinates = (enemies.x[x] >> 4) + (low_byte(temp6) & 0xf0);
 
@@ -2234,7 +2258,7 @@ void cannonball_ai(void) {
         // Using add_scroll_y(0, ___) will 
         // correct the value if the low byte is > 0xef.
         // Clamp the value. 
-        temp6 = add_scroll_y(0x00, temp6);
+        add_scroll_y(temp6, 0x00, temp6);
 
         // Save the corrected nt.
         enemies.nt[x] = high_byte(temp6);
@@ -2243,7 +2267,7 @@ void cannonball_ai(void) {
         enemies.actual_y[x] = low_byte(temp6);
 
         // Figure out where the collision should be detected.
-        temp5 = add_scroll_y(7, temp6);
+        add_scroll_y(temp5, 7, temp6);
 
     } else {
         // Negative Y - subtract.
@@ -2273,7 +2297,7 @@ void cannonball_ai(void) {
         enemies.actual_y[x] = low_byte(temp6);
         
         // Figure out where the collision should be detected.
-        temp5 = add_scroll_y(1, temp6);
+        add_scroll_y(temp5, 1, temp6);
     }
 
     // Now that we know where we are, it's time to check to see if this cannonball

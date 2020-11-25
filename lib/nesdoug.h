@@ -8,6 +8,15 @@
 // you shouldn't have to turn the screen off...
 // allowing us to make smooth scrolling games.
 
+#define high_byte(a) *((unsigned char*)&a+1)
+#define low_byte(a) *((unsigned char*)&a)
+// for getting or modifying just 1 byte of an int
+
+#define POKE(addr,val)     (*(unsigned char*) (addr) = (val))
+#define PEEK(addr)         (*(unsigned char*) (addr))
+// examples
+// POKE(0xD800, 0x12); // stores 0x12 at address 0xd800, useful for hardware registers
+// B = PEEK(0xD800); // read a value from address 0xd800, into B, which should be a char
 
 void set_vram_buffer(void);
 // sets the vram update to point to the vram_buffer. VRAM_BUF defined in crt0.s
@@ -53,6 +62,11 @@ unsigned char __fastcall__ check_collision(void * object1, void * object2);
 // you will probably have to pass the address of the object like &object
 // the struct can be bigger than 4 bytes, as long as the first 4 bytes are X, Y, width, height
 
+//unsigned char __fastcall__  check_collision_fast_sub();
+
+//#define check_collision_fast(object1, object2) {\
+//	__asm__()
+//}
 
 void __fastcall__ pal_fade_to(unsigned char from, unsigned char to);
 // adapted from Shiru's "Chase" game code
@@ -70,15 +84,24 @@ void __fastcall__ set_scroll_y(unsigned int y);
 // which aligns it with sprites, which are shifted down 1 pixel
 
 
-int __fastcall__ add_scroll_y(unsigned char add, unsigned int scroll);
+// int __fastcall__ add_scroll_y(unsigned char add, unsigned int scroll);
 // add a value to y scroll, keep the low byte in the 0-0xef range
 // returns y scroll, which will have to be passed to set_scroll_y
+
+int __fastcall__ add_scroll_y_fast_sub(unsigned char add);
+
+#define add_scroll_y(updateMe, add, scroll) {\
+	__asm__("lda %v", scroll);\
+	__asm__("sta %v", TEMP);\
+	__asm__("lda %v+1", scroll);\
+	__asm__("sta %v+1", TEMP);\
+	updateMe = add_scroll_y_fast_sub(add);\
+}
 
 
 int __fastcall__ sub_scroll_y(unsigned char sub, unsigned int scroll);
 // subtract a value from y scroll, keep the low byte in the 0-0xef range
 // returns y scroll, which will have to be passed to set_scroll_y
-
 
 int __fastcall__ get_ppu_addr(char nt, char x, char y);
 // gets a ppu address from x and y coordinates (in pixels)
@@ -151,18 +174,6 @@ void gray_line(void);
 // For debugging. Insert at the end of the game loop, to see how much frame is left.
 // Will print a gray line on the screen. Distance to the bottom = how much is left.
 // No line, possibly means that you are in v-blank.
-
-
-#define high_byte(a) *((unsigned char*)&a+1)
-#define low_byte(a) *((unsigned char*)&a)
-// for getting or modifying just 1 byte of an int
-
-#define POKE(addr,val)     (*(unsigned char*) (addr) = (val))
-#define PEEK(addr)         (*(unsigned char*) (addr))
-// examples
-// POKE(0xD800, 0x12); // stores 0x12 at address 0xd800, useful for hardware registers
-// B = PEEK(0xD800); // read a value from address 0xd800, into B, which should be a char
-
 
 void seed_rng(void);
 // get from the frame count. You can use a button (start on title screen) to trigger

@@ -20,6 +20,7 @@
 #include "tilemaps/level13.h"
 #include "tilemaps/level14.h"
 #include "tilemaps/level16.h"
+#include "tilemaps/level17.h"
 #include "tilemaps/level_debug_tiledump.h"
 #include "tilemaps/level_star_test.h"
 #include "tilemaps/level_enemies_test.h"
@@ -44,6 +45,7 @@ const unsigned char const level_nt_length[] = {
     2,
     // 15
     1, // Level 16
+    3,
     1, // tiledump
     3, // star test
     3, // enemies test
@@ -66,6 +68,7 @@ const unsigned char const valrigard_starting_nt[] = {
     1, // Level 14
     // 15
     0, // Level 16
+    2,
     0, // Tiledump
     0, // Star Test
     2,
@@ -92,6 +95,7 @@ const unsigned char const valrigard_inital_coords[] = {
     // 15
     0x4a, // 16
     0x4d,
+    0x4d,
     0x30,
     0x4d,
 };
@@ -114,6 +118,7 @@ const unsigned char * const level_compressed_nametable_pointers[] = {
     level14,
     //level15,
     level16,
+    level17,
     level_debug_tiledump,
     level_star_test,
     level_enemies_test,
@@ -123,6 +128,7 @@ const unsigned char * const level_compressed_nametable_pointers[] = {
 const unsigned char const level_nametable_banks[] = {
     0,
     0, 
+    0,
     0,
     0,
     0,
@@ -158,13 +164,14 @@ const char * const level_names[] = {
     "Level 14 ",
     //"Level 15",
     "Level 16 ",
+    "Level 17 ",
     "Tile Dump",
     "Star Test",
     "EnemyTest",
 };
 
 // Convenient ROM value that shows the number of levels implemented.
-#define NUMBER_OF_LEVELS 18
+#define NUMBER_OF_LEVELS 19
 
 // Max of 32 enemies.
 // Be aware that cannons and acid blobs functionally take up 2 slots
@@ -192,6 +199,7 @@ const unsigned char * const level_enemy_data[] = {
     level14_enemy,
     //level15_enemy,
     level16_enemy,
+    level17_enemy,
     level_debug_tiledump_enemy,
     empty_enemy,
     level_enemies_test_enemy,
