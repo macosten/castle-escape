@@ -1678,7 +1678,7 @@ const unsigned char const enemy_hitbox_x_offset_lookup_table[] = {
     0,
     0,
     0,
-    2, // Sun
+    1, // Sun
     0,
     0,
     0,
@@ -1752,6 +1752,8 @@ void sprite_collisions(void) {
             hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
             
             hitbox2.x = enemies.x[x];
+            hitbox2.x += enemy_hitbox_x_offset_lookup_table[temp1];
+
             hitbox2.y = enemies.y[x];
 
             if (check_collision(&hitbox, &hitbox2)) {
@@ -1769,6 +1771,8 @@ void sprite_collisions(void) {
             hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
             
             hitbox2.x = enemies.x[x];
+            hitbox2.x += enemy_hitbox_x_offset_lookup_table[temp1];
+
             hitbox2.y = enemies.y[x];
 
             if (check_collision(&hitbox, &hitbox2)) {
@@ -1786,6 +1790,8 @@ void sprite_collisions(void) {
             hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
             
             hitbox2.x = enemies.x[x];
+            hitbox2.x += enemy_hitbox_x_offset_lookup_table[temp1];
+
             hitbox2.y = enemies.y[x];
 
             if (check_collision(&hitbox, &hitbox2)) {
