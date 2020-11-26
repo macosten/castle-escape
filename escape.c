@@ -254,37 +254,93 @@ I don't really know what the ideal pattern would be, though.
 // Enemy memory.
 Enemies enemies;
 
-#define ACTIVATE_ENEMY(index) (enemies.flags[index] |= 0b10000000) // Set high bit.
-#define DEACTIVATE_ENEMY(index) (enemies.flags[index] &= 0b01111111) // Unset high bit.
+// These macros here can probably be optimized a little more 
+
+// Set high bit.
+#define ACTIVATE_ENEMY(index) { \
+    TEMP[0] = enemies.flags[index] | 0b10000000;\
+    enemies.flags[index] = TEMP[0];\
+}
+
+// Unset high bit.
+#define DEACTIVATE_ENEMY(index) { \
+    TEMP[0] = enemies.flags[index] & 0b01111111;\
+    enemies.flags[index] = TEMP[0];\
+}
+
 #define IS_ENEMY_ACTIVE(index) (enemies.flags[index] & 0b10000000) // Test if high bit is set.
 #define GET_ENEMY_TYPE(index) (enemies.type[x])
 
-#define ENEMY_SET_DIRECTION_LEFT(index)     (enemies.flags[index] &= 0b11111110)
-#define ENEMY_SET_DIRECTION_RIGHT(index)    (enemies.flags[index] |= 0b00000001)
-#define ENEMY_FLIP_DIRECTION(index)         (enemies.flags[index] ^= 0b00000001)
+#define ENEMY_SET_DIRECTION_LEFT(index) {\
+    TEMP[0] = enemies.flags[index] & 0b11111110;\
+    enemies.flags[index] = TEMP[0];\
+}
+
+#define ENEMY_SET_DIRECTION_RIGHT(index) {\
+    TEMP[0] = enemies.flags[index] | 0b00000001;\
+    enemies.flags[index] = TEMP[0];\
+}
+
+#define ENEMY_FLIP_DIRECTION(index) {\
+    TEMP[0] = enemies.flags[index] ^ 0b00000001;\
+    enemies.flags[index] = TEMP[0];\
+}
+
 #define ENEMY_DIRECTION(index)              (enemies.flags[index] &  0b00000001)
 
 
 // For cannonballs and other 2-axis projectiles.
-#define CANNONBALL_SET_NEG_X(index) (enemies.flags[index] &= 0b10111111)
-#define CANNONBALL_SET_POS_X(index) (enemies.flags[index] |= 0b01000000)
+#define CANNONBALL_SET_NEG_X(index) {\
+    TEMP[0] = enemies.flags[index] & 0b10111111;\
+    enemies.flags[index] = TEMP[0];\
+}
 
-#define CANNONBALL_SET_NEG_Y(index) (enemies.flags[index] &= 0b11011111)
-#define CANNONBALL_SET_POS_Y(index) (enemies.flags[index] |= 0b00100000)
+#define CANNONBALL_SET_POS_X(index) {\
+    TEMP[0] = enemies.flags[index] | 0b01000000;\
+    enemies.flags[index] = TEMP[0];\
+}
+
+#define CANNONBALL_SET_NEG_Y(index) {\
+    TEMP[0] = enemies.flags[index] & 0b11011111;\
+    enemies.flags[index] = TEMP[0];\
+}
+
+#define CANNONBALL_SET_POS_Y(index) {\
+    TEMP[0] = enemies.flags[index] | 0b00100000;\
+    enemies.flags[index] = TEMP[0];\
+}
 
 #define CANNONBALL_X_DIRECTION(index) (enemies.flags[index] & 0b01000000)
 #define CANNONBALL_Y_DIRECTION(index) (enemies.flags[index] & 0b00100000)
 
 // For Splykes.
 
-#define SPLYKE_SET_STANDING_STILL(index) (enemies.flags[index] &= 0b11011111)
-#define SPLYKE_SET_MOVING_AROUND(index)  (enemies.flags[index] |= 0b00100000) 
+#define SPLYKE_SET_STANDING_STILL(index) {\
+    TEMP[0] = enemies.flags[index] & 0b11011111;\
+    enemies.flags[index] = TEMP[0];\
+}
+
+#define SPLYKE_SET_MOVING_AROUND(index) {\
+    TEMP[0] = enemies.flags[index] | 0b00100000;\
+    enemies.flags[index] = TEMP[0];\
+}
+
 #define SPLYKE_IS_MOVING_AROUND(index)   (enemies.flags[index] &  0b00100000)
 
 // For enemies that can be slashed for points, but don't die when slashed.
 
-#define SLASHABLE_UNKILLABLE_SET_UNSLASHED(index)   (enemies.flags[index] &= 0b11011111) // Not that this makes sense, but...
-#define SLASHABLE_UNKILLABLE_SET_SLASHED(index)     (enemies.flags[index] |= 0b00100000)
+// Not that this makes sense, but...
+#define SLASHABLE_UNKILLABLE_SET_UNSLASHED(index) {\
+    TEMP[0] = enemies.flags[index] & 0b11011111;\
+    enemies.flags[index] = TEMP[0];\
+}
+
+// #define SLASHABLE_UNKILLABLE_SET_SLASHED(index)     (enemies.flags[index] |= 0b00100000)
+#define SLASHABLE_UNKILLABLE_SET_SLASHED(index) {\
+    TEMP[0] = enemies.flags[index] | 0b00100000;\
+    enemies.flags[index] = TEMP[0];\
+}
+
 #define SLASHABLE_UNKILLABLE_IS_SLASHED(index)      (enemies.flags[index] &  0b00100000)
 
 #pragma bss-name(pop)
@@ -1525,9 +1581,10 @@ void draw_screen_D(void) {
 void draw_screen_sub(void) {
     temp1 = high_byte(pseudo_scroll_y);
     
-    set_data_pointer(cmaps[temp1]); // Should this value be clamped to the number of cmaps?
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
+    set_data_pointer(temppointer); // Should this value be clamped to the number of cmaps?
     nt = (temp1 & 1) << 1; // 0 or 2
-    y = pseudo_scroll_y & 0xff;
+    y = low_byte(pseudo_scroll_y);
     
     // Important that the main loop clears the vram_buffer.
     
@@ -2116,12 +2173,15 @@ void cannon_ai(void) {
             // temp4 will be used as an index for cannon_sprite_quadrant_lookup_table.
 
             temp4 = 0;
+
+            temp_x = x+1;
+
             if (temp0 < temp2) {
                 // if Valrigard's center X is less, then the cannonball will go in the negative X direction.
-                CANNONBALL_SET_NEG_X(x+1);
+                CANNONBALL_SET_NEG_X(temp_x);
             } else {
                 // ...otherwise, it'll go in the positive x direction.
-                CANNONBALL_SET_POS_X(x+1);
+                CANNONBALL_SET_POS_X(temp_x);
                 ++temp4;
             }
 
@@ -2129,10 +2189,10 @@ void cannon_ai(void) {
 
             if (temp1 < temp3) {
                 // Above - go in -Y
-                CANNONBALL_SET_NEG_Y(x+1);
+                CANNONBALL_SET_NEG_Y(temp_x);
             } else {
                 // Below - go in +Y
-                CANNONBALL_SET_POS_Y(x+1);
+                CANNONBALL_SET_POS_Y(temp_x);
                 temp4 += 0b10;
             }
 
