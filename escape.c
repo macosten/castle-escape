@@ -269,6 +269,7 @@ Enemies enemies;
 }
 
 #define IS_ENEMY_ACTIVE(index) (enemies.flags[index] & 0b10000000) // Test if high bit is set.
+
 #define GET_ENEMY_TYPE(index) (enemies.type[x])
 
 #define ENEMY_SET_DIRECTION_LEFT(index) {\
@@ -559,16 +560,19 @@ void main (void) {
                 begin_level();
             } else if (pad1_new & PAD_LEFT && level_index != 0) {
                 --level_index;
-                
-                temp0 = strlen(level_names[level_index]);
-                multi_vram_buffer_horz(level_names[level_index], temp0, NTADR_A(3, 8));
+
+                // Update the level name shown on the screen.
+                AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
+                temp0 = strlen(temppointer);
+                multi_vram_buffer_horz(temppointer, temp0, NTADR_A(3, 8));
 
             } else if (pad1_new & PAD_RIGHT && level_index < NUMBER_OF_LEVELS-1) {
                 ++level_index;
 
                 // Update the level name shown on the screen.
-                temp0 = strlen(level_names[level_index]);
-                multi_vram_buffer_horz(level_names[level_index], temp0, NTADR_A(3, 8));
+                AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
+                temp0 = strlen(temppointer);
+                multi_vram_buffer_horz(temppointer, temp0, NTADR_A(3, 8));
 
             }
 
@@ -696,7 +700,8 @@ void load_title_screen(void) {
     put_str(NTADR_A(3, 4), author_string);
     put_str(NTADR_A(3, 6), instruction_string);
 
-    put_str(NTADR_A(3, 8), level_names[level_index]);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
+    put_str(NTADR_A(3, 8), temppointer);
 
     ppu_on_all();
 }
@@ -776,10 +781,12 @@ void load_level_new(void) {
     set_prg_bank(level_nametable_banks[level_index]);
 
     // New: decompress level data.
-    LZG_decode(level_compressed_nametable_pointers[level_index], cmap);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, level_compressed_nametable_pointers, level_index);
+    LZG_decode(temppointer, cmap);
 
     // Load inital room data into the PPU.
-    set_data_pointer(cmaps[nt_current]);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, nt_current);
+    set_data_pointer(temppointer);
     set_mt_pointer(metatiles);
     temp1 = high_byte(initial_scroll) + 1;
     temp1 = (temp1 & 1) << 1;
@@ -802,7 +809,8 @@ void load_level_new(void) {
 
     temp0 = nt_current == 0 ? nt_current + 1 : nt_current - 1;
 
-    set_data_pointer(cmaps[temp0]);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp0);
+    set_data_pointer(temppointer);
     for(x=0; ;x+=0x20){
         y = 0xe0;
         clear_vram_buffer(); // do each frame, and before putting anything in the buffer
@@ -821,26 +829,29 @@ void load_level_new(void) {
     memfill(&enemies, 0, sizeof(enemies));
 
     // Load the enemy data for the current level.
-    temppointer = level_enemy_data[level_index];
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, level_enemy_data, level_index);
 
     for (x = 0, y = 0; x < MAX_ENEMIES; ++x){
 
         enemies.y[x] = 0;
-        temp1 = temppointer[y]; // Get a byte of data - the bitpacked coords.
+        AsmSet1ByteFromZpPtrAtIndexVar(temp1, temppointer, y); // Get a byte of data - the bitpacked coords.
 
         if (temp1 == 0xff) break; // 0xff terminates the enemy data.
 
-        enemies.x[x] = temp1 & 0xf0;
-        enemies.actual_y[x] = (temp1 & 0x0f) << 4;
+        temp2 = temp1 & 0xf0;
+        enemies.x[x] = temp2;
+
+        temp2 = (temp1 & 0x0f) << 4;
+        enemies.actual_y[x] = temp2;
 
         ++y; // Next byte:
 
-        temp1 = temppointer[y]; // the namtetable byte.
+        AsmSet1ByteFromZpPtrAtIndexVar(temp1, temppointer, y); // the namtetable byte.
         enemies.nt[x] = temp1;
 
         ++y; // Next byte:
 
-        temp1 = temppointer[y]; // the type byte.
+        AsmSet1ByteFromZpPtrAtIndexVar(temp1, temppointer, y); // the type byte.
         enemies.type[x] = temp1; 
 
         temp1 = GET_ENEMY_TYPE(x);
@@ -854,8 +865,8 @@ void load_level_new(void) {
             enemies.type[x] = ENEMY_ACIDDROP;
             // extra[x] for this enemy should be a number of frames to wait between acid drops.
             // This varied from drop to drop in the original so I'll make it somewhat random.
-            enemies.extra[x] = rand8() & 0b01111111;
-            enemies.extra[x] += 128;
+            temp2 = rand8() | 0b10000000;
+            enemies.extra[x] = temp2;
         }
 
         ++y; // Next byte.
@@ -881,7 +892,8 @@ void load_level_new(void) {
                 // fallthrough
             case 4: // ENEMY_CANNON
                 // Add a random timer from 0 to 127 frames.
-                enemies.timer[x] += rand8() & 0b01111111;
+                temp0 = rand8() & 0b01111111;
+                enemies.timer[x] = temp0;
                 break;
             default:
                 // Most enemies do not need special initialization here.
@@ -1457,9 +1469,11 @@ void bg_collision_sub(void) {
         address = get_ppu_addr(nt, temp1, temp3 & 0xf0);
 
         // Enqueue.
-        tile_clear_queue[tile_clear_back] = address;
+        AsmSet2ByteAtPtrWithOffset(tile_clear_queue, tile_clear_back, address);
         tile_clear_to_type_queue[tile_clear_back] = EMPTY_TILE;
-        tile_clear_attr_addr_queue[tile_clear_back] = 0; // Don't update an attribute.
+
+        address = 0;
+        AsmSet2ByteAtPtrWithOffset(tile_clear_attr_addr_queue, tile_clear_back, address); // Don't update an attribute.
 
         ++tile_clear_back;
         tile_clear_back &= 0b11; // Mask to <4
@@ -1505,11 +1519,11 @@ void bg_collision_sub_collision_u(void) {
         address = get_ppu_addr(nt, temp1, temp3 & 0xf0);
 
         // Enqueue a tile update.
-        tile_clear_queue[tile_clear_back] = address;
+        AsmSet2ByteAtPtrWithOffset(tile_clear_queue, tile_clear_back, address);
         tile_clear_to_type_queue[tile_clear_back] = QUAD_EDGE_STONE;
 
         address = get_at_addr(nt, temp1, temp3 & 0xf0);
-        tile_clear_attr_addr_queue[tile_clear_back] = address;
+        AsmSet2ByteAtPtrWithOffset(tile_clear_attr_addr_queue, tile_clear_back, address);
         ++tile_clear_back;
         tile_clear_back &= 0b11;
 
@@ -2153,7 +2167,8 @@ void cannon_ai(void) {
     // extra2[x] should be the specific sprite we should be showing.
 
     // The next enemy should be a cannonball. If it's active, don't do anything.
-    if (IS_ENEMY_ACTIVE(x+1)) { return; }
+    temp_x = x + 1;
+    if (IS_ENEMY_ACTIVE(temp_x)) { return; }
 
     // Decrement the timer this frame.
     // That'll be *slightly* longer than 1 second on NTSC systems, and
@@ -2173,8 +2188,6 @@ void cannon_ai(void) {
             // temp4 will be used as an index for cannon_sprite_quadrant_lookup_table.
 
             temp4 = 0;
-
-            temp_x = x+1;
 
             if (temp0 < temp2) {
                 // if Valrigard's center X is less, then the cannonball will go in the negative X direction.
@@ -2216,7 +2229,7 @@ void cannon_ai(void) {
             enemies.extra[x] = temp2;
 
             // temppointer will be a pointer to the correct sprite lookup table.
-            temppointer = cannon_sprite_quadrant_lookup_table[temp4];
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, cannon_sprite_quadrant_lookup_table, temp4);
 
             // Within the sprite lookup table, figure out the sprite.
             if (temp2 > 0x30) { // over 0x30 brads
@@ -2240,11 +2253,11 @@ void cannon_ai(void) {
         temp1 = enemies.actual_y[x] + 3;
         temp2 = enemies.nt[x];
 
-        enemies.x[x+1] = temp0;
-        enemies.actual_y[x+1] = temp1;
-        enemies.nt[x+1] = temp2;
+        enemies.x[temp_x] = temp0;
+        enemies.actual_y[temp_x] = temp1;
+        enemies.nt[temp_x] = temp2;
 
-        enemies.type[x+1] = ENEMY_CANNONBALL;
+        enemies.type[temp_x] = ENEMY_CANNONBALL;
 
     }
     // Subtract from a (randomly-seeded?) timer of some sort.
@@ -2264,7 +2277,8 @@ void cannonball_ai(void) {
     // extra2[x] should be the sub_y.
 
     // brads
-    temp1 = enemies.extra[x - 1];
+    temp_x = x-1;
+    temp1 = enemies.extra[temp_x];
     
     // add/sub this to x
     temp2 = cos_lookup(temp1);
@@ -2413,7 +2427,8 @@ void acid_ai(void) {
     }
 
     // The next enemy should be an acid drop. If it's active, don't do anything.
-    if (IS_ENEMY_ACTIVE(x+1)) { return; }
+    temp_x = x + 1;
+    if (IS_ENEMY_ACTIVE(temp_x)) { return; }
 
     if (--enemies.timer[x] == 0) {
         // Reset our timer.
@@ -2426,12 +2441,12 @@ void acid_ai(void) {
         temp2 = enemies.actual_y[x];
         temp3 = enemies.nt[x];
 
-        enemies.x[x+1] = temp1;
-        enemies.actual_y[x+1] = temp2;
-        enemies.nt[x+1] = temp3;
+        enemies.x[temp_x] = temp1;
+        enemies.actual_y[temp_x] = temp2;
+        enemies.nt[temp_x] = temp3;
 
         // Set the enemy in motion.
-        enemies.type[x+1] = ENEMY_ACIDDROP;
+        enemies.type[temp_x] = ENEMY_ACIDDROP;
 
         enemies.extra2[x] = 12; // ACIDBLOB_ANIMATION_FRAME_COUNT
 

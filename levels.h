@@ -198,7 +198,7 @@ const char * const level_names[] = {
 };
 
 // Convenient ROM value that shows the number of levels implemented.
-#define NUMBER_OF_LEVELS 21
+#define NUMBER_OF_LEVELS 23
 
 // Max of MAX_ENEMIES enemies.
 // Be aware that cannons and acid blobs functionally take up 2 slots

@@ -16,12 +16,23 @@
 // When used, something like
 // temp0 = array[i];
 // becomes:
-// AsmSetCharFromPtrAtIndexVar(temp0, array, i);
+// AsmSet1ByteFromPtrAtIndexVar(temp0, array, i);
 
 #define AsmSet1ByteFromZpPtrAtIndexVar(variable, zppointer, indexVariable) { \
 	__asm__("ldy %v", indexVariable); \
 	__asm__("lda (%v), %s", zppointer, Y); \
 	__asm__("sta %v", variable); \
+}
+
+// When used, something like
+// array[i] = temp0;
+// becomes:
+// AsmSet1ByteAtPtrWithOffset(array, i, temp0);
+
+#define AsmSet1ByteAtPtrWithOffset(pointer, offset, variable) {\
+	__asm__("ldy %v", offset);\
+	__asm__("lda %v", variable);\
+	__asm__("sta %v,%s", pointer, Y);\
 }
 
 // This ensures that a 2-byte copy from an array to a pointer or int takes only a few instructions.
@@ -38,6 +49,16 @@
 	__asm__("sta %v", variable); \
 	__asm__("lda %v+1, %s", pointer, y); \
 	__asm__("sta %v+1", variable); \
+}
+
+#define AsmSet2ByteAtPtrWithOffset(pointer, offset, variable) {\
+	__asm__("lda %v", offset);\
+	__asm__("asl");\
+	__asm__("tay");\
+	__asm__("lda %v", variable);\
+	__asm__("sta %v, %s", pointer, y);\
+	__asm__("lda %v+1", variable);\
+	__asm__("sta %v+1,%s", pointer, y);\
 }
 
 // Something like this that supports cases of indexVariable > 127 will be more complicated.
