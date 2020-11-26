@@ -62,11 +62,6 @@ unsigned char __fastcall__ check_collision(void * object1, void * object2);
 // you will probably have to pass the address of the object like &object
 // the struct can be bigger than 4 bytes, as long as the first 4 bytes are X, Y, width, height
 
-//unsigned char __fastcall__  check_collision_fast_sub();
-
-//#define check_collision_fast(object1, object2) {\
-//	__asm__()
-//}
 
 void __fastcall__ pal_fade_to(unsigned char from, unsigned char to);
 // adapted from Shiru's "Chase" game code
