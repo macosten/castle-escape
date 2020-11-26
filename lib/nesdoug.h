@@ -79,10 +79,6 @@ void __fastcall__ set_scroll_y(unsigned int y);
 // which aligns it with sprites, which are shifted down 1 pixel
 
 
-// int __fastcall__ add_scroll_y(unsigned char add, unsigned int scroll);
-// add a value to y scroll, keep the low byte in the 0-0xef range
-// returns y scroll, which will have to be passed to set_scroll_y
-
 int __fastcall__ add_scroll_y_fast_sub(unsigned char add);
 
 #define add_scroll_y(updateMe, add, scroll) {\
@@ -92,7 +88,9 @@ int __fastcall__ add_scroll_y_fast_sub(unsigned char add);
 	__asm__("sta %v+1", TEMP);\
 	updateMe = add_scroll_y_fast_sub(add);\
 }
-
+// add a value to y scroll, keep the low byte in the 0-0xef range
+// modifies updateMe to contain the new y scroll, 
+// which will have to be passed to set_scroll_y
 
 int __fastcall__ sub_scroll_y(unsigned char sub, unsigned int scroll);
 // subtract a value from y scroll, keep the low byte in the 0-0xef range
@@ -126,14 +124,33 @@ void __fastcall__ set_mt_pointer(const char * metatiles);
 // max metatiles = 51 (because 51 x 5 = 255)
 
 
-void __fastcall__ buffer_1_mt(int ppu_address, char metatile);
+void __fastcall__ buffer_1_mt_fast_sub(char metatile);
+
+#define buffer_1_mt(ppu_address, metatile) {\
+	__asm__("lda %v", ppu_address);\
+	__asm__("ldx %v+1", ppu_address);\
+	__asm__("and #$de"); /*Sanitize, as in the original -- should be even x and y*/\
+	__asm__("sta %v", TEMP);\
+	__asm__("txa");\
+	__asm__("ora #$40"); /*NT_UPD_HORZ*/\
+	__asm__("sta %v+1", TEMP);\
+	buffer_1_mt_fast_sub(metatile);\
+}
 // will push 1 metatile and 0 attribute bytes to the vram_buffer
 // make sure to set_vram_buffer(), and clear_vram_buffer(), 
 // and set_mt_pointer() 
 // "metatile" should be 0-50, like the metatile data
 
+void __fastcall__ buffer_4_mt_fast_sub(char index);
 
-void __fastcall__ buffer_4_mt(int ppu_address, char index);
+#define buffer_4_mt(ppu_address, index) {\
+	__asm__("lda %v", ppu_address);\
+	__asm__("and #$9c"); /* Sanitize, as done in the original function */ \
+	__asm__("sta %v+7", TEMP);\
+	__asm__("lda %v+1", ppu_address);\
+	__asm__("sta %v+8", TEMP);\
+	buffer_4_mt_fast_sub(index);\
+}
 // will push 4 metatiles (2x2 box) and 1 attribute byte to the vram_buffer
 // this affects a 32x32 px area of the screen, and pushes 17 bytes to the vram_buffer.
 // make sure to set_vram_buffer(), and clear_vram_buffer(), 

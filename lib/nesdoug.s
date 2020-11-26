@@ -4,12 +4,12 @@
 .export _set_vram_buffer, _multi_vram_buffer_horz, _multi_vram_buffer_vert, _one_vram_buffer
 .export _clear_vram_buffer, _get_pad_new, _get_frame_count, _set_music_speed
 .export _check_collision, _pal_fade_to, _set_scroll_x, _set_scroll_y, _sub_scroll_y
-.export  _get_ppu_addr, _get_at_addr, _set_data_pointer, _set_mt_pointer, _buffer_4_mt, _buffer_1_mt
+.export  _get_ppu_addr, _get_at_addr, _set_data_pointer, _set_mt_pointer
 .export _color_emphasis, _xy_split, _gray_line, _seed_rng
 
 ; Modified by macosten 2020
 
-.export _add_scroll_y_fast_sub
+.export _add_scroll_y_fast_sub, _buffer_4_mt_fast_sub, _buffer_1_mt_fast_sub
 
 .segment "CODE"
 
@@ -425,10 +425,130 @@ _set_mt_pointer:
 	rts
 	
 	
+
+	
+
+;void __fastcall__ color_emphasis(char color);	
+_color_emphasis:
+	;a = bits 1110 0000
+	and #$e0 ;sanitize
+	sta TEMP
+	lda <PPU_MASK_VAR
+	and #$1f
+	ora TEMP
+	sta <PPU_MASK_VAR
+	rts
 	
 	
+	
+	
+;void __fastcall__ xy_split(unsigned int x, unsigned int y);
+_xy_split:
+	;Nametable number << 2 (that is: $00, $04, $08, or $0C) to $2006
+	;Y to $2005
+	;X to $2005
+	;Low byte of nametable address to $2006, which is ((Y & $F8) << 2) | (X >> 3)
+
+	sta <TEMP+2 ;y low
+	stx <TEMP+3
+	jsr popax
+	sta <TEMP ;x low
+	stx <TEMP+1
+	
+;push to stack in reverse order	
+	lda <TEMP+2 ;low y
+	and #$f8
+	asl a
+	asl a
+	sta <TEMP+4
+	lda <TEMP ;low x
+	lsr a
+	lsr a
+	lsr a
+	ora <TEMP+4
+	pha
+	
+	lda <TEMP ;low x
+	pha
+	
+	lda <TEMP+2 ;low y
+	pha
+
+	lda <TEMP+3 ;y high
+	and #$01
+	asl a
+	sta <TEMP+4
+	lda <TEMP+1 ;x high
+	and #$01
+	ora <TEMP+4
+	asl a
+	asl a
+	pha
+
+@3:
+
+	bit PPU_STATUS
+	bvs @3
+
+@4:
+
+	bit PPU_STATUS
+	bvc @4
+
+	pla
+	sta $2006
+	pla
+	sta $2005
+	pla
+	sta $2005
+	pla
+	sta $2006
+	rts	
+	
+
+	
+	
+;void gray_line(void);
+_gray_line:
+	lda <PPU_MASK_VAR
+	and #$1f ;no color emphasis bits
+	ora #1 ;yes gray bit
+	sta PPU_MASK
+	
+	ldx #20 ;wait
+@loop:
+	dex
+	bne @loop
+	
+	lda <PPU_MASK_VAR
+	and #$1e ;no gray bit
+	ora #$e0 ;all color emphasis bits
+	sta PPU_MASK
+	
+	ldx #20 ;wait
+@loop2:
+	dex
+	bne @loop2
+	
+	lda <PPU_MASK_VAR ;normal
+	sta PPU_MASK
+	rts
+	
+	
+	
+	
+;void seed_rng(void);
+_seed_rng:
+	lda <FRAME_CNT1
+	sta <RAND_SEED
+	rts	
+	
+	
+
+
 ;void __fastcall__ buffer_4_mt(int ppu_address, char index);
-_buffer_4_mt:
+; -> macro
+_buffer_4_mt_fast_sub:
 	;a is the index into the data, get 4 metatiles
 
 	and #$ee ;sanitize, x and y should be even
@@ -452,11 +572,11 @@ _buffer_4_mt:
 @skip:	
 ;metatiles are in TEMP+2 - TEMP+5 now
 
-	jsr popax ;ppu address
-	and #$9c ;sanitize, should be top left
-	sta TEMP+7
-	stx TEMP+8 ;save for later, ppu_address
-	
+	; Macro version sidesteps previous stack operations here
+	; Let's just lda the proper value...
+
+	lda TEMP+7
+
 	sta TEMP
 	txa
 	ora #$40	;NT_UPD_HORZ
@@ -629,22 +749,16 @@ _buffer_4_mt:
 	ror a ;bit to carry
 	ror TEMP+10 ;roll the a.t. bits in the high 2 bits
 	rts
-	
-	
-	
-	
+
+
+
+
 ;void __fastcall__ buffer_1_mt(int ppu_address, char metatile);
-_buffer_1_mt:
+; -> macro
+_buffer_1_mt_fast_sub:
 	;which metatile, in A
 
 	sta TEMP+2
-	
-	jsr popax ;get ppu address
-	and #$de ;sanitize, should be even x and y
-	sta TEMP
-	txa
-	ora #$40 ;NT_UPD_HORZ
-	sta TEMP+1
 	
 	ldx VRAM_INDEX	
 	lda TEMP				;ppu address
@@ -687,124 +801,3 @@ _buffer_1_mt:
 	lda #$ff ;=NT_UPD_EOF
 	sta VRAM_BUF,x
 	rts
-	
-	
-	
-	
-;void __fastcall__ color_emphasis(char color);	
-_color_emphasis:
-	;a = bits 1110 0000
-	and #$e0 ;sanitize
-	sta TEMP
-	lda <PPU_MASK_VAR
-	and #$1f
-	ora TEMP
-	sta <PPU_MASK_VAR
-	rts
-	
-	
-	
-	
-;void __fastcall__ xy_split(unsigned int x, unsigned int y);
-_xy_split:
-	;Nametable number << 2 (that is: $00, $04, $08, or $0C) to $2006
-	;Y to $2005
-	;X to $2005
-	;Low byte of nametable address to $2006, which is ((Y & $F8) << 2) | (X >> 3)
-
-	sta <TEMP+2 ;y low
-	stx <TEMP+3
-	jsr popax
-	sta <TEMP ;x low
-	stx <TEMP+1
-	
-;push to stack in reverse order	
-	lda <TEMP+2 ;low y
-	and #$f8
-	asl a
-	asl a
-	sta <TEMP+4
-	lda <TEMP ;low x
-	lsr a
-	lsr a
-	lsr a
-	ora <TEMP+4
-	pha
-	
-	lda <TEMP ;low x
-	pha
-	
-	lda <TEMP+2 ;low y
-	pha
-
-	lda <TEMP+3 ;y high
-	and #$01
-	asl a
-	sta <TEMP+4
-	lda <TEMP+1 ;x high
-	and #$01
-	ora <TEMP+4
-	asl a
-	asl a
-	pha
-
-@3:
-
-	bit PPU_STATUS
-	bvs @3
-
-@4:
-
-	bit PPU_STATUS
-	bvc @4
-
-	pla
-	sta $2006
-	pla
-	sta $2005
-	pla
-	sta $2005
-	pla
-	sta $2006
-	rts	
-	
-
-	
-	
-;void gray_line(void);
-_gray_line:
-	lda <PPU_MASK_VAR
-	and #$1f ;no color emphasis bits
-	ora #1 ;yes gray bit
-	sta PPU_MASK
-	
-	ldx #20 ;wait
-@loop:
-	dex
-	bne @loop
-	
-	lda <PPU_MASK_VAR
-	and #$1e ;no gray bit
-	ora #$e0 ;all color emphasis bits
-	sta PPU_MASK
-	
-	ldx #20 ;wait
-@loop2:
-	dex
-	bne @loop2
-	
-	lda <PPU_MASK_VAR ;normal
-	sta PPU_MASK
-	rts
-	
-	
-	
-	
-;void seed_rng(void);
-_seed_rng:
-	lda <FRAME_CNT1
-	sta <RAND_SEED
-	rts
-	
-	
-	
