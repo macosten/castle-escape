@@ -10,7 +10,12 @@
 
 // Each line corresponds to one hardware sprite, and the following information is in each line:
 // X offset, Y offset, sprite/tile ID, palette (| OAM flip)
-// 128 terminates (I think).
+// 128 terminates.
+
+#define METASPRITE_BANK 5
+
+#pragma rodata-name(push, "BANK5")
+
 const unsigned char const valrigard_idle_left[] = {
       0xfe, 0xfd,   0xe0,   1,
       6,    0xfd,   0xe1,   1,
@@ -520,3 +525,5 @@ const unsigned char const splyke_death_effect1[] = {
       0x07, 0x07, 0x2E,0|OAM_FLIP_H|OAM_FLIP_V,
   128
 };
+
+#pragma rodata-name(pop)

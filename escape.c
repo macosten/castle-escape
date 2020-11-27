@@ -452,7 +452,16 @@ const unsigned char const leftright_movement_offset_lookup_table[] = {0xff, 15};
 const unsigned char const leftright_movement_moving_lookup_table[] = {0xff, 1};
 const unsigned char const updown_movement_offset_lookup_table[] = {0xff, 15};
 
+// Offset lookup tables for determining a cannon's direction.
+const unsigned char const cannon_ul_sprite_lookup_table[] = {6, 7, 0};
+const unsigned char const cannon_ur_sprite_lookup_table[] = {2, 1, 0};
+const unsigned char const cannon_dr_sprite_lookup_table[] = {2, 3, 4};
+const unsigned char const cannon_dl_sprite_lookup_table[] = {6, 5, 4};
+const unsigned char * const cannon_sprite_quadrant_lookup_table[] = {cannon_ul_sprite_lookup_table, cannon_ur_sprite_lookup_table, cannon_dl_sprite_lookup_table, cannon_dr_sprite_lookup_table};
+
+
 // Lookup tables for valrigard's sprite.
+#pragma rodata-name(push, "BANK5") // Metasprite Bank.
 
 const unsigned char * const valrigard_idle_sprite_lookup_table[] = {
     valrigard_idle_left, valrigard_idle_right
@@ -506,11 +515,6 @@ const unsigned char * const grarrl_sprite_lookup_table[] = {
 // Cannon lookup tables.
 const unsigned char * const cannon_sprite_lookup_table[] = {cannon_up, cannon_up_left, cannon_left, cannon_down_left, cannon_down, cannon_down_right, cannon_right, cannon_up_right};
 
-const unsigned char const cannon_ul_sprite_lookup_table[] = {6, 7, 0};
-const unsigned char const cannon_ur_sprite_lookup_table[] = {2, 1, 0};
-const unsigned char const cannon_dr_sprite_lookup_table[] = {2, 3, 4};
-const unsigned char const cannon_dl_sprite_lookup_table[] = {6, 5, 4};
-const unsigned char * const cannon_sprite_quadrant_lookup_table[] = {cannon_ul_sprite_lookup_table, cannon_ur_sprite_lookup_table, cannon_dl_sprite_lookup_table, cannon_dr_sprite_lookup_table};
 // const unsigned char const enemy_contact_behavior_lookup_table[] = {0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1}
 
 // Frames here are in reverse order so that they can be array-indexed and then have the index decremented.
@@ -534,6 +538,8 @@ const unsigned char * const purple_death_effect_sprite_lookup_table[] = {
 const unsigned char * const splyke_death_effect_sprite_lookup_table[] = {
     splyke_death_effect1, splyke_death_effect1, splyke_death_effect0
 };
+
+#pragma rodata-name(pop)
 
 void main (void) {
 
@@ -662,7 +668,7 @@ void main (void) {
             }
 
             // debug:
-            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
 
         }
@@ -989,6 +995,9 @@ const void (* draw_func_pointers[])(void) = {
 };
 
 void draw_sprites(void) {
+    // Ensure the metasprite bank is banked.
+    set_prg_bank(METASPRITE_BANK);
+
     // clear all sprites from sprite buffer
     oam_clear();
 
