@@ -477,7 +477,14 @@ const unsigned char * const valrigard_dead_sprite_lookup_table[] = {
 
 // Lookup tables for enemy sprites (not yet animated).
 const unsigned char * const korbat_sprite_lookup_table[] = {korbat_left, korbat_right};
-const unsigned char * const grarrl_sprite_lookup_table[] = {grarrl_left, grarrl_right};
+const unsigned char * const grarrl_sprite_lookup_table[] = {
+    grarrl_left, grarrl_right,
+    grarrl_backfoot_step0_left, grarrl_backfoot_step0_right,
+    grarrl_backfoot_step1_left, grarrl_backfoot_step1_right,
+    grarrl_left, grarrl_right,
+    grarrl_frontfoot_step0_left, grarrl_frontfoot_step0_right,
+    grarrl_frontfoot_step1_left, grarrl_frontfoot_step1_right,
+};
 
 // Cannon lookup tables.
 const unsigned char * const cannon_sprite_lookup_table[] = {cannon_up, cannon_up_left, cannon_left, cannon_down_left, cannon_down, cannon_down_right, cannon_right, cannon_up_right};
@@ -1094,7 +1101,16 @@ void draw_korbat(void) {
 }
 
 void draw_grarrl(void) {
-    temp3 = ENEMY_DIRECTION(x);
+    
+    temp3 = enemies.timer[x] & 0b111000;
+
+    if (temp3 >= (6 << 3)) { // Clamp the frame number to 6.
+        temp3 = 0;
+        enemies.timer[x] = 0;
+    }
+
+    temp3 = (temp3 >> 2) | ENEMY_DIRECTION(x);
+
     AsmSet2ByteFromPtrAtIndexVar(temppointer, grarrl_sprite_lookup_table, temp3); 
     oam_meta_spr(temp_x, temp_y, temppointer);
 }
@@ -1745,14 +1761,14 @@ const unsigned char const enemy_hitbox_x_offset_lookup_table[] = {
     0,
     0,
     0,
-    0,
+    1, // Cannon
     0,
     0,
     0,
     1, // Sun
     0,
-    0,
-    0,
+    1, // Cannonball
+    1, // Aciddrop
     0,
     0,
 };
@@ -2019,6 +2035,12 @@ void spikeball_ai(void) {
     // TODO: Consider the case of us being on the exact edge of a nametable.
     // (i.e we're in nt 1, y tile = 0xD; below us should be nt 2, y tile = 0x0)
     
+    // Increment the timer. The meaning of the timer will depend on the enemy.
+    // Intermediate variable used here because the compiled code is better this way.
+    temp0 = enemies.timer[x];
+    ++temp0;
+    enemies.timer[x] = temp0;
+
     temp3 = ENEMY_DIRECTION(x);
 
     temp1 = enemies.x[x];
@@ -2173,7 +2195,11 @@ void cannon_ai(void) {
     // Decrement the timer this frame.
     // That'll be *slightly* longer than 1 second on NTSC systems, and
     // it'll be more like 1.28 seconds on PAL systems.
-    if (--enemies.timer[x] == 20) { 
+    temp0 = enemies.timer[x];
+    --temp0;
+    enemies.timer[x] = temp0;
+
+    if (enemies.timer[x] == 20) { 
 
         // If the high nibble is 0...
         if (!(enemies.extra2[x] & 0xf0)) {
@@ -2423,14 +2449,19 @@ void acid_ai(void) {
     // Animations for this won't yet be implemented, but for now:
     // Animate this enemy.
     if (enemies.extra2[x]) {
-        --enemies.extra2[x];
+        temp0 = enemies.extra2[x];
+        --temp0;
+        enemies.extra2[x] = temp0;
     }
 
     // The next enemy should be an acid drop. If it's active, don't do anything.
     temp_x = x + 1;
     if (IS_ENEMY_ACTIVE(temp_x)) { return; }
 
-    if (--enemies.timer[x] == 0) {
+    temp0 = enemies.timer[x];
+    --temp0;
+    enemies.timer[x] = temp0;
+    if (temp0 == 0) {
         // Reset our timer.
         temp0 = enemies.extra[x];
         enemies.timer[x] = temp0;
@@ -2559,7 +2590,11 @@ void boss_ai(void) {
 
 void death_effect_timer_ai(void) {
     // Decrement this thing's timer, then check if it's zero.
-    if (--enemies.timer[x] == 0){
+    temp0 = enemies.timer[x];
+    --temp0;
+    enemies.timer[x] = temp0;
+
+    if (temp0 == 0){
         // If it's zero, turn this into a None and clear its flags.
         enemies.type[x] = ENEMY_NONE;
         enemies.flags[x] = 0;
