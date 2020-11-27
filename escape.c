@@ -476,7 +476,24 @@ const unsigned char * const valrigard_dead_sprite_lookup_table[] = {
 
 
 // Lookup tables for enemy sprites (not yet animated).
-const unsigned char * const korbat_sprite_lookup_table[] = {korbat_left, korbat_right};
+const unsigned char * const korbat_sprite_lookup_table[] = {
+    korbat_left, korbat_right,
+    korbat_flap1_left, korbat_flap1_right,
+    korbat_flap2_left, korbat_flap2_right,
+    korbat_flap3_left, korbat_flap3_right,
+    korbat_flap4_left, korbat_flap4_right,
+    korbat_flap5_left, korbat_flap5_right,
+    korbat_flap6_left, korbat_flap6_right,
+    korbat_flap6_left, korbat_flap6_right,
+    korbat_flap5_left, korbat_flap5_right,
+    korbat_flap4_left, korbat_flap4_right,
+    korbat_flap3_left, korbat_flap3_right,
+    korbat_flap2_left, korbat_flap2_right,
+    korbat_flap1_left, korbat_flap1_right,
+    korbat_left, korbat_right,
+};
+
+
 const unsigned char * const grarrl_sprite_lookup_table[] = {
     grarrl_left, grarrl_right,
     grarrl_backfoot_step0_left, grarrl_backfoot_step0_right,
@@ -1095,21 +1112,26 @@ void draw_energy(void) {
 // For all the draw_ functions, temp_x and temp_y are important
 
 void draw_korbat(void) {
-    temp3 = ENEMY_DIRECTION(x);
+    temp3 = enemies.timer[x] & 0b11110; // Derive the frame number from the timer.
+    if (temp3 >= (14 << 1)) { // Clamp the frame number to 14.
+        temp3 = 0;
+        enemies.timer[x] = 0;
+    }
+
+    temp3 = temp3 | ENEMY_DIRECTION(x);
+
     AsmSet2ByteFromPtrAtIndexVar(temppointer, korbat_sprite_lookup_table, temp3); 
     oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
 void draw_grarrl(void) {
-    
-    temp3 = enemies.timer[x] & 0b111000;
-
+    temp3 = enemies.timer[x] & 0b111000; // Derive the frame number from the timer.
     if (temp3 >= (6 << 3)) { // Clamp the frame number to 6.
         temp3 = 0;
         enemies.timer[x] = 0;
     }
 
-    temp3 = (temp3 >> 2) | ENEMY_DIRECTION(x);
+    temp3 = (temp3 >> 2) | ENEMY_DIRECTION(x); // Last 2 bits just make the animation slower.
 
     AsmSet2ByteFromPtrAtIndexVar(temppointer, grarrl_sprite_lookup_table, temp3); 
     oam_meta_spr(temp_x, temp_y, temppointer);
@@ -1991,7 +2013,11 @@ void korbat_ai(void) {
     // Look to see if the metatile ahead of me is solid. If it is, turn around.
     // Then, move forward.
 
-    // Convert the coords of this enemy to metatile coords.
+    // Increment the timer. The meaning of the timer will depend on the enemy.
+    // Intermediate variable used here because the compiled code is better this way.
+    temp0 = enemies.timer[x];
+    ++temp0;
+    enemies.timer[x] = temp0;
 
     temp3 = ENEMY_DIRECTION(x);
 
@@ -2031,9 +2057,6 @@ void spikeball_ai(void) {
     // Then, move forward.
 
     // Should also be used for Grarrls.
-
-    // TODO: Consider the case of us being on the exact edge of a nametable.
-    // (i.e we're in nt 1, y tile = 0xD; below us should be nt 2, y tile = 0x0)
     
     // Increment the timer. The meaning of the timer will depend on the enemy.
     // Intermediate variable used here because the compiled code is better this way.
