@@ -15,7 +15,7 @@ int main(int argc, char * argv[]) {
 	FILE * infile = fopen(argv[1], "r"); // Input file.
 
 	// Figure out the filename without the extension.
-	const char * filename = basename(argv[1]);
+	char * filename = basename(argv[1]);
 	
 	for (char * ptr = filename; *ptr != '\0'; ++ptr) {
 		if (*ptr == '.') { 
@@ -26,6 +26,7 @@ int main(int argc, char * argv[]) {
 
 	if (!infile) {
 		fprintf(stderr, "Error reading input file.\n");
+		return -1;
 	}
 
 	// Read all the csv values. (A trailing comma will be necessary, probably.)
@@ -35,7 +36,7 @@ int main(int argc, char * argv[]) {
 	for (count = 0; ; ++count) {
 		unsigned char inchar = 0;
 
-		int rval = fscanf(infile, "%u,", &inchar); // Parse values one at a time.
+		int rval = fscanf(infile, "%hhu,", &inchar); // Parse values one at a time.
 		if (rval != 1) { break; } // Not enough tokens found -- terminate loop.
 
 		sb_push(uncompressed_map, inchar);
