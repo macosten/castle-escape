@@ -45,7 +45,8 @@ const unsigned char const metatiles[]={
     166, 167, 182, 183,  3,
     170, 171, 186, 187,  2, // Red Door
     
-    168, 169, 184, 185,  0, // Prison Window
+    168, 169, 184, 185,  0, 
+    // Prison Window
     0, 0, 0, 168,  0,
     0, 0, 169, 0,  0,
     0, 184, 0, 0,  0,
@@ -66,7 +67,7 @@ const unsigned char const metatiles[]={
     232, 233, 248, 249,  3, // Star
     234, 235, 250, 251,  1, // Energy Refill
     
-    0,   0,   0,   0,    0, // Empty
+    ' ', ' ', ' ', ' ',  0, // Empty
 
     // Unfortunately I didn't have the foresight to make Empty the absolute last tile, so:
     140, 140, 156, 156, 1, // Left Conveyor Middle (no wheel)
@@ -76,7 +77,7 @@ const unsigned char const metatiles[]={
 
     224, 225, 242, 243, 0, // Top Square Platform (U+L+R Edges)
     226, 227, 240, 241, 0, // Bottom Square Platform (D+L+R Edges)
-    '4', '9', '?', '?', 1, // Unused Tile (#49)
+     11,  11,  11,  11, 0, // Dialog Box Bottom
     '5', '0', '?', '?', 1, // Unused Tile (#50)
 };
 
@@ -174,5 +175,8 @@ const unsigned char const metatile_property_lookup_table[]={
     METATILE_SOLID,
     METATILE_SOLID,
 
+    // Tile #49 -- Bottom of a dialog box.
+    METATILE_NO_EFFECT,
+    
     // The unused tiles don't have properties specified here -- so I guess they're "glitchy" that way.
 };

@@ -13,6 +13,16 @@
 .export _set_nmi_chr_tile_bank, _unset_nmi_chr_tile_bank
 .export _set_mirroring, _set_mmc1_ctrl
 
+
+; Converted from C:
+
+.define MAX_BANK_DEPTH 10
+
+BANK_LEVEL: .res 1
+BANK_BUFFER: .res MAX_BANK_DEPTH
+
+.export _bank_pop, _bank_push
+
 ; sets the bank at $8000-bfff
 _set_prg_bank:
     sta BP_BANK
@@ -61,5 +71,47 @@ _set_mmc1_ctrl:
 	and #$1f ;remove upper 3 bits
 	jmp Ctrl_common
 	
+; "Hand-compiled" from C to 6502 asm (but untested):
+
+; void __fastcall__ bank_pop(void);
+_bank_pop:
+    ; --BANK_LEVEL;
+    dec     BANK_LEVEL
+    ; if (BANK_LEVEL > 0) { (beq will branch if dec set the zero flag) 
+    ; (i.e if BANK_LEVEL is now zero)
+    beq     bankLevelIsZero
+    ; set_prg_bank(BANK_BUFFER[BANK_LEVEL-1]);
+    ldy     BANK_LEVEL
+    dey
+    lda     BANK_BUFFER,y
+    jmp     _set_prg_bank
+    ; }
+bankLevelIsZero:  rts
 	
+; void __fastcall__ bank_push(unsigned char bankId);
+_bank_push:
+    ; Accumulator is already bankId.
+    ; BANK_BUFFER[BANK_LEVEL] = bankID;
+    ldy BANK_LEVEL
+    sta BANK_BUFFER,y
+    ; ++BANK_LEVEL;
+    inc BANK_LEVEL
+    ; set_prg_bank(bankID);
+    jmp _set_prg_bank
 	
+; Call a function pointed to by TEMP.
+calltemp:
+    jmp (TEMP)
+
+; void __fastcall__ banked_call(unsigned char bankId, void (*method)(void));
+_banked_call:
+    ; Save the pointer for later.
+    sta TEMP
+    stx TEMP+1
+    ; bank_push(bankId)
+    jsr popa
+    jsr _bank_push
+    ; (*method)();
+    jsr calltemp
+    ; bank_pop();
+    jmp _bank_pop ; rts will be executed eventually in _set_prg_bank

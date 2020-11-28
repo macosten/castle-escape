@@ -16,20 +16,19 @@ export nesemupath="mednafen"
 export CC65_HOME="/usr/local/share/cc65"
 # Important; otherwise, CC65 will not know where to find its includes.
 
-cc65 -Oirs $name.c --add-source
-# cc65 -O $name.c --add-source # The game has advanced far enough that this is now definitely slower than -Oirs
-ca65 crt0.s
-ca65 $name.s -g
+# cc65 -Oirs --add-source src/$name.c
 
-# ld65 -C nrom_32k_horz.cfg -o $name.nes crt0.o $name.o nes.lib -Ln labels.txt
-ld65 -C mmc1.cfg -o $name.nes crt0.o $name.o nes.lib -Ln labels.txt
+# ca65 src/crt0.s
+# ca65 src/$name.s -g
 
-#rm *.o
+# ld65 -C src/mmc1.cfg -o $name.nes src/*.o nes.lib -Ln build/labels.txt
 
-mv -f labels.txt build/
-mv -f $name.s build/
-mv -f $name.nes build/
+# mv -f src/*.o build/
+# mv -f src/$name.s build/
+# mv -f $name.nes build/
 
-python3 fceux_symbols.py
+# python3 fceux_symbols.py
+
+make
 
 $nesemupath build/$name.nes >/dev/null

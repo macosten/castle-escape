@@ -21,5 +21,12 @@ const unsigned char const level20[] = {
 	4,3,7,2,8,
 };
 
+const unsigned char const * bossDialog[] = {
+	"So we meet again, Valrigard.",
+	"I should have known...",
+	"Did you really think I wouldn't escape?",
+	"You may have escaped the dungeon, but you won't live to speak of it..."
+};
+
 #pragma rodata-name(pop)
 

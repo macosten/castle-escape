@@ -1,5 +1,0 @@
-BreakPoint: startAddr=D6C6  endAddr=0000  flags=-C--X-  condition=""  desc="Start Movement" 
-BreakPoint: startAddr=D95E  endAddr=0000  flags=-C--X-  condition=""  desc="Start Enemy Movement" 
-BreakPoint: startAddr=D997  endAddr=0000  flags=-C--X-  condition=""  desc="End Enemy  AII" 
-BreakPoint: startAddr=CD8E  endAddr=0000  flags=-C--X-  condition=""  desc="End Draw " 
-Bookmark: addr=CD8F  desc="draw_korbat" 
