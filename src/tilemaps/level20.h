@@ -2,6 +2,8 @@
 // swapped in the correct place in RAM.
 // Otherwise, you'll get garbage data.
 
+#include "structs.h"
+
 #pragma rodata-name(push, "BANK0")
 
 // bitpacked coords (0xXY), nt, direction (or other info) + type
@@ -21,11 +23,21 @@ const unsigned char const level20[] = {
 	4,3,7,2,8,
 };
 
-const unsigned char const * bossDialog[] = {
+const char * const boss_dialog_strings[] = {
 	"So we meet again, Valrigard.",
 	"I should have known...",
 	"Did you really think I wouldn't escape?",
 	"You may have escaped the dungeon, but you won't live to speak of it..."
+};
+
+const unsigned char * const boss_dialog_portrait_sprites[] = {
+	NULL, NULL, NULL, NULL
+};
+
+const DialogBoxData boss_dialog = {
+	4,
+	boss_dialog_portrait_sprites,
+	boss_dialog_strings,
 };
 
 #pragma rodata-name(pop)

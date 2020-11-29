@@ -39,6 +39,7 @@ unsigned int temp6;
 
 // Pointers.
 const unsigned char * temppointer;
+const unsigned char * temppointer1;
 unsigned char * temp_mutablepointer;
 
 unsigned char eject_L; // Used in the collision routine(s).
@@ -125,7 +126,7 @@ unsigned char menu_index;
 
 unsigned int tile_clear_queue[4]; // Each element is one result of get_ppu_addr
 unsigned char tile_clear_to_type_queue[4]; // This is the tile ID to replace the cleared tile with.
-unsigned int tile_clear_attr_addr_queue[4]; // This is the palette ID to replace the cleared tile's palette with.
+// unsigned int tile_clear_attr_addr_queue[4]; // More complex math is required to adjust the attribute table mid-game.
 unsigned char tile_clear_front;
 unsigned char tile_clear_back;
 

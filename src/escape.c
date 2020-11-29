@@ -257,6 +257,9 @@ void boss_ai(void);
 
 void death_effect_timer_ai(void);
 
+extern void dialog_box_handler(void);
+extern void trigger_dialog_box(DialogBoxData const * dboxdata);
+
 // MARK: Lookup Tables
 
 // The lookup tables for draw_screen_sub().
@@ -497,6 +500,28 @@ void main (void) {
             // debug:
             // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
+
+        }
+
+        while (game_mode == MODE_GAME_SHOWING_TEXT) {
+            // The mode the game is in while a dialog box should block all movement.
+            ppu_wait_nmi(); 
+
+            // Music...?
+
+            set_chr_bank_0(0);
+            pad1 = pad_poll(0); // read the first controller
+            pad1_new = get_pad_new(0); 
+
+            clear_vram_buffer();
+
+            // No movement of any kind.
+
+            draw_sprites();
+
+            // And no screen-drawing (other than what the dialog box code does).
+
+            dialog_box_handler();
 
         }
 
@@ -1456,6 +1481,10 @@ void handle_tile_clear_queue(void) {
 void draw_screen_U(void) {
     pseudo_scroll_y = sub_scroll_y(0x20, scroll_y);
     
+    temp1 = high_byte(pseudo_scroll_y);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
+    set_data_pointer(temppointer); // Should this value be clamped to the number of cmaps?
+
     draw_screen_sub();
 }
 
@@ -1465,14 +1494,16 @@ void draw_screen_D(void) {
     // This 0xef (239, which is the height of the screen minus one) might possibly want to be either a 0xf0 (240) or a 
     // 0x100 (1 full nametable compensating for the fact that the last 16 values are masked off by add_scroll_y)
     
+    temp1 = high_byte(pseudo_scroll_y);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
+    set_data_pointer(temppointer); // Should this value be clamped to the number of cmaps?
+
     draw_screen_sub();
 }
 
 void draw_screen_sub(void) {
     temp1 = high_byte(pseudo_scroll_y);
     
-    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
-    set_data_pointer(temppointer); // Should this value be clamped to the number of cmaps?
     nt = (temp1 & 1) << 1; // 0 or 2 for vertical scrolling
     y = low_byte(pseudo_scroll_y);
     
@@ -2446,6 +2477,13 @@ void splyke_ai(void) {
 }
 
 void boss_ai(void) {
+
+    // extra[x] will be a bunch of flags. 
+
+    if (enemies.extra[x] == 0) {
+        enemies.extra[x] = 128;
+        trigger_dialog_box(&boss_dialog);
+    }
 
 }
 

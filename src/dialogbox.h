@@ -1,21 +1,24 @@
 #ifndef dialogbox_h
 #define dialogbox_h
 
-typedef struct dialogboxdata_t {
-    // On a conceptual level, for each i, portraitSprites[i] and strings[i] are a pair.
-
-    unsigned char ** portraitSprites; // One pointer to a metasprite for each dialog box. This will be shown alongside strings[i].
-    unsigned char ** strings; // One string for each dialog box.
-    unsigned char count; // The number of boxes full of dialog this data object holds.
-    // 
-} DialogBoxData;
-
-DialogBoxData const * active_dboxdata;
+#include "structs.h"
 
 // Activate a dialog box, telling the game that one is rendering.
 void trigger_dialog_box(DialogBoxData const * dboxdata);
 
-// Draw the dialog.
-void draw_dialog_text(void);
+// Called in the main game loop if a dialog box is active.
+void dbox_handler(void);
+
+// Actually draw the dialog box.
+void dbox_draw_box(void);
+
+// Draw the text.
+void dbox_draw_text(void);
+
+// Wait for the player to press the A button.
+void dbox_await_input(void);
+
+// "Erase" the dialog box (actually, just redraw the map in the area the dialog box used to be in).
+void dbox_erase_box(void);
 
 #endif

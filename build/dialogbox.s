@@ -10,19 +10,44 @@
 	.importzp	sp, sreg, regsave, regbank
 	.importzp	tmp1, tmp2, tmp3, tmp4, ptr1, ptr2, ptr3, ptr4
 	.macpack	longbranch
-	.export		_active_dboxdata
 	.export		_trigger_dialog_box
-	.export		_draw_dialog_text
+	.export		_dbox_draw_box
+	.export		_dbox_draw_text
+	.export		_dbox_await_input
+	.export		_dbox_erase_box
+	.import		_add_scroll_y_fast_sub
 	.import		_set_data_pointer
-	.export		_didDraw
-	.export		_lineIndex
-	.export		_charIndex
+	.importzp	_TEMP
+	.export		_active_dboxdata
+	.export		_dbox_bg_part
+	.export		_dbox_status
+	.export		_dbox_x
+	.export		_dbox_y
 	.importzp	_temp0
+	.importzp	_pad1
+	.importzp	_temppointer
 	.importzp	_scroll_y
-	.importzp	_nt
+	.importzp	_pseudo_scroll_y
+	.importzp	_scroll_count
 	.importzp	_game_mode
+	.import		_cmaps
+	.import		_draw_screen_sub
 	.export		_dbox_tiles
-	.export		_draw_box
+	.export		_dbox_x_offset_lookup0
+	.export		_dbox_x_offset_lookup1
+	.export		_dbox_y_offset_lookup
+	.export		_dbox_index_offset_lookup0
+	.export		_dbox_index_offset_lookup1
+	.export		_dbox_functions
+	.export		_dialog_box_handler
+
+.segment	"DATA"
+
+_dbox_functions:
+	.addr	_dbox_draw_box
+	.addr	_dbox_erase_box
+	.addr	_dbox_draw_text
+	.addr	_dbox_await_input
 
 .segment	"RODATA"
 
@@ -91,20 +116,47 @@ _dbox_tiles:
 	.byte	$31
 	.byte	$31
 	.byte	$31
+_dbox_x_offset_lookup0:
+	.byte	$00
+	.byte	$20
+	.byte	$40
+	.byte	$60
+_dbox_x_offset_lookup1:
+	.byte	$80
+	.byte	$A0
+	.byte	$C0
+	.byte	$E0
+_dbox_y_offset_lookup:
+	.byte	$00
+	.byte	$00
+	.byte	$20
+	.byte	$20
+_dbox_index_offset_lookup0:
+	.byte	$00
+	.byte	$02
+	.byte	$04
+	.byte	$06
+_dbox_index_offset_lookup1:
+	.byte	$08
+	.byte	$0A
+	.byte	$0C
+	.byte	$0E
 
 .segment	"BSS"
 
 _active_dboxdata:
 	.res	2,$00
-_didDraw:
+_dbox_bg_part:
 	.res	1,$00
-_lineIndex:
+_dbox_status:
 	.res	1,$00
-_charIndex:
+_dbox_x:
+	.res	1,$00
+_dbox_y:
 	.res	1,$00
 
 ; ---------------------------------------------------------------
-; void __near__ trigger_dialog_box (__near__ const struct dialogboxdata_t *)
+; void __near__ trigger_dialog_box (__near__ const struct DialogBoxData_t *)
 ; ---------------------------------------------------------------
 
 .segment	"CODE"
@@ -132,6 +184,19 @@ _charIndex:
 	lda     #$05
 	sta     _game_mode
 ;
+; dbox_status = DBOX_STATUS_DRAWING_BOX;
+;
+	tya
+	sta     _dbox_status
+;
+; dbox_x = 0;
+;
+	sta     _dbox_x
+;
+; dbox_y = 0;
+;
+	sta     _dbox_y
+;
 ; }
 ;
 	jmp     incsp2
@@ -139,15 +204,86 @@ _charIndex:
 .endproc
 
 ; ---------------------------------------------------------------
-; void __near__ draw_dialog_text (void)
+; void __near__ dbox_draw_box (void)
 ; ---------------------------------------------------------------
 
 .segment	"CODE"
 
-.proc	_draw_dialog_text: near
+.proc	_dbox_draw_box: near
 
 .segment	"CODE"
 
+;
+; set_data_pointer(dbox_tiles);
+;
+	lda     #<(_dbox_tiles)
+	ldx     #>(_dbox_tiles)
+	jsr     _set_data_pointer
+;
+; add_scroll_y(pseudo_scroll_y, dbox_y, scroll_y);
+;
+	lda     _scroll_y
+	sta     _TEMP
+	lda     _scroll_y+1
+	sta     _TEMP+1
+	lda     _dbox_y
+	jsr     _add_scroll_y_fast_sub
+	sta     _pseudo_scroll_y
+	stx     _pseudo_scroll_y+1
+;
+; draw_screen_sub();
+;
+	jsr     _draw_screen_sub
+;
+; if (scroll_count == 0) {
+;
+	lda     _scroll_count
+	bne     L00D5
+;
+; dbox_y += 0x20;
+;
+	lda     #$20
+	clc
+	adc     _dbox_y
+	sta     _dbox_y
+;
+; if (dbox_y > 0x20) {
+;
+L00D5:	lda     _dbox_y
+	cmp     #$21
+	bcc     L009F
+;
+; dbox_status = DBOX_STATUS_DRAWING_TEXT;
+;
+	lda     #$02
+	sta     _dbox_status
+;
+; dbox_y = 0;
+;
+	lda     #$00
+	sta     _dbox_y
+;
+; }
+;
+L009F:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ dbox_draw_text (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_dbox_draw_text: near
+
+.segment	"CODE"
+
+;
+; dbox_status = DBOX_STATUS_AWAITING_BUTTON;
+;
+	lda     #$03
+	sta     _dbox_status
 ;
 ; }
 ;
@@ -156,32 +292,127 @@ _charIndex:
 .endproc
 
 ; ---------------------------------------------------------------
-; void __near__ draw_box (void)
+; void __near__ dbox_await_input (void)
 ; ---------------------------------------------------------------
 
 .segment	"CODE"
 
-.proc	_draw_box: near
+.proc	_dbox_await_input: near
 
 .segment	"CODE"
 
 ;
-; temp0 = high_byte(scroll_y);
+; if (pad1 & PAD_DOWN) {
 ;
+	lda     _pad1
+	and     #$04
+	beq     L00A9
+;
+; dbox_status = DBOX_STATUS_ERASING_BOX;
+;
+	lda     #$01
+	sta     _dbox_status
+;
+; }
+;
+L00A9:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ dbox_erase_box (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_dbox_erase_box: near
+
+.segment	"CODE"
+
+;
+; add_scroll_y(pseudo_scroll_y, dbox_y, scroll_y);
+;
+	lda     _scroll_y
+	sta     _TEMP
 	lda     _scroll_y+1
+	sta     _TEMP+1
+	lda     _dbox_y
+	jsr     _add_scroll_y_fast_sub
+	sta     _pseudo_scroll_y
+	stx     _pseudo_scroll_y+1
+;
+; temp0 = high_byte(pseudo_scroll_y);
+;
+	lda     _pseudo_scroll_y+1
 	sta     _temp0
 ;
-; nt = (temp0 & 1) << 1; // 0 or 2 for vertical scrolling
+; AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp0);
 ;
-	and     #$01
 	asl     a
-	sta     _nt
+	tay
+	lda     _cmaps,y
+	sta     _temppointer
+	lda     _cmaps+1,y
+	sta     _temppointer+1
 ;
-; set_data_pointer(dbox_tiles);
+; set_data_pointer(temppointer);
 ;
-	lda     #<(_dbox_tiles)
-	ldx     #>(_dbox_tiles)
-	jmp     _set_data_pointer
+	lda     _temppointer
+	ldx     _temppointer+1
+	jsr     _set_data_pointer
+;
+; draw_screen_sub();
+;
+	jsr     _draw_screen_sub
+;
+; if (scroll_count == 0) {
+;
+	lda     _scroll_count
+	bne     L00D6
+;
+; dbox_y += 0x20;
+;
+	lda     #$20
+	clc
+	adc     _dbox_y
+	sta     _dbox_y
+;
+; if (dbox_y > 0x20) {
+;
+L00D6:	lda     _dbox_y
+	cmp     #$21
+	bcc     L00D1
+;
+; game_mode = MODE_GAME;
+;
+	lda     #$01
+	sta     _game_mode
+;
+; }
+;
+L00D1:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ dialog_box_handler (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_dialog_box_handler: near
+
+.segment	"CODE"
+
+;
+; AsmCallFunctionAtPtrOffsetByIndexVar(dbox_functions, dbox_status);
+;
+	lda     _dbox_status
+	asl     a
+	tay
+	lda     _dbox_functions,y
+	ldx     _dbox_functions+1,y
+	jmp     callax
 
 .endproc
 

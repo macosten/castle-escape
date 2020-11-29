@@ -2,7 +2,7 @@
 #define structs_h
 // Struct definitions go here.
 
-typedef struct PlayerSprite {
+typedef struct PlayerSprite_t {
     unsigned int x; // Low byte == subpixel, high byte == pixel
     unsigned int y;
     signed int velocity_x;
@@ -19,6 +19,13 @@ typedef struct Hitbox_t {
 } Hitbox;
 // Technically speaking, the same hitbox will be used to check the collisions of multiple things in one frame.
 
+typedef struct DialogBoxData_t {
+    // On a conceptual level, for each i, portraitSprites[i] and strings[i] are a pair.
+    const unsigned char count; // The number of boxes full of dialog this data object holds.
+    const unsigned char * const * portrait_sprites; // One pointer to a metasprite for each dialog box. This will be shown alongside strings[i].
+    const unsigned char * const * strings; // One string for each dialog box.
+    // 
+} DialogBoxData;
 
 #define MAX_ENEMIES 40
 // The Struct of Arrays pattern plays much nicer with cc65 than an array of structs would.
