@@ -4,7 +4,8 @@
 //
 //  Created by Zaccari Silverman on 6/12/20.
 //
-
+#ifndef metatiles_h
+#define metatiles_h
 // Format: 4 tile indices (upper left, upper right, lower left, lower right), then the palette index.
 const unsigned char const metatiles[]={
     // Solid Tiles
@@ -45,7 +46,8 @@ const unsigned char const metatiles[]={
     166, 167, 182, 183,  3,
     170, 171, 186, 187,  2, // Red Door
     
-    168, 169, 184, 185,  0, 
+    238, 239, 254, 255,  3, // Bonked ? Block
+
     // Prison Window
     0, 0, 0, 168,  0,
     0, 0, 169, 0,  0,
@@ -77,15 +79,17 @@ const unsigned char const metatiles[]={
 
     224, 225, 242, 243, 0, // Top Square Platform (U+L+R Edges)
     226, 227, 240, 241, 0, // Bottom Square Platform (D+L+R Edges)
-     11,  11,  11,  11, 0, // Dialog Box Bottom
+      0,   0,0x11,0x11, 3, // Dialog Box Bottom
     '5', '0', '?', '?', 1, // Unused Tile (#50)
 };
 
 #define QUAD_EDGE_STONE 15
 #define QUESTION_BLOCK 22
+#define BONKED_QUESTION_BLOCK 27
 #define STAR_TILE 42
 #define ENERGY_REFILL_TILE 43
 #define EMPTY_TILE 44
+#define DIALOG_BOX_BOTTOM 49
 
 
 #define METATILE_NO_EFFECT      0 // No collisions, or anything else
@@ -141,8 +145,10 @@ const unsigned char const metatile_property_lookup_table[]={
     METATILE_YELLOW_DOOR,
     METATILE_RED_DOOR,
 
+    // Bonked ? Block
+    METATILE_SOLID, 
+
     // Prison Window
-    METATILE_NO_EFFECT, 
     METATILE_NO_EFFECT,
     METATILE_NO_EFFECT,
     METATILE_NO_EFFECT,
@@ -180,3 +186,4 @@ const unsigned char const metatile_property_lookup_table[]={
     
     // The unused tiles don't have properties specified here -- so I guess they're "glitchy" that way.
 };
+#endif

@@ -1,208 +1,27 @@
-// using a buffer, we have more flexibility, since we can adjust the
-// screen position of a PPU write, and can piggy back multiple data
-// sets into 1 push, doing more than 1 update per frame, and
-// the data sets can have zeroes, since they are not zero terminated
+// ====
+// Castle Escape
+//
 
-#include "lib/neslib.h"
-#include "lib/nesdoug.h"
+#include "lib/neslib.h" // Shiru's library. Some functions were modified to reduce stack usage.
+#include "lib/nesdoug.h" // dougeff's library. Some functions were modified to reduce stack usage.
 
-#include "mmc1/bank_helpers.h"
+#include "mmc1/bank_helpers.h" // MMC1 utility functions.
 
-#include "structs.h"
-#include "metasprites.h"
-#include "metatiles.h"
-#include "levels.h"
+#include "structs.h" // Some general-purpose structs are defined here (these will probably be moved).
+#include "metasprites.h" // Metasprite data is defined here.
+#include "metatiles.h" // Metatile data is defined here.
+#include "levels.h" // Level data is defined here (in a bunch of headers).
 #include "enemies.h"
+#include "zeropage.h" // Zeropage declarations are here. Probably better to just extern what you need than import this everywhere.
+#include "constants.h" // Constant #defines are here.
 
 #include "asm/score.h"
 #include "asm/math.h"
 #include "asm/macros.h"
 #include "asm/helper.h"
 
-#include "lib/lzgmini_6502.h"
+#include "lib/lzgmini_6502.h" // My version of liblzg, interfaced to work with cc65.
 
-#define SPEED 0x150
-
-#define ACCEL 0x20
-#define GRAVITY 0x30
-#define MAX_SPEED 0x150
-#define MAX_FALL MAX_SPEED
-#define FLY_VEL -0x600
-
-// All the appropriate stuff below this (in this case, variables)
-// should be placed into the named segment.
-// This applies to all appropriate stuff between this pragma
-// and the next bss-name(pop) pragma.
-#pragma bss-name(push, "ZEROPAGE")
-
-// If we wanted to put code or rodata into another bank, we'd do something like:
-// #pragma rodata-name("BANK0")
-// This will happen for level data and potentially other data we don't need often too.
-
-// MARK: Zero Page Globals
-unsigned char pad1; // Stores the state of the game controller.
-unsigned char pad1_new; // Stores the state of the game controller.
-unsigned char collision; // Used in collision routines.
-unsigned char collision_L;
-unsigned char collision_R;
-unsigned char collision_U;
-unsigned char collision_D;
-unsigned char coordinates; // Used to index the collision maps.
-
-// Temporary variables, used for a multitude of things.
-// Since we don't have many registers in the actual CPU, these sort of act as the next best thing.
-// Best to assume that the values of these temps are NOT stored between function calls.
-// If the values of the temps *does* matter at the end, then the function name should end in "_sub".
-unsigned char temp0;
-unsigned char temp1;
-unsigned char temp2;
-unsigned char temp3;
-unsigned char temp4;
-
-unsigned int temp5;
-unsigned int temp6;
-
-// Pointers.
-const unsigned char * temppointer;
-unsigned char * temp_mutablepointer;
-
-unsigned char eject_L; // Used in the collision routine(s).
-unsigned char eject_R;
-unsigned char eject_D;
-unsigned char eject_U; 
-
-
-unsigned char player_frame_timer;
-unsigned char player_sword_timer;
-//unsigned char player_timer;
-
-unsigned char player_flags; // All of these flags should be such that the default value for this byte when starting a level is 0
-#define DIRECTION (player_flags & 1) //facing left or right? (lsb of player_flags)
-#define SET_DIRECTION_LEFT() (player_flags &= 0b11111110) // Un-set the lsb
-#define SET_DIRECTION_RIGHT() (player_flags |= 1) // Set the lsb
-#define LEFT 0
-#define RIGHT 1
-#define UP 0
-#define DOWN 1
-
-#define STATUS_DEAD (player_flags & 2)
-#define SET_STATUS_ALIVE() (player_flags &= 0b11111101)
-#define SET_STATUS_DEAD() (player_flags |= 2) // set bit 1
-#define ALIVE 0
-#define DEAD 2 // 0b10
-
-#define IS_SWINGING_SWORD (player_flags & 4)
-#define SET_STATUS_NOT_SWINGING_SWORD() (player_flags &= 0b11111011)
-#define SET_STATUS_SWINGING_SWORD() (player_flags |= 4)
-
-unsigned char game_mode;
-// Generally preferring defines like this over enums as enums are ints
-// under the hood, and ints are 2 bytes (which makes them slower). 
-#define MODE_TITLE 0
-#define MODE_GAME 1
-#define MODE_PAUSE 2
-#define MODE_LEVEL_WELCOME_SCREEN 3
-#define MODE_GAME_OVER 4 
-// (Uh, do we actually want game overs?) 
-// Maybe we just nuke your score every N deaths...
-
-int address; // Used with get_ppu_addr and buffer_4_mt.
-
-unsigned char x; // Used as a loop index.
-unsigned char y; // Used as a loop index.
-unsigned char index; // Used as an index, for loops and otherwise.
-
-unsigned char nt; // nametable index (though it's only used in 1 place, so...)
-
-// unsigned int scroll_x;
-unsigned int pseudo_scroll_y;
-unsigned int scroll_y;
-unsigned int min_scroll_y;
-unsigned int max_scroll_y;
-unsigned int initial_scroll;
-unsigned char scroll_count;
-#define MAX_UP 0x4000 // The lowest Y value the player can have before the screen attempts to scroll up.
-#define MIN_DOWN 0x8000 // The highest Y value the player can have before the screen attempts to scroll down.
-
-unsigned char L_R_switch;
-unsigned int old_x;
-unsigned int old_y;
-// For enemies:
-unsigned char temp_x;
-unsigned char temp_y;
-
-unsigned char level_index;
-
-unsigned char energy;
-#define MAX_ENERGY 0x70 // 144: 9 (rough number of tiles of flight height with no tapping) * 16(height of [meta]tile in pixels)?
-// Or should this be the number of frames which we should be able to fly for?
-
-// Max score of 65535. That feels like it should be enough, right?
-unsigned int score;
-unsigned char enemy_score;
-
-// At 100, you should get an extra life!
-unsigned char stars;
-
-// 255 frames / 60 fps (NTSC) = 4.25 seconds
-// Should we also take PAL machines into account and try to change frame counts in these cases?
-
-unsigned char timer;
-#define TITLE_SCREEN_LENGTH 120 // ~2 seconds on NTSC machines.
-
-#define SONGS 0 // No songs yet. I might look into FamiStudio...
-unsigned char song;
-// enum {SONG_NAME1, SONG_NAME2};
-// enum {SFX_FLAP, ...};
-
-// Level information.
-unsigned char nt_min; // lower bound (included) in the range of nametables we're allowed to scroll in right now.
-unsigned char nt_max; // upper bound (not included) in the range of nametables we're allowed to scroll in right now.
-unsigned char nt_current; // The nametable Valrigard is currently in. This should help us determine what other nametable to load when scrolling...?
-
-#define VALRIGARD_WIDTH 11
-#define VALRIGARD_HEIGHT 13
-
-// The swinging hitbox should be expanded slightly.
-#define VALRIGARD_SWINGING_WIDTH 15
-#define VALRIGARD_SWINGING_HEIGHT 15
-
-#define METATILE_IS_SOLID(mtid) (metatile_property_lookup_table[mtid] & METATILE_SOLID)
-
-
-Player valrigard; // A width of 12 makes Valrigard's hitbox a bit more forgiving. It also happens to match up with his nose.
-Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C stack is not preferable to using a global, generally speaking)
-// I renamed nesdoug's "Generic" to "Hitbox" to remind me of what purpose it serves.
-
-Hitbox hitbox2; // This hitbox is used for enemies.
-
-unsigned char shuffle_offset;
-unsigned char shuffle_maximum;
-
-// Debug variables that get rendered to the screen each frame.
-// These will be removed in the future.
-unsigned char debug_tile_x;
-unsigned char debug_tile_y;
-
-// Added to valrigard.x when standing on a conveyor belt.
-#define LEFT_CONVEYOR_DELTA -127
-#define RIGHT_CONVEYOR_DELTA 127
-signed char conveyor_delta;
-
-unsigned char menu_index;
-
-unsigned int tile_clear_queue[4]; // Each element is one result of get_ppu_addr
-unsigned char tile_clear_to_type_queue[4]; // This is the tile ID to replace the cleared tile with.
-unsigned int tile_clear_attr_addr_queue[4]; // This is the palette ID to replace the cleared tile's palette with.
-unsigned char tile_clear_front;
-unsigned char tile_clear_back;
-
-// If nonzero, then valrigard should be jerked down (+Y) a bit this frame.
-unsigned char did_headbonk;
-
-// ~?? zp bytes left? (see ZP_LAST in labels.txt)
-
-#pragma bss-name(pop)
 
 #pragma bss-name(push, "BSS")
 
@@ -588,17 +407,25 @@ void main (void) {
                 // level_index = 0;
                 score = 0; // Reset the score.
                 begin_level();
-            } else if (pad1_new & PAD_LEFT && level_index != 0) {
-                --level_index;
+            } else if (pad1_new & PAD_LEFT) {
+
+                if (level_index != 0) {
+                    --level_index;
+                } else {
+                    level_index = NUMBER_OF_LEVELS - 1;
+                }
+                
 
                 // Update the level name shown on the screen.
                 AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
                 temp0 = strlen(temppointer);
                 multi_vram_buffer_horz(temppointer, temp0, NTADR_A(3, 8));
 
-            } else if (pad1_new & PAD_RIGHT && level_index < NUMBER_OF_LEVELS-1) {
+            } else if (pad1_new & PAD_RIGHT) {
                 ++level_index;
-
+                if (level_index == NUMBER_OF_LEVELS) {
+                    level_index = 0;
+                }
                 // Update the level name shown on the screen.
                 AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
                 temp0 = strlen(temppointer);
@@ -1519,8 +1346,8 @@ void bg_collision_sub(void) {
         AsmSet2ByteAtPtrWithOffset(tile_clear_queue, tile_clear_back, address);
         tile_clear_to_type_queue[tile_clear_back] = EMPTY_TILE;
 
-        address = 0;
-        AsmSet2ByteAtPtrWithOffset(tile_clear_attr_addr_queue, tile_clear_back, address); // Don't update an attribute.
+        //address = 0;
+        //AsmSet2ByteAtPtrWithOffset(tile_clear_attr_addr_queue, tile_clear_back, address); // Don't update an attribute.
 
         ++tile_clear_back;
         tile_clear_back &= 0b11; // Mask to <4
@@ -1550,7 +1377,7 @@ void bg_collision_sub_collision_u(void) {
     if (temp4 == QUESTION_BLOCK && (temp3 & 0x0f) == 0x0f 
         && (temp1 & 0xf0) == ( (high_byte(valrigard.x) + VALRIGARD_HEIGHT/2 ) & 0xf0)) {
 
-        temp_mutablepointer[coordinates] = QUAD_EDGE_STONE;
+        temp_mutablepointer[coordinates] = BONKED_QUESTION_BLOCK;
 
         // Figure out the correct bonus amount.
         if (temp0 > 128) { score += 1; }
@@ -1567,10 +1394,13 @@ void bg_collision_sub_collision_u(void) {
 
         // Enqueue a tile update.
         AsmSet2ByteAtPtrWithOffset(tile_clear_queue, tile_clear_back, address);
-        tile_clear_to_type_queue[tile_clear_back] = QUAD_EDGE_STONE;
+        tile_clear_to_type_queue[tile_clear_back] = BONKED_QUESTION_BLOCK;
 
-        address = get_at_addr(nt, temp1, temp3 & 0xf0);
-        AsmSet2ByteAtPtrWithOffset(tile_clear_attr_addr_queue, tile_clear_back, address);
+        // Turns out it's actually more complicated to update a single tile's attribute mid-game;
+        // as-is this recolors a 2 by 2 mt area (not ideal).
+        //address = get_at_addr(nt, temp1, temp3 & 0xf0);
+        //AsmSet2ByteAtPtrWithOffset(tile_clear_attr_addr_queue, tile_clear_back, address);
+        
         ++tile_clear_back;
         tile_clear_back &= 0b11;
 
@@ -1607,11 +1437,10 @@ void handle_tile_clear_queue(void) {
 
     // Otherwise, dequeue and clear the tile.
     
-    // Set the color palette (attribute in the attribute table).
-    AsmSet2ByteFromPtrAtIndexVar(address, tile_clear_attr_addr_queue, tile_clear_front);
-
-    // Since we could be changing a ? block to a regular block:
-    one_vram_buffer(0x00, address); // Set to the 0th palette
+    // Set the color palette (attribute in the attribute table) -- except this does a 2x2 mt area.
+    // Not sure if it's worth trying to "solve", but we'll see.
+    // AsmSet2ByteFromPtrAtIndexVar(address, tile_clear_attr_addr_queue, tile_clear_front);
+    // one_vram_buffer(0x00, address); // Set to the 0th palette
 
     AsmSet2ByteFromPtrAtIndexVar(address, tile_clear_queue, tile_clear_front);
     AsmSet1ByteFromPtrAtIndexVar(temp0, tile_clear_to_type_queue, tile_clear_front);
@@ -1644,7 +1473,7 @@ void draw_screen_sub(void) {
     
     AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
     set_data_pointer(temppointer); // Should this value be clamped to the number of cmaps?
-    nt = (temp1 & 1) << 1; // 0 or 2
+    nt = (temp1 & 1) << 1; // 0 or 2 for vertical scrolling
     y = low_byte(pseudo_scroll_y);
     
     // Important that the main loop clears the vram_buffer.
