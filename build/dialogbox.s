@@ -15,31 +15,43 @@
 	.export		_dbox_draw_text
 	.export		_dbox_await_input
 	.export		_dbox_erase_box
+	.export		_dbox_erase_text
+	.export		_dbox_erase_text_addr_calc_sub
+	.import		_one_vram_buffer
+	.import		_multi_vram_buffer_horz
 	.import		_add_scroll_y_fast_sub
 	.import		_set_data_pointer
 	.importzp	_TEMP
 	.export		_active_dboxdata
-	.export		_dbox_bg_part
 	.export		_dbox_status
 	.export		_dbox_x
 	.export		_dbox_y
+	.export		_dbox_string_index
+	.export		_dbox_char_index
+	.export		_dbox_erase_text_frame
+	.export		_dbox_current_string
+	.export		_dbox_string_array
+	.export		_dbox_sprite_array
 	.importzp	_temp0
-	.importzp	_pad1
+	.importzp	_pad1_new
+	.importzp	_address
 	.importzp	_temppointer
 	.importzp	_scroll_y
 	.importzp	_pseudo_scroll_y
+	.importzp	_nt
 	.importzp	_scroll_count
 	.importzp	_game_mode
+	.importzp	_debug_tile_y
 	.import		_cmaps
 	.import		_draw_screen_sub
+	.import		_set_prg_bank
 	.export		_dbox_tiles
-	.export		_dbox_x_offset_lookup0
-	.export		_dbox_x_offset_lookup1
-	.export		_dbox_y_offset_lookup
-	.export		_dbox_index_offset_lookup0
-	.export		_dbox_index_offset_lookup1
+	.export		_empty_string
 	.export		_dbox_functions
 	.export		_dialog_box_handler
+	.export		_dbox_erase_text_x_values
+	.export		_dbox_erase_text_y_values
+	.export		_dbox_erase_text_lengths
 
 .segment	"DATA"
 
@@ -48,6 +60,7 @@ _dbox_functions:
 	.addr	_dbox_erase_box
 	.addr	_dbox_draw_text
 	.addr	_dbox_await_input
+	.addr	_dbox_erase_text
 
 .segment	"RODATA"
 
@@ -116,44 +129,45 @@ _dbox_tiles:
 	.byte	$31
 	.byte	$31
 	.byte	$31
-_dbox_x_offset_lookup0:
-	.byte	$00
-	.byte	$20
-	.byte	$40
-	.byte	$60
-_dbox_x_offset_lookup1:
-	.byte	$80
-	.byte	$A0
-	.byte	$C0
-	.byte	$E0
-_dbox_y_offset_lookup:
-	.byte	$00
-	.byte	$00
-	.byte	$20
-	.byte	$20
-_dbox_index_offset_lookup0:
-	.byte	$00
+_empty_string:
+	.byte	$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
+	.byte	$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$00
+_dbox_erase_text_x_values:
 	.byte	$02
+	.byte	$02
+	.byte	$02
+	.byte	$02
+_dbox_erase_text_y_values:
+	.byte	$03
 	.byte	$04
+	.byte	$05
 	.byte	$06
-_dbox_index_offset_lookup1:
-	.byte	$08
-	.byte	$0A
-	.byte	$0C
-	.byte	$0E
+_dbox_erase_text_lengths:
+	.byte	$1C
+	.byte	$1C
 
 .segment	"BSS"
 
 _active_dboxdata:
 	.res	2,$00
-_dbox_bg_part:
-	.res	1,$00
 _dbox_status:
 	.res	1,$00
 _dbox_x:
 	.res	1,$00
 _dbox_y:
 	.res	1,$00
+_dbox_string_index:
+	.res	1,$00
+_dbox_char_index:
+	.res	1,$00
+_dbox_erase_text_frame:
+	.res	1,$00
+_dbox_current_string:
+	.res	2,$00
+_dbox_string_array:
+	.res	2,$00
+_dbox_sprite_array:
+	.res	2,$00
 
 ; ---------------------------------------------------------------
 ; void __near__ trigger_dialog_box (__near__ const struct DialogBoxData_t *)
@@ -189,13 +203,39 @@ _dbox_y:
 	tya
 	sta     _dbox_status
 ;
-; dbox_x = 0;
-;
-	sta     _dbox_x
-;
 ; dbox_y = 0;
 ;
 	sta     _dbox_y
+;
+; dbox_string_index = 0;
+;
+	sta     _dbox_string_index
+;
+; dbox_char_index = 0;
+;
+	sta     _dbox_char_index
+;
+; dbox_current_string = dboxdata->strings[0];
+;
+	iny
+	lda     (sp),y
+	sta     ptr1+1
+	dey
+	lda     (sp),y
+	sta     ptr1
+	ldy     #$03
+	lda     (ptr1),y
+	tax
+	dey
+	lda     (ptr1),y
+	sta     ptr1
+	stx     ptr1+1
+	dey
+	lda     (ptr1),y
+	sta     _dbox_current_string+1
+	dey
+	lda     (ptr1),y
+	sta     _dbox_current_string
 ;
 ; }
 ;
@@ -238,7 +278,7 @@ _dbox_y:
 ; if (scroll_count == 0) {
 ;
 	lda     _scroll_count
-	bne     L00D5
+	bne     L0144
 ;
 ; dbox_y += 0x20;
 ;
@@ -247,25 +287,29 @@ _dbox_y:
 	adc     _dbox_y
 	sta     _dbox_y
 ;
-; if (dbox_y > 0x20) {
+; if (dbox_y > 0x20) { // ...but there are only two rows.
 ;
-L00D5:	lda     _dbox_y
+L0144:	lda     _dbox_y
 	cmp     #$21
-	bcc     L009F
+	bcc     L0090
 ;
 ; dbox_status = DBOX_STATUS_DRAWING_TEXT;
 ;
 	lda     #$02
 	sta     _dbox_status
 ;
-; dbox_y = 0;
+; dbox_x = TEXT_START_X;
 ;
-	lda     #$00
+	sta     _dbox_x
+;
+; dbox_y = TEXT_START_Y;
+;
+	lda     #$03
 	sta     _dbox_y
 ;
 ; }
 ;
-L009F:	rts
+L0090:	rts
 
 .endproc
 
@@ -280,14 +324,114 @@ L009F:	rts
 .segment	"CODE"
 
 ;
+; set_prg_bank(0);
+;
+	lda     #$00
+	jsr     _set_prg_bank
+;
+; temp0 = dbox_current_string[dbox_char_index];
+;
+	lda     _dbox_current_string
+	ldx     _dbox_current_string+1
+	ldy     _dbox_char_index
+	sta     ptr1
+	stx     ptr1+1
+	lda     (ptr1),y
+	sta     _temp0
+;
+; ++dbox_char_index; 
+;
+	inc     _dbox_char_index
+;
+; if (temp0 == '\0') {
+;
+	ldx     #$00
+	lda     _temp0
+	bne     L0148
+;
 ; dbox_status = DBOX_STATUS_AWAITING_BUTTON;
 ;
 	lda     #$03
 	sta     _dbox_status
 ;
-; }
+; } else if (temp0 == '\n') {
 ;
 	rts
+L0148:	lda     _temp0
+	cmp     #$0A
+;
+; } else {
+;
+	beq     L014E
+;
+; if (nt == 0) {
+;
+	lda     _nt
+	bne     L014A
+;
+; address = NTADR_A(dbox_x, dbox_y);
+;
+	lda     _dbox_y
+	jsr     aslax4
+	stx     tmp1
+	asl     a
+	rol     tmp1
+	sta     ptr1
+	lda     _dbox_x
+	ora     ptr1
+	sta     _address
+	lda     tmp1
+	ora     #$20
+;
+; } else {
+;
+	jmp     L014C
+;
+; address = NTADR_C(dbox_x, dbox_y);
+;
+L014A:	lda     _dbox_y
+	jsr     aslax4
+	stx     tmp1
+	asl     a
+	rol     tmp1
+	sta     ptr1
+	lda     _dbox_x
+	ora     ptr1
+	sta     _address
+	lda     tmp1
+	ora     #$28
+L014C:	sta     _address+1
+;
+; one_vram_buffer(temp0, address);
+;
+	lda     _temp0
+	jsr     pusha
+	lda     _address
+	ldx     _address+1
+	jsr     _one_vram_buffer
+;
+; ++dbox_x;
+;
+	inc     _dbox_x
+;
+; if (dbox_x >= TEXT_END_X) {
+;
+	lda     _dbox_x
+	cmp     #$1E
+	bcc     L00BF
+;
+; dbox_x = TEXT_START_X;
+;
+L014E:	lda     #$02
+	sta     _dbox_x
+;
+; ++dbox_y;
+;
+	inc     _dbox_y
+;
+; }
+;
+L00BF:	rts
 
 .endproc
 
@@ -302,20 +446,115 @@ L009F:	rts
 .segment	"CODE"
 
 ;
-; if (pad1 & PAD_DOWN) {
+; set_prg_bank(0);
 ;
-	lda     _pad1
+	lda     #$00
+	jsr     _set_prg_bank
+;
+; debug_tile_y = active_dboxdata->count;
+;
+	lda     _active_dboxdata+1
+	sta     ptr1+1
+	lda     _active_dboxdata
+	sta     ptr1
+	ldy     #$04
+	lda     (ptr1),y
+	sta     _debug_tile_y
+;
+; if (pad1_new & PAD_DOWN) {
+;
+	lda     _pad1_new
 	and     #$04
-	beq     L00A9
+	beq     L00D2
+;
+; ++dbox_string_index;
+;
+	inc     _dbox_string_index
+;
+; if (dbox_string_index == active_dboxdata->count) { 
+;
+	lda     _dbox_string_index
+	jsr     pusha0
+	lda     _active_dboxdata+1
+	sta     ptr1+1
+	lda     _active_dboxdata
+	sta     ptr1
+	ldy     #$04
+	lda     (ptr1),y
+	jsr     tosicmp0
+	bne     L00CC
 ;
 ; dbox_status = DBOX_STATUS_ERASING_BOX;
 ;
 	lda     #$01
 	sta     _dbox_status
 ;
+; dbox_y = 0;
+;
+	lda     #$00
+	sta     _dbox_y
+;
+; } else {
+;
+	rts
+;
+; dbox_current_string = active_dboxdata->strings[dbox_string_index];
+;
+L00CC:	lda     _active_dboxdata+1
+	sta     ptr1+1
+	lda     _active_dboxdata
+	sta     ptr1
+	ldy     #$03
+	lda     (ptr1),y
+	tax
+	dey
+	lda     (ptr1),y
+	sta     ptr1
+	stx     ptr1+1
+	ldx     #$00
+	lda     _dbox_string_index
+	asl     a
+	bcc     L0150
+	inx
+	clc
+L0150:	adc     ptr1
+	sta     ptr1
+	txa
+	adc     ptr1+1
+	sta     ptr1+1
+	dey
+	lda     (ptr1),y
+	sta     _dbox_current_string+1
+	dey
+	lda     (ptr1),y
+	sta     _dbox_current_string
+;
+; dbox_status = DBOX_STATUS_ERASING_TEXT;
+;
+	lda     #$04
+	sta     _dbox_status
+;
+; dbox_char_index = 0;
+;
+	sty     _dbox_char_index
+;
+; dbox_x = TEXT_START_X;
+;
+	lda     #$02
+	sta     _dbox_x
+;
+; dbox_y = TEXT_START_Y;
+;
+	lda     #$03
+	sta     _dbox_y
+;
+; dbox_erase_text_frame = 0;
+;
+	sty     _dbox_erase_text_frame
+;
 ; }
 ;
-L00A9:	rts
+L00D2:	rts
 
 .endproc
 
@@ -368,7 +607,7 @@ L00A9:	rts
 ; if (scroll_count == 0) {
 ;
 	lda     _scroll_count
-	bne     L00D6
+	bne     L0151
 ;
 ; dbox_y += 0x20;
 ;
@@ -379,9 +618,9 @@ L00A9:	rts
 ;
 ; if (dbox_y > 0x20) {
 ;
-L00D6:	lda     _dbox_y
+L0151:	lda     _dbox_y
 	cmp     #$21
-	bcc     L00D1
+	bcc     L0140
 ;
 ; game_mode = MODE_GAME;
 ;
@@ -390,7 +629,150 @@ L00D6:	lda     _dbox_y
 ;
 ; }
 ;
-L00D1:	rts
+L0140:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ dbox_erase_text (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_dbox_erase_text: near
+
+.segment	"CODE"
+
+;
+; for (temp0 = 0; temp0 < 2; ++temp0) {
+;
+	lda     #$00
+	sta     _temp0
+L0152:	lda     _temp0
+	cmp     #$02
+	bcs     L0153
+;
+; dbox_x = dbox_erase_text_x_values[dbox_erase_text_frame];
+;
+	ldy     _dbox_erase_text_frame
+	lda     _dbox_erase_text_x_values,y
+	sta     _dbox_x
+;
+; dbox_y = dbox_erase_text_y_values[dbox_erase_text_frame];
+;
+	ldy     _dbox_erase_text_frame
+	lda     _dbox_erase_text_y_values,y
+	sta     _dbox_y
+;
+; address = dbox_erase_text_addr_calc_sub();
+;
+	jsr     _dbox_erase_text_addr_calc_sub
+	sta     _address
+	stx     _address+1
+;
+; multi_vram_buffer_horz(empty_string, dbox_erase_text_lengths[temp0], address);
+;
+	jsr     decsp3
+	lda     #<(_empty_string)
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     #>(_empty_string)
+	sta     (sp),y
+	ldy     _temp0
+	lda     _dbox_erase_text_lengths,y
+	ldy     #$00
+	sta     (sp),y
+	lda     _address
+	ldx     _address+1
+	jsr     _multi_vram_buffer_horz
+;
+; ++dbox_erase_text_frame;
+;
+	inc     _dbox_erase_text_frame
+;
+; for (temp0 = 0; temp0 < 2; ++temp0) {
+;
+	inc     _temp0
+	jmp     L0152
+;
+; if (dbox_erase_text_frame == 4) {
+;
+L0153:	lda     _dbox_erase_text_frame
+	cmp     #$04
+	bne     L0114
+;
+; dbox_status = DBOX_STATUS_DRAWING_TEXT;
+;
+	lda     #$02
+	sta     _dbox_status
+;
+; dbox_x = TEXT_START_X;
+;
+	sta     _dbox_x
+;
+; dbox_y = TEXT_START_Y;
+;
+	lda     #$03
+	sta     _dbox_y
+;
+; }
+;
+L0114:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; int __near__ dbox_erase_text_addr_calc_sub (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_dbox_erase_text_addr_calc_sub: near
+
+.segment	"CODE"
+
+;
+; if (nt == 0) {
+;
+	ldx     #$00
+	lda     _nt
+	bne     L0155
+;
+; return NTADR_A(dbox_x, dbox_y);
+;
+	lda     _dbox_y
+	jsr     aslax4
+	stx     tmp1
+	asl     a
+	rol     tmp1
+	sta     ptr1
+	lda     _dbox_x
+	ora     ptr1
+	pha
+	lda     tmp1
+	ora     #$20
+	jmp     L0156
+;
+; return NTADR_C(dbox_x, dbox_y);
+;
+L0155:	lda     _dbox_y
+	jsr     aslax4
+	stx     tmp1
+	asl     a
+	rol     tmp1
+	sta     ptr1
+	lda     _dbox_x
+	ora     ptr1
+	pha
+	lda     tmp1
+	ora     #$28
+L0156:	tax
+	pla
+;
+; }
+;
+	rts
 
 .endproc
 

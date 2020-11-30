@@ -21,9 +21,9 @@ typedef struct Hitbox_t {
 
 typedef struct DialogBoxData_t {
     // On a conceptual level, for each i, portraitSprites[i] and strings[i] are a pair.
-    const unsigned char count; // The number of boxes full of dialog this data object holds.
     const unsigned char * const * portrait_sprites; // One pointer to a metasprite for each dialog box. This will be shown alongside strings[i].
     const unsigned char * const * strings; // One string for each dialog box.
+    const unsigned char count; // The number of boxes full of dialog this data object holds.
     // 
 } DialogBoxData;
 

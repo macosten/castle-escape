@@ -79,7 +79,7 @@ const unsigned char const metatiles[]={
 
     224, 225, 242, 243, 0, // Top Square Platform (U+L+R Edges)
     226, 227, 240, 241, 0, // Bottom Square Platform (D+L+R Edges)
-      0,   0,0x11,0x11, 3, // Dialog Box Bottom
+      0,   0,0x11,0x11, 0, // Dialog Box Bottom
     '5', '0', '?', '?', 1, // Unused Tile (#50)
 };
 

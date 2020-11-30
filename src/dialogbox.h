@@ -21,4 +21,9 @@ void dbox_await_input(void);
 // "Erase" the dialog box (actually, just redraw the map in the area the dialog box used to be in).
 void dbox_erase_box(void);
 
+// Clear the text displayed in the box.
+void dbox_erase_text(void);
+
+int dbox_erase_text_addr_calc_sub(void);
+
 #endif

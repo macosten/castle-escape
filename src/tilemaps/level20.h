@@ -26,8 +26,8 @@ const unsigned char const level20[] = {
 const char * const boss_dialog_strings[] = {
 	"So we meet again, Valrigard.",
 	"I should have known...",
-	"Did you really think I wouldn't escape?",
-	"You may have escaped the dungeon, but you won't live to speak of it..."
+	"Did you really think I\nwouldn't escape?",
+	"You may have escaped the\ndungeon, but you won't live\nto speak of it...",
 };
 
 const unsigned char * const boss_dialog_portrait_sprites[] = {
@@ -35,9 +35,9 @@ const unsigned char * const boss_dialog_portrait_sprites[] = {
 };
 
 const DialogBoxData boss_dialog = {
-	4,
 	boss_dialog_portrait_sprites,
 	boss_dialog_strings,
+	4
 };
 
 #pragma rodata-name(pop)

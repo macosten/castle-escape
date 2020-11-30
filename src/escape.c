@@ -885,8 +885,12 @@ void draw_sprites(void) {
     shuffle_offset += enemies.count;
     if (shuffle_offset >= shuffle_maximum) { shuffle_offset = 0; }
 
+    // Perhaps the HUD should be its own function, or perhaps it should be included in the flicker system.
+    // Not sure, but still...
+
     // Draw the energy level as sprites.
-    draw_energy();
+    if (game_mode != MODE_GAME_SHOWING_TEXT) { 
+        draw_energy(); 
     
     // Draw the score.
     // This doesn't really interact with the metasprite system yet, so
@@ -894,16 +898,17 @@ void draw_sprites(void) {
     // We could address this by making the score take up a "slot" in the shuffle array.
     // Maybe by doing something like "if x > enemies.count, then draw the score" in the loop above?
     // Same could go for the energy.
-    draw_score();
+        draw_score();
+    }
 
     // Debug HUD, drawn last because it's the least important.
     //oam_spr(232, 42, collision_D, 2);
     
-    //oam_spr(200, 50, debug_tile_x >> 4, 1);
-    //oam_spr(208, 50, debug_tile_x & 0x0f, 1);
+    oam_spr(200, 50, debug_tile_x >> 4, 1);
+    oam_spr(208, 50, debug_tile_x & 0x0f, 1);
     
-    //oam_spr(224, 50, debug_tile_y >> 4, 1);
-    //oam_spr(232, 50, debug_tile_y & 0x0f, 1);
+    oam_spr(224, 50, debug_tile_y >> 4, 1);
+    oam_spr(232, 50, debug_tile_y & 0x0f, 1);
 
     // Animate the animated palette.
 
@@ -1825,7 +1830,7 @@ void collision_with_splyke(void) {
 }
 
 void collision_with_boss(void) {
-
+    game_mode = MODE_GAME_OVER; // Just end the level for now.
 }
 
 // A lookup table for enemy AI functions.
@@ -2481,6 +2486,7 @@ void boss_ai(void) {
     // extra[x] will be a bunch of flags. 
 
     if (enemies.extra[x] == 0) {
+        SET_DIRECTION_RIGHT();
         enemies.extra[x] = 128;
         trigger_dialog_box(&boss_dialog);
     }
