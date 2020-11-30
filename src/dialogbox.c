@@ -7,7 +7,7 @@
 
 #include "constants.h"
 
-DialogBoxData const * active_dboxdata;
+DialogBoxData active_dboxdata;
 
 // Box control variables.
 
@@ -25,8 +25,6 @@ unsigned char dbox_string_index;
 unsigned char dbox_char_index;
 unsigned char dbox_erase_text_frame;
 const char * dbox_current_string;
-const char * const * dbox_string_array;
-const unsigned char * const dbox_sprite_array;
 
 // === Extern'd zero page symbols, defined in zeropage.h.
 extern unsigned char temp0;
@@ -97,6 +95,11 @@ const unsigned char const dbox_tiles[] = {
 	BOTTM,BOTTM,BOTTM,BOTTM,BOTTM,BOTTM,BOTTM,BOTTM,BOTTM,BOTTM,BOTTM,BOTTM,BOTTM,BOTTM,BOTTM,BOTTM,
 };
 
+#define CURSOR_BASE_Y 16 * 3
+const unsigned char const dbox_downward_cursor_y_offset_table[] = { 
+	CURSOR_BASE_Y+0, CURSOR_BASE_Y+1, CURSOR_BASE_Y+2, CURSOR_BASE_Y+1, 
+};
+
 const char empty_string[] = "                            "; // 28 spaces
 
 const void (* dbox_functions[])(void) = {
@@ -109,7 +112,7 @@ const void (* dbox_functions[])(void) = {
 
 // Activate a dialog box, telling the game that one is rendering.
 void trigger_dialog_box(DialogBoxData const * dboxdata) {
-	active_dboxdata = dboxdata;
+	active_dboxdata = *dboxdata; // Shallow copy. This means fewer dereferencings, which means smaller code.
 
 	game_mode = MODE_GAME_SHOWING_TEXT;
 	dbox_status = DBOX_STATUS_DRAWING_BOX;
@@ -117,7 +120,7 @@ void trigger_dialog_box(DialogBoxData const * dboxdata) {
 	dbox_y = 0;
 	dbox_string_index = 0;
 	dbox_char_index = 0;
-	dbox_current_string = dboxdata->strings[0];
+	dbox_current_string = active_dboxdata.strings[0];
 }
 
 void dialog_box_handler(void) {
@@ -162,6 +165,7 @@ void dbox_draw_text(void) {
 	if (temp0 == '\0') {
 		// A null terminator? Start awaiting button input.
 		dbox_status = DBOX_STATUS_AWAITING_BUTTON;
+		dbox_y = 0;
 	} else if (temp0 == '\n') {
 		// A newline? Act like it.
 		dbox_x = TEXT_START_X;
@@ -192,20 +196,18 @@ void dbox_await_input(void) {
 	// In the future, dboxdata should hold what bank it's in (?).
 	set_prg_bank(0);
 
-	debug_tile_y = active_dboxdata->count;
-
 	if (pad1_new & PAD_DOWN) {
 		// Advance the status of the dialog box.
 		// If there's still text to be drawn, clear it and then draw the next text.
 		
 		++dbox_string_index;
-		if (dbox_string_index == active_dboxdata->count) { 
+		if (dbox_string_index == active_dboxdata.count) { 
 			dbox_status = DBOX_STATUS_ERASING_BOX;
 			// Set control variables.
 			dbox_y = 0;
 		} else {
 
-			dbox_current_string = active_dboxdata->strings[dbox_string_index];
+			dbox_current_string = active_dboxdata.strings[dbox_string_index];
 
 			dbox_status = DBOX_STATUS_ERASING_TEXT;
 			// Set control variables.
@@ -216,6 +218,13 @@ void dbox_await_input(void) {
 		}
 	
 
+	} else {
+		// Show the downward-facing cursor.
+		temp1 = dbox_y >> 3;
+		temp0 = dbox_downward_cursor_y_offset_table[temp1];
+		oam_spr(232, temp0, 0x11, 0);
+		++dbox_y;
+		dbox_y &= 0b11111;
 	}
 }
 

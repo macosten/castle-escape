@@ -904,11 +904,11 @@ void draw_sprites(void) {
     // Debug HUD, drawn last because it's the least important.
     //oam_spr(232, 42, collision_D, 2);
     
-    oam_spr(200, 50, debug_tile_x >> 4, 1);
-    oam_spr(208, 50, debug_tile_x & 0x0f, 1);
+    //oam_spr(200, 50, debug_tile_x >> 4, 1);
+    //oam_spr(208, 50, debug_tile_x & 0x0f, 1);
     
-    oam_spr(224, 50, debug_tile_y >> 4, 1);
-    oam_spr(232, 50, debug_tile_y & 0x0f, 1);
+    //oam_spr(224, 50, debug_tile_y >> 4, 1);
+    //oam_spr(232, 50, debug_tile_y & 0x0f, 1);
 
     // Animate the animated palette.
 

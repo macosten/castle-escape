@@ -22,6 +22,7 @@
 	.import		_add_scroll_y_fast_sub
 	.import		_set_data_pointer
 	.importzp	_TEMP
+	.import		_oam_spr_fast_sub
 	.export		_active_dboxdata
 	.export		_dbox_status
 	.export		_dbox_x
@@ -30,9 +31,8 @@
 	.export		_dbox_char_index
 	.export		_dbox_erase_text_frame
 	.export		_dbox_current_string
-	.export		_dbox_string_array
-	.export		_dbox_sprite_array
 	.importzp	_temp0
+	.importzp	_temp1
 	.importzp	_pad1_new
 	.importzp	_address
 	.importzp	_temppointer
@@ -41,11 +41,11 @@
 	.importzp	_nt
 	.importzp	_scroll_count
 	.importzp	_game_mode
-	.importzp	_debug_tile_y
 	.import		_cmaps
 	.import		_draw_screen_sub
 	.import		_set_prg_bank
 	.export		_dbox_tiles
+	.export		_dbox_downward_cursor_y_offset_table
 	.export		_empty_string
 	.export		_dbox_functions
 	.export		_dialog_box_handler
@@ -129,6 +129,11 @@ _dbox_tiles:
 	.byte	$31
 	.byte	$31
 	.byte	$31
+_dbox_downward_cursor_y_offset_table:
+	.byte	$30
+	.byte	$31
+	.byte	$32
+	.byte	$31
 _empty_string:
 	.byte	$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
 	.byte	$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$00
@@ -149,7 +154,7 @@ _dbox_erase_text_lengths:
 .segment	"BSS"
 
 _active_dboxdata:
-	.res	2,$00
+	.res	5,$00
 _dbox_status:
 	.res	1,$00
 _dbox_x:
@@ -163,10 +168,6 @@ _dbox_char_index:
 _dbox_erase_text_frame:
 	.res	1,$00
 _dbox_current_string:
-	.res	2,$00
-_dbox_string_array:
-	.res	2,$00
-_dbox_sprite_array:
 	.res	2,$00
 
 ; ---------------------------------------------------------------
@@ -184,14 +185,16 @@ _dbox_sprite_array:
 ;
 	jsr     pushax
 ;
-; active_dboxdata = dboxdata;
+; active_dboxdata = *dboxdata; // Shallow copy. This means fewer dereferencings, which means smaller code.
 ;
-	ldy     #$01
-	lda     (sp),y
-	sta     _active_dboxdata+1
-	dey
-	lda     (sp),y
-	sta     _active_dboxdata
+	lda     #<(_active_dboxdata)
+	ldx     #>(_active_dboxdata)
+	jsr     pushax
+	ldy     #$05
+	jsr     pushwysp
+	ldx     #$00
+	lda     #$05
+	jsr     _memcpy
 ;
 ; game_mode = MODE_GAME_SHOWING_TEXT;
 ;
@@ -200,7 +203,7 @@ _dbox_sprite_array:
 ;
 ; dbox_status = DBOX_STATUS_DRAWING_BOX;
 ;
-	tya
+	lda     #$00
 	sta     _dbox_status
 ;
 ; dbox_y = 0;
@@ -215,22 +218,13 @@ _dbox_sprite_array:
 ;
 	sta     _dbox_char_index
 ;
-; dbox_current_string = dboxdata->strings[0];
+; dbox_current_string = active_dboxdata.strings[0];
 ;
-	iny
-	lda     (sp),y
+	lda     _active_dboxdata+2+1
 	sta     ptr1+1
-	dey
-	lda     (sp),y
+	lda     _active_dboxdata+2
 	sta     ptr1
-	ldy     #$03
-	lda     (ptr1),y
-	tax
-	dey
-	lda     (ptr1),y
-	sta     ptr1
-	stx     ptr1+1
-	dey
+	ldy     #$01
 	lda     (ptr1),y
 	sta     _dbox_current_string+1
 	dey
@@ -278,7 +272,7 @@ _dbox_sprite_array:
 ; if (scroll_count == 0) {
 ;
 	lda     _scroll_count
-	bne     L0144
+	bne     L015D
 ;
 ; dbox_y += 0x20;
 ;
@@ -289,9 +283,9 @@ _dbox_sprite_array:
 ;
 ; if (dbox_y > 0x20) { // ...but there are only two rows.
 ;
-L0144:	lda     _dbox_y
+L015D:	lda     _dbox_y
 	cmp     #$21
-	bcc     L0090
+	bcc     L0094
 ;
 ; dbox_status = DBOX_STATUS_DRAWING_TEXT;
 ;
@@ -309,7 +303,7 @@ L0144:	lda     _dbox_y
 ;
 ; }
 ;
-L0090:	rts
+L0094:	rts
 
 .endproc
 
@@ -347,27 +341,31 @@ L0090:	rts
 ;
 	ldx     #$00
 	lda     _temp0
-	bne     L0148
+	bne     L0161
 ;
 ; dbox_status = DBOX_STATUS_AWAITING_BUTTON;
 ;
 	lda     #$03
 	sta     _dbox_status
 ;
+; dbox_y = 0;
+;
+	stx     _dbox_y
+;
 ; } else if (temp0 == '\n') {
 ;
 	rts
-L0148:	lda     _temp0
+L0161:	lda     _temp0
 	cmp     #$0A
 ;
 ; } else {
 ;
-	beq     L014E
+	beq     L0167
 ;
 ; if (nt == 0) {
 ;
 	lda     _nt
-	bne     L014A
+	bne     L0163
 ;
 ; address = NTADR_A(dbox_x, dbox_y);
 ;
@@ -385,11 +383,11 @@ L0148:	lda     _temp0
 ;
 ; } else {
 ;
-	jmp     L014C
+	jmp     L0165
 ;
 ; address = NTADR_C(dbox_x, dbox_y);
 ;
-L014A:	lda     _dbox_y
+L0163:	lda     _dbox_y
 	jsr     aslax4
 	stx     tmp1
 	asl     a
@@ -400,7 +398,7 @@ L014A:	lda     _dbox_y
 	sta     _address
 	lda     tmp1
 	ora     #$28
-L014C:	sta     _address+1
+L0165:	sta     _address+1
 ;
 ; one_vram_buffer(temp0, address);
 ;
@@ -418,11 +416,11 @@ L014C:	sta     _address+1
 ;
 	lda     _dbox_x
 	cmp     #$1E
-	bcc     L00BF
+	bcc     L00C5
 ;
 ; dbox_x = TEXT_START_X;
 ;
-L014E:	lda     #$02
+L0167:	lda     #$02
 	sta     _dbox_x
 ;
 ; ++dbox_y;
@@ -431,7 +429,7 @@ L014E:	lda     #$02
 ;
 ; }
 ;
-L00BF:	rts
+L00C5:	rts
 
 .endproc
 
@@ -451,38 +449,22 @@ L00BF:	rts
 	lda     #$00
 	jsr     _set_prg_bank
 ;
-; debug_tile_y = active_dboxdata->count;
-;
-	lda     _active_dboxdata+1
-	sta     ptr1+1
-	lda     _active_dboxdata
-	sta     ptr1
-	ldy     #$04
-	lda     (ptr1),y
-	sta     _debug_tile_y
-;
 ; if (pad1_new & PAD_DOWN) {
 ;
 	lda     _pad1_new
 	and     #$04
-	beq     L00D2
+	beq     L016D
 ;
 ; ++dbox_string_index;
 ;
 	inc     _dbox_string_index
 ;
-; if (dbox_string_index == active_dboxdata->count) { 
+; if (dbox_string_index == active_dboxdata.count) { 
 ;
-	lda     _dbox_string_index
-	jsr     pusha0
-	lda     _active_dboxdata+1
-	sta     ptr1+1
-	lda     _active_dboxdata
-	sta     ptr1
-	ldy     #$04
-	lda     (ptr1),y
-	jsr     tosicmp0
-	bne     L00CC
+	ldx     #$00
+	lda     _active_dboxdata+4
+	cmp     _dbox_string_index
+	bne     L016C
 ;
 ; dbox_status = DBOX_STATUS_ERASING_BOX;
 ;
@@ -491,38 +473,25 @@ L00BF:	rts
 ;
 ; dbox_y = 0;
 ;
-	lda     #$00
-	sta     _dbox_y
+	txa
 ;
 ; } else {
 ;
-	rts
+	jmp     L016A
 ;
-; dbox_current_string = active_dboxdata->strings[dbox_string_index];
+; dbox_current_string = active_dboxdata.strings[dbox_string_index];
 ;
-L00CC:	lda     _active_dboxdata+1
-	sta     ptr1+1
-	lda     _active_dboxdata
-	sta     ptr1
-	ldy     #$03
-	lda     (ptr1),y
-	tax
-	dey
-	lda     (ptr1),y
-	sta     ptr1
-	stx     ptr1+1
-	ldx     #$00
-	lda     _dbox_string_index
+L016C:	lda     _dbox_string_index
 	asl     a
-	bcc     L0150
+	bcc     L016B
 	inx
 	clc
-L0150:	adc     ptr1
+L016B:	adc     _active_dboxdata+2
 	sta     ptr1
 	txa
-	adc     ptr1+1
+	adc     _active_dboxdata+2+1
 	sta     ptr1+1
-	dey
+	ldy     #$01
 	lda     (ptr1),y
 	sta     _dbox_current_string+1
 	dey
@@ -552,9 +521,48 @@ L0150:	adc     ptr1
 ;
 	sty     _dbox_erase_text_frame
 ;
+; } else {
+;
+	rts
+;
+; temp1 = dbox_y >> 3;
+;
+L016D:	lda     _dbox_y
+	lsr     a
+	lsr     a
+	lsr     a
+	sta     _temp1
+;
+; temp0 = dbox_downward_cursor_y_offset_table[temp1];
+;
+	ldy     _temp1
+	lda     _dbox_downward_cursor_y_offset_table,y
+	sta     _temp0
+;
+; oam_spr(232, temp0, 0x11, 0);
+;
+	lda     #$E8
+	sta     _TEMP
+	lda     _temp0
+	sta     _TEMP+1
+	lda     #$11
+	sta     _TEMP+2
+	lda     #$00
+	jsr     _oam_spr_fast_sub
+;
+; ++dbox_y;
+;
+	inc     _dbox_y
+;
+; dbox_y &= 0b11111;
+;
+	lda     _dbox_y
+	and     #$1F
+L016A:	sta     _dbox_y
+;
 ; }
 ;
-L00D2:	rts
+	rts
 
 .endproc
 
@@ -607,7 +615,7 @@ L00D2:	rts
 ; if (scroll_count == 0) {
 ;
 	lda     _scroll_count
-	bne     L0151
+	bne     L016E
 ;
 ; dbox_y += 0x20;
 ;
@@ -618,9 +626,9 @@ L00D2:	rts
 ;
 ; if (dbox_y > 0x20) {
 ;
-L0151:	lda     _dbox_y
+L016E:	lda     _dbox_y
 	cmp     #$21
-	bcc     L0140
+	bcc     L0159
 ;
 ; game_mode = MODE_GAME;
 ;
@@ -629,7 +637,7 @@ L0151:	lda     _dbox_y
 ;
 ; }
 ;
-L0140:	rts
+L0159:	rts
 
 .endproc
 
@@ -648,9 +656,9 @@ L0140:	rts
 ;
 	lda     #$00
 	sta     _temp0
-L0152:	lda     _temp0
+L016F:	lda     _temp0
 	cmp     #$02
-	bcs     L0153
+	bcs     L0170
 ;
 ; dbox_x = dbox_erase_text_x_values[dbox_erase_text_frame];
 ;
@@ -694,13 +702,13 @@ L0152:	lda     _temp0
 ; for (temp0 = 0; temp0 < 2; ++temp0) {
 ;
 	inc     _temp0
-	jmp     L0152
+	jmp     L016F
 ;
 ; if (dbox_erase_text_frame == 4) {
 ;
-L0153:	lda     _dbox_erase_text_frame
+L0170:	lda     _dbox_erase_text_frame
 	cmp     #$04
-	bne     L0114
+	bne     L012D
 ;
 ; dbox_status = DBOX_STATUS_DRAWING_TEXT;
 ;
@@ -718,7 +726,7 @@ L0153:	lda     _dbox_erase_text_frame
 ;
 ; }
 ;
-L0114:	rts
+L012D:	rts
 
 .endproc
 
@@ -737,7 +745,7 @@ L0114:	rts
 ;
 	ldx     #$00
 	lda     _nt
-	bne     L0155
+	bne     L0172
 ;
 ; return NTADR_A(dbox_x, dbox_y);
 ;
@@ -752,11 +760,11 @@ L0114:	rts
 	pha
 	lda     tmp1
 	ora     #$20
-	jmp     L0156
+	jmp     L0173
 ;
 ; return NTADR_C(dbox_x, dbox_y);
 ;
-L0155:	lda     _dbox_y
+L0172:	lda     _dbox_y
 	jsr     aslax4
 	stx     tmp1
 	asl     a
@@ -767,7 +775,7 @@ L0155:	lda     _dbox_y
 	pha
 	lda     tmp1
 	ora     #$28
-L0156:	tax
+L0173:	tax
 	pla
 ;
 ; }
