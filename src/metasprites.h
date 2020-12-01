@@ -526,4 +526,138 @@ const unsigned char const splyke_death_effect1[] = {
   128
 };
 
+// Energy bars.
+const unsigned char const energy_threshold_lookup_table[] = {1, 11, 21, 31, 41, 51, 61, 71, 81, 91, 101, 111};
+
+const unsigned char const energy_bar_0[] = {
+    0, 3, 0x0A, 1|OAM_FLIP_V,
+    0, 8, 0x0A, 1,
+    0, 16, 0x0A, 1,
+    0, 24, 0x0A, 1, 
+  128
+};
+
+const unsigned char const energy_bar_1[] = {
+    0, 3, 0x0A, 1|OAM_FLIP_V,
+    0, 8, 0x0A, 1,
+    0, 16, 0x0A, 1,
+    0, 24, 0x0B, 1, 
+  128
+};
+
+const unsigned char const energy_bar_2[] = {
+    0, 3, 0x0A, 1|OAM_FLIP_V,
+    0, 8, 0x0A, 1,
+    0, 16, 0x0A, 1,
+    0, 24, 0x0C, 1, 
+  128
+};
+
+const unsigned char const energy_bar_3[] = {
+    0, 3, 0x0A, 1|OAM_FLIP_V,
+    0, 8, 0x0A, 1,
+    0, 16, 0x0A, 1,
+    0, 24, 0x0D, 1, 
+  128
+};
+
+const unsigned char const energy_bar_4[] = {
+    0, 3, 0x0A, 1|OAM_FLIP_V,
+    0, 8, 0x0A, 1,
+    0, 16, 0x0F, 1,
+    0, 24, 0x0E, 1, 
+  128
+};
+
+const unsigned char const energy_bar_5[] = {
+    0, 3, 0x0A, 1|OAM_FLIP_V,
+    0, 8, 0x0A, 1,
+    0, 16, 0x0B, 1,
+    0, 24, 0x0E, 1, 
+  128
+};
+
+const unsigned char const energy_bar_6[] = {
+    0, 3, 0x0A, 1|OAM_FLIP_V,
+    0, 8, 0x0A, 1,
+    0, 16, 0x0C, 1,
+    0, 24, 0x0E, 1, 
+  128
+};
+
+const unsigned char const energy_bar_7[] = {
+    0, 3, 0x0A, 1|OAM_FLIP_V,
+    0, 8, 0x0A, 1,
+    0, 16, 0x0D, 1,
+    0, 24, 0x0E, 1, 
+  128
+};
+
+const unsigned char const energy_bar_8[] = {
+    0, 3, 0x0A, 1|OAM_FLIP_V,
+    0, 8, 0x0F, 1,
+    0, 16, 0x0E, 1,
+    0, 24, 0x0E, 1, 
+  128
+};
+
+const unsigned char const energy_bar_9[] = {
+    0, 3, 0x0A, 1|OAM_FLIP_V,
+    0, 8, 0x0B, 1,
+    0, 16, 0x0E, 1,
+    0, 24, 0x0E, 1, 
+  128
+};
+
+const unsigned char const energy_bar_a[] = {
+    0, 3, 0x0A, 1|OAM_FLIP_V,
+    0, 8, 0x0C, 1,
+    0, 16, 0x0E, 1,
+    0, 24, 0x0E, 1, 
+  128
+};
+
+const unsigned char const energy_bar_b[] = {
+    0, 3,  0xFF, 1,
+    0, 4,  0x0B, 1,
+    0, 8,  0x0D, 1,
+    0, 16, 0x0E, 1,
+    0, 24, 0x0E, 1, 
+  128
+};
+
+const unsigned char const energy_bar_c[] = {
+    0, 3,  0xFF, 1,
+    0, 4,  0x0C, 1,
+    0, 8,  0x0E, 1,
+    0, 16, 0x0E, 1,
+    0, 24, 0x0E, 1, 
+  128
+};
+
+const unsigned char const energy_bar_d[] = {
+    0, 3,  0xFF, 1,
+    0, 4,  0x0D, 1,
+    0, 8,  0x0E, 1,
+    0, 16, 0x0E, 1,
+    0, 24, 0x0E, 1, 
+  128
+};
+
+const unsigned char const energy_bar_e[] = {
+    0, 3,  0x0E, 1|OAM_FLIP_V,
+    0, 8,  0x0E, 1,
+    0, 16, 0x0E, 1,
+    0, 24, 0x0E, 1, 
+  128
+};
+
+const unsigned char const energy_bar_f[] = {
+    0, 1,  0x0E, 1|OAM_FLIP_V,
+    0, 8,  0x0E, 1,
+    0, 16, 0x0E, 1,
+    0, 24, 0x0E, 1, 
+  128
+};
+
 #pragma rodata-name(pop)

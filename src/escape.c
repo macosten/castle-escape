@@ -54,6 +54,7 @@ const unsigned char const palette_sp[]={
 #endif
 
 unsigned char shuffle_array[SHUFFLE_ARRAY_SIZE];
+unsigned char shuffle_leg_size;
 
 /*
 The function describing the values might be something like:
@@ -361,6 +362,11 @@ const unsigned char * const splyke_death_effect_sprite_lookup_table[] = {
     splyke_death_effect1, splyke_death_effect1, splyke_death_effect0
 };
 
+const unsigned char * const energy_bar_lookup_table[] = {
+    energy_bar_0, energy_bar_1, energy_bar_2, energy_bar_3, energy_bar_4, energy_bar_5, energy_bar_6, energy_bar_7,
+    energy_bar_8, energy_bar_9, energy_bar_a, energy_bar_b, energy_bar_c, energy_bar_d, energy_bar_e, energy_bar_f
+};
+
 #pragma rodata-name(pop)
 
 void main (void) {
@@ -498,7 +504,7 @@ void main (void) {
             }
 
             // debug:
-            // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
 
         }
@@ -787,24 +793,25 @@ void load_level_new(void) {
 
 void calculate_shuffle_array(void) {
     temp0 = 0; // Index in the shuffle array
+    shuffle_leg_size = enemies.count; // Shuffle array leg size. (1/4 the size of the shuffle array.)
     // First quarter: 0...n
-    for (x = 0; x < enemies.count; ++x) {
+    for (x = 0; x < shuffle_leg_size; ++x) {
         shuffle_array[temp0] = x;
         ++temp0;
     }
     // Second quarter: n...0
-    for (x = enemies.count - 1; ; --x) {
+    for (x = shuffle_leg_size - 1; ; --x) {
         shuffle_array[temp0] = x;
         ++temp0;
         if (x == 0) { break; }
     }
 
     // Third quarter: ascending evens from 0 to n, then odds from 0 to n
-    for (x = 0; x < enemies.count; x += 2){
+    for (x = 0; x < shuffle_leg_size; x += 2){
         shuffle_array[temp0] = x;
         ++temp0;
     } 
-    for (x = 1; x < enemies.count; x += 2){
+    for (x = 1; x < shuffle_leg_size; x += 2){
         shuffle_array[temp0] = x;
         ++temp0;
     }
@@ -812,12 +819,12 @@ void calculate_shuffle_array(void) {
     // Fourth quarter: descending odds from n to 0, then evens from n to 0
     // ...or switch odds and evens here (it depends on the parity of enemies.count).
     // It shouldn't really matter either way.
-    for (x = enemies.count - 1; ; x -= 2) {
+    for (x = shuffle_leg_size - 1; ; x -= 2) {
         shuffle_array[temp0] = x;
         ++temp0;
         if (x < 2) { break; }
     }
-    for (x = enemies.count - 2; ; x -= 2) {
+    for (x = shuffle_leg_size - 2; ; x -= 2) {
         shuffle_array[temp0] = x;
         ++temp0;
         if (x < 2) { break; }
@@ -825,7 +832,7 @@ void calculate_shuffle_array(void) {
     
     // Let's also deal with the other shuffling variables here.
     shuffle_offset = 0; 
-    shuffle_maximum = 4 * enemies.count; // Set the size of the calculated portion of the shuffle array.
+    shuffle_maximum = 4 * shuffle_leg_size; // Set the size of the calculated portion of the shuffle array.
 
 }
 
@@ -846,6 +853,11 @@ const void (* draw_func_pointers[])(void) = {
     draw_splyke_death_effect, // 12 - ENEMY_SPLYKE_DEATH_EFFECT;
 };
 
+const void (* draw_hud_func_pointers[])(void) = {
+    draw_score,
+    draw_energy,
+};
+
 void draw_sprites(void) {
     // Ensure the metasprite bank is banked.
     set_prg_bank(METASPRITE_BANK);
@@ -856,14 +868,20 @@ void draw_sprites(void) {
     // draw valrigard
     draw_player();
     
+    // Drawing the HUD before the enemies.
+    // Trying to shoehorn the HUD into the shuffle array proved too costly in terms of performance...
+    if (game_mode != MODE_GAME_SHOWING_TEXT) {
+        draw_score();
+        draw_energy();
+    }
+
     // draw enemies.
-    for (y = 0; y < enemies.count; ++y) {
+    for (y = 0; y < shuffle_leg_size; ++y) {
         // Unrolling this loop is a bit inconsistent from frame to frame, so I didn't.
 
         //x = shuffle_array[y + shuffle_offset];
         temp1 = y + shuffle_offset;
         AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
-
         if (IS_ENEMY_ACTIVE(x)) {  
             temp_x = enemies.x[x];
             // Not that we should have enemies ever in these X values, 
@@ -882,25 +900,9 @@ void draw_sprites(void) {
     }
 
     // Handle the shuffle offset.
-    shuffle_offset += enemies.count;
+    shuffle_offset += shuffle_leg_size;
     if (shuffle_offset >= shuffle_maximum) { shuffle_offset = 0; }
-
-    // Perhaps the HUD should be its own function, or perhaps it should be included in the flicker system.
-    // Not sure, but still...
-
-    // Draw the energy level as sprites.
-    if (game_mode != MODE_GAME_SHOWING_TEXT) { 
-        draw_energy(); 
     
-    // Draw the score.
-    // This doesn't really interact with the metasprite system yet, so
-    // this can result in a sprite getting hidden in the score somewhere.
-    // We could address this by making the score take up a "slot" in the shuffle array.
-    // Maybe by doing something like "if x > enemies.count, then draw the score" in the loop above?
-    // Same could go for the energy.
-        draw_score();
-    }
-
     // Debug HUD, drawn last because it's the least important.
     //oam_spr(232, 42, collision_D, 2);
     
@@ -917,7 +919,17 @@ void draw_sprites(void) {
         palette_bg[7] = palette_bg[6];
         palette_bg[6] = palette_bg[5];
         palette_bg[5] = temp0;
-        pal_bg(palette_bg);
+        // Almost a call to pal_bg, but only update part of the palette 
+        // because only part of the palette is animating.
+        // (This is kind of a dumb optimization...)
+        __asm__("lda #<%v", palette_bg);
+        __asm__("ldx #>%v", palette_bg);
+        __asm__("sta %v", TEMP);
+        __asm__("stx %v+1", TEMP);
+        __asm__("ldx #$00"); // We'd make this #$10 if we wanted pal_spr.
+        __asm__("lda #$08"); // Only update the first 8 bytes of the palette.
+        __asm__("bne pal_copy");
+        //pal_bg(palette_bg);
     }
 
 }
@@ -962,7 +974,7 @@ void draw_score(void) {
     for (x = 200; x <= 232; x+=8) {
         if (temp0) {
             oam_spr(x, 20, score_string[y], 3);
-        } else if (score_string[y]) {
+        } else if (score_string[temp_y]) {
             temp0 = 1;
             oam_spr(x, 20, score_string[y], 3);
         }
@@ -970,9 +982,13 @@ void draw_score(void) {
     }
 }
 
+#define ENERGY_BAR_X 216
+#define ENERGY_BAR_Y 28
+
 void draw_energy(void) { 
-    oam_spr(200, 28, energy >> 4, 1);
-    oam_spr(208, 28, energy & 0x0f, 1);
+    temp0 = energy >> 3;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, energy_bar_lookup_table, temp0);
+    oam_meta_spr(ENERGY_BAR_X, ENERGY_BAR_Y, temppointer);
 }
 
 // For all the draw_ functions, temp_x and temp_y are important

@@ -42,6 +42,7 @@
 	.import		_buffer_1_mt_fast_sub
 	.import		_buffer_4_mt_fast_sub
 	.import		_flush_vram_update_nmi
+	.import		_gray_line
 	.import		_seed_rng
 	.export		_bankLevel
 	.export		_bankBuffer
@@ -109,6 +110,23 @@
 	.export		_purple_death_effect1
 	.export		_splyke_death_effect0
 	.export		_splyke_death_effect1
+	.export		_energy_threshold_lookup_table
+	.export		_energy_bar_0
+	.export		_energy_bar_1
+	.export		_energy_bar_2
+	.export		_energy_bar_3
+	.export		_energy_bar_4
+	.export		_energy_bar_5
+	.export		_energy_bar_6
+	.export		_energy_bar_7
+	.export		_energy_bar_8
+	.export		_energy_bar_9
+	.export		_energy_bar_a
+	.export		_energy_bar_b
+	.export		_energy_bar_c
+	.export		_energy_bar_d
+	.export		_energy_bar_e
+	.export		_energy_bar_f
 	.export		_metatiles
 	.export		_metatile_property_lookup_table
 	.export		_level01_enemy
@@ -244,6 +262,7 @@
 	.export		_palette_bg
 	.export		_palette_sp
 	.export		_shuffle_array
+	.export		_shuffle_leg_size
 	.export		_enemies
 	.export		_cmap
 	.export		_cmaps
@@ -324,6 +343,7 @@
 	.export		_splyke_sprite_lookup_table
 	.export		_purple_death_effect_sprite_lookup_table
 	.export		_splyke_death_effect_sprite_lookup_table
+	.export		_energy_bar_lookup_table
 	.export		_main
 	.export		_title_string
 	.export		_author_string
@@ -331,6 +351,7 @@
 	.export		_level_complete_string
 	.export		_down_to_restart_string
 	.export		_draw_func_pointers
+	.export		_draw_hud_func_pointers
 	.export		_enemy_hitbox_width_lookup_table
 	.export		_enemy_hitbox_height_lookup_table
 	.export		_enemy_hitbox_x_offset_lookup_table
@@ -370,6 +391,9 @@ _draw_func_pointers:
 	.addr	_draw_acid_drop
 	.addr	_draw_purple_death_effect
 	.addr	_draw_splyke_death_effect
+_draw_hud_func_pointers:
+	.addr	_draw_score
+	.addr	_draw_energy
 _collision_functions:
 	.addr	_collision_with_inert
 	.addr	_collision_with_killable_slashable
@@ -1445,6 +1469,319 @@ _splyke_death_effect1:
 	.byte	$07
 	.byte	$2E
 	.byte	$C0
+	.byte	$80
+_energy_threshold_lookup_table:
+	.byte	$01
+	.byte	$0B
+	.byte	$15
+	.byte	$1F
+	.byte	$29
+	.byte	$33
+	.byte	$3D
+	.byte	$47
+	.byte	$51
+	.byte	$5B
+	.byte	$65
+	.byte	$6F
+_energy_bar_0:
+	.byte	$00
+	.byte	$03
+	.byte	$0A
+	.byte	$81
+	.byte	$00
+	.byte	$08
+	.byte	$0A
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0A
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0A
+	.byte	$01
+	.byte	$80
+_energy_bar_1:
+	.byte	$00
+	.byte	$03
+	.byte	$0A
+	.byte	$81
+	.byte	$00
+	.byte	$08
+	.byte	$0A
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0A
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0B
+	.byte	$01
+	.byte	$80
+_energy_bar_2:
+	.byte	$00
+	.byte	$03
+	.byte	$0A
+	.byte	$81
+	.byte	$00
+	.byte	$08
+	.byte	$0A
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0A
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0C
+	.byte	$01
+	.byte	$80
+_energy_bar_3:
+	.byte	$00
+	.byte	$03
+	.byte	$0A
+	.byte	$81
+	.byte	$00
+	.byte	$08
+	.byte	$0A
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0A
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0D
+	.byte	$01
+	.byte	$80
+_energy_bar_4:
+	.byte	$00
+	.byte	$03
+	.byte	$0A
+	.byte	$81
+	.byte	$00
+	.byte	$08
+	.byte	$0A
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0F
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0E
+	.byte	$01
+	.byte	$80
+_energy_bar_5:
+	.byte	$00
+	.byte	$03
+	.byte	$0A
+	.byte	$81
+	.byte	$00
+	.byte	$08
+	.byte	$0A
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0B
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0E
+	.byte	$01
+	.byte	$80
+_energy_bar_6:
+	.byte	$00
+	.byte	$03
+	.byte	$0A
+	.byte	$81
+	.byte	$00
+	.byte	$08
+	.byte	$0A
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0C
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0E
+	.byte	$01
+	.byte	$80
+_energy_bar_7:
+	.byte	$00
+	.byte	$03
+	.byte	$0A
+	.byte	$81
+	.byte	$00
+	.byte	$08
+	.byte	$0A
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0D
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0E
+	.byte	$01
+	.byte	$80
+_energy_bar_8:
+	.byte	$00
+	.byte	$03
+	.byte	$0A
+	.byte	$81
+	.byte	$00
+	.byte	$08
+	.byte	$0F
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0E
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0E
+	.byte	$01
+	.byte	$80
+_energy_bar_9:
+	.byte	$00
+	.byte	$03
+	.byte	$0A
+	.byte	$81
+	.byte	$00
+	.byte	$08
+	.byte	$0B
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0E
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0E
+	.byte	$01
+	.byte	$80
+_energy_bar_a:
+	.byte	$00
+	.byte	$03
+	.byte	$0A
+	.byte	$81
+	.byte	$00
+	.byte	$08
+	.byte	$0C
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0E
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0E
+	.byte	$01
+	.byte	$80
+_energy_bar_b:
+	.byte	$00
+	.byte	$03
+	.byte	$FF
+	.byte	$01
+	.byte	$00
+	.byte	$04
+	.byte	$0B
+	.byte	$01
+	.byte	$00
+	.byte	$08
+	.byte	$0D
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0E
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0E
+	.byte	$01
+	.byte	$80
+_energy_bar_c:
+	.byte	$00
+	.byte	$03
+	.byte	$FF
+	.byte	$01
+	.byte	$00
+	.byte	$04
+	.byte	$0C
+	.byte	$01
+	.byte	$00
+	.byte	$08
+	.byte	$0E
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0E
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0E
+	.byte	$01
+	.byte	$80
+_energy_bar_d:
+	.byte	$00
+	.byte	$03
+	.byte	$FF
+	.byte	$01
+	.byte	$00
+	.byte	$04
+	.byte	$0D
+	.byte	$01
+	.byte	$00
+	.byte	$08
+	.byte	$0E
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0E
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0E
+	.byte	$01
+	.byte	$80
+_energy_bar_e:
+	.byte	$00
+	.byte	$03
+	.byte	$0E
+	.byte	$81
+	.byte	$00
+	.byte	$08
+	.byte	$0E
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0E
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0E
+	.byte	$01
+	.byte	$80
+_energy_bar_f:
+	.byte	$00
+	.byte	$01
+	.byte	$0E
+	.byte	$81
+	.byte	$00
+	.byte	$08
+	.byte	$0E
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$0E
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$0E
+	.byte	$01
 	.byte	$80
 .segment	"RODATA"
 _metatiles:
@@ -8327,10 +8664,10 @@ _level20:
 	.byte	$02
 	.byte	$08
 _boss_dialog_strings:
-	.addr	L1E9A
-	.addr	L1E9C
-	.addr	L1E9E
-	.addr	L1EA0
+	.addr	L1FC2
+	.addr	L1FC4
+	.addr	L1FC6
+	.addr	L1FC8
 _boss_dialog_portrait_sprites:
 	.word	$0000
 	.word	$0000
@@ -8927,30 +9264,30 @@ _level_nametable_banks:
 	.byte	$00
 	.byte	$00
 _level_names:
-	.addr	L20E8
-	.addr	L20EA
-	.addr	L20EC
-	.addr	L20EE
-	.addr	L20F0
-	.addr	L20F2
-	.addr	L20F4
-	.addr	L20F6
-	.addr	L20F8
-	.addr	L20FA
-	.addr	L20FC
-	.addr	L20FE
-	.addr	L2100
-	.addr	L2102
-	.addr	L2104
-	.addr	L2106
-	.addr	L2108
-	.addr	L210A
-	.addr	L210C
-	.addr	L210E
-	.addr	L2110
-	.addr	L2112
-	.addr	L2114
-	.addr	L2116
+	.addr	L2210
+	.addr	L2212
+	.addr	L2214
+	.addr	L2216
+	.addr	L2218
+	.addr	L221A
+	.addr	L221C
+	.addr	L221E
+	.addr	L2220
+	.addr	L2222
+	.addr	L2224
+	.addr	L2226
+	.addr	L2228
+	.addr	L222A
+	.addr	L222C
+	.addr	L222E
+	.addr	L2230
+	.addr	L2232
+	.addr	L2234
+	.addr	L2236
+	.addr	L2238
+	.addr	L223A
+	.addr	L223C
+	.addr	L223E
 _empty_enemy:
 	.byte	$FF
 _level_enemy_data:
@@ -9164,6 +9501,23 @@ _splyke_death_effect_sprite_lookup_table:
 	.addr	_splyke_death_effect1
 	.addr	_splyke_death_effect1
 	.addr	_splyke_death_effect0
+_energy_bar_lookup_table:
+	.addr	_energy_bar_0
+	.addr	_energy_bar_1
+	.addr	_energy_bar_2
+	.addr	_energy_bar_3
+	.addr	_energy_bar_4
+	.addr	_energy_bar_5
+	.addr	_energy_bar_6
+	.addr	_energy_bar_7
+	.addr	_energy_bar_8
+	.addr	_energy_bar_9
+	.addr	_energy_bar_a
+	.addr	_energy_bar_b
+	.addr	_energy_bar_c
+	.addr	_energy_bar_d
+	.addr	_energy_bar_e
+	.addr	_energy_bar_f
 .segment	"RODATA"
 _title_string:
 	.byte	$43,$61,$73,$74,$6C,$65,$20,$45,$73,$63,$61,$70,$65,$20,$41,$6C
@@ -9219,69 +9573,69 @@ _enemy_hitbox_x_offset_lookup_table:
 	.byte	$01
 	.byte	$00
 	.byte	$00
-L1EA0:
+L1FC8:
 	.byte	$59,$6F,$75,$20,$6D,$61,$79,$20,$68,$61,$76,$65,$20,$65,$73,$63
 	.byte	$61,$70,$65,$64,$20,$74,$68,$65,$0A,$64,$75,$6E,$67,$65,$6F,$6E
 	.byte	$2C,$20,$62,$75,$74,$20,$79,$6F,$75,$20,$77,$6F,$6E,$27,$74,$20
 	.byte	$6C,$69,$76,$65,$0A,$74,$6F,$20,$73,$70,$65,$61,$6B,$20,$6F,$66
 	.byte	$20,$69,$74,$2E,$2E,$2E,$00
-L1E9E:
+L1FC6:
 	.byte	$44,$69,$64,$20,$79,$6F,$75,$20,$72,$65,$61,$6C,$6C,$79,$20,$74
 	.byte	$68,$69,$6E,$6B,$20,$49,$0A,$77,$6F,$75,$6C,$64,$6E,$27,$74,$20
 	.byte	$65,$73,$63,$61,$70,$65,$3F,$00
-L1E9A:
+L1FC2:
 	.byte	$53,$6F,$20,$77,$65,$20,$6D,$65,$65,$74,$20,$61,$67,$61,$69,$6E
 	.byte	$2C,$20,$56,$61,$6C,$72,$69,$67,$61,$72,$64,$2E,$00
-L1E9C:
+L1FC4:
 	.byte	$49,$20,$73,$68,$6F,$75,$6C,$64,$20,$68,$61,$76,$65,$20,$6B,$6E
 	.byte	$6F,$77,$6E,$2E,$2E,$2E,$00
-L2108:
+L2230:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$37,$20,$00
-L210A:
+L2232:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$38,$20,$00
-L210C:
+L2234:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$39,$20,$00
-L210E:
+L2236:
 	.byte	$4C,$65,$76,$65,$6C,$20,$32,$30,$20,$00
-L2110:
+L2238:
 	.byte	$54,$69,$6C,$65,$20,$44,$75,$6D,$70,$00
-L2112:
+L223A:
 	.byte	$53,$74,$61,$72,$20,$54,$65,$73,$74,$00
-L2114:
+L223C:
 	.byte	$45,$6E,$65,$6D,$79,$54,$65,$73,$74,$00
-L2116:
+L223E:
 	.byte	$3F,$42,$6C,$63,$6B,$54,$65,$73,$74,$00
-L20FC:
+L2224:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$31,$20,$00
-L2104:
+L222C:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$35,$20,$00
-L20FA:
+L2222:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$30,$20,$00
-L20F8:
+L2220:
 	.byte	$4C,$65,$76,$65,$6C,$20,$20,$39,$20,$00
-L2102:
+L222A:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$34,$20,$00
-L20F6:
+L221E:
 	.byte	$4C,$65,$76,$65,$6C,$20,$20,$38,$20,$00
-L2100:
+L2228:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$33,$20,$00
-L20F4:
+L221C:
 	.byte	$4C,$65,$76,$65,$6C,$20,$20,$37,$20,$00
-L20F2:
+L221A:
 	.byte	$4C,$65,$76,$65,$6C,$20,$20,$36,$20,$00
-L20F0:
+L2218:
 	.byte	$4C,$65,$76,$65,$6C,$20,$20,$35,$20,$00
-L20EE:
+L2216:
 	.byte	$4C,$65,$76,$65,$6C,$20,$20,$34,$20,$00
-L2106:
+L222E:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$36,$20,$00
-L20EC:
+L2214:
 	.byte	$4C,$65,$76,$65,$6C,$20,$20,$33,$20,$00
-L20EA:
+L2212:
 	.byte	$4C,$65,$76,$65,$6C,$20,$20,$32,$20,$00
-L20E8:
+L2210:
 	.byte	$4C,$65,$76,$65,$6C,$20,$20,$31,$20,$00
-L20FE:
+L2226:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$32,$20,$00
 
 .segment	"BSS"
@@ -9426,6 +9780,8 @@ _did_headbonk:
 .segment	"BSS"
 _shuffle_array:
 	.res	160,$00
+_shuffle_leg_size:
+	.res	1,$00
 _enemies:
 	.res	361,$00
 .segment	"XRAM"
@@ -9456,16 +9812,30 @@ _cmap:
 ;
 	jsr     _draw_player
 ;
-; for (y = 0; y < enemies.count; ++y) {
+; if (game_mode != MODE_GAME_SHOWING_TEXT) {
 ;
-	lda     #$00
+	lda     _game_mode
+	cmp     #$05
+	beq     L326C
+;
+; draw_score();
+;
+	jsr     _draw_score
+;
+; draw_energy();
+;
+	jsr     _draw_energy
+;
+; for (y = 0; y < shuffle_leg_size; ++y) {
+;
+L326C:	lda     #$00
 	sta     _y
 	tax
-L311F:	lda     _y
-	cmp     _enemies+360
+L326D:	lda     _y
+	cmp     _shuffle_leg_size
 	txa
 	sbc     #$00
-	bcs     L3121
+	bcs     L326F
 ;
 ; temp1 = y + shuffle_offset;
 ;
@@ -9485,7 +9855,7 @@ L311F:	lda     _y
 	ldy     _x
 	lda     _enemies+160,y
 	and     #$80
-	beq     L3120
+	beq     L326E
 ;
 ; temp_x = enemies.x[x];
 ;
@@ -9502,7 +9872,7 @@ L311F:	lda     _y
 ; if (temp_y < 0xf0) {
 ;
 	cmp     #$F0
-	bcs     L3120
+	bcs     L326E
 ;
 ; temp0 = GET_ENEMY_TYPE(x);
 ;
@@ -9518,15 +9888,15 @@ L311F:	lda     _y
 	ldx     _draw_func_pointers+1,y
 	jsr     callax
 ;
-; for (y = 0; y < enemies.count; ++y) {
+; for (y = 0; y < shuffle_leg_size; ++y) {
 ;
 	ldx     #$00
-L3120:	inc     _y
-	jmp     L311F
+L326E:	inc     _y
+	jmp     L326D
 ;
-; shuffle_offset += enemies.count;
+; shuffle_offset += shuffle_leg_size;
 ;
-L3121:	lda     _enemies+360
+L326F:	lda     _shuffle_leg_size
 	clc
 	adc     _shuffle_offset
 	sta     _shuffle_offset
@@ -9536,29 +9906,15 @@ L3121:	lda     _enemies+360
 	cmp     _shuffle_maximum
 	txa
 	sbc     #$00
-	bcc     L3122
+	bcc     L2657
 	lda     #$00
 	sta     _shuffle_offset
 ;
-; if (game_mode != MODE_GAME_SHOWING_TEXT) { 
-;
-L3122:	lda     _game_mode
-	cmp     #$05
-	beq     L251A
-;
-; draw_energy(); 
-;
-	jsr     _draw_energy
-;
-; draw_score();
-;
-	jsr     _draw_score
-;
 ; if (!(get_frame_count() & 7)) {
 ;
-L251A:	jsr     _get_frame_count
+L2657:	jsr     _get_frame_count
 	and     #$07
-	bne     L251E
+	bne     L265B
 ;
 ; temp0 = palette_bg[7];
 ;
@@ -9580,15 +9936,37 @@ L251A:	jsr     _get_frame_count
 	lda     _temp0
 	sta     _palette_bg+5
 ;
-; pal_bg(palette_bg);
+; __asm__("ldx #>%v", palette_bg);
 ;
-	lda     #<(_palette_bg)
-	ldx     #>(_palette_bg)
-	jmp     _pal_bg
+	lda     #>_palette_bg
+;
+; __asm__("stx %v+1", TEMP);
+;
+	sta     _TEMP+1
+;
+; __asm__("lda #<%v", palette_bg);
+;
+	lda     #<_palette_bg
+;
+; __asm__("sta %v", TEMP);
+;
+	sta     _TEMP
+;
+; __asm__("ldx #$00"); // We'd make this #$10 if we wanted pal_spr.
+;
+	ldx     #$00
+;
+; __asm__("lda #$08"); // Only update the first 8 bytes of the palette.
+;
+	lda     #$08
+;
+; __asm__("bne pal_copy");
+;
+	jmp     pal_copy
 ;
 ; }
 ;
-L251E:	rts
+L265B:	rts
 
 .endproc
 
@@ -9617,7 +9995,7 @@ L251E:	rts
 ;
 	lda     _player_flags
 	and     #$02
-	beq     L3124
+	beq     L3271
 ;
 ; temp0 = DIRECTION;
 ;
@@ -9635,10 +10013,10 @@ L251E:	rts
 ;
 ; } else if (IS_SWINGING_SWORD) {
 ;
-	jmp     L3123
-L3124:	lda     _player_flags
+	jmp     L3270
+L3271:	lda     _player_flags
 	and     #$04
-	beq     L3125
+	beq     L3272
 ;
 ; temp0 = (player_frame_timer & 0b11111110) | DIRECTION;
 ;
@@ -9660,11 +10038,11 @@ L3124:	lda     _player_flags
 ;
 ; } else {
 ;
-	jmp     L3123
+	jmp     L3270
 ;
 ; temp0 = DIRECTION;
 ;
-L3125:	lda     _player_flags
+L3272:	lda     _player_flags
 	and     #$01
 	sta     _temp0
 ;
@@ -9675,7 +10053,7 @@ L3125:	lda     _player_flags
 	lda     _valrigard_idle_sprite_lookup_table,y
 	sta     _temppointer
 	lda     _valrigard_idle_sprite_lookup_table+1,y
-L3123:	sta     _temppointer+1
+L3270:	sta     _temppointer+1
 ;
 ; oam_meta_spr(temp1, temp2, temppointer);
 ;
@@ -9690,7 +10068,7 @@ L3123:	sta     _temppointer+1
 ; if (player_frame_timer) { 
 ;
 	lda     _player_frame_timer
-	beq     L257E
+	beq     L26C7
 ;
 ; --player_frame_timer;
 ;
@@ -9698,7 +10076,7 @@ L3123:	sta     _temppointer+1
 ;
 ; }
 ;
-L257E:	rts
+L26C7:	rts
 
 .endproc
 
@@ -9723,7 +10101,7 @@ L257E:	rts
 ; if (temp3 >= (14 << 1)) { // Clamp the frame number to 14.
 ;
 	cmp     #$1C
-	bcc     L3126
+	bcc     L3273
 ;
 ; temp3 = 0;
 ;
@@ -9737,7 +10115,7 @@ L257E:	rts
 ;
 ; temp3 = temp3 | ENEMY_DIRECTION(x);
 ;
-L3126:	ldy     _x
+L3273:	ldy     _x
 	lda     _enemies+160,y
 	and     #$01
 	ora     _temp3
@@ -9785,7 +10163,7 @@ L3126:	ldy     _x
 ; if (temp3 >= (6 << 3)) { // Clamp the frame number to 6.
 ;
 	cmp     #$30
-	bcc     L3127
+	bcc     L3274
 ;
 ; temp3 = 0;
 ;
@@ -9799,7 +10177,7 @@ L3126:	ldy     _x
 ;
 ; temp3 = (temp3 >> 2) | ENEMY_DIRECTION(x); // Last 2 bits just make the animation slower.
 ;
-L3127:	lda     _temp3
+L3274:	lda     _temp3
 	lsr     a
 	lsr     a
 	sta     ptr1
@@ -10198,7 +10576,7 @@ L3127:	lda     _temp3
 ;
 	lda     _score
 	ora     _score+1
-	bne     L2582
+	bne     L26CB
 ;
 ; oam_spr(232, 20, 0, 3);
 ;
@@ -10213,7 +10591,7 @@ L3127:	lda     _temp3
 ;
 ; y = 4;
 ;
-L2582:	lda     #$04
+L26CB:	lda     #$04
 	sta     _y
 ;
 ; temp0 = 0;
@@ -10224,20 +10602,20 @@ L2582:	lda     #$04
 ; for (x = 200; x <= 232; x+=8) {
 ;
 	lda     #$C8
-L3129:	sta     _x
+L3276:	sta     _x
 	cmp     #$E9
-	bcs     L2595
+	bcs     L26DE
 ;
 ; if (temp0) {
 ;
 	lda     _temp0
 ;
-; } else if (score_string[y]) {
+; } else if (score_string[temp_y]) {
 ;
-	bne     L3132
-	ldy     _y
+	bne     L327F
+	ldy     _temp_y
 	lda     _score_string,y
-	beq     L312A
+	beq     L3277
 ;
 ; temp0 = 1;
 ;
@@ -10246,7 +10624,7 @@ L3129:	sta     _x
 ;
 ; oam_spr(x, 20, score_string[y], 3);
 ;
-L3132:	lda     _x
+L327F:	lda     _x
 	sta     _TEMP
 	lda     #$14
 	sta     _TEMP+1
@@ -10258,18 +10636,18 @@ L3132:	lda     _x
 ;
 ; --y;
 ;
-L312A:	dec     _y
+L3277:	dec     _y
 ;
 ; for (x = 200; x <= 232; x+=8) {
 ;
 	lda     #$08
 	clc
 	adc     _x
-	jmp     L3129
+	jmp     L3276
 ;
 ; }
 ;
-L2595:	rts
+L26DE:	rts
 
 .endproc
 
@@ -10284,32 +10662,32 @@ L2595:	rts
 .segment	"CODE"
 
 ;
-; oam_spr(200, 28, energy >> 4, 1);
+; temp0 = energy >> 3;
 ;
-	lda     #$C8
-	sta     _TEMP
-	lda     #$1C
-	sta     _TEMP+1
 	lda     _energy
 	lsr     a
 	lsr     a
 	lsr     a
-	lsr     a
-	sta     _TEMP+2
-	lda     #$01
-	jsr     _oam_spr_fast_sub
+	sta     _temp0
 ;
-; oam_spr(208, 28, energy & 0x0f, 1);
+; AsmSet2ByteFromPtrAtIndexVar(temppointer, energy_bar_lookup_table, temp0);
 ;
-	lda     #$D0
-	sta     _TEMP
+	asl     a
+	tay
+	lda     _energy_bar_lookup_table,y
+	sta     _temppointer
+	lda     _energy_bar_lookup_table+1,y
+	sta     _temppointer+1
+;
+; oam_meta_spr(ENERGY_BAR_X, ENERGY_BAR_Y, temppointer);
+;
+	lda     #$D8
+	sta     _TEMP+5
 	lda     #$1C
-	sta     _TEMP+1
-	lda     _energy
-	and     #$0F
-	sta     _TEMP+2
-	lda     #$01
-	jmp     _oam_spr_fast_sub
+	sta     _TEMP+6
+	lda     _temppointer
+	ldx     _temppointer+1
+	jmp     _oam_meta_spr_fast_sub
 
 .endproc
 
@@ -10388,12 +10766,12 @@ L2595:	rts
 	clc
 	adc     _pseudo_scroll_y
 	sta     _pseudo_scroll_y
-	bcc     L299F
+	bcc     L2AEC
 	inc     _pseudo_scroll_y+1
 ;
 ; temp1 = high_byte(pseudo_scroll_y);
 ;
-L299F:	lda     _pseudo_scroll_y+1
+L2AEC:	lda     _pseudo_scroll_y+1
 	sta     _temp1
 ;
 ; AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
@@ -10553,7 +10931,7 @@ L299F:	lda     _pseudo_scroll_y+1
 ;
 	lda     _tile_clear_back
 	cmp     _tile_clear_front
-	beq     L294E
+	beq     L2A9B
 ;
 ; AsmSet2ByteFromPtrAtIndexVar(address, tile_clear_queue, tile_clear_front);
 ;
@@ -10594,7 +10972,7 @@ L299F:	lda     _pseudo_scroll_y+1
 ;
 ; }
 ;
-L294E:	rts
+L2A9B:	rts
 
 .endproc
 
@@ -10725,9 +11103,9 @@ L294E:	rts
 	lda     #$00
 	sec
 	sbc     #$11
-	bcs     L233C
+	bcs     L2475
 	dex
-L233C:	sta     _initial_scroll
+L2475:	sta     _initial_scroll
 	stx     _initial_scroll+1
 ;
 ; temp4 = valrigard_inital_coords[level_index];
@@ -10814,12 +11192,12 @@ L233C:	sta     _initial_scroll
 ; for(y=0; ;y+=0x20){
 ;
 	lda     #$00
-L3139:	sta     _y
+L3286:	sta     _y
 ;
 ; for(x=0; ;x+=0x20){
 ;
 	lda     #$00
-L3138:	sta     _x
+L3285:	sta     _x
 ;
 ; clear_vram_buffer(); // do each frame, and before putting anything in the buffer
 ;
@@ -10871,45 +11249,45 @@ L3138:	sta     _x
 ;
 	lda     _x
 	cmp     #$E0
-	beq     L313C
+	beq     L3289
 ;
 ; for(x=0; ;x+=0x20){
 ;
 	lda     #$20
 	clc
 	adc     _x
-	jmp     L3138
+	jmp     L3285
 ;
 ; if (y == 0xe0) break;
 ;
-L313C:	lda     _y
+L3289:	lda     _y
 	cmp     #$E0
-	beq     L313D
+	beq     L328A
 ;
 ; for(y=0; ;y+=0x20){
 ;
 	lda     #$20
 	clc
 	adc     _y
-	jmp     L3139
+	jmp     L3286
 ;
 ; temp1 = temp1 ^ 2; // flip that 0000 0010 bit
 ;
-L313D:	lda     _temp1
+L328A:	lda     _temp1
 	eor     #$02
 	sta     _temp1
 ;
 ; temp0 = nt_current == 0 ? nt_current + 1 : nt_current - 1;
 ;
 	lda     _nt_current
-	bne     L313E
+	bne     L328B
 	clc
 	adc     #$01
-	jmp     L313F
-L313E:	lda     _nt_current
+	jmp     L328C
+L328B:	lda     _nt_current
 	sec
 	sbc     #$01
-L313F:	sta     _temp0
+L328C:	sta     _temp0
 ;
 ; AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp0);
 ;
@@ -10929,7 +11307,7 @@ L313F:	sta     _temp0
 ; for(x=0; ;x+=0x20){
 ;
 	lda     #$00
-L313A:	sta     _x
+L3287:	sta     _x
 ;
 ; y = 0xe0;
 ;
@@ -10986,18 +11364,18 @@ L313A:	sta     _x
 ;
 	lda     _x
 	cmp     #$E0
-	beq     L23BE
+	beq     L24F7
 ;
 ; for(x=0; ;x+=0x20){
 ;
 	lda     #$20
 	clc
 	adc     _x
-	jmp     L313A
+	jmp     L3287
 ;
 ; clear_vram_buffer();
 ;
-L23BE:	jsr     _clear_vram_buffer
+L24F7:	jsr     _clear_vram_buffer
 ;
 ; memfill(&enemies, 0, sizeof(enemies));
 ;
@@ -11030,9 +11408,9 @@ L23BE:	jsr     _clear_vram_buffer
 	lda     #$00
 	sta     _x
 	sta     _y
-L3140:	lda     _x
+L328D:	lda     _x
 	cmp     #$28
-	jcs     L3143
+	jcs     L3290
 ;
 ; enemies.y[x] = 0;
 ;
@@ -11049,7 +11427,7 @@ L3140:	lda     _x
 ; if (temp1 == 0xff) break; // 0xff terminates the enemy data.
 ;
 	cmp     #$FF
-	jeq     L3143
+	jeq     L3290
 ;
 ; temp2 = temp1 & 0xf0;
 ;
@@ -11120,7 +11498,7 @@ L3140:	lda     _x
 ; if (temp1 == 4) { // ENEMY_CANNON
 ;
 	cmp     #$04
-	bne     L3141
+	bne     L328E
 ;
 ; ++x;
 ;
@@ -11134,10 +11512,10 @@ L3140:	lda     _x
 ;
 ; } else if (temp1 == 5) { // ENEMY_ACIDPOOL
 ;
-	jmp     L3142
-L3141:	lda     _temp1
+	jmp     L328F
+L328E:	lda     _temp1
 	cmp     #$05
-	bne     L3142
+	bne     L328F
 ;
 ; ++x;
 ;
@@ -11163,26 +11541,26 @@ L3141:	lda     _temp1
 ;
 ; ++y; // Next byte.
 ;
-L3142:	inc     _y
+L328F:	inc     _y
 ;
 ; for (x = 0, y = 0; x < MAX_ENEMIES; ++x){
 ;
 	inc     _x
-	jmp     L3140
+	jmp     L328D
 ;
 ; enemies.count = x+1;
 ;
-L3143:	lda     _x
+L3290:	lda     _x
 	clc
 	adc     #$01
 	sta     _enemies+360
 ;
 ; for(++x; x < MAX_ENEMIES; ++x) {
 ;
-L3147:	inc     _x
+L3294:	inc     _x
 	lda     _x
 	cmp     #$28
-	bcs     L3144
+	bcs     L3291
 ;
 ; enemies.type[x] = ENEMY_NONE;
 ;
@@ -11192,18 +11570,18 @@ L3147:	inc     _x
 ;
 ; for(++x; x < MAX_ENEMIES; ++x) {
 ;
-	jmp     L3147
+	jmp     L3294
 ;
 ; for (x = 0; x < enemies.count; ++x) {
 ;
-L3144:	lda     #$00
+L3291:	lda     #$00
 	sta     _x
 	tax
-L3145:	lda     _x
+L3292:	lda     _x
 	cmp     _enemies+360
 	txa
 	sbc     #$00
-	bcs     L2457
+	bcs     L2590
 ;
 ; switch (GET_ENEMY_TYPE(x)) {
 ;
@@ -11213,9 +11591,9 @@ L3145:	lda     _x
 ; }
 ;
 	cmp     #$04
-	beq     L246B
+	beq     L25A4
 	cmp     #$05
-	bne     L3146
+	bne     L3293
 ;
 ; enemies.timer[x] = 0b10000000;
 ;
@@ -11225,7 +11603,7 @@ L3145:	lda     _x
 ;
 ; temp0 = rand8() & 0b01111111;
 ;
-L246B:	jsr     _rand8
+L25A4:	jsr     _rand8
 	and     #$7F
 	sta     _temp0
 ;
@@ -11238,12 +11616,12 @@ L246B:	jsr     _rand8
 ;
 ; for (x = 0; x < enemies.count; ++x) {
 ;
-L3146:	inc     _x
-	jmp     L3145
+L3293:	inc     _x
+	jmp     L3292
 ;
 ; }
 ;
-L2457:	rts
+L2590:	rts
 
 .endproc
 
@@ -11263,15 +11641,21 @@ L2457:	rts
 	lda     #$00
 	sta     _temp0
 ;
-; for (x = 0; x < enemies.count; ++x) {
+; shuffle_leg_size = enemies.count; // Shuffle array leg size. (1/4 the size of the shuffle array.)
 ;
+	lda     _enemies+360
+	sta     _shuffle_leg_size
+;
+; for (x = 0; x < shuffle_leg_size; ++x) {
+;
+	lda     #$00
 	sta     _x
 	tax
-L314C:	lda     _x
-	cmp     _enemies+360
+L3299:	lda     _x
+	cmp     _shuffle_leg_size
 	txa
 	sbc     #$00
-	bcs     L314D
+	bcs     L329A
 ;
 ; shuffle_array[temp0] = x;
 ;
@@ -11283,21 +11667,21 @@ L314C:	lda     _x
 ;
 	inc     _temp0
 ;
-; for (x = 0; x < enemies.count; ++x) {
+; for (x = 0; x < shuffle_leg_size; ++x) {
 ;
 	inc     _x
-	jmp     L314C
+	jmp     L3299
 ;
-; for (x = enemies.count - 1; ; --x) {
+; for (x = shuffle_leg_size - 1; ; --x) {
 ;
-L314D:	lda     _enemies+360
+L329A:	lda     _shuffle_leg_size
 	sec
 	sbc     #$01
 	sta     _x
 ;
 ; shuffle_array[temp0] = x;
 ;
-L2486:	ldy     _temp0
+L25C1:	ldy     _temp0
 	lda     _x
 	sta     _shuffle_array,y
 ;
@@ -11308,20 +11692,20 @@ L2486:	ldy     _temp0
 ; if (x == 0) { break; }
 ;
 	lda     _x
-	beq     L3148
+	beq     L3295
 ;
-; for (x = enemies.count - 1; ; --x) {
+; for (x = shuffle_leg_size - 1; ; --x) {
 ;
 	dec     _x
-	jmp     L2486
+	jmp     L25C1
 ;
-; for (x = 0; x < enemies.count; x += 2){
+; for (x = 0; x < shuffle_leg_size; x += 2){
 ;
-L3148:	sta     _x
+L3295:	sta     _x
 	ldx     #$00
 	lda     _x
-	cmp     _enemies+360
-	bcs     L314F
+	cmp     _shuffle_leg_size
+	bcs     L329C
 ;
 ; shuffle_array[temp0] = x;
 ;
@@ -11333,21 +11717,21 @@ L3148:	sta     _x
 ;
 	inc     _temp0
 ;
-; for (x = 0; x < enemies.count; x += 2){
+; for (x = 0; x < shuffle_leg_size; x += 2){
 ;
 	lda     #$02
 	clc
 	adc     _x
-	jmp     L3148
+	jmp     L3295
 ;
-; for (x = 1; x < enemies.count; x += 2){
+; for (x = 1; x < shuffle_leg_size; x += 2){
 ;
-L314F:	lda     #$01
-L3149:	sta     _x
-	cmp     _enemies+360
+L329C:	lda     #$01
+L3296:	sta     _x
+	cmp     _shuffle_leg_size
 	txa
 	sbc     #$00
-	bcs     L3150
+	bcs     L329D
 ;
 ; shuffle_array[temp0] = x;
 ;
@@ -11359,19 +11743,19 @@ L3149:	sta     _x
 ;
 	inc     _temp0
 ;
-; for (x = 1; x < enemies.count; x += 2){
+; for (x = 1; x < shuffle_leg_size; x += 2){
 ;
 	lda     #$02
 	clc
 	adc     _x
-	jmp     L3149
+	jmp     L3296
 ;
-; for (x = enemies.count - 1; ; x -= 2) {
+; for (x = shuffle_leg_size - 1; ; x -= 2) {
 ;
-L3150:	lda     _enemies+360
+L329D:	lda     _shuffle_leg_size
 	sec
 	sbc     #$01
-L314A:	sta     _x
+L3297:	sta     _x
 ;
 ; shuffle_array[temp0] = x;
 ;
@@ -11387,18 +11771,18 @@ L314A:	sta     _x
 ;
 	lda     _x
 	cmp     #$02
-	bcc     L3151
+	bcc     L329E
 ;
-; for (x = enemies.count - 1; ; x -= 2) {
+; for (x = shuffle_leg_size - 1; ; x -= 2) {
 ;
 	sec
 	sbc     #$02
-	jmp     L314A
+	jmp     L3297
 ;
-; for (x = enemies.count - 2; ; x -= 2) {
+; for (x = shuffle_leg_size - 2; ; x -= 2) {
 ;
-L3151:	lda     _enemies+360
-L3154:	sec
+L329E:	lda     _shuffle_leg_size
+L32A1:	sec
 	sbc     #$02
 	sta     _x
 ;
@@ -11416,20 +11800,20 @@ L3154:	sec
 ;
 	lda     _x
 	cmp     #$02
-	bcc     L3152
+	bcc     L329F
 ;
-; for (x = enemies.count - 2; ; x -= 2) {
+; for (x = shuffle_leg_size - 2; ; x -= 2) {
 ;
-	jmp     L3154
+	jmp     L32A1
 ;
 ; shuffle_offset = 0; 
 ;
-L3152:	lda     #$00
+L329F:	lda     #$00
 	sta     _shuffle_offset
 ;
-; shuffle_maximum = 4 * enemies.count; // Set the size of the calculated portion of the shuffle array.
+; shuffle_maximum = 4 * shuffle_leg_size; // Set the size of the calculated portion of the shuffle array.
 ;
-	lda     _enemies+360
+	lda     _shuffle_leg_size
 	asl     a
 	asl     a
 	sta     _shuffle_maximum
@@ -11644,11 +12028,11 @@ L3152:	lda     #$00
 ;
 ; while (*str) {
 ;
-	jmp     L22AF
+	jmp     L23E8
 ;
 ; vram_put(*str);
 ;
-L22AD:	ldy     #$01
+L23E6:	ldy     #$01
 	lda     (sp),y
 	sta     ptr1+1
 	dey
@@ -11665,14 +12049,14 @@ L22AD:	ldy     #$01
 ;
 ; while (*str) {
 ;
-L22AF:	ldy     #$01
+L23E8:	ldy     #$01
 	lda     (sp),y
 	sta     ptr1+1
 	dey
 	lda     (sp),y
 	sta     ptr1
 	lda     (ptr1),y
-	bne     L22AD
+	bne     L23E6
 ;
 ; }
 ;
@@ -11711,7 +12095,7 @@ L22AF:	ldy     #$01
 ;
 	lda     _pad1
 	and     #$02
-	beq     L315A
+	beq     L32A7
 ;
 ; SET_DIRECTION_LEFT();
 ;
@@ -11723,10 +12107,10 @@ L22AF:	ldy     #$01
 ;
 	lda     _valrigard+1
 	cmp     #$02
-	bne     L2725
+	bne     L2872
 	lda     _valrigard
 	cmp     #$01
-L2725:	bcs     L2723
+L2872:	bcs     L2870
 ;
 ; valrigard.velocity_x = 0;
 ;
@@ -11742,10 +12126,10 @@ L2725:	bcs     L2723
 ;
 ; } else if (valrigard.x < 0x0600) { // Don't allow us to wrap to the other side
 ;
-	jmp     L2746
-L2723:	ldx     _valrigard+1
+	jmp     L2893
+L2870:	ldx     _valrigard+1
 	cpx     #$06
-	bcs     L272B
+	bcs     L2878
 ;
 ; valrigard.velocity_x = -0x100;
 ;
@@ -11754,20 +12138,20 @@ L2723:	ldx     _valrigard+1
 ;
 ; } else {
 ;
-	jmp     L315C
+	jmp     L32A9
 ;
 ; valrigard.velocity_x = -SPEED;
 ;
-L272B:	ldx     #$FE
+L2878:	ldx     #$FE
 	lda     #$B0
 ;
 ; else if (pad1 & PAD_RIGHT){
 ;
-	jmp     L315C
-L315A:	lda     _pad1
+	jmp     L32A9
+L32A7:	lda     _pad1
 	ldx     #$00
 	and     #$01
-	beq     L315C
+	beq     L32A9
 ;
 ; SET_DIRECTION_RIGHT();
 ;
@@ -11781,7 +12165,7 @@ L315A:	lda     _pad1
 	cmp     #$00
 	lda     _valrigard+1
 	sbc     #$F0
-	bcc     L2738
+	bcc     L2885
 ;
 ; valrigard.velocity_x = 0;
 ;
@@ -11797,12 +12181,12 @@ L315A:	lda     _pad1
 ;
 ; } else if (valrigard.x > 0xec00) { // Don't allow us to wrap to the other side
 ;
-	jmp     L2746
-L2738:	lda     _valrigard
+	jmp     L2893
+L2885:	lda     _valrigard
 	cmp     #$01
 	lda     _valrigard+1
 	sbc     #$EC
-	bcc     L273F
+	bcc     L288C
 ;
 ; valrigard.velocity_x = 0x100;
 ;
@@ -11811,21 +12195,21 @@ L2738:	lda     _valrigard
 ;
 ; } else {
 ;
-	jmp     L315C
+	jmp     L32A9
 ;
 ; valrigard.velocity_x = SPEED;
 ;
-L273F:	inx
+L288C:	inx
 	lda     #$50
 ;
 ; valrigard.velocity_x = 0;
 ;
-L315C:	sta     _valrigard+4
+L32A9:	sta     _valrigard+4
 	stx     _valrigard+4+1
 ;
 ; valrigard.x += valrigard.velocity_x;
 ;
-L2746:	lda     _valrigard+4
+L2893:	lda     _valrigard+4
 	clc
 	adc     _valrigard
 	sta     _valrigard
@@ -11836,20 +12220,20 @@ L2746:	lda     _valrigard+4
 ; if((high_byte(valrigard.x) < 0x01)||(high_byte(valrigard.x) > 0xf8)) { // make sure no wrap around to the other side
 ;
 	lda     _valrigard+1
-	beq     L315D
+	beq     L32AA
 	cmp     #$F9
-	bcc     L315E
+	bcc     L32AB
 ;
 ; valrigard.x = 0x100;
 ;
-L315D:	ldx     #$01
+L32AA:	ldx     #$01
 	lda     #$00
 	sta     _valrigard
 	stx     _valrigard+1
 ;
 ; L_R_switch = 1; // Shrinks the Y values in bg_coll. This makes head/foot collisions less problematic (examine this)
 ;
-L315E:	lda     #$01
+L32AB:	lda     #$01
 	sta     _L_R_switch
 ;
 ; hitbox.x = high_byte(valrigard.x);
@@ -11879,9 +12263,9 @@ L315E:	lda     #$01
 ; if (collision_L && collision_R) { // Half-stuck in a wall, I'm guessing?
 ;
 	lda     _collision_L
-	beq     L2761
+	beq     L28AE
 	lda     _collision_R
-	beq     L2761
+	beq     L28AE
 ;
 ; valrigard.x = old_x;
 ;
@@ -11892,9 +12276,9 @@ L315E:	lda     #$01
 ;
 ; else if (collision_L) {
 ;
-	jmp     L276E
-L2761:	lda     _collision_L
-	beq     L2768
+	jmp     L28BB
+L28AE:	lda     _collision_L
+	beq     L28B5
 ;
 ; high_byte(valrigard.x) -= eject_L;
 ;
@@ -11902,21 +12286,21 @@ L2761:	lda     _collision_L
 ;
 ; else if (collision_R) {
 ;
-	jmp     L316E
-L2768:	lda     _collision_R
-	beq     L276E
+	jmp     L32BB
+L28B5:	lda     _collision_R
+	beq     L28BB
 ;
 ; high_byte(valrigard.x) -= eject_R;
 ;
 	lda     _eject_R
-L316E:	eor     #$FF
+L32BB:	eor     #$FF
 	sec
 	adc     _valrigard+1
 	sta     _valrigard+1
 ;
 ; old_y = valrigard.y;
 ;
-L276E:	lda     _valrigard+2+1
+L28BB:	lda     _valrigard+2+1
 	sta     _old_y+1
 	lda     _valrigard+2
 	sta     _old_y
@@ -11925,9 +12309,9 @@ L276E:	lda     _valrigard+2+1
 ;
 	lda     _pad1
 	and     #$08
-	beq     L2775
+	beq     L28C2
 	lda     _energy
-	beq     L2775
+	beq     L28C2
 ;
 ; if (collision_D) { // If grounded...
 ;
@@ -11935,7 +12319,7 @@ L276E:	lda     _valrigard+2+1
 ;
 ; } else {
 ;
-	bne     L316F
+	bne     L32BC
 ;
 ; valrigard.velocity_y -= GRAVITY;
 ;
@@ -11943,49 +12327,49 @@ L276E:	lda     _valrigard+2+1
 	sec
 	sbc     #$30
 	sta     _valrigard+6
-	bcs     L2780
+	bcs     L28CD
 	dec     _valrigard+6+1
 ;
 ; if (valrigard.velocity_y < -SPEED) valrigard.velocity_y = -SPEED;
 ;
-L2780:	lda     _valrigard+6
+L28CD:	lda     _valrigard+6
 	cmp     #$B0
 	lda     _valrigard+6+1
 	sbc     #$FE
-	bvc     L2783
+	bvc     L28D0
 	eor     #$80
-L2783:	bpl     L3162
-L316F:	ldx     #$FE
+L28D0:	bpl     L32AF
+L32BC:	ldx     #$FE
 	lda     #$B0
 	sta     _valrigard+6
 	stx     _valrigard+6+1
 ;
 ; energy -= 1;
 ;
-L3162:	dec     _energy
+L32AF:	dec     _energy
 ;
 ; } else {
 ;
-	jmp     L278C
+	jmp     L28D9
 ;
 ; valrigard.velocity_y += GRAVITY;
 ;
-L2775:	lda     #$30
+L28C2:	lda     #$30
 	clc
 	adc     _valrigard+6
 	sta     _valrigard+6
-	bcc     L278B
+	bcc     L28D8
 	inc     _valrigard+6+1
 ;
 ; if (valrigard.velocity_y > MAX_FALL) valrigard.velocity_y = MAX_FALL;
 ;
-L278B:	lda     _valrigard+6
+L28D8:	lda     _valrigard+6
 	cmp     #$51
 	lda     _valrigard+6+1
 	sbc     #$01
-	bvs     L278E
+	bvs     L28DB
 	eor     #$80
-L278E:	bpl     L278C
+L28DB:	bpl     L28D9
 	ldx     #$01
 	lda     #$50
 	sta     _valrigard+6
@@ -11993,7 +12377,7 @@ L278E:	bpl     L278C
 ;
 ; valrigard.y += valrigard.velocity_y;
 ;
-L278C:	lda     _valrigard+6
+L28D9:	lda     _valrigard+6
 	clc
 	adc     _valrigard+2
 	sta     _valrigard+2
@@ -12004,23 +12388,23 @@ L278C:	lda     _valrigard+6
 ; if (high_byte(valrigard.y) < 0x01) { valrigard.y = 0x100; }
 ;
 	lda     _valrigard+3
-	bne     L3163
+	bne     L32B0
 	ldx     #$01
 ;
 ; else if (high_byte(valrigard.y) > 0xf0) { valrigard.y = 0xf000; }
 ;
-	jmp     L316A
-L3163:	lda     _valrigard+3
+	jmp     L32B7
+L32B0:	lda     _valrigard+3
 	cmp     #$F1
 	lda     #$00
-	bcc     L3165
+	bcc     L32B2
 	ldx     #$F0
-L316A:	sta     _valrigard+2
+L32B7:	sta     _valrigard+2
 	stx     _valrigard+2+1
 ;
 ; L_R_switch = 0;
 ;
-L3165:	sta     _L_R_switch
+L32B2:	sta     _L_R_switch
 ;
 ; hitbox.x = high_byte(valrigard.x);
 ;
@@ -12039,7 +12423,7 @@ L3165:	sta     _L_R_switch
 ; if(collision_U) {
 ;
 	lda     _collision_U
-	beq     L27A7
+	beq     L28F4
 ;
 ; high_byte(valrigard.y) -= eject_U;
 ;
@@ -12052,7 +12436,7 @@ L3165:	sta     _L_R_switch
 ; if (did_headbonk) { 
 ;
 	lda     _did_headbonk
-	beq     L27BE
+	beq     L290B
 ;
 ; high_byte(valrigard.y) += 4;
 ;
@@ -12069,9 +12453,9 @@ L3165:	sta     _L_R_switch
 ;
 ; else if (collision_D) {
 ;
-	jmp     L27BE
-L27A7:	lda     _collision_D
-	beq     L27BE
+	jmp     L290B
+L28F4:	lda     _collision_D
+	beq     L290B
 ;
 ; high_byte(valrigard.y) -= eject_D;
 ;
@@ -12085,9 +12469,9 @@ L27A7:	lda     _collision_D
 ;
 	ldx     #$00
 	lda     _conveyor_delta
-	bpl     L27BB
+	bpl     L2908
 	dex
-L27BB:	clc
+L2908:	clc
 	adc     _valrigard
 	sta     _valrigard
 	txa
@@ -12104,13 +12488,13 @@ L27BB:	clc
 ; if (energy > MAX_ENERGY) energy = MAX_ENERGY;
 ;
 	cmp     #$71
-	bcc     L27BE
+	bcc     L290B
 	lda     #$70
 	sta     _energy
 ;
 ; temp5 = valrigard.y;
 ;
-L27BE:	lda     _valrigard+2+1
+L290B:	lda     _valrigard+2+1
 	sta     _temp5+1
 	lda     _valrigard+2
 	sta     _temp5
@@ -12119,7 +12503,7 @@ L27BE:	lda     _valrigard+2+1
 ;
 	ldx     _valrigard+2+1
 	cpx     #$40
-	bcs     L27C4
+	bcs     L2911
 	lda     _scroll_y
 	sec
 	sbc     _min_scroll_y
@@ -12127,8 +12511,8 @@ L27BE:	lda     _valrigard+2+1
 	lda     _scroll_y+1
 	sbc     _min_scroll_y+1
 	ora     tmp1
-	beq     L27C4
-	bcc     L27C4
+	beq     L2911
+	bcc     L2911
 ;
 ; temp1 = (MAX_UP - valrigard.y + 0x80) >> 8; // "the numbers work better with +80 (like 0.5)". I'll take his word for it.
 ;
@@ -12142,9 +12526,9 @@ L27BE:	lda     _valrigard+2+1
 	pla
 	clc
 	adc     #$80
-	bcc     L27CB
+	bcc     L2918
 	inx
-L27CB:	txa
+L2918:	txa
 	sta     _temp1
 ;
 ; scroll_y = sub_scroll_y(temp1, scroll_y);
@@ -12163,22 +12547,22 @@ L27CB:	txa
 ;
 ; else if (valrigard.y > MIN_DOWN && scroll_y < max_scroll_y) {
 ;
-	jmp     L316B
-L27C4:	lda     _valrigard+2
+	jmp     L32B8
+L2911:	lda     _valrigard+2
 	cmp     #$01
 	lda     _valrigard+2+1
 	sbc     #$80
-	bcc     L3167
+	bcc     L32B4
 	lda     _scroll_y
 	cmp     _max_scroll_y
 	lda     _scroll_y+1
 	sbc     _max_scroll_y+1
-	bcc     L27D5
-L3167:	rts
+	bcc     L2922
+L32B4:	rts
 ;
 ; temp1 = (MIN_DOWN + valrigard.y + 0x80) >> 8;
 ;
-L27D5:	lda     _valrigard+2
+L2922:	lda     _valrigard+2
 	pha
 	lda     _valrigard+2+1
 	clc
@@ -12187,9 +12571,9 @@ L27D5:	lda     _valrigard+2
 	pla
 	clc
 	adc     #$80
-	bcc     L27DB
+	bcc     L2928
 	inx
-L27DB:	stx     _temp1
+L2928:	stx     _temp1
 ;
 ; add_scroll_y(scroll_y, temp1, scroll_y);
 ;
@@ -12207,7 +12591,7 @@ L27DB:	stx     _temp1
 	lda     _temp1
 	eor     #$FF
 	sec
-L316B:	adc     _valrigard+3
+L32B8:	adc     _valrigard+3
 	sta     _valrigard+3
 ;
 ; }
@@ -12231,12 +12615,12 @@ L316B:	adc     _valrigard+3
 ;
 	lda     _pad1
 	and     #$80
-	beq     L27EB
+	beq     L2938
 	lda     _player_sword_timer
-	bne     L27EB
+	bne     L2938
 	lda     _pad1
 	and     #$08
-	bne     L27EB
+	bne     L2938
 ;
 ; player_sword_timer = 37;
 ;
@@ -12256,8 +12640,8 @@ L316B:	adc     _valrigard+3
 ;
 ; if (player_sword_timer) { 
 ;
-L27EB:	lda     _player_sword_timer
-	beq     L3173
+L2938:	lda     _player_sword_timer
+	beq     L32C0
 ;
 ; --player_sword_timer;
 ;
@@ -12269,7 +12653,7 @@ L27EB:	lda     _player_sword_timer
 ;
 ; SET_STATUS_NOT_SWINGING_SWORD();
 ;
-L3173:	lda     _player_flags
+L32C0:	lda     _player_flags
 	and     #$FB
 	sta     _player_flags
 ;
@@ -12315,7 +12699,7 @@ L3173:	lda     _player_flags
 ; if(temp3 >= 0xf0) return; // This line will probably only really be relevant if there's no floor.
 ;
 	cmp     #$F0
-	bcc     L3175
+	bcc     L32C2
 ;
 ; }
 ;
@@ -12323,7 +12707,7 @@ L3173:	lda     _player_flags
 ;
 ; add_scroll_y(temp6, temp3, scroll_y);
 ;
-L3175:	lda     _scroll_y
+L32C2:	lda     _scroll_y
 	sta     _TEMP
 	lda     _scroll_y+1
 	sta     _TEMP+1
@@ -12376,7 +12760,7 @@ L3175:	lda     _scroll_y
 ; if(collision){ // find a corner in the collision map
 ;
 	lda     _collision
-	beq     L282F
+	beq     L297C
 ;
 ; ++collision_L;
 ;
@@ -12392,7 +12776,7 @@ L3175:	lda     _scroll_y
 ;
 ; temp1 += hitbox.width; // x right
 ;
-L282F:	lda     _hitbox+2
+L297C:	lda     _hitbox+2
 	clc
 	adc     _temp1
 	sta     _temp1
@@ -12411,7 +12795,7 @@ L282F:	lda     _hitbox+2
 ; if(collision){ // find a corner in the collision map
 ;
 	lda     _collision
-	beq     L283B
+	beq     L2988
 ;
 ; ++collision_R;
 ;
@@ -12427,7 +12811,7 @@ L282F:	lda     _hitbox+2
 ;
 ; add_scroll_y(temp6, VALRIGARD_HEIGHT, temp6);
 ;
-L283B:	lda     _temp6
+L2988:	lda     _temp6
 	sta     _TEMP
 	lda     _temp6+1
 	sta     _TEMP+1
@@ -12475,7 +12859,7 @@ L283B:	lda     _temp6
 ;
 	lda     _temp3
 	cmp     #$F0
-	bcs     L286D
+	bcs     L29BA
 ;
 ; bg_collision_sub();
 ;
@@ -12484,7 +12868,7 @@ L283B:	lda     _temp6
 ; if(collision){ // find a corner in the collision map
 ;
 	lda     _collision
-	beq     L2865
+	beq     L29B2
 ;
 ; ++collision_R;
 ;
@@ -12500,7 +12884,7 @@ L283B:	lda     _temp6
 ;
 ; temp1 = hitbox.x; // x left
 ;
-L2865:	lda     _hitbox
+L29B2:	lda     _hitbox
 	sta     _temp1
 ;
 ; bg_collision_sub();
@@ -12510,7 +12894,7 @@ L2865:	lda     _hitbox
 ; if(collision){ // find a corner in the collision map
 ;
 	lda     _collision
-	beq     L286D
+	beq     L29BA
 ;
 ; ++collision_L;
 ;
@@ -12526,7 +12910,7 @@ L2865:	lda     _hitbox
 ;
 ; }
 ;
-L286D:	rts
+L29BA:	rts
 
 .endproc
 
@@ -12591,16 +12975,16 @@ L286D:	rts
 ; if (temp0 == METATILE_NO_EFFECT || temp0 == METATILE_SOLID) { return; }
 ;
 	lda     _temp0
-	beq     L3178
+	beq     L32C5
 	cmp     #$01
-	bne     L3179
-L3178:	rts
+	bne     L32C6
+L32C5:	rts
 ;
 ; if (temp0 & METATILE_SPIKES) {
 ;
-L3179:	lda     _temp0
+L32C6:	lda     _temp0
 	and     #$02
-	beq     L317A
+	beq     L32C7
 ;
 ; SET_STATUS_DEAD();
 ;
@@ -12611,9 +12995,9 @@ L3179:	lda     _temp0
 ; } else if (temp0 & METATILE_POWERUP) {
 ;
 	rts
-L317A:	lda     _temp0
+L32C7:	lda     _temp0
 	and     #$40
-	jeq     L317D
+	jeq     L32CA
 ;
 ; temp_mutablepointer[coordinates] = EMPTY_TILE;
 ;
@@ -12621,9 +13005,9 @@ L317A:	lda     _temp0
 	ldx     _temp_mutablepointer+1
 	clc
 	adc     _coordinates
-	bcc     L3176
+	bcc     L32C3
 	inx
-L3176:	sta     ptr1
+L32C3:	sta     ptr1
 	stx     ptr1+1
 	lda     #$2C
 	ldy     #$00
@@ -12633,23 +13017,23 @@ L3176:	sta     ptr1
 ;
 	lda     _temp4
 	cmp     #$2A
-	bne     L317B
+	bne     L32C8
 	inc     _score
-	bne     L317C
+	bne     L32C9
 	inc     _score+1
 ;
 ; else if (temp4 == ENERGY_REFILL_TILE) { energy = MAX_ENERGY; }
 ;
-	jmp     L317C
-L317B:	lda     _temp4
+	jmp     L32C9
+L32C8:	lda     _temp4
 	cmp     #$2B
-	bne     L317C
+	bne     L32C9
 	lda     #$70
 	sta     _energy
 ;
 ; nt = (nt_current & 1) << 1;
 ;
-L317C:	lda     _nt_current
+L32C9:	lda     _nt_current
 	and     #$01
 	asl     a
 	sta     _nt
@@ -12698,9 +13082,9 @@ L317C:	lda     _nt_current
 ; } else if (temp0 & METATILE_CONVEYOR_LEFT) {
 ;
 	rts
-L317D:	lda     _temp0
+L32CA:	lda     _temp0
 	and     #$04
-	beq     L317E
+	beq     L32CB
 ;
 ; conveyor_delta = LEFT_CONVEYOR_DELTA;
 ;
@@ -12710,9 +13094,9 @@ L317D:	lda     _temp0
 ; } else if (temp0 & METATILE_CONVEYOR_RIGHT) {
 ;
 	rts
-L317E:	lda     _temp0
+L32CB:	lda     _temp0
 	and     #$08
-	beq     L317F
+	beq     L32CC
 ;
 ; conveyor_delta = RIGHT_CONVEYOR_DELTA;
 ;
@@ -12722,9 +13106,9 @@ L317E:	lda     _temp0
 ; } else if (temp0 & METATILE_RED_DOOR) {
 ;
 	rts
-L317F:	lda     _temp0
+L32CC:	lda     _temp0
 	and     #$20
-	beq     L28D7
+	beq     L2A24
 ;
 ; game_mode = MODE_GAME_OVER;
 ;
@@ -12733,7 +13117,7 @@ L317F:	lda     _temp0
 ;
 ; }
 ;
-L28D7:	rts
+L2A24:	rts
 
 .endproc
 
@@ -12757,14 +13141,14 @@ L28D7:	rts
 ;
 	lda     _temp4
 	cmp     #$16
-	bne     L3182
+	bne     L32CF
 	lda     _temp3
 	and     #$0F
 ;
 ; && (temp1 & 0xf0) == ( (high_byte(valrigard.x) + VALRIGARD_HEIGHT/2 ) & 0xf0)) {
 ;
 	cmp     #$0F
-	bne     L3182
+	bne     L32CF
 	lda     _temp1
 	and     #$F0
 	jsr     pusha0
@@ -12773,18 +13157,18 @@ L28D7:	rts
 	adc     #$06
 	and     #$F0
 	jsr     tosicmp0
-	beq     L28DF
-L3182:	rts
+	beq     L2A2C
+L32CF:	rts
 ;
 ; temp_mutablepointer[coordinates] = BONKED_QUESTION_BLOCK;
 ;
-L28DF:	lda     _temp_mutablepointer
+L2A2C:	lda     _temp_mutablepointer
 	ldx     _temp_mutablepointer+1
 	clc
 	adc     _coordinates
-	bcc     L3181
+	bcc     L32CE
 	inx
-L3181:	sta     ptr1
+L32CE:	sta     ptr1
 	stx     ptr1+1
 	lda     #$1B
 	ldy     #$00
@@ -12794,47 +13178,47 @@ L3181:	sta     ptr1
 ;
 	lda     _temp0
 	cmp     #$81
-	bcc     L3183
+	bcc     L32D0
 	inc     _score
-	bne     L2906
+	bne     L2A53
 ;
 ; else if (temp0 > 86) { score += 2; }
 ;
-	jmp     L3186
-L3183:	lda     _temp0
+	jmp     L32D3
+L32D0:	lda     _temp0
 	cmp     #$57
-	bcc     L3184
+	bcc     L32D1
 	lda     #$02
 ;
 ; else if (temp0 > 43) { score += 3; }
 ;
-	jmp     L318A
-L3184:	lda     _temp0
+	jmp     L32D7
+L32D1:	lda     _temp0
 	cmp     #$2C
-	bcc     L3185
+	bcc     L32D2
 	lda     #$03
 ;
 ; else if (temp0 > 2) { score += 4; }
 ;
-	jmp     L318A
-L3185:	lda     _temp0
+	jmp     L32D7
+L32D2:	lda     _temp0
 	cmp     #$03
-	bcc     L28FE
+	bcc     L2A4B
 	lda     #$04
 ;
 ; else { score += 100; } /*if (temp0 < 3)*/ 
 ;
-	jmp     L318A
-L28FE:	lda     #$64
-L318A:	clc
+	jmp     L32D7
+L2A4B:	lda     #$64
+L32D7:	clc
 	adc     _score
 	sta     _score
-	bcc     L2906
-L3186:	inc     _score+1
+	bcc     L2A53
+L32D3:	inc     _score+1
 ;
 ; did_headbonk = 1;
 ;
-L2906:	lda     #$01
+L2A53:	lda     #$01
 	sta     _did_headbonk
 ;
 ; nt = (nt_current & 1) << 1;
@@ -12947,13 +13331,13 @@ L2906:	lda     #$01
 ; if (temp0 & METATILE_YELLOW_DOOR) {
 ;
 	and     #$10
-	beq     L294A
+	beq     L2A97
 ;
 ; if (pad1 & PAD_UP) {
 ;
 	lda     _pad1
 	and     #$08
-	beq     L294A
+	beq     L2A97
 ;
 ; game_mode = MODE_GAME_OVER;
 ;
@@ -12962,7 +13346,7 @@ L2906:	lda     #$01
 ;
 ; }
 ;
-L294A:	rts
+L2A97:	rts
 
 .endproc
 
@@ -12986,9 +13370,9 @@ L294A:	rts
 ;
 	lda     #$00
 	sta     _x
-L3190:	lda     _x
+L32DD:	lda     _x
 	cmp     _enemies+360
-	bcc     L3195
+	bcc     L32E2
 ;
 ; }
 ;
@@ -12996,9 +13380,9 @@ L3190:	lda     _x
 ;
 ; if (GET_ENEMY_TYPE(x)) {
 ;
-L3195:	ldy     _x
+L32E2:	ldy     _x
 	lda     _enemies+200,y
-	jeq     L3191
+	jeq     L32DE
 ;
 ; high_byte(temp5) = enemies.nt[x];
 ;
@@ -13027,7 +13411,7 @@ L3195:	ldy     _x
 ; if (high_byte(temp5)) {
 ;
 	lda     _temp5+1
-	beq     L2A12
+	beq     L2B5F
 ;
 ; DEACTIVATE_ENEMY(x);
 ;
@@ -13041,11 +13425,11 @@ L3195:	ldy     _x
 ;
 ; continue;
 ;
-	jmp     L3194
+	jmp     L32E1
 ;
 ; ACTIVATE_ENEMY(x); // This enemy is active if it's on-screen.
 ;
-L2A12:	ldy     _x
+L2B5F:	ldy     _x
 	lda     _enemies+160,y
 	ora     #$80
 	sta     _TEMP
@@ -13064,7 +13448,7 @@ L2A12:	ldy     _x
 	ldy     _x
 	lda     _enemies+120,y
 	cmp     _nt_current
-	beq     L3191
+	beq     L32DE
 ;
 ; temp0 = enemies.y[x] - 16;
 ;
@@ -13082,13 +13466,13 @@ L2A12:	ldy     _x
 ;
 ; ++x;
 ;
-L3191:	inc     _x
+L32DE:	inc     _x
 ;
 ; if (GET_ENEMY_TYPE(x)) {
 ;
 	ldy     _x
 	lda     _enemies+200,y
-	jeq     L3192
+	jeq     L32DF
 ;
 ; high_byte(temp5) = enemies.nt[x];
 ;
@@ -13117,7 +13501,7 @@ L3191:	inc     _x
 ; if (high_byte(temp5)) {
 ;
 	lda     _temp5+1
-	beq     L2A4D
+	beq     L2B9A
 ;
 ; DEACTIVATE_ENEMY(x);
 ;
@@ -13131,11 +13515,11 @@ L3191:	inc     _x
 ;
 ; continue;
 ;
-	jmp     L3194
+	jmp     L32E1
 ;
 ; ACTIVATE_ENEMY(x);
 ;
-L2A4D:	ldy     _x
+L2B9A:	ldy     _x
 	lda     _enemies+160,y
 	ora     #$80
 	sta     _TEMP
@@ -13154,7 +13538,7 @@ L2A4D:	ldy     _x
 	ldy     _x
 	lda     _enemies+120,y
 	cmp     _nt_current
-	beq     L3192
+	beq     L32DF
 ;
 ; temp0 = enemies.y[x] - 16;
 ;
@@ -13172,13 +13556,13 @@ L2A4D:	ldy     _x
 ;
 ; ++x;
 ;
-L3192:	inc     _x
+L32DF:	inc     _x
 ;
 ; if (GET_ENEMY_TYPE(x)) {
 ;
 	ldy     _x
 	lda     _enemies+200,y
-	jeq     L3193
+	jeq     L32E0
 ;
 ; high_byte(temp5) = enemies.nt[x];
 ;
@@ -13207,7 +13591,7 @@ L3192:	inc     _x
 ; if (high_byte(temp5)) {
 ;
 	lda     _temp5+1
-	beq     L2A88
+	beq     L2BD5
 ;
 ; DEACTIVATE_ENEMY(x);
 ;
@@ -13221,11 +13605,11 @@ L3192:	inc     _x
 ;
 ; continue;
 ;
-	jmp     L3194
+	jmp     L32E1
 ;
 ; ACTIVATE_ENEMY(x);
 ;
-L2A88:	ldy     _x
+L2BD5:	ldy     _x
 	lda     _enemies+160,y
 	ora     #$80
 	sta     _TEMP
@@ -13244,7 +13628,7 @@ L2A88:	ldy     _x
 	ldy     _x
 	lda     _enemies+120,y
 	cmp     _nt_current
-	beq     L3193
+	beq     L32E0
 ;
 ; temp0 = enemies.y[x] - 16;
 ;
@@ -13262,13 +13646,13 @@ L2A88:	ldy     _x
 ;
 ; ++x;
 ;
-L3193:	inc     _x
+L32E0:	inc     _x
 ;
 ; if (GET_ENEMY_TYPE(x)) {
 ;
 	ldy     _x
 	lda     _enemies+200,y
-	jeq     L3194
+	jeq     L32E1
 ;
 ; high_byte(temp5) = enemies.nt[x];
 ;
@@ -13297,7 +13681,7 @@ L3193:	inc     _x
 ; if (high_byte(temp5)) {
 ;
 	lda     _temp5+1
-	beq     L2AC3
+	beq     L2C10
 ;
 ; DEACTIVATE_ENEMY(x);
 ;
@@ -13311,11 +13695,11 @@ L3193:	inc     _x
 ;
 ; continue;
 ;
-	jmp     L3194
+	jmp     L32E1
 ;
 ; ACTIVATE_ENEMY(x);
 ;
-L2AC3:	ldy     _x
+L2C10:	ldy     _x
 	lda     _enemies+160,y
 	ora     #$80
 	sta     _TEMP
@@ -13334,7 +13718,7 @@ L2AC3:	ldy     _x
 	ldy     _x
 	lda     _enemies+120,y
 	cmp     _nt_current
-	beq     L3194
+	beq     L32E1
 ;
 ; temp0 = enemies.y[x] - 16;
 ;
@@ -13352,8 +13736,8 @@ L2AC3:	ldy     _x
 ;
 ; for (x = 0; x < enemies.count; ++x) {
 ;
-L3194:	inc     _x
-	jmp     L3190
+L32E1:	inc     _x
+	jmp     L32DD
 
 .endproc
 
@@ -13382,7 +13766,7 @@ L3194:	inc     _x
 ;
 	lda     _player_flags
 	and     #$04
-	beq     L3197
+	beq     L32E4
 ;
 ; hitbox.width = VALRIGARD_SWINGING_WIDTH;
 ;
@@ -13391,28 +13775,28 @@ L3194:	inc     _x
 ;
 ; } else {
 ;
-	jmp     L3196
+	jmp     L32E3
 ;
 ; hitbox.width = VALRIGARD_WIDTH;
 ;
-L3197:	lda     #$0B
+L32E4:	lda     #$0B
 	sta     _hitbox+2
 ;
 ; hitbox.height = VALRIGARD_HEIGHT;    
 ;
 	lda     #$0D
-L3196:	sta     _hitbox+3
+L32E3:	sta     _hitbox+3
 ;
 ; for (x = 0; x < enemies.count; ++x) {
 ;
 	lda     #$00
 	sta     _x
 	tax
-L3198:	lda     _x
+L32E5:	lda     _x
 	cmp     _enemies+360
 	txa
 	sbc     #$00
-	bcc     L319D
+	bcc     L32EA
 ;
 ; }
 ;
@@ -13420,10 +13804,10 @@ L3198:	lda     _x
 ;
 ; if(IS_ENEMY_ACTIVE(x)) {
 ;
-L319D:	ldy     _x
+L32EA:	ldy     _x
 	lda     _enemies+160,y
 	and     #$80
-	beq     L3199
+	beq     L32E6
 ;
 ; temp1 = GET_ENEMY_TYPE(x);
 ;
@@ -13440,7 +13824,7 @@ L319D:	ldy     _x
 ; if (!hitbox2.width) { continue; } // Continue if width of the hitbox is 0.
 ;
 	lda     _hitbox2+2
-	jeq     L319C
+	jeq     L32E9
 ;
 ; hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
 ;
@@ -13477,7 +13861,7 @@ L319D:	ldy     _x
 	ldx     #>(_hitbox2)
 	jsr     _check_collision
 	tax
-	beq     L3199
+	beq     L32E6
 ;
 ; AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
 ;
@@ -13490,14 +13874,14 @@ L319D:	ldy     _x
 ;
 ; ++x;
 ;
-L3199:	inc     _x
+L32E6:	inc     _x
 ;
 ; if(IS_ENEMY_ACTIVE(x)) {
 ;
 	ldy     _x
 	lda     _enemies+160,y
 	and     #$80
-	beq     L319A
+	beq     L32E7
 ;
 ; temp1 = GET_ENEMY_TYPE(x);
 ;
@@ -13515,7 +13899,7 @@ L3199:	inc     _x
 ; if (!hitbox2.width) { continue; } // Continue if width of the hitbox is 0.
 ;
 	lda     _hitbox2+2
-	jeq     L319C
+	jeq     L32E9
 ;
 ; hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
 ;
@@ -13552,7 +13936,7 @@ L3199:	inc     _x
 	ldx     #>(_hitbox2)
 	jsr     _check_collision
 	tax
-	beq     L319A
+	beq     L32E7
 ;
 ; AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
 ;
@@ -13565,14 +13949,14 @@ L3199:	inc     _x
 ;
 ; ++x;
 ;
-L319A:	inc     _x
+L32E7:	inc     _x
 ;
 ; if(IS_ENEMY_ACTIVE(x)) {
 ;
 	ldy     _x
 	lda     _enemies+160,y
 	and     #$80
-	beq     L319B
+	beq     L32E8
 ;
 ; temp1 = GET_ENEMY_TYPE(x);
 ;
@@ -13590,7 +13974,7 @@ L319A:	inc     _x
 ; if (!hitbox2.width) { continue; } // Continue if width of the hitbox is 0.
 ;
 	lda     _hitbox2+2
-	jeq     L319C
+	jeq     L32E9
 ;
 ; hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
 ;
@@ -13627,7 +14011,7 @@ L319A:	inc     _x
 	ldx     #>(_hitbox2)
 	jsr     _check_collision
 	tax
-	beq     L319B
+	beq     L32E8
 ;
 ; AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
 ;
@@ -13640,7 +14024,7 @@ L319A:	inc     _x
 ;
 ; ++x;
 ;
-L319B:	inc     _x
+L32E8:	inc     _x
 ;
 ; if(IS_ENEMY_ACTIVE(x)) {
 ;
@@ -13648,7 +14032,7 @@ L319B:	inc     _x
 	lda     _enemies+160,y
 	ldx     #$00
 	and     #$80
-	beq     L319C
+	beq     L32E9
 ;
 ; temp1 = GET_ENEMY_TYPE(x);
 ;
@@ -13665,7 +14049,7 @@ L319B:	inc     _x
 ; if (!hitbox2.width) { continue; } // Continue if width of the hitbox is 0.
 ;
 	lda     _hitbox2+2
-	beq     L319C
+	beq     L32E9
 ;
 ; hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
 ;
@@ -13702,7 +14086,7 @@ L319B:	inc     _x
 	ldx     #>(_hitbox2)
 	jsr     _check_collision
 	tax
-	beq     L319C
+	beq     L32E9
 ;
 ; AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
 ;
@@ -13716,8 +14100,8 @@ L319B:	inc     _x
 ; for (x = 0; x < enemies.count; ++x) {
 ;
 	ldx     #$00
-L319C:	inc     _x
-	jmp     L3198
+L32E9:	inc     _x
+	jmp     L32E5
 
 .endproc
 
@@ -13753,7 +14137,7 @@ L319C:	inc     _x
 ;
 	lda     _player_flags
 	and     #$04
-	bne     L2BFF
+	bne     L2D4C
 ;
 ; SET_STATUS_DEAD();
 ;
@@ -13767,7 +14151,7 @@ L319C:	inc     _x
 ;
 ; enemies.type[x] = ENEMY_PURPLE_DEATH_EFFECT;
 ;
-L2BFF:	ldy     _x
+L2D4C:	ldy     _x
 	lda     #$0B
 	sta     _enemies+200,y
 ;
@@ -13780,12 +14164,12 @@ L2BFF:	ldy     _x
 ; score += 1; // Add to the score 
 ;
 	inc     _score
-	bne     L2C10
+	bne     L2D5D
 	inc     _score+1
 ;
 ; }
 ;
-L2C10:	rts
+L2D5D:	rts
 
 .endproc
 
@@ -13804,16 +14188,16 @@ L2C10:	rts
 ;
 	lda     _player_flags
 	and     #$04
-	beq     L319F
+	beq     L32EC
 	ldy     _x
 	lda     _enemies+160,y
 	and     #$20
-	beq     L31A0
-L319F:	rts
+	beq     L32ED
+L32EC:	rts
 ;
 ; SLASHABLE_UNKILLABLE_SET_SLASHED(x);
 ;
-L31A0:	ldy     _x
+L32ED:	ldy     _x
 	lda     _enemies+160,y
 	ora     #$20
 	sta     _TEMP
@@ -13824,12 +14208,12 @@ L31A0:	ldy     _x
 ; score += 1;
 ;
 	inc     _score
-	bne     L2C26
+	bne     L2D73
 	inc     _score+1
 ;
 ; }
 ;
-L2C26:	rts
+L2D73:	rts
 
 .endproc
 
@@ -13871,7 +14255,7 @@ L2C26:	rts
 ;
 	lda     _player_flags
 	and     #$04
-	bne     L2C2C
+	bne     L2D79
 ;
 ; SET_STATUS_DEAD();
 ;
@@ -13882,10 +14266,10 @@ L2C26:	rts
 ; } else if (!SPLYKE_IS_MOVING_AROUND(x)){ // Not tornado:
 ;
 	rts
-L2C2C:	ldy     _x
+L2D79:	ldy     _x
 	lda     _enemies+160,y
 	and     #$20
-	bne     L2C33
+	bne     L2D80
 ;
 ; enemies.type[x] = ENEMY_SPLYKE_DEATH_EFFECT;
 ;
@@ -13901,12 +14285,12 @@ L2C2C:	ldy     _x
 ; score += 1;
 ;
 	inc     _score
-	bne     L2C33
+	bne     L2D80
 	inc     _score+1
 ;
 ; }
 ;
-L2C33:	rts
+L2D80:	rts
 
 .endproc
 
@@ -13947,9 +14331,9 @@ L2C33:	rts
 ;
 	lda     #$00
 	sta     _x
-L31A1:	lda     _x
+L32EE:	lda     _x
 	cmp     _enemies+360
-	bcc     L31A6
+	bcc     L32F3
 ;
 ; }
 ;
@@ -13957,10 +14341,10 @@ L31A1:	lda     _x
 ;
 ; if (IS_ENEMY_ACTIVE(x)) {
 ;
-L31A6:	ldy     _x
+L32F3:	ldy     _x
 	lda     _enemies+160,y
 	and     #$80
-	beq     L31A2
+	beq     L32EF
 ;
 ; temp1 = GET_ENEMY_TYPE(x);
 ;
@@ -13978,14 +14362,14 @@ L31A6:	ldy     _x
 ;
 ; ++x;
 ;
-L31A2:	inc     _x
+L32EF:	inc     _x
 ;
 ; if (IS_ENEMY_ACTIVE(x)) {
 ;
 	ldy     _x
 	lda     _enemies+160,y
 	and     #$80
-	beq     L31A3
+	beq     L32F0
 ;
 ; temp1 = GET_ENEMY_TYPE(x);
 ;
@@ -14003,14 +14387,14 @@ L31A2:	inc     _x
 ;
 ; ++x;
 ;
-L31A3:	inc     _x
+L32F0:	inc     _x
 ;
 ; if (IS_ENEMY_ACTIVE(x)) {
 ;
 	ldy     _x
 	lda     _enemies+160,y
 	and     #$80
-	beq     L31A4
+	beq     L32F1
 ;
 ; temp1 = GET_ENEMY_TYPE(x);
 ;
@@ -14028,14 +14412,14 @@ L31A3:	inc     _x
 ;
 ; ++x;
 ;
-L31A4:	inc     _x
+L32F1:	inc     _x
 ;
 ; if (IS_ENEMY_ACTIVE(x)) {
 ;
 	ldy     _x
 	lda     _enemies+160,y
 	and     #$80
-	beq     L31A5
+	beq     L32F2
 ;
 ; temp1 = GET_ENEMY_TYPE(x);
 ;
@@ -14053,8 +14437,8 @@ L31A4:	inc     _x
 ;
 ; for (x = 0; x < enemies.count; ++x) {
 ;
-L31A5:	inc     _x
-	jmp     L31A1
+L32F2:	inc     _x
+	jmp     L32EE
 
 .endproc
 
@@ -14154,7 +14538,7 @@ L31A5:	inc     _x
 	ldy     _collision
 	lda     _metatile_property_lookup_table,y
 	and     #$01
-	beq     L2CEF
+	beq     L2E3C
 ;
 ; ENEMY_FLIP_DIRECTION(x);
 ;
@@ -14174,7 +14558,7 @@ L31A5:	inc     _x
 ;
 ; temp1 = leftright_movement_moving_lookup_table[temp3];
 ;
-L2CEF:	ldy     _temp3
+L2E3C:	ldy     _temp3
 	lda     _leftright_movement_moving_lookup_table,y
 	sta     _temp1
 ;
@@ -14257,7 +14641,7 @@ L2CEF:	ldy     _temp3
 ; if (temp2 >= 0xf0) {
 ;
 	cmp     #$F0
-	bcc     L2D28
+	bcc     L2E75
 ;
 ; temp4 = enemies.nt[x] + 1;
 ;
@@ -14274,17 +14658,17 @@ L2CEF:	ldy     _temp3
 ;
 ; } else {
 ;
-	jmp     L31AA
+	jmp     L32F7
 ;
 ; temp4 = enemies.nt[x];
 ;
-L2D28:	ldy     _x
+L2E75:	ldy     _x
 	lda     _enemies+120,y
 	sta     _temp4
 ;
 ; coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
 ;
-L31AA:	lda     _temp1
+L32F7:	lda     _temp1
 	lsr     a
 	lsr     a
 	lsr     a
@@ -14317,7 +14701,7 @@ L31AA:	lda     _temp1
 	ldy     _collision
 	lda     _metatile_property_lookup_table,y
 	and     #$01
-	bne     L2D4E
+	bne     L2E9B
 ;
 ; ENEMY_FLIP_DIRECTION(x);
 ;
@@ -14337,7 +14721,7 @@ L31AA:	lda     _temp1
 ;
 ; temp2 = enemies.actual_y[x] + 6; // center y
 ;
-L2D4E:	ldy     _x
+L2E9B:	ldy     _x
 	lda     _enemies+80,y
 	clc
 	adc     #$06
@@ -14383,7 +14767,7 @@ L2D4E:	ldy     _x
 	ldy     _collision
 	lda     _metatile_property_lookup_table,y
 	and     #$01
-	beq     L2D80
+	beq     L2ECD
 ;
 ; ENEMY_FLIP_DIRECTION(x);
 ;
@@ -14403,7 +14787,7 @@ L2D4E:	ldy     _x
 ;
 ; temp1 = leftright_movement_moving_lookup_table[temp3];
 ;
-L2D80:	ldy     _temp3
+L2ECD:	ldy     _temp3
 	lda     _leftright_movement_moving_lookup_table,y
 	sta     _temp1
 ;
@@ -14450,7 +14834,7 @@ L2D80:	ldy     _temp3
 	ldy     _temp_x
 	lda     _enemies+160,y
 	and     #$80
-	beq     L31B2
+	beq     L32FF
 ;
 ; }
 ;
@@ -14458,7 +14842,7 @@ L2D80:	ldy     _temp3
 ;
 ; temp0 = enemies.timer[x];
 ;
-L31B2:	ldy     _x
+L32FF:	ldy     _x
 	lda     _enemies+320,y
 	sta     _temp0
 ;
@@ -14477,14 +14861,14 @@ L31B2:	ldy     _x
 	ldy     _x
 	lda     _enemies+320,y
 	cmp     #$14
-	jne     L2E77
+	jne     L2FC4
 ;
 ; if (!(enemies.extra2[x] & 0xf0)) {
 ;
 	ldy     _x
 	lda     _enemies+280,y
 	and     #$F0
-	jne     L2E77
+	jne     L2FC4
 ;
 ; temp0 = high_byte(valrigard.x) + (VALRIGARD_WIDTH/2);
 ;
@@ -14525,7 +14909,7 @@ L31B2:	ldy     _x
 ;
 	lda     _temp0
 	cmp     _temp2
-	bcs     L2E95
+	bcs     L2FE2
 ;
 ; CANNONBALL_SET_NEG_X(temp_x);
 ;
@@ -14539,11 +14923,11 @@ L31B2:	ldy     _x
 ;
 ; } else {
 ;
-	jmp     L31AF
+	jmp     L32FC
 ;
 ; CANNONBALL_SET_POS_X(temp_x);
 ;
-L2E95:	ldy     _temp_x
+L2FE2:	ldy     _temp_x
 	lda     _enemies+160,y
 	ora     #$40
 	sta     _TEMP
@@ -14557,9 +14941,9 @@ L2E95:	ldy     _temp_x
 ;
 ; if (temp1 < temp3) {
 ;
-L31AF:	lda     _temp1
+L32FC:	lda     _temp1
 	cmp     _temp3
-	bcs     L2EAD
+	bcs     L2FFA
 ;
 ; CANNONBALL_SET_NEG_Y(temp_x);
 ;
@@ -14573,11 +14957,11 @@ L31AF:	lda     _temp1
 ;
 ; } else {
 ;
-	jmp     L2EB9
+	jmp     L3006
 ;
 ; CANNONBALL_SET_POS_Y(temp_x);
 ;
-L2EAD:	ldy     _temp_x
+L2FFA:	ldy     _temp_x
 	lda     _enemies+160,y
 	ora     #$20
 	sta     _TEMP
@@ -14594,7 +14978,7 @@ L2EAD:	ldy     _temp_x
 ;
 ; temp0 = abs_subtract(temp0, temp2);
 ;
-L2EB9:	lda     _temp0
+L3006:	lda     _temp0
 	jsr     pusha
 	lda     _temp2
 	jsr     _abs_subtract
@@ -14604,7 +14988,7 @@ L2EB9:	lda     _temp0
 ;
 	and     #$0F
 	cmp     #$09
-	bcc     L2ECA
+	bcc     L3017
 	lda     #$10
 	clc
 	adc     _temp0
@@ -14612,7 +14996,7 @@ L2EB9:	lda     _temp0
 ;
 ; temp1 = abs_subtract(temp1, temp3);
 ;
-L2ECA:	lda     _temp1
+L3017:	lda     _temp1
 	jsr     pusha
 	lda     _temp3
 	jsr     _abs_subtract
@@ -14657,7 +15041,7 @@ L2ECA:	lda     _temp1
 ;
 	lda     _temp2
 	cmp     #$31
-	bcc     L31B0
+	bcc     L32FD
 ;
 ; temp3 = temppointer[2]; // y-axis aligned
 ;
@@ -14669,10 +15053,10 @@ L2ECA:	lda     _temp1
 ;
 ; } else if (temp2 > 0x10) { // over 0x10 brads
 ;
-	jmp     L31B1
-L31B0:	lda     _temp2
+	jmp     L32FE
+L32FD:	lda     _temp2
 	cmp     #$11
-	bcc     L2EF4
+	bcc     L3041
 ;
 ; temp3 = temppointer[1]; // diagonal
 ;
@@ -14684,16 +15068,16 @@ L31B0:	lda     _temp2
 ;
 ; } else { // 0x10 or fewer brads
 ;
-	jmp     L31B1
+	jmp     L32FE
 ;
 ; temp3 = temppointer[0]; // x-axis aligned
 ;
-L2EF4:	lda     _temppointer+1
+L3041:	lda     _temppointer+1
 	sta     ptr1+1
 	lda     _temppointer
 	sta     ptr1
 	ldy     #$00
-L31B1:	lda     (ptr1),y
+L32FE:	lda     (ptr1),y
 	sta     _temp3
 ;
 ; enemies.extra2[x] = temp3;
@@ -14704,9 +15088,9 @@ L31B1:	lda     (ptr1),y
 ;
 ; if (enemies.timer[x] == 0) {
 ;
-L2E77:	ldy     _x
+L2FC4:	ldy     _x
 	lda     _enemies+320,y
-	bne     L2F01
+	bne     L304E
 ;
 ; enemies.timer[x] = 120;
 ;
@@ -14762,7 +15146,7 @@ L2E77:	ldy     _x
 ;
 ; }
 ;
-L2F01:	rts
+L304E:	rts
 
 .endproc
 
@@ -14818,7 +15202,7 @@ L2F01:	rts
 	ldy     _x
 	lda     _enemies+160,y
 	and     #$40
-	beq     L31B6
+	beq     L3303
 ;
 ; temp5 += temp2;
 ;
@@ -14837,11 +15221,11 @@ L2F01:	rts
 ;
 ; } else {
 ;
-	jmp     L31B3
+	jmp     L3300
 ;
 ; temp5 -= temp2;
 ;
-L31B6:	lda     _temp2
+L3303:	lda     _temp2
 	eor     #$FF
 	sec
 	adc     _temp5
@@ -14854,7 +15238,7 @@ L31B6:	lda     _temp2
 ;
 	clc
 	adc     #$FF
-L31B3:	sta     _temp1
+L3300:	sta     _temp1
 ;
 ; enemies.x[x] = high_byte(temp5);
 ;
@@ -14885,7 +15269,7 @@ L31B3:	sta     _temp1
 	ldy     _x
 	lda     _enemies+160,y
 	and     #$20
-	beq     L31B7
+	beq     L3304
 ;
 ; temp6 += temp3;
 ;
@@ -14947,11 +15331,11 @@ L31B3:	sta     _temp1
 ;
 ; } else {
 ;
-	jmp     L31BB
+	jmp     L3308
 ;
 ; temp6 -= temp3;
 ;
-L31B7:	lda     _temp3
+L3304:	lda     _temp3
 	eor     #$FF
 	sec
 	adc     _temp6
@@ -14980,7 +15364,7 @@ L31B7:	lda     _temp3
 ; if (!low_byte(temp6)) {
 ;
 	lda     _temp6
-	bne     L2FAB
+	bne     L30F8
 ;
 ; temp6 = sub_scroll_y(0x01, temp6);
 ;
@@ -14988,12 +15372,12 @@ L31B7:	lda     _temp3
 ;
 ; } else {
 ;
-	jmp     L31BF
+	jmp     L330C
 ;
 ; temp6 = sub_scroll_y(0x00, temp6);
 ;
-L2FAB:	lda     #$00
-L31BF:	jsr     pusha
+L30F8:	lda     #$00
+L330C:	jsr     pusha
 	lda     _temp6
 	ldx     _temp6+1
 	jsr     _sub_scroll_y
@@ -15019,7 +15403,7 @@ L31BF:	jsr     pusha
 	lda     _temp6+1
 	sta     _TEMP+1
 	lda     #$01
-L31BB:	jsr     _add_scroll_y_fast_sub
+L3308:	jsr     _add_scroll_y_fast_sub
 	sta     _temp5
 	stx     _temp5+1
 ;
@@ -15062,7 +15446,7 @@ L31BB:	jsr     _add_scroll_y_fast_sub
 	ldy     _collision
 	lda     _metatile_property_lookup_table,y
 	and     #$01
-	beq     L2FE8
+	beq     L3135
 ;
 ; enemies.type[x] = ENEMY_NONE;
 ;
@@ -15077,7 +15461,7 @@ L31BB:	jsr     _add_scroll_y_fast_sub
 ;
 ; }
 ;
-L2FE8:	rts
+L3135:	rts
 
 .endproc
 
@@ -15096,7 +15480,7 @@ L2FE8:	rts
 ;
 	ldy     _x
 	lda     _enemies+280,y
-	beq     L31C1
+	beq     L330E
 ;
 ; temp0 = enemies.extra2[x];
 ;
@@ -15116,7 +15500,7 @@ L2FE8:	rts
 ;
 ; temp_x = x + 1;
 ;
-L31C1:	lda     _x
+L330E:	lda     _x
 	clc
 	adc     #$01
 	sta     _temp_x
@@ -15126,7 +15510,7 @@ L31C1:	lda     _x
 	ldy     _temp_x
 	lda     _enemies+160,y
 	and     #$80
-	beq     L31C2
+	beq     L330F
 ;
 ; }
 ;
@@ -15134,7 +15518,7 @@ L31C1:	lda     _x
 ;
 ; temp0 = enemies.timer[x];
 ;
-L31C2:	ldy     _x
+L330F:	ldy     _x
 	lda     _enemies+320,y
 	sta     _temp0
 ;
@@ -15151,7 +15535,7 @@ L31C2:	ldy     _x
 ; if (temp0 == 0) {
 ;
 	lda     _temp0
-	bne     L3014
+	bne     L3161
 ;
 ; temp0 = enemies.extra[x];
 ;
@@ -15223,7 +15607,7 @@ L31C2:	ldy     _x
 ;
 ; }
 ;
-L3014:	rts
+L3161:	rts
 
 .endproc
 
@@ -15311,7 +15695,7 @@ L3014:	rts
 	ldy     _collision
 	lda     _metatile_property_lookup_table,y
 	and     #$01
-	beq     L2E4D
+	beq     L2F9A
 ;
 ; enemies.type[x] = ENEMY_NONE;
 ;
@@ -15330,7 +15714,7 @@ L3014:	rts
 ;
 ; enemies.nt[x] = high_byte(temp5);
 ;
-L2E4D:	ldy     _x
+L2F9A:	ldy     _x
 	lda     _temp5+1
 	sta     _enemies+120,y
 ;
@@ -15388,9 +15772,9 @@ L2E4D:	ldy     _x
 ; if (temp0 == 0 && temp1 == 0) {
 ;
 	lda     _temp0
-	bne     L3052
+	bne     L319F
 	lda     _temp1
-	bne     L3052
+	bne     L319F
 ;
 ; SPLYKE_SET_MOVING_AROUND(x); // Start moving.
 ;
@@ -15405,8 +15789,8 @@ L2E4D:	ldy     _x
 ; } else if (temp1){
 ;
 	rts
-L3052:	lda     _temp1
-	bne     L31CA
+L319F:	lda     _temp1
+	bne     L3317
 ;
 ; }
 ;
@@ -15414,8 +15798,8 @@ L3052:	lda     _temp1
 ;
 ; if (temp0 == 0) {
 ;
-L31CA:	lda     _temp0
-	bne     L3063
+L3317:	lda     _temp0
+	bne     L31B0
 ;
 ; SPLYKE_SET_STANDING_STILL(x);
 ;
@@ -15429,7 +15813,7 @@ L31CA:	lda     _temp0
 ;
 ; temp3 = ENEMY_DIRECTION(x);
 ;
-L3063:	ldy     _x
+L31B0:	ldy     _x
 	lda     _enemies+160,y
 	and     #$01
 	sta     _temp3
@@ -15467,7 +15851,7 @@ L3063:	ldy     _x
 ; if (temp2 >= 0xf0) {
 ;
 	cmp     #$F0
-	bcc     L3085
+	bcc     L31D2
 ;
 ; temp4 = enemies.nt[x] + 1;
 ;
@@ -15484,17 +15868,17 @@ L3063:	ldy     _x
 ;
 ; } else {
 ;
-	jmp     L31C7
+	jmp     L3314
 ;
 ; temp4 = enemies.nt[x];
 ;
-L3085:	ldy     _x
+L31D2:	ldy     _x
 	lda     _enemies+120,y
 	sta     _temp4
 ;
 ; coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
 ;
-L31C7:	lda     _temp1
+L3314:	lda     _temp1
 	lsr     a
 	lsr     a
 	lsr     a
@@ -15527,7 +15911,7 @@ L31C7:	lda     _temp1
 	ldy     _collision
 	lda     _metatile_property_lookup_table,y
 	and     #$01
-	bne     L30AB
+	bne     L31F8
 ;
 ; ENEMY_FLIP_DIRECTION(x);
 ;
@@ -15547,7 +15931,7 @@ L31C7:	lda     _temp1
 ;
 ; temp2 = enemies.actual_y[x] + 6; // center y
 ;
-L30AB:	ldy     _x
+L31F8:	ldy     _x
 	lda     _enemies+80,y
 	clc
 	adc     #$06
@@ -15593,7 +15977,7 @@ L30AB:	ldy     _x
 	ldy     _collision
 	lda     _metatile_property_lookup_table,y
 	and     #$01
-	beq     L30DD
+	beq     L322A
 ;
 ; ENEMY_FLIP_DIRECTION(x);
 ;
@@ -15613,7 +15997,7 @@ L30AB:	ldy     _x
 ;
 ; temp1 = leftright_movement_moving_lookup_table[temp3];
 ;
-L30DD:	ldy     _temp3
+L322A:	ldy     _temp3
 	lda     _leftright_movement_moving_lookup_table,y
 	sta     _temp1
 ;
@@ -15684,7 +16068,7 @@ L30DD:	ldy     _temp3
 ; if (temp3 == UP) { // subtracting from y
 ;
 	lda     _temp3
-	bne     L2DB2
+	bne     L2EFF
 ;
 ; temp5 = sub_scroll_y(1, temp5);
 ;
@@ -15707,11 +16091,11 @@ L30DD:	ldy     _temp3
 ;
 ; } else { // DOWN (adding to y)
 ;
-	jmp     L31CB
+	jmp     L3318
 ;
 ; add_scroll_y(temp5, 1, temp5);
 ;
-L2DB2:	lda     _temp5
+L2EFF:	lda     _temp5
 	sta     _TEMP
 	lda     _temp5+1
 	sta     _TEMP+1
@@ -15739,7 +16123,7 @@ L2DB2:	lda     _temp5
 ; temp4 = high_byte(temp6); // NT of tile of interest
 ;
 	lda     _temp6+1
-L31CB:	sta     _temp4
+L3318:	sta     _temp4
 ;
 ; coordinates = (temp1 >> 4) + (temp2 & 0xf0);
 ;
@@ -15776,7 +16160,7 @@ L31CB:	sta     _temp4
 	ldy     _collision
 	lda     _metatile_property_lookup_table,y
 	and     #$01
-	beq     L2DF3
+	beq     L2F40
 ;
 ; ENEMY_FLIP_DIRECTION(x);
 ;
@@ -15796,7 +16180,7 @@ L31CB:	sta     _temp4
 ;
 ; enemies.nt[x] = high_byte(temp5);
 ;
-L2DF3:	ldy     _x
+L2F40:	ldy     _x
 	lda     _temp5+1
 	sta     _enemies+120,y
 ;
@@ -15827,7 +16211,7 @@ L2DF3:	ldy     _x
 ;
 	ldy     _x
 	lda     _enemies+240,y
-	bne     L30FD
+	bne     L324A
 ;
 ; SET_DIRECTION_RIGHT();
 ;
@@ -15849,7 +16233,7 @@ L2DF3:	ldy     _x
 ;
 ; }
 ;
-L30FD:	rts
+L324A:	rts
 
 .endproc
 
@@ -15883,7 +16267,7 @@ L30FD:	rts
 ; if (temp0 == 0){
 ;
 	lda     _temp0
-	bne     L3114
+	bne     L3261
 ;
 ; enemies.type[x] = ENEMY_NONE;
 ;
@@ -15897,7 +16281,7 @@ L30FD:	rts
 ;
 ; }
 ;
-L3114:	rts
+L3261:	rts
 
 .endproc
 
@@ -15966,11 +16350,11 @@ L3114:	rts
 ;
 ; while (game_mode == MODE_TITLE) { 
 ;
-	jmp     L31D1
+	jmp     L331E
 ;
 ; ppu_wait_nmi();
 ;
-L2206:	jsr     _ppu_wait_nmi
+L233E:	jsr     _ppu_wait_nmi
 ;
 ; pad1 = pad_poll(0); // read the first controller
 ;
@@ -15992,7 +16376,7 @@ L2206:	jsr     _ppu_wait_nmi
 ;
 	lda     _pad1_new
 	and     #$08
-	beq     L31CE
+	beq     L331B
 ;
 ; score = 0; // Reset the score.
 ;
@@ -16006,15 +16390,15 @@ L2206:	jsr     _ppu_wait_nmi
 ;
 ; } else if (pad1_new & PAD_LEFT) {
 ;
-	jmp     L31D1
-L31CE:	lda     _pad1_new
+	jmp     L331E
+L331B:	lda     _pad1_new
 	and     #$02
-	beq     L31D0
+	beq     L331D
 ;
 ; if (level_index != 0) {
 ;
 	lda     _level_index
-	beq     L31CF
+	beq     L331C
 ;
 ; --level_index;
 ;
@@ -16022,18 +16406,18 @@ L31CE:	lda     _pad1_new
 ;
 ; } else {
 ;
-	jmp     L223E
+	jmp     L2376
 ;
 ; level_index = NUMBER_OF_LEVELS - 1;
 ;
-L31CF:	lda     #$17
+L331C:	lda     #$17
 ;
 ; } else if (pad1_new & PAD_RIGHT) {
 ;
-	jmp     L31EC
-L31D0:	lda     _pad1_new
+	jmp     L3339
+L331D:	lda     _pad1_new
 	and     #$01
-	beq     L31D1
+	beq     L331E
 ;
 ; ++level_index;
 ;
@@ -16043,16 +16427,16 @@ L31D0:	lda     _pad1_new
 ;
 	lda     _level_index
 	cmp     #$18
-	bne     L223E
+	bne     L2376
 ;
 ; level_index = 0;
 ;
 	lda     #$00
-L31EC:	sta     _level_index
+L3339:	sta     _level_index
 ;
 ; AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
 ;
-L223E:	lda     _level_index
+L2376:	lda     _level_index
 	asl     a
 	tay
 	lda     _level_names,y
@@ -16085,16 +16469,16 @@ L223E:	lda     _level_index
 ;
 ; while (game_mode == MODE_TITLE) { 
 ;
-L31D1:	lda     _game_mode
-	jeq     L2206
+L331E:	lda     _game_mode
+	jeq     L233E
 ;
 ; while (game_mode == MODE_GAME) {
 ;
-	jmp     L31D3
+	jmp     L3320
 ;
 ; ppu_wait_nmi(); // wait till beginning of the frame
 ;
-L225C:	jsr     _ppu_wait_nmi
+L2394:	jsr     _ppu_wait_nmi
 ;
 ; set_chr_bank_0(0);
 ;
@@ -16156,7 +16540,7 @@ L225C:	jsr     _ppu_wait_nmi
 ; if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
 ;
 	ldx     _valrigard+6+1
-	bmi     L2274
+	bmi     L23AC
 ;
 ; draw_screen_D();
 ;
@@ -16164,21 +16548,21 @@ L225C:	jsr     _ppu_wait_nmi
 ;
 ; }  else {
 ;
-	jmp     L2277
+	jmp     L23AF
 ;
 ; draw_screen_U();
 ;
-L2274:	jsr     _draw_screen_U
+L23AC:	jsr     _draw_screen_U
 ;
 ; handle_tile_clear_queue();
 ;
-L2277:	jsr     _handle_tile_clear_queue
+L23AF:	jsr     _handle_tile_clear_queue
 ;
 ; if (game_mode == MODE_GAME_OVER) {
 ;
 	lda     _game_mode
 	cmp     #$04
-	bne     L31D2
+	bne     L331F
 ;
 ; load_game_over_screen();
 ;
@@ -16186,9 +16570,9 @@ L2277:	jsr     _handle_tile_clear_queue
 ;
 ; if (pad1 & PAD_DOWN) {
 ;
-L31D2:	lda     _pad1
+L331F:	lda     _pad1
 	and     #$04
-	beq     L31D3
+	beq     L23B5
 ;
 ; SET_STATUS_ALIVE();
 ;
@@ -16196,19 +16580,23 @@ L31D2:	lda     _pad1
 	and     #$FD
 	sta     _player_flags
 ;
+; gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+;
+L23B5:	jsr     _gray_line
+;
 ; while (game_mode == MODE_GAME) {
 ;
-L31D3:	lda     _game_mode
+L3320:	lda     _game_mode
 	cmp     #$01
-	beq     L225C
+	beq     L2394
 ;
 ; while (game_mode == MODE_GAME_SHOWING_TEXT) {
 ;
-	jmp     L31D4
+	jmp     L3321
 ;
 ; ppu_wait_nmi(); 
 ;
-L2282:	jsr     _ppu_wait_nmi
+L23BB:	jsr     _ppu_wait_nmi
 ;
 ; set_chr_bank_0(0);
 ;
@@ -16241,17 +16629,17 @@ L2282:	jsr     _ppu_wait_nmi
 ;
 ; while (game_mode == MODE_GAME_SHOWING_TEXT) {
 ;
-L31D4:	lda     _game_mode
+L3321:	lda     _game_mode
 	cmp     #$05
-	beq     L2282
+	beq     L23BB
 ;
 ; while (game_mode == MODE_GAME_OVER) {
 ;
-	jmp     L31D5
+	jmp     L3322
 ;
 ; ppu_wait_nmi();
 ;
-L2292:	jsr     _ppu_wait_nmi
+L23CB:	jsr     _ppu_wait_nmi
 ;
 ; pad1 = pad_poll(0);
 ;
@@ -16268,7 +16656,7 @@ L2292:	jsr     _ppu_wait_nmi
 ; if (pad1_new & PAD_DOWN) {
 ;
 	and     #$04
-	beq     L31D5
+	beq     L3322
 ;
 ; load_title_screen();
 ;
@@ -16276,13 +16664,13 @@ L2292:	jsr     _ppu_wait_nmi
 ;
 ; while (game_mode == MODE_GAME_OVER) {
 ;
-L31D5:	lda     _game_mode
+L3322:	lda     _game_mode
 	cmp     #$04
-	beq     L2292
+	beq     L23CB
 ;
 ; while (1){
 ;
-	jmp     L31D1
+	jmp     L331E
 
 .endproc
 

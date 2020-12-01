@@ -37,6 +37,9 @@
 	
 	.export _flush_vram_update_nmi, _oam_set, _oam_get
 
+	; Exposing this for small optimization potential when updating palettes:
+	.export pal_copy
+
 .segment "ZEROPAGE"
 	_oam_spr_x: .res  1
 	_oam_spr_y: .res 1
