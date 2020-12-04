@@ -13,8 +13,7 @@ _convert_to_decimal: ; A contains the low byte, X contains the high byte
     ldy #0 ; Load the index for score_string into Y
     ; Store A and X at TEMP and TEMP+1, respectively
     sta TEMP
-    txa
-    sta TEMP+1
+    stx TEMP+1
     ; TEMP now contains the number we're looking to convert (in the correct byte order, too, I think). 
     ; clear the score string buffer
     lda #0

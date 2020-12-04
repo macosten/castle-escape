@@ -201,6 +201,7 @@ void draw_sun(void);
 void draw_boss(void);
 void draw_purple_death_effect(void);
 void draw_splyke_death_effect(void);
+void draw_magic_bolt(void);
 
 void draw_score(void);
 void draw_energy(void);
@@ -367,6 +368,8 @@ const unsigned char * const energy_bar_lookup_table[] = {
     energy_bar_8, energy_bar_9, energy_bar_a, energy_bar_b, energy_bar_c, energy_bar_d, energy_bar_e, energy_bar_f
 };
 
+const unsigned char const boss_magic_offset_table[] = { 0x80, 0x81, 0x82 };
+
 #pragma rodata-name(pop)
 
 void main (void) {
@@ -476,14 +479,14 @@ void main (void) {
 
             // Check sprite collisions
             sprite_collisions();
-
+            
             // Move enemies.
             enemy_movement();
             
             set_scroll_y(scroll_y);
-
+            
             convert_to_decimal(score);
-
+            
             draw_sprites();
 
             if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
@@ -504,7 +507,7 @@ void main (void) {
             }
 
             // debug:
-            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            //gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
 
         }
@@ -849,13 +852,9 @@ const void (* draw_func_pointers[])(void) = {
     draw_boss,        // 8 - ENEMY_BOSS;
     draw_cannonball,  // 9 - ENEMY_CANNONBALL;
     draw_acid_drop,   // 10 - ENEMY_ACIDDROP;
-    draw_purple_death_effect, // 11 - ENEMY_PURPLE_DEATH_EFFECT;
-    draw_splyke_death_effect, // 12 - ENEMY_SPLYKE_DEATH_EFFECT;
-};
-
-const void (* draw_hud_func_pointers[])(void) = {
-    draw_score,
-    draw_energy,
+    draw_magic_bolt,  // 11 - ENEMY_BOSS_MAGIC_BOLT;
+    draw_purple_death_effect, // 12 - ENEMY_PURPLE_DEATH_EFFECT;
+    draw_splyke_death_effect, // 13 - ENEMY_SPLYKE_DEATH_EFFECT;
 };
 
 void draw_sprites(void) {
@@ -870,6 +869,7 @@ void draw_sprites(void) {
     
     // Drawing the HUD before the enemies.
     // Trying to shoehorn the HUD into the shuffle array proved too costly in terms of performance...
+    
     if (game_mode != MODE_GAME_SHOWING_TEXT) {
         draw_score();
         draw_energy();
@@ -898,6 +898,7 @@ void draw_sprites(void) {
         }
 
     }
+    
 
     // Handle the shuffle offset.
     shuffle_offset += shuffle_leg_size;
@@ -974,7 +975,7 @@ void draw_score(void) {
     for (x = 200; x <= 232; x+=8) {
         if (temp0) {
             oam_spr(x, 20, score_string[y], 3);
-        } else if (score_string[temp_y]) {
+        } else if (score_string[y]) {
             temp0 = 1;
             oam_spr(x, 20, score_string[y], 3);
         }
@@ -1068,7 +1069,8 @@ void draw_sun(void) {
 
 void draw_boss(void) {
     // Dummied out.
-    oam_spr(temp_x, temp_y, 0x10, 3);
+    draw_magic_bolt();
+    //oam_spr(temp_x, temp_y, 0x10, 3);
 }
 
 void draw_purple_death_effect(void) {
@@ -1083,6 +1085,20 @@ void draw_splyke_death_effect(void) {
     oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
+void draw_magic_bolt(void) {
+    temp3 = enemies.timer[x] >> 3;
+
+    if (temp3 == 3) { 
+        temp3 = 0;
+        enemies.timer[x] = 0;
+    }
+
+    oam_spr(temp_x, temp_y, boss_magic_offset_table[temp3], 0);
+
+    temp3 = enemies.timer[x]; 
+    ++temp3;
+    enemies.timer[x] = temp3;   
+}
 
 // MARK: -- Movement.
 
@@ -1649,6 +1665,7 @@ const unsigned char const enemy_hitbox_width_lookup_table[] = {
     13, // Boss
     6,  // Cannonball
     6,  // Aciddrop
+    6,  // Magic Bolt
     0,  // Purple Death Effect
     0,  // Splyke Death Effect
 };
@@ -1665,6 +1682,7 @@ const unsigned char const enemy_hitbox_height_lookup_table[] = {
     13, // Boss
     6,  // Cannonball
     6,  // Aciddrop
+    6,  // Magic Bolt
     0,  // ...Particle effect of some sort? 
 };
 
@@ -1681,6 +1699,7 @@ const unsigned char const enemy_hitbox_x_offset_lookup_table[] = {
     0,
     1, // Cannonball
     1, // Aciddrop
+    1, // Magic Bolt
     0,
     0,
 };
@@ -1697,6 +1716,7 @@ const void (* collision_functions[])(void) = {
     collision_with_boss,                    // Boss
     collision_with_unkillable_unslashable,  // Cannonball
     collision_with_unkillable_unslashable,  // Aciddrop
+    collision_with_unkillable_unslashable,  // Magic Bolt
     collision_with_inert,                   // Purple Death Effect
     collision_with_inert,                   // Splyke Death Effect
 };
@@ -1862,8 +1882,9 @@ const void (* ai_pointers[])(void) = {
     boss_ai,            // 8 - ENEMY_BOSS;
     cannonball_ai,      // 9 - ENEMY_CANNONBALL;
     acid_drop_ai,       // 10 - ENEMY_ACIDDROP;
-    death_effect_timer_ai, // 11 - ENEMY_PURPLE_DEATH_EFFECT;
-    death_effect_timer_ai, // 12 - ENEMY_SPLYKE_DEATH_EFFECT;
+    cannonball_ai,      // 11 - ENEMY_BOSS_MAGIC_BOLT;
+    death_effect_timer_ai, // 12 - ENEMY_PURPLE_DEATH_EFFECT;
+    death_effect_timer_ai, // 13 - ENEMY_SPLYKE_DEATH_EFFECT;
 };
 
 // Enemy AI.
@@ -2500,11 +2521,13 @@ void splyke_ai(void) {
 void boss_ai(void) {
 
     // extra[x] will be a bunch of flags. 
-
+    // extra2[x] can be a target of some sort.
     if (enemies.extra[x] == 0) {
         SET_DIRECTION_RIGHT();
         enemies.extra[x] = 128;
         trigger_dialog_box(&boss_dialog);
+    } else {
+
     }
 
 }

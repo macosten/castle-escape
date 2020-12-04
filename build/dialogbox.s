@@ -449,11 +449,10 @@ L00C5:	rts
 	lda     #$00
 	jsr     _set_prg_bank
 ;
-; if (pad1_new & PAD_DOWN) {
+; if (pad1_new) {
 ;
 	lda     _pad1_new
-	and     #$04
-	beq     L016D
+	beq     L00CD
 ;
 ; ++dbox_string_index;
 ;
@@ -527,7 +526,7 @@ L016B:	adc     _active_dboxdata+2
 ;
 ; temp1 = dbox_y >> 3;
 ;
-L016D:	lda     _dbox_y
+L00CD:	lda     _dbox_y
 	lsr     a
 	lsr     a
 	lsr     a
@@ -615,7 +614,7 @@ L016A:	sta     _dbox_y
 ; if (scroll_count == 0) {
 ;
 	lda     _scroll_count
-	bne     L016E
+	bne     L016D
 ;
 ; dbox_y += 0x20;
 ;
@@ -626,7 +625,7 @@ L016A:	sta     _dbox_y
 ;
 ; if (dbox_y > 0x20) {
 ;
-L016E:	lda     _dbox_y
+L016D:	lda     _dbox_y
 	cmp     #$21
 	bcc     L0159
 ;
@@ -656,9 +655,9 @@ L0159:	rts
 ;
 	lda     #$00
 	sta     _temp0
-L016F:	lda     _temp0
+L016E:	lda     _temp0
 	cmp     #$02
-	bcs     L0170
+	bcs     L016F
 ;
 ; dbox_x = dbox_erase_text_x_values[dbox_erase_text_frame];
 ;
@@ -702,11 +701,11 @@ L016F:	lda     _temp0
 ; for (temp0 = 0; temp0 < 2; ++temp0) {
 ;
 	inc     _temp0
-	jmp     L016F
+	jmp     L016E
 ;
 ; if (dbox_erase_text_frame == 4) {
 ;
-L0170:	lda     _dbox_erase_text_frame
+L016F:	lda     _dbox_erase_text_frame
 	cmp     #$04
 	bne     L012D
 ;
@@ -745,7 +744,7 @@ L012D:	rts
 ;
 	ldx     #$00
 	lda     _nt
-	bne     L0172
+	bne     L0171
 ;
 ; return NTADR_A(dbox_x, dbox_y);
 ;
@@ -760,11 +759,11 @@ L012D:	rts
 	pha
 	lda     tmp1
 	ora     #$20
-	jmp     L0173
+	jmp     L0172
 ;
 ; return NTADR_C(dbox_x, dbox_y);
 ;
-L0172:	lda     _dbox_y
+L0171:	lda     _dbox_y
 	jsr     aslax4
 	stx     tmp1
 	asl     a
@@ -775,7 +774,7 @@ L0172:	lda     _dbox_y
 	pha
 	lda     tmp1
 	ora     #$28
-L0173:	tax
+L0172:	tax
 	pla
 ;
 ; }

@@ -250,6 +250,7 @@ const unsigned char const sun1[] = {
 // These are single sprites, so these are just their tile IDs in bank 1.
 #define ACIDDROP_SPRITE_OFFSET 0x17
 #define CANNONBALL_SPRITE_OFFSET 0x18
+#define BOSS_MAGIC_SPRITE_OFFSET 0x10
 /*const unsigned char const acid_drop[]= {
       0xff, 0xff, 0x17,3,
   128
@@ -527,8 +528,6 @@ const unsigned char const splyke_death_effect1[] = {
 };
 
 // Energy bars.
-const unsigned char const energy_threshold_lookup_table[] = {1, 11, 21, 31, 41, 51, 61, 71, 81, 91, 101, 111};
-
 const unsigned char const energy_bar_0[] = {
     0, 3, 0x0A, 1|OAM_FLIP_V,
     0, 8, 0x0A, 1,

@@ -196,7 +196,7 @@ void dbox_await_input(void) {
 	// In the future, dboxdata should hold what bank it's in (?).
 	set_prg_bank(0);
 
-	if (pad1_new & PAD_DOWN) {
+	if (pad1_new) {
 		// Advance the status of the dialog box.
 		// If there's still text to be drawn, clear it and then draw the next text.
 		
@@ -206,7 +206,6 @@ void dbox_await_input(void) {
 			// Set control variables.
 			dbox_y = 0;
 		} else {
-
 			dbox_current_string = active_dboxdata.strings[dbox_string_index];
 
 			dbox_status = DBOX_STATUS_ERASING_TEXT;
@@ -277,7 +276,7 @@ void dbox_erase_box(void) {
 
 	temp0 = high_byte(pseudo_scroll_y);
 	AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp0);
-	//temppointer = cmaps[temp0];
+
 	set_data_pointer(temppointer);
 
 	draw_screen_sub();

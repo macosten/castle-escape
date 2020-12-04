@@ -28,16 +28,17 @@ const char * const boss_dialog_strings[] = {
 	"I should have known...",
 	"Did you really think I\nwouldn't escape?",
 	"You may have escaped the\ndungeon, but you won't live\nto speak of it...",
+	"We'll see about that, old\nman.",
 };
 
 const unsigned char * const boss_dialog_portrait_sprites[] = {
-	NULL, NULL, NULL, NULL
+	NULL, NULL, NULL, NULL, NULL
 };
 
 const DialogBoxData boss_dialog = {
 	boss_dialog_portrait_sprites,
 	boss_dialog_strings,
-	4
+	5
 };
 
 #pragma rodata-name(pop)
