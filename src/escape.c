@@ -398,6 +398,9 @@ void main (void) {
 
     ppu_on_all(); // turn on screen
 
+    //music_play(0);
+    //set_music_speed(5);
+
     while (1){
 
         while (game_mode == MODE_TITLE) { 
@@ -431,7 +434,7 @@ void main (void) {
                 // Update the level name shown on the screen.
                 AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
                 temp0 = strlen(temppointer);
-                multi_vram_buffer_horz(temppointer, temp0, NTADR_A(3, 8));
+                multi_vram_buffer_horz(temppointer, temp0, NTADR_A(3, 10));
 
             } else if (pad1_new & PAD_RIGHT) {
                 ++level_index;
@@ -441,7 +444,7 @@ void main (void) {
                 // Update the level name shown on the screen.
                 AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
                 temp0 = strlen(temppointer);
-                multi_vram_buffer_horz(temppointer, temp0, NTADR_A(3, 8));
+                multi_vram_buffer_horz(temppointer, temp0, NTADR_A(3, 10));
 
             }
 
@@ -455,7 +458,7 @@ void main (void) {
             ppu_wait_nmi(); // wait till beginning of the frame
             // the sprites are pushed from a buffer to the OAM during nmi
 
-            // set_music_speed(???);
+            // set_music_speed(64);
             // For now, just set the same chr bank every frame
         
             set_chr_bank_0(0);
@@ -467,6 +470,9 @@ void main (void) {
             // It's useful for times we don't want button holds to retrigger something (say, pausing and unpausing).
             
             clear_vram_buffer();
+
+            // Reset anything that's supposed to be reset at the start of a frame.
+            RESET_SCORE_CHANGED_THIS_FRAME();
 
             // Move the player.
             movement();
@@ -485,7 +491,7 @@ void main (void) {
             
             set_scroll_y(scroll_y);
             
-            convert_to_decimal(score);
+            if (SCORE_CHANGED_THIS_FRAME) { convert_to_decimal(score); }
             
             draw_sprites();
 
@@ -507,7 +513,7 @@ void main (void) {
             }
 
             // debug:
-            //gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
 
         }
@@ -589,10 +595,12 @@ void load_title_screen(void) {
     //multi_vram_buffer_horz(title_string, sizeof(title_string), NTADR_A(3, 2));
     put_str(NTADR_A(3, 2), title_string);
     put_str(NTADR_A(3, 4), author_string);
-    put_str(NTADR_A(3, 6), instruction_string);
+    put_str(NTADR_A(3, 6), __DATE__);
+    put_str(NTADR_A(15, 6), __TIME__);
+    put_str(NTADR_A(3, 8), instruction_string);
 
     AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
-    put_str(NTADR_A(3, 8), temppointer);
+    put_str(NTADR_A(3, 10), temppointer);
 
     ppu_on_all();
 }
@@ -1258,6 +1266,7 @@ void swing_sword(void) {
         player_sword_timer = 37;
         player_frame_timer = 14;
         SET_STATUS_SWINGING_SWORD();
+        sfx_play(0,0);
     }
 
     if (player_sword_timer) { 
@@ -1287,9 +1296,9 @@ void bg_collision(void){
     // the top of hitbox was on a different nametable than the bottom.
     // Keeping it here just in case...
 
-    if(temp3 >= 0xf0) return; // This line will probably only really be relevant if there's no floor.
+    // if(temp3 >= 0xf0) return; // This line will probably only really be relevant if there's no floor/cieling.
     // There shouldn't really be no floor in this game, but maybe I'll want to reuse this code in
-    // another game, so I'll leave this line in.
+    // another game, so I'll leave this line in...
 
     // For star pickup: recalculate nt_current.
     add_scroll_y(temp6, temp3, scroll_y);
@@ -1397,7 +1406,11 @@ void bg_collision_sub(void) {
         temp_mutablepointer[coordinates] = EMPTY_TILE;
 
         // But what powerup was it?
-        if (temp4 == STAR_TILE) { score += 1; }
+        if (temp4 == STAR_TILE) { 
+            score += 1;
+            sfx_play(1,0); // Star collection
+            SET_SCORE_CHANGED_THIS_FRAME();
+        }
         else if (temp4 == ENERGY_REFILL_TILE) { energy = MAX_ENERGY; }
     
         // Enqueue a tile to the tile clear queue.
@@ -1447,6 +1460,7 @@ void bg_collision_sub_collision_u(void) {
         else if (temp0 > 43) { score += 3; }
         else if (temp0 > 2) { score += 4; }
         else { score += 100; } /*if (temp0 < 3)*/ 
+        SET_SCORE_CHANGED_THIS_FRAME();
 
         did_headbonk = 1;
 
@@ -1835,6 +1849,8 @@ void collision_with_killable_slashable(void) {
         enemies.type[x] = ENEMY_PURPLE_DEATH_EFFECT;
         enemies.timer[x] = 12;
         score += 1; // Add to the score 
+        SET_SCORE_CHANGED_THIS_FRAME();
+        sample_play(31);
         // (todo: make a counter of total active enemies to mimic scoring from original)
     }
 }
@@ -1844,6 +1860,7 @@ void collision_with_inert_slashable(void) {
         // If swinging and unslashed:
         SLASHABLE_UNKILLABLE_SET_SLASHED(x);
         score += 1;
+        SET_SCORE_CHANGED_THIS_FRAME();
     }
 }
 
@@ -1861,6 +1878,7 @@ void collision_with_splyke(void) {
         enemies.type[x] = ENEMY_SPLYKE_DEATH_EFFECT;
         enemies.timer[x] = 12;
         score += 1;
+        SET_SCORE_CHANGED_THIS_FRAME();
     }
     // Yes tornado, Yes swinging: do nothing.
 }
