@@ -4,13 +4,25 @@ sounds:
 	.word @ntsc
 	.word @ntsc
 @ntsc:
-	.word @sfx_ntsc_0_sword_slash
-	.word @sfx_ntsc_1_star_collect
+	.word @sfx_ntsc_00_sword_slash
+	.word @sfx_ntsc_01_star_collect
+	.word @sfx_ntsc_02_enemy_kill
+	.word @sfx_ntsc_03_cannon_fire
 
-@sfx_ntsc_0_sword_slash:
+@sfx_ntsc_00_sword_slash:
 	.byte $8a,$0f,$89,$3f,$8a,$0e,$01,$8a,$0d,$01,$8a,$0c,$01,$8a,$0b,$01
 	.byte $8a,$0a,$01,$8a,$09,$01,$8a,$08,$01,$8a,$07,$01,$8a,$06,$00
-@sfx_ntsc_1_star_collect:
+@sfx_ntsc_01_star_collect:
 	.byte $82,$00,$81,$bd,$80,$3f,$89,$f0,$81,$7e,$01,$81,$54,$80,$36,$01
 	.byte $80,$3d,$01,$80,$39,$01,$80,$37,$01,$80,$35,$01,$80,$33,$01,$80
 	.byte $32,$01,$80,$31,$03,$00
+@sfx_ntsc_02_enemy_kill:
+	.byte $8a,$07,$89,$3a,$8a,$06,$89,$3d,$01,$8a,$05,$89,$3c,$01,$8a,$04
+	.byte $01,$8a,$05,$89,$3b,$03,$89,$3a,$02,$89,$39,$01,$89,$38,$02,$89
+	.byte $37,$02,$89,$36,$03,$89,$35,$02,$89,$34,$03,$89,$33,$05,$89,$32
+	.byte $14,$89,$31,$20,$00
+@sfx_ntsc_03_cannon_fire:
+	.byte $8a,$0f,$89,$3a,$8a,$0e,$89,$3d,$01,$8a,$0d,$89,$3c,$01,$8a,$0c
+	.byte $01,$8a,$0d,$89,$3b,$03,$89,$3a,$02,$89,$39,$01,$89,$38,$02,$89
+	.byte $37,$02,$89,$36,$03,$89,$35,$02,$89,$34,$03,$89,$33,$05,$89,$32
+	.byte $14,$89,$31,$20,$00

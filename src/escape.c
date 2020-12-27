@@ -231,8 +231,6 @@ void swing_sword(void);
 void bg_collision(void); // For the player
 void bg_collision_sub(void);
 void bg_collision_sub_collision_u(void);
-void bg_collision_sub_collision_d(void);
-
 
 void check_spr_objects(void); // For enemies
 void sprite_collisions(void);
@@ -674,7 +672,9 @@ void load_level_new(void) {
     temp4 = valrigard_inital_coords[level_index];
 
     high_byte(valrigard.x) = (temp4 & 0xf0);
-    high_byte(valrigard.y) = ((temp4 & 0x0f) * 16);
+    high_byte(valrigard.y) = ((temp4 & 0x0f) * 16) + 2; 
+    // +2 to eliminate a bug in which Valrigard could clip through the ceiling and wrap around to the bottom of the 
+    // nametable when holding up at the start of a level (this would happen on the Star Test level).
 
     // Load the level into RAM.
     set_prg_bank(level_nametable_banks[level_index]);
@@ -915,8 +915,8 @@ void draw_sprites(void) {
     // Debug HUD, drawn last because it's the least important.
     //oam_spr(232, 42, collision_D, 2);
     
-    //oam_spr(200, 50, debug_tile_x >> 4, 1);
-    //oam_spr(208, 50, debug_tile_x & 0x0f, 1);
+    oam_spr(200, 50, debug_tile_x >> 4, 1);
+    oam_spr(208, 50, debug_tile_x & 0x0f, 1);
     
     //oam_spr(224, 50, debug_tile_y >> 4, 1);
     //oam_spr(232, 50, debug_tile_y & 0x0f, 1);
@@ -1115,6 +1115,7 @@ void movement(void) {
     // Reset the conveyor delta and headbonk status.
     conveyor_delta = 0;
     did_headbonk = 0;
+    RESET_TOUCHING_YELLOW_DOOR();
 
     // Handle X.
     old_x = valrigard.x;
@@ -1162,7 +1163,7 @@ void movement(void) {
         valrigard.x = 0x100;
     }
     
-    L_R_switch = 1; // Shrinks the Y values in bg_coll. This makes head/foot collisions less problematic (examine this)
+    //L_R_switch = 1; // Shrinks the Y values in bg_coll. This makes head/foot collisions less problematic (examine this)
     
     // Copying these bytes like this is faster than passing a pointer to Valrigard.
     hitbox.x = high_byte(valrigard.x);
@@ -1213,7 +1214,7 @@ void movement(void) {
     else if (high_byte(valrigard.y) > 0xf0) { valrigard.y = 0xf000; }
     
     // MARK: - Collision
-    L_R_switch = 0;
+    //L_R_switch = 0;
     
     hitbox.x = high_byte(valrigard.x);
     hitbox.y = high_byte(valrigard.y);
@@ -1240,6 +1241,10 @@ void movement(void) {
 
         energy += 4;
         if (energy > MAX_ENERGY) energy = MAX_ENERGY;
+
+        if (TOUCHING_YELLOW_DOOR && (pad1 & PAD_UP)) {
+            game_mode = MODE_GAME_OVER;
+        }
     }
     
     // MARK: - Deal with scrolling
@@ -1266,7 +1271,7 @@ void swing_sword(void) {
         player_sword_timer = 37;
         player_frame_timer = 14;
         SET_STATUS_SWINGING_SWORD();
-        sfx_play(0,0);
+        sfx_play(SFX_SWORD_SLASH,0);
     }
 
     if (player_sword_timer) { 
@@ -1347,7 +1352,7 @@ void bg_collision(void){
     // bottom right, x hasn't changed
 
     temp3 = hitbox.y + hitbox.height; // y bottom
-    // if(L_R_switch) temp3 -= 2; // fix bug, walking through walls -- commented out for now.
+    // if(L_R_switch) temp3 -= 2; // fix bug, walking through walls -- commented out for now (because *it* was causing bugs).
     
     add_scroll_y(temp5, temp3, scroll_y); // upper left
     temp3 = low_byte(temp5); // low byte y
@@ -1361,7 +1366,6 @@ void bg_collision(void){
     if(collision){ // find a corner in the collision map
         ++collision_R;
         ++collision_D;
-        bg_collision_sub_collision_d();
     }
     
     // bottom left
@@ -1374,8 +1378,8 @@ void bg_collision(void){
     if(collision){ // find a corner in the collision map
         ++collision_L;
         ++collision_D;
-        bg_collision_sub_collision_d();
     }
+
 }
 
 void bg_collision_sub(void) {
@@ -1408,7 +1412,7 @@ void bg_collision_sub(void) {
         // But what powerup was it?
         if (temp4 == STAR_TILE) { 
             score += 1;
-            sfx_play(1,0); // Star collection
+            sfx_play(SFX_STAR_COLLECT,1); // Star collection
             SET_SCORE_CHANGED_THIS_FRAME();
         }
         else if (temp4 == ENERGY_REFILL_TILE) { energy = MAX_ENERGY; }
@@ -1421,9 +1425,6 @@ void bg_collision_sub(void) {
         AsmSet2ByteAtPtrWithOffset(tile_clear_queue, tile_clear_back, address);
         tile_clear_to_type_queue[tile_clear_back] = EMPTY_TILE;
 
-        //address = 0;
-        //AsmSet2ByteAtPtrWithOffset(tile_clear_attr_addr_queue, tile_clear_back, address); // Don't update an attribute.
-
         ++tile_clear_back;
         tile_clear_back &= 0b11; // Mask to <4
 
@@ -1433,6 +1434,8 @@ void bg_collision_sub(void) {
         conveyor_delta = LEFT_CONVEYOR_DELTA;
     } else if (temp0 & METATILE_CONVEYOR_RIGHT) {
         conveyor_delta = RIGHT_CONVEYOR_DELTA;
+    } else if (temp0 & METATILE_YELLOW_DOOR) {
+        SET_TOUCHING_YELLOW_DOOR();
     } else if (temp0 & METATILE_RED_DOOR) {
         game_mode = MODE_GAME_OVER;
     }
@@ -1480,22 +1483,6 @@ void bg_collision_sub_collision_u(void) {
         ++tile_clear_back;
         tile_clear_back &= 0b11;
 
-    }
-}
-
-void bg_collision_sub_collision_d(void) {
-    // Look at the tile above the one we're colliding with.
-    coordinates = (temp1 >> 4) + ((temp3 - 1) & 0xf0);
-    temp0 = high_byte(temp5);
-    AsmSet2ByteFromPtrAtIndexVar(temp_mutablepointer, cmaps, temp0);
-    AsmSet1ByteFromZpPtrAtIndexVar(temp4, temp_mutablepointer, coordinates);
-    temp0 = metatile_property_lookup_table[temp4];
-
-    if (temp0 & METATILE_YELLOW_DOOR) {
-        // For now, end the game if grounded. (This detection isn't *perfect*, but it's decent.)
-        if (pad1 & PAD_UP) {
-            game_mode = MODE_GAME_OVER;
-        }
     }
 }
 
@@ -1850,7 +1837,8 @@ void collision_with_killable_slashable(void) {
         enemies.timer[x] = 12;
         score += 1; // Add to the score 
         SET_SCORE_CHANGED_THIS_FRAME();
-        sample_play(31);
+
+        sfx_play(SFX_ENEMY_KILL, 0);
         // (todo: make a counter of total active enemies to mimic scoring from original)
     }
 }
@@ -1861,6 +1849,8 @@ void collision_with_inert_slashable(void) {
         SLASHABLE_UNKILLABLE_SET_SLASHED(x);
         score += 1;
         SET_SCORE_CHANGED_THIS_FRAME();
+
+        sfx_play(SFX_ENEMY_KILL, 0);
     }
 }
 
@@ -1879,6 +1869,8 @@ void collision_with_splyke(void) {
         enemies.timer[x] = 12;
         score += 1;
         SET_SCORE_CHANGED_THIS_FRAME();
+
+        sfx_play(SFX_ENEMY_KILL, 0);
     }
     // Yes tornado, Yes swinging: do nothing.
 }
@@ -2225,6 +2217,8 @@ void cannon_ai(void) {
     if (enemies.timer[x] == 0) {
         // Fire the cannonball.
         enemies.timer[x] = 120;
+
+        sfx_play(SFX_CANNON_FIRE, 0);
 
         // Move the cannonball into place.
         temp0 = enemies.x[x] + 3;

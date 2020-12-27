@@ -52,6 +52,10 @@
 #define SET_SCORE_CHANGED_THIS_FRAME() (player_flags |= 8)
 #define RESET_SCORE_CHANGED_THIS_FRAME() (player_flags &= ~8)
 
+#define TOUCHING_YELLOW_DOOR (player_flags & 16)
+#define SET_TOUCHING_YELLOW_DOOR() (player_flags |= 16)
+#define RESET_TOUCHING_YELLOW_DOOR() (player_flags &= ~16)
+
 // =====
 // Constants + Macros for game_mode
 
@@ -93,5 +97,9 @@
 #define LEFT_CONVEYOR_DELTA -127
 #define RIGHT_CONVEYOR_DELTA 127
 
+#define SFX_SWORD_SLASH 0
+#define SFX_STAR_COLLECT 1
+#define SFX_ENEMY_KILL 2
+#define SFX_CANNON_FIRE 3
 
 #endif
