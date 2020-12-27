@@ -150,7 +150,7 @@ const unsigned char * const level_compressed_nametable_pointers[] = {
     level_star_test,
     level_enemies_test,
     level_question_block_test,
-    level_downloader_test,
+    level_macosten,
 };
 
 // The banks in which each level's data is actually located.
@@ -248,6 +248,6 @@ const unsigned char * const level_enemy_data[] = {
     empty_enemy,
     level_enemies_test_enemy,
     empty_enemy,
-    empty_enemy,
+    level_macosten_enemy,
 };
 

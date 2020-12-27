@@ -27,7 +27,7 @@ typedef struct DialogBoxData_t {
     // 
 } DialogBoxData;
 
-#define MAX_ENEMIES 40
+#define MAX_ENEMIES 64
 // The Struct of Arrays pattern plays much nicer with cc65 than an array of structs would.
 // In other words, this design decision is another concession to the compiler.
 typedef struct EnemyDatabase {

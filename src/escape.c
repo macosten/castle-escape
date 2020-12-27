@@ -906,7 +906,6 @@ void draw_sprites(void) {
         }
 
     }
-    
 
     // Handle the shuffle offset.
     shuffle_offset += shuffle_leg_size;
@@ -915,8 +914,8 @@ void draw_sprites(void) {
     // Debug HUD, drawn last because it's the least important.
     //oam_spr(232, 42, collision_D, 2);
     
-    oam_spr(200, 50, debug_tile_x >> 4, 1);
-    oam_spr(208, 50, debug_tile_x & 0x0f, 1);
+    //oam_spr(200, 50, debug_tile_x >> 4, 1);
+    //oam_spr(208, 50, debug_tile_x & 0x0f, 1);
     
     //oam_spr(224, 50, debug_tile_y >> 4, 1);
     //oam_spr(232, 50, debug_tile_y & 0x0f, 1);
@@ -2007,8 +2006,6 @@ void spikeball_ai(void) {
 
     coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
 
-    
-
     // Which cmap should I look at?
     //temppointer = cmaps[temp4];
     AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp4);
@@ -2019,25 +2016,25 @@ void spikeball_ai(void) {
     if (!METATILE_IS_SOLID(collision)) {
         ENEMY_FLIP_DIRECTION(x);
         temp3 ^= 1;
-    }
+    } else { // Don't flip twice -- this causes a bug if we're on an edge and there's a block ahead of us, but not one block down+ahead of us.
+       // Now, check ahead of us.
 
-    // Now, check ahead of us.
+        temp2 = enemies.actual_y[x] + 6; // center y
+        coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
 
-    temp2 = enemies.actual_y[x] + 6; // center y
-    coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
+        // Which cmap should I look at?
+        temp4 = enemies.nt[x];
 
-    // Which cmap should I look at?
-    temp4 = enemies.nt[x];
+        //temppointer = cmaps[temp4];
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp4);
 
-    //temppointer = cmaps[temp4];
-    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp4);
-
-    //collision = temppointer[coordinates];
-    AsmSet1ByteFromZpPtrAtIndexVar(collision, temppointer, coordinates);
+        //collision = temppointer[coordinates];
+        AsmSet1ByteFromZpPtrAtIndexVar(collision, temppointer, coordinates);
     
-    if (METATILE_IS_SOLID(collision)) {
-        ENEMY_FLIP_DIRECTION(x);
-        temp3 ^= 1;
+        if (METATILE_IS_SOLID(collision)) {
+            ENEMY_FLIP_DIRECTION(x);
+            temp3 ^= 1;
+        } 
     }
 
     temp1 = leftright_movement_moving_lookup_table[temp3];
@@ -2497,25 +2494,25 @@ void splyke_ai(void) {
         if (!METATILE_IS_SOLID(collision)) {
             ENEMY_FLIP_DIRECTION(x);
             temp3 ^= 1;
-        }
+        } else { // Don't flip twice.
+            // Now, check ahead of us.
 
-        // Now, check ahead of us.
+            temp2 = enemies.actual_y[x] + 6; // center y
+            coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
 
-        temp2 = enemies.actual_y[x] + 6; // center y
-        coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
+            // Which cmap should I look at?
+            temp4 = enemies.nt[x];
 
-        // Which cmap should I look at?
-        temp4 = enemies.nt[x];
+            //temppointer = cmaps[temp4];
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp4);
 
-        //temppointer = cmaps[temp4];
-        AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp4);
-
-        //collision = temppointer[coordinates];
-        AsmSet1ByteFromZpPtrAtIndexVar(collision, temppointer, coordinates);
-        
-        if (METATILE_IS_SOLID(collision)) {
-            ENEMY_FLIP_DIRECTION(x);
-            temp3 ^= 1;
+            //collision = temppointer[coordinates];
+            AsmSet1ByteFromZpPtrAtIndexVar(collision, temppointer, coordinates);
+            
+            if (METATILE_IS_SOLID(collision)) {
+                ENEMY_FLIP_DIRECTION(x);
+                temp3 ^= 1;
+            }
         }
 
         // Move 2 pixels instead of 1.
