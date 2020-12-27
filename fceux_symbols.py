@@ -31,4 +31,4 @@ def label_to_nl(label_file, nl_file, range_min, range_max):
 if __name__ == "__main__":
     label_to_nl(f"build{os.sep}labels.txt", f"build{os.sep}escape.nes.ram.nl", 0x0000, 0x7FFF)
     label_to_nl(f"build{os.sep}labels.txt", f"build{os.sep}escape.nes.0.nl",   0x8000, 0xBFFF)
-    label_to_nl(f"build{os.sep}labels.txt", f"build{os.sep}escape.nes.1.nl",   0xC000, 0xFFFF)
+    label_to_nl(f"build{os.sep}labels.txt", f"build{os.sep}escape.nes.7.nl",   0xC000, 0xFFFF)

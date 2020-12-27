@@ -4,12 +4,12 @@
 .export _set_vram_buffer, _multi_vram_buffer_horz, _multi_vram_buffer_vert, _one_vram_buffer
 .export _clear_vram_buffer, _get_pad_new, _get_frame_count, _set_music_speed
 .export _check_collision, _pal_fade_to, _set_scroll_x, _set_scroll_y, _sub_scroll_y
-.export  _get_ppu_addr, _get_at_addr, _set_data_pointer, _set_mt_pointer
+.export  _get_at_addr, _set_data_pointer, _set_mt_pointer
 .export _color_emphasis, _xy_split, _gray_line, _seed_rng
 
 ; Modified by macosten 2020
 
-.export _add_scroll_y_fast_sub, _buffer_4_mt_fast_sub, _buffer_1_mt_fast_sub
+.export _add_scroll_y_fast_sub, _buffer_4_mt_fast_sub, _buffer_1_mt_fast_sub, _get_ppu_addr_fast, _check_collision_fast
 
 .segment "CODE"
 
@@ -157,7 +157,7 @@ _check_collision:
 	sta PTR2
 	stx PTR2+1 ;set up a pointer to the second object
 	
-
+_check_collision_fast:
 	ldy #0
 	lda (PTR),y
 	sta TEMP+4  	;X 1
@@ -348,10 +348,9 @@ _sub_scroll_y:
 	rts
 	
 	
-	
-	
-;int __fastcall__ get_ppu_addr(char nt, char x, char y);	
-_get_ppu_addr:	
+;int __fastcall__ get_ppu_addr(char nt, char x, char y);
+; -> (macro): int __fastcall__ get_ppu_addr_fast(char y);	
+_get_ppu_addr_fast:	
 	and #$f8 ;y bits
 	ldx #0
 	stx TEMP+1
@@ -361,14 +360,14 @@ _get_ppu_addr:
 	rol TEMP+1
 	sta TEMP
 	
-	jsr popa ;x bits
+	lda TEMP+2 ;x bits
 	lsr a
 	lsr a
 	lsr a
 	ora TEMP
 	sta TEMP
 	
-	jsr popa ;nt 0-3
+	lda TEMP+3 ;nt 0-3
 	and #3
 	asl a
 	asl a
@@ -377,7 +376,6 @@ _get_ppu_addr:
 	tax
 	lda TEMP
 	rts
-	
 	
 
 	

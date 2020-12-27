@@ -492,12 +492,18 @@ void main (void) {
             if (SCORE_CHANGED_THIS_FRAME) { convert_to_decimal(score); }
             
             draw_sprites();
-
+            
             if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
-                draw_screen_D();
+                //draw_screen_D();
+                add_scroll_y(pseudo_scroll_y, 0x20, scroll_y);
+                pseudo_scroll_y += 0xef; 
+                // This 0xef (239, which is the height of the screen minus one) might possibly want to be either a 0xf0 (240) or a 
+                // 0x100 (1 full nametable compensating for the fact that the last 16 values are masked off by add_scroll_y)
             }  else {
-                draw_screen_U();
-            } 
+                //draw_screen_U();
+                pseudo_scroll_y = sub_scroll_y(0x20, scroll_y);
+            }
+            draw_screen_sub();
 
             handle_tile_clear_queue();
 
@@ -693,7 +699,7 @@ void load_level_new(void) {
         for(x=0; ;x+=0x20){
             clear_vram_buffer(); // do each frame, and before putting anything in the buffer
             
-            address = get_ppu_addr(temp1, x, y);
+            get_ppu_addr(address, temp1, x, y);
             index = (y & 0xf0) + (x >> 4);
             buffer_4_mt(address, index); // ppu_address, index to the data
             flush_vram_update_nmi();
@@ -713,7 +719,7 @@ void load_level_new(void) {
     for(x=0; ;x+=0x20){
         y = 0xe0;
         clear_vram_buffer(); // do each frame, and before putting anything in the buffer
-        address = get_ppu_addr(temp1, x, y);
+        get_ppu_addr(address, temp1, x, y);
         index = (y & 0xf0) + (x >> 4);
         buffer_4_mt(address, index); // ppu_address, index to the data
         flush_vram_update_nmi();
@@ -909,7 +915,7 @@ void draw_sprites(void) {
 
     // Handle the shuffle offset.
     shuffle_offset += shuffle_leg_size;
-    if (shuffle_offset >= shuffle_maximum) { shuffle_offset = 0; }
+    if (shuffle_offset == shuffle_maximum) { shuffle_offset = 0; }
     
     // Debug HUD, drawn last because it's the least important.
     //oam_spr(232, 42, collision_D, 2);
@@ -1402,8 +1408,8 @@ void bg_collision_sub(void) {
     if (temp0 == METATILE_NO_EFFECT || temp0 == METATILE_SOLID) { return; }
 
     // No? We must have touched a special tile, then.
-    if (temp0 & METATILE_SPIKES) {
-        SET_STATUS_DEAD();
+    if (temp0 & METATILE_YELLOW_DOOR) {
+        SET_TOUCHING_YELLOW_DOOR();
     } else if (temp0 & METATILE_POWERUP) {
         // Collect the powerup.
         temp_mutablepointer[coordinates] = EMPTY_TILE;
@@ -1418,7 +1424,7 @@ void bg_collision_sub(void) {
     
         // Enqueue a tile to the tile clear queue.
         nt = (nt_current & 1) << 1;
-        address = get_ppu_addr(nt, temp1, temp3 & 0xf0);
+        get_ppu_addr(address, nt, temp1, temp3 & 0xf0);
 
         // Enqueue.
         AsmSet2ByteAtPtrWithOffset(tile_clear_queue, tile_clear_back, address);
@@ -1433,8 +1439,8 @@ void bg_collision_sub(void) {
         conveyor_delta = LEFT_CONVEYOR_DELTA;
     } else if (temp0 & METATILE_CONVEYOR_RIGHT) {
         conveyor_delta = RIGHT_CONVEYOR_DELTA;
-    } else if (temp0 & METATILE_YELLOW_DOOR) {
-        SET_TOUCHING_YELLOW_DOOR();
+    } else if (temp0 & METATILE_SPIKES) {
+        SET_STATUS_DEAD();
     } else if (temp0 & METATILE_RED_DOOR) {
         game_mode = MODE_GAME_OVER;
     }
@@ -1468,7 +1474,7 @@ void bg_collision_sub_collision_u(void) {
 
         // Calculate the correct address to update.
         nt = (nt_current & 1) << 1;
-        address = get_ppu_addr(nt, temp1, temp3 & 0xf0);
+        get_ppu_addr(address, nt, temp1, temp3 & 0xf0);
 
         // Enqueue a tile update.
         AsmSet2ByteAtPtrWithOffset(tile_clear_queue, tile_clear_back, address);
@@ -1540,6 +1546,8 @@ void draw_screen_D(void) {
 
 void draw_screen_sub(void) {
     temp1 = high_byte(pseudo_scroll_y);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
+    set_data_pointer(temppointer); // Should this value be clamped to the number of cmaps?
     
     nt = (temp1 & 1) << 1; // 0 or 2 for vertical scrolling
     y = low_byte(pseudo_scroll_y);
@@ -1549,11 +1557,11 @@ void draw_screen_sub(void) {
     temp2 = draw_screen_sub_lookup_index_offset_0[scroll_count];
     temp4 = draw_screen_sub_lookup_index_offset_1[scroll_count];
 
-    address = get_ppu_addr(nt, draw_screen_sub_lookup_addr_0[scroll_count], y);
+    get_ppu_addr(address, nt, draw_screen_sub_lookup_addr_0[scroll_count], y);
     index = (y & 0xf0) + temp2;
     buffer_4_mt(address, index); // ppu_address, index to the data
             
-    address = get_ppu_addr(nt, draw_screen_sub_lookup_addr_1[scroll_count], y);
+    get_ppu_addr(address, nt, draw_screen_sub_lookup_addr_1[scroll_count], y);
     index = (y & 0xf0) + temp4;
     buffer_4_mt(address, index); // ppu_address, index to the data
     
@@ -1756,7 +1764,8 @@ void sprite_collisions(void) {
 
             hitbox2.y = enemies.y[x];
 
-            if (check_collision(&hitbox, &hitbox2)) {
+            check_collision(temp0, hitbox, hitbox2);
+            if (temp0) {
                 AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
             }
         }
@@ -1775,7 +1784,8 @@ void sprite_collisions(void) {
 
             hitbox2.y = enemies.y[x];
 
-            if (check_collision(&hitbox, &hitbox2)) {
+            check_collision(temp0, hitbox, hitbox2);
+            if (temp0) {
                 AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
             }
         }
@@ -1794,7 +1804,8 @@ void sprite_collisions(void) {
 
             hitbox2.y = enemies.y[x];
 
-            if (check_collision(&hitbox, &hitbox2)) {
+            check_collision(temp0, hitbox, hitbox2);
+            if (temp0) {
                 AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
             }
         }
@@ -1813,7 +1824,8 @@ void sprite_collisions(void) {
 
             hitbox2.y = enemies.y[x];
 
-            if (check_collision(&hitbox, &hitbox2)) {
+            check_collision(temp0, hitbox, hitbox2);
+            if (temp0) {
                 AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
             }
         }

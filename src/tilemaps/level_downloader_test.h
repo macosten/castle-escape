@@ -10,13 +10,13 @@
 // const char * const level_macosten_name = "What`s this?";
 
 const unsigned char const level_macosten_enemy[] = {
-	0x7d, 0, 2,
-	0x8d, 0, 6,
-	0x9d, 0, 1,
-	0xad, 0, 5,
-	0x1e, 0, 4,
-	0x2e, 0, 3,
-	0x3e, 0, 7,
+	//0x7d, 0, 2,
+	//0x8d, 0, 6,
+	//0x9d, 0, 1,
+	//0xad, 0, 5,
+	//0x1e, 0, 4,
+	//0x2e, 0, 3,
+	//0x3e, 0, 7,
 	0x13, 3, 4,
 	0xa3, 3, 4,
 	0x14, 3, 4,

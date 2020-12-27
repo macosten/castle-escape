@@ -57,7 +57,7 @@ build: build/$(ROM_NAME).nes
 
 # Not the most clever: just recompile everything if a header changes.
 build/%.s : %.c $(SOURCE_HEADERS)
-	$(CCOMPILER) $(CFLAGS) $< -o $(patsubst %.o, %.s, $@)
+	$(CCOMPILER) $(CFLAGS) $< -o $(patsubst %.o, %.s, $@) # --debug-info
 
 build/%.o : build/%.s
 	$(ASSEMBLER) $<
@@ -69,7 +69,7 @@ build/crt0.o :
 	$(ASSEMBLER) src/crt0.s -o build/crt0.o
 
 build/$(ROM_NAME).nes: build/crt0.o $(SOURCE_O)
-	$(LINKER) -C $(CONFIG_FILE) -o build/$(ROM_NAME).nes build/*.o nes.lib -Ln build/labels.txt
+	$(LINKER) -C $(CONFIG_FILE) -o build/$(ROM_NAME).nes build/*.o nes.lib -Ln build/$(ROM_NAME).labels.txt # --dbgfile build/$(ROM_NAME).nes.dbg
 
 clean:
 	$(RM) build/*

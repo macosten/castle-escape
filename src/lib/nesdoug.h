@@ -57,10 +57,24 @@ void __fastcall__ set_music_speed(unsigned char tempo);
 // music_stop() and music_pause() also overwrite this value
 
 
-unsigned char __fastcall__ check_collision(void * object1, void * object2);
+//unsigned char __fastcall__ check_collision(void * object1, void * object2);
 // expects an object (struct) where the first 4 bytes are X, Y, width, height
 // you will probably have to pass the address of the object like &object
 // the struct can be bigger than 4 bytes, as long as the first 4 bytes are X, Y, width, height
+
+// A bit more restricted than the normal one (this expects object1 and object2 to be in the zero page).
+unsigned char __fastcall__ check_collision_fast();
+#define check_collision(result, object1, object2) {\
+	__asm__("lda #<(%v)", object1);\
+	__asm__("sta %v", TEMP);\
+	__asm__("lda #>(%v)", object1);\
+	__asm__("sta %v+1", TEMP);\
+	__asm__("lda #<(%v)", object2);\
+	__asm__("sta %v+2", TEMP);\
+	__asm__("lda #>(%v)", object2);\
+	__asm__("sta %v+3", TEMP);\
+	result = check_collision_fast();\
+}
 
 
 void __fastcall__ pal_fade_to(unsigned char from, unsigned char to);
@@ -96,9 +110,17 @@ int __fastcall__ sub_scroll_y(unsigned char sub, unsigned int scroll);
 // subtract a value from y scroll, keep the low byte in the 0-0xef range
 // returns y scroll, which will have to be passed to set_scroll_y
 
-int __fastcall__ get_ppu_addr(char nt, char x, char y);
+//int __fastcall__ get_ppu_addr(char nt, char x, char y);
 // gets a ppu address from x and y coordinates (in pixels)
 // x is screen pixels 0-255, y is screen pixels 0-239, nt is nametable 0-3
+
+int __fastcall__ get_ppu_addr_fast(char y);
+
+#define get_ppu_addr(updateMe, nt, x, y) {\
+	TEMP[2] = (unsigned char)x;\
+	TEMP[3] = (unsigned char)nt;\
+	updateMe = get_ppu_addr_fast(y);\
+}
 
 
 int __fastcall__ get_at_addr(char nt, char x, char y);
