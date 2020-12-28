@@ -418,9 +418,12 @@ void main (void) {
             // We can just set this to if (1) for debugging.
             if (pad1_new & PAD_UP) {
                 // level_index = 0;
+                sfx_play(SFX_MENU_BEEP, 0);
                 score = 0; // Reset the score.
                 begin_level();
             } else if (pad1_new & PAD_LEFT) {
+
+                sfx_play(SFX_MENU_BEEP, 0);
 
                 if (level_index != 0) {
                     --level_index;
@@ -435,6 +438,9 @@ void main (void) {
                 multi_vram_buffer_horz(temppointer, temp0, NTADR_A(3, 10));
 
             } else if (pad1_new & PAD_RIGHT) {
+
+                sfx_play(SFX_MENU_BEEP, 0);
+
                 ++level_index;
                 if (level_index == NUMBER_OF_LEVELS) {
                     level_index = 0;
@@ -1416,7 +1422,7 @@ void bg_collision_sub(void) {
 
         // But what powerup was it?
         if (temp4 == STAR_TILE) { 
-            score += 1;
+            ++score;
             sfx_play(SFX_STAR_COLLECT,1); // Star collection
             SET_SCORE_CHANGED_THIS_FRAME();
         }
@@ -1463,7 +1469,7 @@ void bg_collision_sub_collision_u(void) {
         temp_mutablepointer[coordinates] = BONKED_QUESTION_BLOCK;
 
         // Figure out the correct bonus amount.
-        if (temp0 > 128) { score += 1; }
+        if (temp0 > 128) { ++score; }
         else if (temp0 > 86) { score += 2; }
         else if (temp0 > 43) { score += 3; }
         else if (temp0 > 2) { score += 4; }
@@ -1471,6 +1477,8 @@ void bg_collision_sub_collision_u(void) {
         SET_SCORE_CHANGED_THIS_FRAME();
 
         did_headbonk = 1;
+
+        sfx_play(SFX_BUMP, 0);
 
         // Calculate the correct address to update.
         nt = (nt_current & 1) << 1;
@@ -2435,6 +2443,8 @@ void acid_ai(void) {
         enemies.type[temp_x] = ENEMY_ACIDDROP;
 
         enemies.extra2[x] = 12; // ACIDBLOB_ANIMATION_FRAME_COUNT
+
+        sfx_play(SFX_ACID_DROP, 0);
 
     }
 

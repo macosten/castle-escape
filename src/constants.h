@@ -101,5 +101,8 @@
 #define SFX_STAR_COLLECT 1
 #define SFX_ENEMY_KILL 2
 #define SFX_CANNON_FIRE 3
+#define SFX_MENU_BEEP 4
+#define SFX_BUMP 5
+#define SFX_ACID_DROP 6
 
 #endif
