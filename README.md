@@ -1,5 +1,7 @@
 # Castle Escape
 
+Please note that this is very much a work in progress. 
+
 ## About:
 
 This game is meant to (eventually) be a port of the Neopets game [Escape from Meridell Castle](http://www.jellyneo.net/?go=escape_from_meridell_castle).  
