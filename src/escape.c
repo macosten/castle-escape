@@ -206,8 +206,6 @@ void draw_magic_bolt(void);
 void draw_score(void);
 void draw_energy(void);
 
-void draw_screen_U(void);
-void draw_screen_D(void);
 void draw_screen_sub(void);
 
 void handle_tile_clear_queue(void);
@@ -499,6 +497,7 @@ void main (void) {
             
             draw_sprites();
             
+            // Draw tiles on the edge of the screen.
             if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
                 //draw_screen_D();
                 add_scroll_y(pseudo_scroll_y, 0x20, scroll_y);
@@ -509,7 +508,13 @@ void main (void) {
                 //draw_screen_U();
                 pseudo_scroll_y = sub_scroll_y(0x20, scroll_y);
             }
+
+            temp1 = high_byte(pseudo_scroll_y);
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
+            set_data_pointer(temppointer); // Should this value be clamped to the number of cmaps?
+
             draw_screen_sub();
+            // Done drawing tiles on the edge of the screen.
 
             handle_tile_clear_queue();
 
@@ -1529,34 +1534,7 @@ void handle_tile_clear_queue(void) {
 
 }
 
-void draw_screen_U(void) {
-    pseudo_scroll_y = sub_scroll_y(0x20, scroll_y);
-    
-    temp1 = high_byte(pseudo_scroll_y);
-    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
-    set_data_pointer(temppointer); // Should this value be clamped to the number of cmaps?
-
-    draw_screen_sub();
-}
-
-void draw_screen_D(void) {
-    add_scroll_y(pseudo_scroll_y, 0x20, scroll_y);
-    pseudo_scroll_y += 0xef; 
-    // This 0xef (239, which is the height of the screen minus one) might possibly want to be either a 0xf0 (240) or a 
-    // 0x100 (1 full nametable compensating for the fact that the last 16 values are masked off by add_scroll_y)
-    
-    temp1 = high_byte(pseudo_scroll_y);
-    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
-    set_data_pointer(temppointer); // Should this value be clamped to the number of cmaps?
-
-    draw_screen_sub();
-}
-
-void draw_screen_sub(void) {
-    temp1 = high_byte(pseudo_scroll_y);
-    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
-    set_data_pointer(temppointer); // Should this value be clamped to the number of cmaps?
-    
+void draw_screen_sub(void) {    
     nt = (temp1 & 1) << 1; // 0 or 2 for vertical scrolling
     y = low_byte(pseudo_scroll_y);
     

@@ -133,6 +133,8 @@ void dbox_draw_box(void) {
 
 	add_scroll_y(pseudo_scroll_y, dbox_y, scroll_y);
 
+	// Necessary:
+	temp1 = high_byte(pseudo_scroll_y);
 	// Yep: we're reusing this code to draw the box.
 	draw_screen_sub();
 
@@ -273,10 +275,8 @@ void dbox_erase_box(void) {
 	//pseudo_scroll_y = sub_scroll_y(dbox_y, scroll_y);
 	add_scroll_y(pseudo_scroll_y, dbox_y, scroll_y);
 
-
-	temp0 = high_byte(pseudo_scroll_y);
-	AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp0);
-
+	temp1 = high_byte(pseudo_scroll_y);
+	AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
 	set_data_pointer(temppointer);
 
 	draw_screen_sub();
