@@ -15,10 +15,12 @@
 #include "zeropage.h" // Zeropage declarations are here. Probably better to just extern what you need than import this everywhere.
 #include "constants.h" // Constant #defines are here.
 
-#include "asm/score.h"
-#include "asm/math.h"
-#include "asm/macros.h"
-#include "asm/helper.h"
+#include "tilemaps/compressed_welcome_screen.h"
+
+#include "asm/score.h" // A sort of stripped-down ultoa().
+#include "asm/math.h" // A few supporting functions+declarations related to sine and cosine lookups.
+#include "asm/macros.h" // Macros that are actually asm statements.
+#include "asm/helper.h" // Misc functions I didn't want to import stdlib for.
 
 #include "lib/lzgmini_6502.h" // My version of liblzg, interfaced to work with cc65.
 
@@ -217,6 +219,7 @@ void calculate_shuffle_array(void);
 
 void load_title_screen(void);
 void load_game_over_screen(void);
+void load_level_welcome_screen(void);
 
 void clear_screen(void);
 void put_str(unsigned int adr, const char * str);
@@ -419,35 +422,43 @@ void main (void) {
                 sfx_play(SFX_MENU_BEEP, 0);
                 score = 0; // Reset the score.
                 begin_level();
-            } else if (pad1_new & PAD_LEFT) {
+            } 
 
-                sfx_play(SFX_MENU_BEEP, 0);
-
+            if (pad1_new & PAD_LEFT) {
+                // Decrement the level index, or purposefully underflow it.
                 if (level_index != 0) {
                     --level_index;
                 } else {
                     level_index = NUMBER_OF_LEVELS - 1;
                 }
-                
-
-                // Update the level name shown on the screen.
-                AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
-                temp0 = strlen(temppointer);
-                multi_vram_buffer_horz(temppointer, temp0, NTADR_A(3, 10));
 
             } else if (pad1_new & PAD_RIGHT) {
-
-                sfx_play(SFX_MENU_BEEP, 0);
-
+                // Increment the level index, or purposefully overflow it.
                 ++level_index;
                 if (level_index == NUMBER_OF_LEVELS) {
                     level_index = 0;
                 }
+
+            }
+
+            if (pad1_new & PAD_LEFT | pad1_new & PAD_RIGHT) {
+                // Code shared between what we'd do with either button press.
+                sfx_play(SFX_MENU_BEEP, 0);
+
                 // Update the level name shown on the screen.
+                // We must take into account that a remainder of the previous level name will be shown
+                // if the length of the next one is less than the length of the current one.
+                //memfill(&cmap, ' ', 28); // 28 accounts for the border of 2 tiles from each side
+                for (temp0 = 0; temp0 < 28; ++temp0) { cmap[temp0] = ' '; }
+
                 AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
                 temp0 = strlen(temppointer);
-                multi_vram_buffer_horz(temppointer, temp0, NTADR_A(3, 10));
-
+                for (temp1 = 0; temp1 < temp0; ++temp1) {
+                    //temp2 = temppointer[temp1];
+                    AsmSet1ByteFromZpPtrAtIndexVar(temp2, temppointer, temp1);
+                    cmap[temp1] = temp2;
+                }
+                multi_vram_buffer_horz(cmap, 28, NTADR_A(3, 10));
             }
 
 
@@ -636,7 +647,51 @@ void load_game_over_screen(void) {
     ppu_on_all();
 }
 
+void load_level_welcome_screen(void) {
+    ppu_off();
+    clear_screen();
+    
+    LZG_decode(welcome_screen, cmap);
+
+    // Add the level name...
+    // Try centering it:
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
+    temp0 = strlen(temppointer);
+    temp1 = 16 - (temp0/2);
+
+    temp_mutablepointer = (cmap + 256 + 64);
+    temp_mutablepointer += temp1;
+
+    for (temp2 = 0; temp2 < temp0; ++temp2) {
+        //AsmSet1ByteFromZpPtrAtIndexVar(temp3, temppointer, temp2);
+        temp_mutablepointer[temp2] = temppointer[temp2];
+    }
+
+    // Write what we've buffered to cmap into vram. (That WRAM sure is convenient...)
+    vram_write(cmap, (32*30));
+
+    ppu_on_all();
+
+    // Draw a small Valrigard inside the box with the level text.
+    set_prg_bank(METASPRITE_BANK);
+    oam_meta_spr(120, 114, valrigard_idle_left);
+
+    // Not going to set the game mode this time because we'll call ppu_wait_nmi (we'll wait a few frames) first.
+    for (temp0 = 0; temp0 < 120; ++temp0) {
+        ppu_wait_nmi();
+
+        // Allow someone to escape this screen early by just pressing a button.
+        pad1 = pad_poll(0);
+        pad1_new = get_pad_new(0);
+        if (pad1_new) { break; }
+    }
+    oam_clear();
+}
+
 void begin_level(void) {
+    // Show the welcome screen - the screen that says the level's name (and that gives a bit of respite between levels).
+    load_level_welcome_screen();
+
     ppu_off(); // We're going to make big changes to VRAM so we need to turn it off.
     
     // Set the game mode properly.
