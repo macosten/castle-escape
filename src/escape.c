@@ -24,6 +24,7 @@
 
 #include "lib/lzgmini_6502.h" // My version of liblzg, interfaced to work with cc65.
 
+#include "titlescreen.h"
 
 #pragma bss-name(push, "BSS")
 
@@ -34,7 +35,7 @@
 
 unsigned char palette_bg[]={
     0x0f, 0x00, 0x10, 0x30, // black, gray, lt gray, white
-    0x0f, 0x17, 0x27, 0x38, // Animated. Probably yellow.
+    0x0f, 0x17, 0x27, 0x38, // Animated -- for the conveyor belts.
     0x0f, 0x06, 0x16, 0x26, // Reds, like the Red Doors
     0x0f, 0x17, 0x27, 0x38, // Yellow(ish)s, like the main level exit doors
 };
@@ -217,12 +218,12 @@ void load_level_new(void);
 
 void calculate_shuffle_array(void);
 
-void load_title_screen(void);
+void load_level_selector(void);
 void load_game_over_screen(void);
 void load_level_welcome_screen(void);
 
 void clear_screen(void);
-void put_str(unsigned int adr, const char * str);
+void put_str_sub(void);
 
 // Physics/Logic functions.
 void movement(void);
@@ -260,6 +261,8 @@ void death_effect_timer_ai(void);
 
 extern void dialog_box_handler(void);
 extern void trigger_dialog_box(DialogBoxData const * dboxdata);
+
+extern unsigned char const * titlescreen;
 
 // MARK: Lookup Tables
 
@@ -375,10 +378,6 @@ void main (void) {
 
     ppu_off(); // screen off
     
-    // load the palettes
-    pal_bg(palette_bg);
-    pal_spr(palette_sp);
-
     // use the second set of tiles for sprites
     // both bg and sprites are set to 0 by default
     // Set the swappable bank like this:
@@ -389,13 +388,23 @@ void main (void) {
     
     set_vram_buffer(); // do at least once, sets a pointer to a buffer
     clear_vram_buffer();
+
+    set_prg_bank(4);
+    show_title_screen();
         
     // Set the level index to the first level.
     level_index = 0;
 
-    load_title_screen();
+    load_level_selector();
 
-    ppu_on_all(); // turn on screen
+    // pal_bright set to zero by show_title_screen(). Set it back to 4.
+    pal_bright(4);
+
+    // (re)load the palettes
+    pal_bg(palette_bg);
+    pal_spr(palette_sp);
+
+    // ppu_on_all(); // turn on screen
 
     //music_play(0);
     //set_music_speed(5);
@@ -422,6 +431,7 @@ void main (void) {
                 sfx_play(SFX_MENU_BEEP, 0);
                 score = 0; // Reset the score.
                 begin_level();
+                break; // Prevent the execution of any of the following code.
             } 
 
             if (pad1_new & PAD_LEFT) {
@@ -539,8 +549,7 @@ void main (void) {
             }
 
             // debug:
-            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
-
+            // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
         }
 
@@ -574,7 +583,7 @@ void main (void) {
             pad1_new = get_pad_new(0);
 
             if (pad1_new & PAD_DOWN) {
-                load_title_screen();
+                load_level_selector();
             }
 
         }
@@ -597,11 +606,20 @@ void clear_screen(void) {
 }
 
 // Prints a string to the specified place. (Assumes the characters are correctly placed for ASCII.)
-void put_str(unsigned int adr, const char *str) {
-    vram_adr(adr);
-    while (*str) {
-        vram_put(*str);
-        ++str;
+#define put_str(adr, str) { \
+    address = adr;\
+    temppointer = str;\
+    put_str_sub();\
+}
+// Subroutine for put_str. This sort of "macro that calls a function" 
+// lets us pretend to use function parameters without actually using the (slow) stack.
+void put_str_sub(void) {
+    vram_adr(address);
+    temp0 = *temppointer;
+    while (temp0) {
+        vram_put(temp0);
+        ++temppointer;
+        temp0 = *temppointer;
     }
 }
 
@@ -611,7 +629,7 @@ const char const instruction_string[] = "Press Up to start";
 
 #define MENU_SELECTOR_SPRITE 0x10
 
-void load_title_screen(void) {
+void load_level_selector(void) {
     // Eventually we'll want to make a nicer title screen and vram_unrle it, but for now, a simple one:
     ppu_off();
     clear_screen();
@@ -650,21 +668,24 @@ void load_game_over_screen(void) {
 void load_level_welcome_screen(void) {
     ppu_off();
     clear_screen();
-    
+
+    // Decode the blank welcome screen. Buffer it into the cmap RAM.
     LZG_decode(welcome_screen, cmap);
 
     // Add the level name...
-    // Try centering it:
+    // Try centering it: calculate the text's offset from the left side of the screen.
     AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
     temp0 = strlen(temppointer);
-    temp1 = 16 - (temp0/2);
+    temp1 = 16;
+    temp1 -= temp0 >> 1;
+    // Figure out where the text should be. Note that each row is 32 tiles, so:
+    temp_mutablepointer = (cmap + 256 + 64); // This sets the correct row
+    temp_mutablepointer += temp1; // and then this sets the correct distance from the left of the screen
 
-    temp_mutablepointer = (cmap + 256 + 64);
-    temp_mutablepointer += temp1;
-
+    // Actually copy the text.
     for (temp2 = 0; temp2 < temp0; ++temp2) {
-        //AsmSet1ByteFromZpPtrAtIndexVar(temp3, temppointer, temp2);
-        temp_mutablepointer[temp2] = temppointer[temp2];
+        AsmSet1ByteFromZpPtrAtIndexVar(temp3, temppointer, temp2);
+        AsmSet1ByteAtZpPtrWithOffset(temp_mutablepointer, temp2, temp3);
     }
 
     // Write what we've buffered to cmap into vram. (That WRAM sure is convenient...)
@@ -676,7 +697,7 @@ void load_level_welcome_screen(void) {
     set_prg_bank(METASPRITE_BANK);
     oam_meta_spr(120, 114, valrigard_idle_left);
 
-    // Not going to set the game mode this time because we'll call ppu_wait_nmi (we'll wait a few frames) first.
+    // Not going to set the game mode this time because we'll call ppu_wait_nmi here directly.
     for (temp0 = 0; temp0 < 120; ++temp0) {
         ppu_wait_nmi();
 
@@ -685,7 +706,7 @@ void load_level_welcome_screen(void) {
         pad1_new = get_pad_new(0);
         if (pad1_new) { break; }
     }
-    oam_clear();
+    oam_clear(); // Clear the Valrigard sprite.
 }
 
 void begin_level(void) {
@@ -1044,21 +1065,21 @@ void draw_player(void) {
 }
 
 void draw_score(void) {
-    if (score == 0){
+    if (score == 0){ // Special case. (Haven't thought about optimizing this one away, perhaps I could.)
         oam_spr(232, 20, 0, 3);
         return;
     }
 
-    y = 4;
-    temp0 = 0;
+    y = 4; // 5 digits (indices 0...4)
+    temp0 = 0; // Found a nonzero digit? We want to skip leading zeroes.
     for (x = 200; x <= 232; x+=8) {
-        if (temp0) {
+        if (temp0) { // Already found a nonzero digit.
             oam_spr(x, 20, score_string[y], 3);
-        } else if (score_string[y]) {
-            temp0 = 1;
+        } else if (score_string[y]) { // This is the first nonzero digit.
             oam_spr(x, 20, score_string[y], 3);
+            temp0 = 1; // Mark as having found a nonzero digit.
         }
-        --y;
+        --y; // Next index.
     }
 }
 

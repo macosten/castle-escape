@@ -13,7 +13,7 @@ unsigned char bankBuffer[MAX_BANK_DEPTH];
 // Note: Using banked_call to call a second function from within  
 // another banked_call is safe. This will break if you nest more  
 // than 10 calls deep.
-void banked_call(unsigned char bankId, void (*method)(void));
+void __fastcall__ banked_call(unsigned char bankId, void (*method)(void));
 
 
 // Internal function used by banked_call(), don't call this directly.

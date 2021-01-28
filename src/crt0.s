@@ -302,7 +302,7 @@ detectNTSC:
 
     ; PRG Bank stuff has to be included here.
     .include "mmc1/mmc1_macros.asm"
-    .include "mmc1/bank_helpers.asm"
+    .include "mmc1/bank_helpers.s"
     .include "lib/neslib.s"
     .include "lib/nesdoug.s"
     .include "asm/math.s"
@@ -339,5 +339,5 @@ sounds_data:
 
 
 .segment "CHARS"
-
     .incbin "escape.chr"
+    .incbin "titlescreen.chr"

@@ -35,6 +35,16 @@
 	__asm__("sta %v,%s", pointer, Y);\
 }
 
+// When used, something like
+// temppointer[i] = temp0
+// becomes:
+// AsmSet1ByteAtZpPtrWithOffset(temppointer, i, temp0);
+#define AsmSet1ByteAtZpPtrWithOffset(pointer, offset, variable) {\
+	__asm__("ldy %v", offset);\
+	__asm__("lda %v", variable);\
+	__asm__("sta (%v), %s", pointer, Y);\
+}
+
 // This ensures that a 2-byte copy from an array to a pointer or int takes only a few instructions.
 // This can avoid scenarios in which cc65 will try to save the state of something irrelevant.
 // Don't use this if indexVariable > 127.

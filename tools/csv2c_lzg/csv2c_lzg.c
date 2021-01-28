@@ -36,7 +36,7 @@ int main(int argc, char * argv[]) {
 	for (count = 0; ; ++count) {
 		unsigned char inchar = 0;
 
-		int rval = fscanf(infile, "%hhu,", &inchar); // Parse values one at a time.
+		int rval = fscanf(infile, "%hhu,", &inchar);
 		if (rval != 1) { break; } // Not enough tokens found -- terminate loop.
 
 		sb_push(uncompressed_map, inchar);
