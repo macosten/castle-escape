@@ -414,8 +414,6 @@ void main (void) {
         while (game_mode == MODE_TITLE) { 
             ppu_wait_nmi();
             // set_music_speed, etc
-    
-            
 
             // Just listen for desired inputs.
             pad1 = pad_poll(0); // read the first controller
@@ -495,6 +493,10 @@ void main (void) {
             clear_vram_buffer();
 
             // Reset anything that's supposed to be reset at the start of a frame.
+            conveyor_delta = 0;
+            did_headbonk = 0;
+            RESET_TOUCHING_YELLOW_DOOR();
+            RESET_TOUCHING_SPIKES();
             RESET_SCORE_CHANGED_THIS_FRAME();
 
             // Move the player.
@@ -1203,11 +1205,6 @@ void draw_magic_bolt(void) {
 // MARK: -- Movement.
 
 void movement(void) {
-    
-    // Reset the conveyor delta and headbonk status.
-    conveyor_delta = 0;
-    did_headbonk = 0;
-    RESET_TOUCHING_YELLOW_DOOR();
 
     // Handle X.
     old_x = valrigard.x;
@@ -1336,6 +1333,22 @@ void movement(void) {
 
         if (TOUCHING_YELLOW_DOOR && (pad1 & PAD_UP)) {
             game_mode = MODE_GAME_OVER;
+        }
+    }
+
+    // Check if we touched spikes. 
+    // The same apparent hitbox for spikes should be more forgiving than that of the solid blocks so this should do that.
+    if (TOUCHING_SPIKES) {
+        hitbox.x = high_byte(valrigard.x) + VALRIGARD_SPIKE_HITBOX_WIDTH_OFFSET; 
+        hitbox.y = high_byte(valrigard.y) + VALRIGARD_SPIKE_HITBOX_HEIGHT_OFFSET; 
+        hitbox.width = VALRIGARD_SPIKE_HITBOX_WIDTH;
+        hitbox.height = VALRIGARD_SPIKE_HITBOX_HEIGHT;
+
+        RESET_TOUCHING_SPIKES(); // Clear the spike flag, then try to collide with the background again.
+        bg_collision();
+
+        if (TOUCHING_SPIKES) { // If we're still touching spikes even with a smaller hitbox, we die.
+            SET_STATUS_DEAD();
         }
     }
     
@@ -1527,7 +1540,8 @@ void bg_collision_sub(void) {
     } else if (temp0 & METATILE_CONVEYOR_RIGHT) {
         conveyor_delta = RIGHT_CONVEYOR_DELTA;
     } else if (temp0 & METATILE_SPIKES) {
-        SET_STATUS_DEAD();
+        //SET_STATUS_DEAD();
+        SET_TOUCHING_SPIKES();
     } else if (temp0 & METATILE_RED_DOOR) {
         game_mode = MODE_GAME_OVER;
     }

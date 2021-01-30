@@ -12,6 +12,7 @@
 	.macpack	longbranch
 	.export		_show_title_screen
 	.import		_get_pad_new
+	.import		_get_frame_count
 	.import		_pal_fade_to
 	.import		_pal_bg
 	.import		_pal_spr
@@ -23,6 +24,7 @@
 	.import		_oam_meta_spr_fast_sub
 	.import		_pad_poll
 	.import		_vram_write
+	.importzp	_temp0
 	.importzp	_pad1
 	.importzp	_pad1_new
 	.import		_clear_screen
@@ -35,6 +37,8 @@
 	.export		_grarrl_mouth_spr
 	.export		_valrigard_face_spr
 	.export		_t_bottom_spr
+	.export		_button_press_spr0
+	.export		_button_press_spr1
 
 .segment	"RODATA"
 
@@ -1096,8 +1100,8 @@ _title_palette_spr:
 	.byte	$38
 	.byte	$10
 	.byte	$0F
-	.byte	$0F
-	.byte	$0F
+	.byte	$00
+	.byte	$30
 _grarrl_eye_spr:
 	.byte	$00
 	.byte	$00
@@ -1282,6 +1286,42 @@ _t_bottom_spr:
 	.byte	$1F
 	.byte	$00
 	.byte	$80
+_button_press_spr0:
+	.byte	$00
+	.byte	$00
+	.byte	$3E
+	.byte	$03
+	.byte	$08
+	.byte	$00
+	.byte	$3E
+	.byte	$43
+	.byte	$00
+	.byte	$08
+	.byte	$4E
+	.byte	$03
+	.byte	$08
+	.byte	$08
+	.byte	$4E
+	.byte	$43
+	.byte	$80
+_button_press_spr1:
+	.byte	$00
+	.byte	$00
+	.byte	$3F
+	.byte	$03
+	.byte	$08
+	.byte	$00
+	.byte	$3F
+	.byte	$43
+	.byte	$00
+	.byte	$08
+	.byte	$4F
+	.byte	$03
+	.byte	$08
+	.byte	$08
+	.byte	$4F
+	.byte	$43
+	.byte	$80
 .segment	"RODATA"
 
 ; ---------------------------------------------------------------
@@ -1294,6 +1334,11 @@ _t_bottom_spr:
 
 .segment	"BANK4"
 
+;
+; temp0 = 0; // Show the animated button press if temp0 != 0
+;
+	lda     #$00
+	sta     _temp0
 ;
 ; ppu_off();
 ;
@@ -1340,7 +1385,7 @@ _t_bottom_spr:
 ;
 ; ppu_wait_nmi();
 ;
-L04E9:	jsr     _ppu_wait_nmi
+L050E:	jsr     _ppu_wait_nmi
 ;
 ; oam_clear();
 ;
@@ -1386,10 +1431,55 @@ L04E9:	jsr     _ppu_wait_nmi
 	ldx     #>(_t_bottom_spr)
 	jsr     _oam_meta_spr_fast_sub
 ;
+; if (!get_frame_count()) { // At frame #256...
+;
+	jsr     _get_frame_count
+	tax
+	bne     L053C
+;
+; temp0 = 1;
+;
+	lda     #$01
+	sta     _temp0
+;
+; if (temp0) {
+;
+L053C:	lda     _temp0
+	beq     L056D
+;
+; if (get_frame_count() & 64) {
+;
+	jsr     _get_frame_count
+	and     #$40
+	beq     L056C
+;
+; oam_meta_spr(192, 64, button_press_spr1); // Pressed button
+;
+	lda     #$C0
+	sta     _TEMP+5
+	lda     #$40
+	sta     _TEMP+6
+	lda     #<(_button_press_spr1)
+	ldx     #>(_button_press_spr1)
+;
+; } else {
+;
+	jmp     L056B
+;
+; oam_meta_spr(192, 64, button_press_spr0); // Depressed button
+;
+L056C:	lda     #$C0
+	sta     _TEMP+5
+	lda     #$40
+	sta     _TEMP+6
+	lda     #<(_button_press_spr0)
+	ldx     #>(_button_press_spr0)
+L056B:	jsr     _oam_meta_spr_fast_sub
+;
 ; pad1 = pad_poll(0);
 ;
 	lda     #$00
-	jsr     _pad_poll
+L056D:	jsr     _pad_poll
 	sta     _pad1
 ;
 ; pad1_new = get_pad_new(0);
@@ -1401,7 +1491,7 @@ L04E9:	jsr     _ppu_wait_nmi
 ; if (pad1_new) {
 ;
 	lda     _pad1_new
-	beq     L04E9
+	jeq     L050E
 ;
 ; pal_fade_to(4, 0);
 ;

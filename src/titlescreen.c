@@ -4,6 +4,9 @@
 #include "lib/neslib.h"
 
 // === Extern'd zero page symbols, defined in zeropage.h.
+extern unsigned char temp0;
+#pragma zpsym("temp0") 
+
 extern unsigned char pad1;
 #pragma zpsym("pad1") 
 
@@ -36,7 +39,7 @@ const unsigned char const title_palette_spr[] = {
 	0x10, 0x0f, 0x16, 0x30, // White+Red -- Grarrl Mouth, Val Mouth and bottom of T
 	0x10, 0x0f, 0x16, 0x26, // Red+Red -- Grarrl Eye
 	0x10, 0x0f, 0x16, 0x38, // Red+Yellow -- Valrigard Eye
-	0x10, 0x0f, 0x0f, 0x0f, // ???
+	0x10, 0x0f, 0x00, 0x30, // Greys -- Button
 };
 
 const unsigned char const grarrl_eye_spr[] = {
@@ -99,9 +102,26 @@ const unsigned char const t_bottom_spr[] = {
 	128
 };
 
-extern const unsigned char const welcome_screen[];
+const unsigned char const button_press_spr0[] = {
+	0x00, 0x00, 0x3E, 3,
+	0x08, 0x00, 0x3E, 3|OAM_FLIP_H,
+	0x00, 0x08, 0x4E, 3,
+	0x08, 0x08, 0x4E, 3|OAM_FLIP_H,
+	128
+};
 
+const unsigned char const button_press_spr1[] = {
+	0x00, 0x00, 0x3F, 3,
+	0x08, 0x00, 0x3F, 3|OAM_FLIP_H,
+	0x00, 0x08, 0x4F, 3,
+	0x08, 0x08, 0x4F, 3|OAM_FLIP_H,
+	128
+};
+
+// Note: this darkens the screen, which will need to be returned to normal again with pal_bright(4) 
 void show_title_screen(void) {
+	temp0 = 0; // Show the animated button press if temp0 != 0
+
 	ppu_off();
 	clear_screen();
 
@@ -132,6 +152,19 @@ void show_title_screen(void) {
 		oam_meta_spr(100, 89, valrigard_face_spr);
 		oam_meta_spr(76, 23, t_bottom_spr);
 
+		if (!get_frame_count()) { // At frame #256...
+			temp0 = 1;
+		}
+
+		if (temp0) {
+			if (get_frame_count() & 64) {
+				// Every 64th frame:
+				oam_meta_spr(192, 64, button_press_spr1); // Pressed button
+			} else {
+				oam_meta_spr(192, 64, button_press_spr0); // Depressed button
+			}
+		}
+		
 		// Listen for an input
         pad1 = pad_poll(0);
         pad1_new = get_pad_new(0);

@@ -56,6 +56,10 @@
 #define SET_TOUCHING_YELLOW_DOOR() (player_flags |= 16)
 #define RESET_TOUCHING_YELLOW_DOOR() (player_flags &= ~16)
 
+#define TOUCHING_SPIKES (player_flags & 32)
+#define SET_TOUCHING_SPIKES() (player_flags |= 32)
+#define RESET_TOUCHING_SPIKES() (player_flags &= ~32)
+
 // =====
 // Constants + Macros for game_mode
 
@@ -89,6 +93,12 @@
 // The swinging hitbox should be expanded slightly.
 #define VALRIGARD_SWINGING_WIDTH 15
 #define VALRIGARD_SWINGING_HEIGHT 15
+
+// ...but on the other hand, the dimensions for touching spikes should be more forgiving.
+#define VALRIGARD_SPIKE_HITBOX_WIDTH 9
+#define VALRIGARD_SPIKE_HITBOX_WIDTH_OFFSET ((VALRIGARD_WIDTH - VALRIGARD_SPIKE_HITBOX_WIDTH)/2) // Should just be 1...
+#define VALRIGARD_SPIKE_HITBOX_HEIGHT 11
+#define VALRIGARD_SPIKE_HITBOX_HEIGHT_OFFSET ((VALRIGARD_HEIGHT - VALRIGARD_SPIKE_HITBOX_HEIGHT)/2)
 
 #define METATILE_IS_SOLID(mtid) (metatile_property_lookup_table[mtid] & METATILE_SOLID)
 
