@@ -309,6 +309,18 @@ const unsigned char * const valrigard_dead_sprite_lookup_table[] = {
     valrigard_dead_left, valrigard_dead_right
 };
 
+const unsigned char * const valrigard_flying_sprite_lookup_table[] = {
+    // Animation for flying (reversed): (Left, Right)
+    valrigard_flying_left1, valrigard_flying_right1,
+    valrigard_flying_left1, valrigard_flying_right1,
+    valrigard_flying_left2, valrigard_flying_right2,
+    valrigard_flying_left2, valrigard_flying_right2,
+    valrigard_flying_left1, valrigard_flying_right1,
+    valrigard_idle_left,    valrigard_idle_right,
+    valrigard_flying_left0, valrigard_flying_right0,
+    valrigard_flying_left0, valrigard_flying_right0,
+};
+
 
 // Lookup tables for enemy sprites (not yet animated).
 const unsigned char * const korbat_sprite_lookup_table[] = {
@@ -552,7 +564,7 @@ void main (void) {
 
             // debug:
             // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
-
+            
         }
 
         while (game_mode == MODE_GAME_SHOWING_TEXT) {
@@ -1046,13 +1058,16 @@ void draw_player(void) {
     // if only because this will only be called once per frame while the others may be called
     // more than once per frame.
 
-    if (STATUS_DEAD) {
+    if (STATUS_DEAD) { // Dead
         temp0 = DIRECTION;
         AsmSet2ByteFromPtrAtIndexVar(temppointer, valrigard_dead_sprite_lookup_table, temp0);
-    } else if (IS_SWINGING_SWORD) {
+    } else if (IS_SWINGING_SWORD) { // Swinging sword
         temp0 = (player_frame_timer & 0b11111110) | DIRECTION;
         AsmSet2ByteFromPtrAtIndexVar(temppointer, valrigard_sword_swing_sprite_lookup_table, temp0);
-    } else {
+    } else if (pad1 & PAD_UP && energy > 0) { // Flying
+        temp0 = (player_frame_timer & 0b11111110) | DIRECTION;
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, valrigard_flying_sprite_lookup_table, temp0);
+    } else { // Idle
         temp0 = DIRECTION;
         AsmSet2ByteFromPtrAtIndexVar(temppointer, valrigard_idle_sprite_lookup_table, temp0);
     }
@@ -1288,7 +1303,12 @@ void movement(void) {
         }
         
         energy -= 1;
-        
+
+        // Handle flying animation timer stuff
+        if (!player_frame_timer && !IS_SWINGING_SWORD) {
+            player_frame_timer = 14;
+        }
+
     } else {
         
         valrigard.velocity_y += GRAVITY;
