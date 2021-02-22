@@ -100,9 +100,9 @@ const unsigned char const dbox_downward_cursor_y_offset_table[] = {
 	CURSOR_BASE_Y+0, CURSOR_BASE_Y+1, CURSOR_BASE_Y+2, CURSOR_BASE_Y+1, 
 };
 
-const char empty_string[] = "                            "; // 28 spaces
+const char const empty_string[] = "                            "; // 28 spaces
 
-const void (* dbox_functions[])(void) = {
+const void (* const dbox_functions[])(void) = {
 	dbox_draw_box,
 	dbox_erase_box,
 	dbox_draw_text,
@@ -110,9 +110,10 @@ const void (* dbox_functions[])(void) = {
 	dbox_erase_text,
 };
 
+
 // Activate a dialog box, telling the game that one is rendering.
-void trigger_dialog_box(DialogBoxData const * dboxdata) {
-	active_dboxdata = *dboxdata; // Shallow copy. This means fewer dereferencings, which means smaller code.
+void trigger_dialog_box(void) {
+	//active_dboxdata = *dboxdata; // Shallow copy. This means fewer dereferencings, which means smaller code.
 
 	game_mode = MODE_GAME_SHOWING_TEXT;
 	dbox_status = DBOX_STATUS_DRAWING_BOX;
@@ -287,6 +288,7 @@ void dbox_erase_box(void) {
 
 	if (dbox_y > 0x20) {
 		game_mode = MODE_GAME;
+		dbox_y = 0;
 	}
 
 }

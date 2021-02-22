@@ -15,6 +15,9 @@
 #include "zeropage.h" // Zeropage declarations are here. Probably better to just extern what you need than import this everywhere.
 #include "constants.h" // Constant #defines are here.
 
+#include "player_macros.h"
+#include "enemy_macros.h"
+
 #include "tilemaps/compressed_welcome_screen.h"
 
 #include "asm/score.h" // A sort of stripped-down ultoa().
@@ -77,95 +80,11 @@ I don't really know what the ideal pattern would be, though.
 // Enemy memory.
 Enemies enemies;
 
-// These macros here can probably be optimized a little more 
+// Extra memory used for bosses or the like.
+unsigned char boss_state;
+unsigned char boss_memory[32];
 
-// Set high bit.
-#define ACTIVATE_ENEMY(index) { \
-    TEMP[0] = enemies.flags[index] | 0b10000000;\
-    enemies.flags[index] = TEMP[0];\
-}
-
-// Unset high bit.
-#define DEACTIVATE_ENEMY(index) { \
-    TEMP[0] = enemies.flags[index] & 0b01111111;\
-    enemies.flags[index] = TEMP[0];\
-}
-
-#define IS_ENEMY_ACTIVE(index) (enemies.flags[index] & 0b10000000) // Test if high bit is set.
-
-#define GET_ENEMY_TYPE(index) (enemies.type[x])
-
-#define ENEMY_SET_DIRECTION_LEFT(index) {\
-    TEMP[0] = enemies.flags[index] & 0b11111110;\
-    enemies.flags[index] = TEMP[0];\
-}
-
-#define ENEMY_SET_DIRECTION_RIGHT(index) {\
-    TEMP[0] = enemies.flags[index] | 0b00000001;\
-    enemies.flags[index] = TEMP[0];\
-}
-
-#define ENEMY_FLIP_DIRECTION(index) {\
-    TEMP[0] = enemies.flags[index] ^ 0b00000001;\
-    enemies.flags[index] = TEMP[0];\
-}
-
-#define ENEMY_DIRECTION(index)              (enemies.flags[index] &  0b00000001)
-
-
-// For cannonballs and other 2-axis projectiles.
-#define CANNONBALL_SET_NEG_X(index) {\
-    TEMP[0] = enemies.flags[index] & 0b10111111;\
-    enemies.flags[index] = TEMP[0];\
-}
-
-#define CANNONBALL_SET_POS_X(index) {\
-    TEMP[0] = enemies.flags[index] | 0b01000000;\
-    enemies.flags[index] = TEMP[0];\
-}
-
-#define CANNONBALL_SET_NEG_Y(index) {\
-    TEMP[0] = enemies.flags[index] & 0b11011111;\
-    enemies.flags[index] = TEMP[0];\
-}
-
-#define CANNONBALL_SET_POS_Y(index) {\
-    TEMP[0] = enemies.flags[index] | 0b00100000;\
-    enemies.flags[index] = TEMP[0];\
-}
-
-#define CANNONBALL_X_DIRECTION(index) (enemies.flags[index] & 0b01000000)
-#define CANNONBALL_Y_DIRECTION(index) (enemies.flags[index] & 0b00100000)
-
-// For Splykes.
-
-#define SPLYKE_SET_STANDING_STILL(index) {\
-    TEMP[0] = enemies.flags[index] & 0b11011111;\
-    enemies.flags[index] = TEMP[0];\
-}
-
-#define SPLYKE_SET_MOVING_AROUND(index) {\
-    TEMP[0] = enemies.flags[index] | 0b00100000;\
-    enemies.flags[index] = TEMP[0];\
-}
-
-#define SPLYKE_IS_MOVING_AROUND(index)   (enemies.flags[index] &  0b00100000)
-
-// For enemies that can be slashed for points, but don't die when slashed.
-
-// Not that this makes sense, but...
-#define SLASHABLE_UNKILLABLE_SET_UNSLASHED(index) {\
-    TEMP[0] = enemies.flags[index] & 0b11011111;\
-    enemies.flags[index] = TEMP[0];\
-}
-
-// #define SLASHABLE_UNKILLABLE_SET_SLASHED(index)     (enemies.flags[index] |= 0b00100000)
-#define SLASHABLE_UNKILLABLE_SET_SLASHED(index) {\
-    TEMP[0] = enemies.flags[index] | 0b00100000;\
-    enemies.flags[index] = TEMP[0];\
-}
-
-#define SLASHABLE_UNKILLABLE_IS_SLASHED(index)      (enemies.flags[index] &  0b00100000)
+#define BOSS_DIALOG_ALREADY_GIVEN 128
 
 #pragma bss-name(pop)
 
@@ -251,6 +170,7 @@ void korbat_ai(void);
 void spikeball_ai(void);
 void cannon_ai(void);
 void cannonball_ai(void);
+void cannonball_ai_sub(void);
 void acid_ai(void);
 void acid_drop_ai(void);
 void splyke_ai(void);
@@ -261,6 +181,11 @@ void death_effect_timer_ai(void);
 
 extern void dialog_box_handler(void);
 extern void trigger_dialog_box(DialogBoxData const * dboxdata);
+
+extern void boss_ai_intro(void);
+extern void boss_ai_idle(void);
+extern void boss_ai_ascending(void);
+extern void boss_ai_descending(void);
 
 extern unsigned char const * titlescreen;
 
@@ -380,6 +305,22 @@ const unsigned char * const splyke_death_effect_sprite_lookup_table[] = {
 const unsigned char * const energy_bar_lookup_table[] = {
     energy_bar_0, energy_bar_1, energy_bar_2, energy_bar_3, energy_bar_4, energy_bar_5, energy_bar_6, energy_bar_7,
     energy_bar_8, energy_bar_9, energy_bar_a, energy_bar_b, energy_bar_c, energy_bar_d, energy_bar_e, energy_bar_f
+};
+
+const unsigned char * const boss_body_sprite_idle_lookup_table[] = {
+    boss_body_idle_left0, boss_body_idle_right0,
+};
+
+const unsigned char * const boss_head_sprite_lookup_table[] = {
+    boss_head_eye_open_mouth_closed_left, boss_head_eye_open_mouth_closed_right,
+    boss_head_eye_closed_mouth_closed_left, boss_head_eye_closed_mouth_closed_right,
+};
+
+const unsigned char * const boss_body_sprite_flying_lookup_table[] = {
+    boss_body_flying_left0, boss_body_flying_left0,
+    boss_body_flying_left1, boss_body_flying_left1,
+    boss_body_flying_left2, boss_body_flying_left2,
+    boss_body_flying_left3, boss_body_flying_left3,
 };
 
 const unsigned char const boss_magic_offset_table[] = { 0x80, 0x81, 0x82 };
@@ -564,7 +505,7 @@ void main (void) {
 
             // debug:
             // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
-            
+
         }
 
         while (game_mode == MODE_GAME_SHOWING_TEXT) {
@@ -753,15 +694,18 @@ void begin_level(void) {
     tile_clear_front = 0;
     tile_clear_back = 0;
 
+    // Reset a few variables related to the player.
+    player_flags = 0; 
+    scroll_count = 0; 
+
+    // Reset boss flags.
+    boss_state = 0;
+
     // Turn the PPU back on.
     ppu_on_all();
 }
 
 void load_level_new(void) {
-    // Reset a few variables related to the player
-    player_flags = 0; 
-    scroll_count = 0; 
-
     nt_max = level_nt_length[level_index];
     nt_current = valrigard_starting_nt[level_index];
     high_byte(scroll_y) = nt_current; // The high byte of scroll_y is the nametable we're currently in (0-255).
@@ -866,13 +810,14 @@ void load_level_new(void) {
             ++x;
             enemies.type[x] = ENEMY_CANNONBALL;
         } else if (temp1 == 5) { // ENEMY_ACIDPOOL
-            // Load in the next enemy as an acid drop.
-            ++x;
-            enemies.type[x] = ENEMY_ACIDDROP;
             // extra[x] for this enemy should be a number of frames to wait between acid drops.
             // This varied from drop to drop in the original so I'll make it somewhat random.
             temp2 = rand8() | 0b10000000;
             enemies.extra[x] = temp2;
+            // Make room for the next enemy to be an acid drop.
+            ++x;
+        } else if (temp1 == 8) { // ENEMY_BOSS
+            x += 3; // Make room for magic bolts.
         }
 
         ++y; // Next byte.
@@ -955,7 +900,7 @@ void calculate_shuffle_array(void) {
 }
 
 // A lookup table for enemy draw functions.
-const void (* draw_func_pointers[])(void) = {
+const void (* const draw_func_pointers[])(void) = {
     draw_korbat,      // 0 - ENEMY_NONE;
     draw_korbat,      // 1 - ENEMY_KORBAT;
     draw_grarrl,      // 2 - ENEMY_GRARRL;
@@ -1185,9 +1130,22 @@ void draw_sun(void) {
 }
 
 void draw_boss(void) {
-    // Dummied out.
-    draw_magic_bolt();
-    //oam_spr(temp_x, temp_y, 0x10, 3);
+    // extra2 is the animation timer for this enemy as timer[] is used for timing and other logic.
+
+    // IDLE --
+    temp4 = ENEMY_DIRECTION(x);
+
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_head_sprite_lookup_table, temp4);
+    oam_meta_spr(temp_x, temp_y, temppointer);
+
+    // FLYING --
+    temp3 = enemies.extra2[x];
+    temp3 >>= 2;
+    temp3 &= 0b110; // Mask the frame number.
+    temp4 = temp3 | ENEMY_DIRECTION(x);
+
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_body_sprite_flying_lookup_table, temp4);
+    oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
 void draw_purple_death_effect(void) {
@@ -1241,7 +1199,6 @@ void movement(void) {
     }
     // Right
     else if (pad1 & PAD_RIGHT){
-        // DIRECTION = RIGHT;
         SET_DIRECTION_RIGHT();
         
         if (valrigard.x >= 0xf000) {  // Also changed by 1 from nesdoug's example because Valrigard's hitbox is narrower by 1 pixel on both sides
@@ -1808,7 +1765,7 @@ const unsigned char const enemy_hitbox_x_offset_lookup_table[] = {
     0,
 };
 
-const void (* collision_functions[])(void) = {
+const void (* const collision_functions[])(void) = {
     collision_with_inert,                   // None
     collision_with_killable_slashable,      // Korbat
     collision_with_killable_slashable,      // Grarrl
@@ -1987,7 +1944,7 @@ void collision_with_boss(void) {
 }
 
 // A lookup table for enemy AI functions.
-const void (* ai_pointers[])(void) = {
+const void (* const ai_pointers[])(void) = {
     korbat_ai,          // 0 - ENEMY_NONE;
     korbat_ai,          // 1 - ENEMY_KORBAT;
     spikeball_ai,       // 2 - ENEMY_GRARRL;
@@ -2357,6 +2314,14 @@ void cannonball_ai(void) {
     temp_x = x-1;
     temp1 = enemies.extra[temp_x];
     
+    cannonball_ai_sub();
+}
+
+void cannonball_ai_sub(void) {
+    // Any projectile-like object will have its AI here.
+
+    // temp1 should be the correct brads value.
+
     // add/sub this to x
     temp2 = cos_lookup(temp1);
 
@@ -2488,7 +2453,6 @@ void cannonball_ai(void) {
 
         // It's possible we want to play a sound effect or animation here.
     }
-
 }
 
 void acid_ai(void) {
@@ -2537,7 +2501,6 @@ void acid_ai(void) {
     }
 
 }
-
 
 void splyke_ai(void) {
     // Two things happen somewhat randomly when it comes to this enemy:
@@ -2637,17 +2600,47 @@ void splyke_ai(void) {
 
 }
 
+const void (* const boss_ai_functions[])(void) = { // defined in boss_ai.h
+    boss_ai_intro,
+    boss_ai_idle,
+    boss_ai_ascending,
+    boss_ai_descending,
+};
+
 void boss_ai(void) {
 
-    // extra[x] will be a bunch of flags. 
-    // extra2[x] can be a target of some sort.
-    if (enemies.extra[x] == 0) {
-        SET_DIRECTION_RIGHT();
-        enemies.extra[x] = 128;
-        trigger_dialog_box(&boss_dialog);
-    } else {
+    // extra[x] will be a logic timer target. 
+    // extra2[x] will be an animation timer.
+    // timer[x] will be a logic/frame timer.
+    // extra memory is available for this enemy at boss_memory.
 
+    // Trigger the dialog box if it hasn't been triggered yet.
+
+    // The Kau Wizard should have multiple (potential) states:
+    // BOSS_STATE_DESCENDING -- Flying to the ground (probably after shooting fireballs).
+    // BOSS_STATE_IDLE -- Idle and vulnerable -- only vulnerable in this state.
+    // BOSS_STATE_ASCENDING -- Flying upwards. Shoots fireballs in this mode.
+
+    // Always do the following:
+
+    if (high_byte(valrigard.x) > enemies.x[x]) {
+        ENEMY_SET_DIRECTION_RIGHT(x);
+    } else {
+        ENEMY_SET_DIRECTION_LEFT(x);
     }
+
+    // Timers will need to exist for both invincibility frames and animation frames.
+
+    temp0 = enemies.timer[x];
+    ++temp0;
+    enemies.timer[x] = temp0;
+
+    temp0 = enemies.extra2[x];
+    ++temp0;
+    enemies.extra2[x] = temp0;
+
+    // Now figure out the correct dispatch:
+    AsmCallFunctionAtPtrOffsetByIndexVar(boss_ai_functions, boss_state);
 
 }
 

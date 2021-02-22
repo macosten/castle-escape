@@ -4,7 +4,7 @@
 #include "structs.h"
 
 // Activate a dialog box, telling the game that one is rendering.
-void trigger_dialog_box(DialogBoxData const * dboxdata);
+void trigger_dialog_box(void);
 
 // Called in the main game loop if a dialog box is active.
 void dbox_handler(void);

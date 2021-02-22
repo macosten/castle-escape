@@ -53,15 +53,6 @@
 	.export		_dbox_erase_text_y_values
 	.export		_dbox_erase_text_lengths
 
-.segment	"DATA"
-
-_dbox_functions:
-	.addr	_dbox_draw_box
-	.addr	_dbox_erase_box
-	.addr	_dbox_draw_text
-	.addr	_dbox_await_input
-	.addr	_dbox_erase_text
-
 .segment	"RODATA"
 
 _dbox_tiles:
@@ -137,6 +128,12 @@ _dbox_downward_cursor_y_offset_table:
 _empty_string:
 	.byte	$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
 	.byte	$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$00
+_dbox_functions:
+	.addr	_dbox_draw_box
+	.addr	_dbox_erase_box
+	.addr	_dbox_draw_text
+	.addr	_dbox_await_input
+	.addr	_dbox_erase_text
 _dbox_erase_text_x_values:
 	.byte	$02
 	.byte	$02
@@ -171,7 +168,7 @@ _dbox_current_string:
 	.res	2,$00
 
 ; ---------------------------------------------------------------
-; void __near__ trigger_dialog_box (__near__ const struct DialogBoxData_t *)
+; void __near__ trigger_dialog_box (void)
 ; ---------------------------------------------------------------
 
 .segment	"CODE"
@@ -180,21 +177,6 @@ _dbox_current_string:
 
 .segment	"CODE"
 
-;
-; void trigger_dialog_box(DialogBoxData const * dboxdata) {
-;
-	jsr     pushax
-;
-; active_dboxdata = *dboxdata; // Shallow copy. This means fewer dereferencings, which means smaller code.
-;
-	lda     #<(_active_dboxdata)
-	ldx     #>(_active_dboxdata)
-	jsr     pushax
-	ldy     #$05
-	jsr     pushwysp
-	ldx     #$00
-	lda     #$05
-	jsr     _memcpy
 ;
 ; game_mode = MODE_GAME_SHOWING_TEXT;
 ;
@@ -233,7 +215,7 @@ _dbox_current_string:
 ;
 ; }
 ;
-	jmp     incsp2
+	rts
 
 .endproc
 
@@ -290,7 +272,7 @@ _dbox_current_string:
 ;
 L0160:	lda     _dbox_y
 	cmp     #$21
-	bcc     L0097
+	bcc     L0095
 ;
 ; dbox_status = DBOX_STATUS_DRAWING_TEXT;
 ;
@@ -308,7 +290,7 @@ L0160:	lda     _dbox_y
 ;
 ; }
 ;
-L0097:	rts
+L0095:	rts
 
 .endproc
 
@@ -421,7 +403,7 @@ L0168:	sta     _address+1
 ;
 	lda     _dbox_x
 	cmp     #$1E
-	bcc     L00C8
+	bcc     L00C6
 ;
 ; dbox_x = TEXT_START_X;
 ;
@@ -434,7 +416,7 @@ L016A:	lda     #$02
 ;
 ; }
 ;
-L00C8:	rts
+L00C6:	rts
 
 .endproc
 
@@ -457,7 +439,7 @@ L00C8:	rts
 ; if (pad1_new) {
 ;
 	lda     _pad1_new
-	beq     L00D0
+	beq     L00CE
 ;
 ; ++dbox_string_index;
 ;
@@ -531,7 +513,7 @@ L016E:	adc     _active_dboxdata+2
 ;
 ; temp1 = dbox_y >> 3;
 ;
-L00D0:	lda     _dbox_y
+L00CE:	lda     _dbox_y
 	lsr     a
 	lsr     a
 	lsr     a
@@ -632,16 +614,21 @@ L016D:	sta     _dbox_y
 ;
 L0170:	lda     _dbox_y
 	cmp     #$21
-	bcc     L015C
+	bcc     L015A
 ;
 ; game_mode = MODE_GAME;
 ;
 	lda     #$01
 	sta     _game_mode
 ;
+; dbox_y = 0;
+;
+	lda     #$00
+	sta     _dbox_y
+;
 ; }
 ;
-L015C:	rts
+L015A:	rts
 
 .endproc
 
@@ -712,7 +699,7 @@ L0171:	lda     _temp0
 ;
 L0172:	lda     _dbox_erase_text_frame
 	cmp     #$04
-	bne     L0130
+	bne     L012E
 ;
 ; dbox_status = DBOX_STATUS_DRAWING_TEXT;
 ;
@@ -730,7 +717,7 @@ L0172:	lda     _dbox_erase_text_frame
 ;
 ; }
 ;
-L0130:	rts
+L012E:	rts
 
 .endproc
 

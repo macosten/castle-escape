@@ -31,6 +31,10 @@ const char * const boss_dialog_strings[] = {
 	"We'll see about that, old\nman.",
 };
 
+const char * const defeat_dialog_strings[] = {
+	"Test."
+};
+
 const unsigned char * const boss_dialog_portrait_sprites[] = {
 	NULL, NULL, NULL, NULL, NULL
 };
@@ -39,6 +43,12 @@ const DialogBoxData boss_dialog = {
 	boss_dialog_portrait_sprites,
 	boss_dialog_strings,
 	5
+};
+
+const DialogBoxData defeat_dialog = {
+	NULL,
+	boss_dialog_strings,
+	1
 };
 
 #pragma rodata-name(pop)
