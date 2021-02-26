@@ -131,7 +131,10 @@ unsigned char tile_clear_front;
 unsigned char tile_clear_back;
 
 // If nonzero, then valrigard should be jerked down (+Y) a bit this frame.
-unsigned char did_headbonk;
+unsigned char did_headbonk; // possible that this should be a bit inside player_flags.
+
+// If nonzero, then don't perform certain logic in the BG collision subroutines.
+unsigned char enemy_is_using_bg_collision;
 
 // ~?? zp bytes left? (see ZP_LAST in labels.txt)
 

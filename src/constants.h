@@ -1,25 +1,6 @@
 #ifndef constants_h
 #define constants_h
 
-// From chriscpp's nes-starter-kit -- not sure if I actually want to use these macros yet.
-// NOTE: If you call this in a .c file and expose it, be sure to mark it with `ZEROPAGE_EXTERN` there.
-#define STR_HELPER(x) #x
-#define STR(x) STR_HELPER(x)
-
-// Mark a variable referenced in a header file as being a zeropage symbol.
-// Any time you set a variable as a ZEROPAGE_DEF, you will want to also update any header files referencing it
-// with this function.
-// (Usage; ZEROPAGE_EXTERN(type, variableName); eg ZEROPAGE_EXTERN(int, myInt))
-#define ZEROPAGE_EXTERN(defa, defb) extern defa defb; _Pragma("zpsym (\"" STR(defb) "\")")
-#define ZEROPAGE_ARRAY_EXTERN(defa, defb, defArr) extern defa defb[defArr]; _Pragma("zpsym (\"" STR(defb) "\")")
-
-// Mark a variable referened in a header file as being SRAM.
-// Technically this just creates a regular extern, and you could avoid using this symbol. It is used only for
-// consistency with ZEROPAGE variables, to make the source easier to follow.
-#define SRAM_EXTERN(defa, defb) extern defa defb;
-#define SRAM_ARRAY_EXTERN(defa, defb, defArr) extern defa defb[defArr];
-
-
 #define SPEED 0x150
 
 #define ACCEL 0x20
@@ -47,7 +28,6 @@
 #define MAX_ENERGY 0x70 // 144: 9 (rough number of tiles of flight height with no tapping) * 16(height of [meta]tile in pixels)?
 // Or should this be the number of frames which we should be able to fly for?
 
-
 #define TITLE_SCREEN_LENGTH 120 // ~2 seconds on NTSC machines.
 
 // ===
@@ -67,8 +47,6 @@
 #define VALRIGARD_SPIKE_HITBOX_WIDTH_OFFSET ((VALRIGARD_WIDTH - VALRIGARD_SPIKE_HITBOX_WIDTH)/2) // Should just be 1...
 #define VALRIGARD_SPIKE_HITBOX_HEIGHT 11
 #define VALRIGARD_SPIKE_HITBOX_HEIGHT_OFFSET ((VALRIGARD_HEIGHT - VALRIGARD_SPIKE_HITBOX_HEIGHT)/2)
-
-#define METATILE_IS_SOLID(mtid) (metatile_property_lookup_table[mtid] & METATILE_SOLID)
 
 // ===
 // Constants for conveyor_delta. Used when standing on a conveyor belt tile.

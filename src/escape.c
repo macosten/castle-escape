@@ -179,6 +179,8 @@ void boss_ai(void);
 
 void death_effect_timer_ai(void);
 
+void fire_at_target(void);
+
 extern void dialog_box_handler(void);
 extern void trigger_dialog_box(DialogBoxData const * dboxdata);
 
@@ -317,11 +319,18 @@ const unsigned char * const boss_head_sprite_lookup_table[] = {
 };
 
 const unsigned char * const boss_body_sprite_flying_lookup_table[] = {
-    boss_body_flying_left0, boss_body_flying_left0,
-    boss_body_flying_left1, boss_body_flying_left1,
-    boss_body_flying_left2, boss_body_flying_left2,
-    boss_body_flying_left3, boss_body_flying_left3,
+    boss_body_flying_left0, boss_body_flying_right0,
+    boss_body_flying_left1, boss_body_flying_right1,
+    boss_body_flying_left2, boss_body_flying_right2,
+    boss_body_flying_left3, boss_body_flying_right3,
 };
+
+/*const unsigned char * const * const boss_body_sprite_state_meta_lookup_table[] = {
+    boss_body_sprite_flying_lookup_table, // Into
+    boss_body_sprite_idle_lookup_table, // BOSS_STATE_IDLE
+    boss_body_sprite_flying_lookup_table, // BOSS_STATE_ASCENDING
+    boss_body_sprite_flying_lookup_table, // BOSS_STATE_DESCENDING
+};*/ // Alternate solution to problem currently using branch logic
 
 const unsigned char const boss_magic_offset_table[] = { 0x80, 0x81, 0x82 };
 
@@ -504,7 +513,7 @@ void main (void) {
             }
 
             // debug:
-            // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            //gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
         }
 
@@ -1138,13 +1147,20 @@ void draw_boss(void) {
     AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_head_sprite_lookup_table, temp4);
     oam_meta_spr(temp_x, temp_y, temppointer);
 
-    // FLYING --
-    temp3 = enemies.extra2[x];
-    temp3 >>= 2;
-    temp3 &= 0b110; // Mask the frame number.
-    temp4 = temp3 | ENEMY_DIRECTION(x);
+    if (boss_state == 1) { // BOSS_STATE_IDLE
+        // Idle
+        temp4 = ENEMY_DIRECTION(x);
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_body_sprite_idle_lookup_table, temp4);
+    } else { 
+        // Flying
+        temp3 = enemies.extra2[x];
+        temp3 >>= 2;
+        temp3 &= 0b110; // Mask the frame number.
+        temp4 = temp3 | ENEMY_DIRECTION(x);
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_body_sprite_flying_lookup_table, temp4);
+    }
 
-    AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_body_sprite_flying_lookup_table, temp4);
+    
     oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
@@ -1365,6 +1381,8 @@ void swing_sword(void) {
 }
 
 void bg_collision(void){
+    // New: temp0 is a parameter -- if temp0 == 0, then an enemy/NPC is using this routine, 
+    // so not all logic should be executed.
 
     // note, !0 = collision
     // sprite collision with backgrounds
@@ -1407,7 +1425,7 @@ void bg_collision(void){
     if(collision){ // find a corner in the collision map
         ++collision_L;
         ++collision_U;
-        bg_collision_sub_collision_u();
+        if (!enemy_is_using_bg_collision) { bg_collision_sub_collision_u(); }
     }
 
     // Upper right...
@@ -1422,11 +1440,11 @@ void bg_collision(void){
     if(collision){ // find a corner in the collision map
         ++collision_R;
         ++collision_U;
-        bg_collision_sub_collision_u();
+        if (!enemy_is_using_bg_collision) { bg_collision_sub_collision_u(); }
     }
     
     // Now for the bottom.
-    add_scroll_y(temp6, VALRIGARD_HEIGHT, temp6);
+    add_scroll_y(temp6, hitbox.height, temp6);
     nt_current = high_byte(temp6);
     // This value of nt_current is correct for the bottom of the player.
     // Notice that it *could* be different.
@@ -1482,7 +1500,7 @@ void bg_collision_sub(void) {
     collision = METATILE_IS_SOLID(temp4);
 
     // If the collision is with a tile that is solid but has no other properties, return.
-    if (temp0 == METATILE_NO_EFFECT || temp0 == METATILE_SOLID) { return; }
+    if (temp0 == METATILE_NO_EFFECT || temp0 == METATILE_SOLID || enemy_is_using_bg_collision) { return; }
 
     // No? We must have touched a special tile, then.
     if (temp0 & METATILE_YELLOW_DOOR) {
@@ -1675,40 +1693,6 @@ void check_spr_objects(void) {
                 enemies.y[x] = temp0;
             }
         }
-        ++x;
-
-        if (GET_ENEMY_TYPE(x)) {
-            high_byte(temp5) = enemies.nt[x];
-            low_byte(temp5) = enemies.actual_y[x];
-            temp5 -= scroll_y;
-            if (high_byte(temp5)) {
-                DEACTIVATE_ENEMY(x);
-                continue;
-            }
-            ACTIVATE_ENEMY(x);
-            enemies.y[x] = low_byte(temp5);
-            if (nt_current != enemies.nt[x]) { 
-                temp0 = enemies.y[x] - 16;
-                enemies.y[x] = temp0;
-            }
-        }
-        ++x;
-
-        if (GET_ENEMY_TYPE(x)) {
-            high_byte(temp5) = enemies.nt[x];
-            low_byte(temp5) = enemies.actual_y[x];
-            temp5 -= scroll_y;
-            if (high_byte(temp5)) {
-                DEACTIVATE_ENEMY(x);
-                continue;
-            }
-            ACTIVATE_ENEMY(x);
-            enemies.y[x] = low_byte(temp5);
-            if (nt_current != enemies.nt[x]) { 
-                temp0 = enemies.y[x] - 16;
-                enemies.y[x] = temp0;
-            }
-        }
 
     }
 }
@@ -1842,46 +1826,6 @@ void sprite_collisions(void) {
                 AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
             }
         }
-        ++x;
-        if(IS_ENEMY_ACTIVE(x)) {
-            temp1 = GET_ENEMY_TYPE(x);
-
-            // Determine the enemy hitbox size.
-            hitbox2.width = enemy_hitbox_width_lookup_table[temp1];
-            if (!hitbox2.width) { continue; } // Continue if width of the hitbox is 0.
-
-            hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
-            
-            hitbox2.x = enemies.x[x];
-            hitbox2.x += enemy_hitbox_x_offset_lookup_table[temp1];
-
-            hitbox2.y = enemies.y[x];
-
-            check_collision(temp0, hitbox, hitbox2);
-            if (temp0) {
-                AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
-            }
-        }
-        ++x;
-        if(IS_ENEMY_ACTIVE(x)) {
-            temp1 = GET_ENEMY_TYPE(x);
-
-            // Determine the enemy hitbox size.
-            hitbox2.width = enemy_hitbox_width_lookup_table[temp1];
-            if (!hitbox2.width) { continue; } // Continue if width of the hitbox is 0.
-
-            hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
-            
-            hitbox2.x = enemies.x[x];
-            hitbox2.x += enemy_hitbox_x_offset_lookup_table[temp1];
-
-            hitbox2.y = enemies.y[x];
-
-            check_collision(temp0, hitbox, hitbox2);
-            if (temp0) {
-                AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
-            }
-        }
     }
 
 }
@@ -1971,16 +1915,6 @@ void enemy_movement(void) {
             temp1 = GET_ENEMY_TYPE(x);
             // An assembly macro (defined in asm/macros.h) is used here to ensure that this is efficient.
             // Do we want to delete (set type to ENEMY_NONE) any projectiles (CANNONBALL/ACIDDROP) that go offscreen?
-            AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
-        }
-        ++x;
-        if (IS_ENEMY_ACTIVE(x)) {
-            temp1 = GET_ENEMY_TYPE(x);
-            AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
-        }
-        ++x;
-        if (IS_ENEMY_ACTIVE(x)) {
-            temp1 = GET_ENEMY_TYPE(x);
             AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
         }
         ++x;
@@ -2209,64 +2143,27 @@ void cannon_ai(void) {
 
         // If the high nibble is 0...
         if (!(enemies.extra2[x] & 0xf0)) {
-            // Calculate the dydx between my center and Valrigard's center.
+            
+            // target center x and y
             temp0 = high_byte(valrigard.x) + (VALRIGARD_WIDTH/2);
             temp1 = high_byte(valrigard.y) + 4; // Tweaked for maximum accuracy - may need to be tweaked more.
 
+            // source center x and y
             temp2 = enemies.x[x] + 6; // ENEMY_WIDTH/2
             temp3 = enemies.y[x] + 6; // ENEMY_HEIGHT/2
 
-            // Let's figure out if Valrigard to our left or right.
-            // temp4 will be used as an index for cannon_sprite_quadrant_lookup_table.
-
-            temp4 = 0;
-
-            if (temp0 < temp2) {
-                // if Valrigard's center X is less, then the cannonball will go in the negative X direction.
-                CANNONBALL_SET_NEG_X(temp_x);
-            } else {
-                // ...otherwise, it'll go in the positive x direction.
-                CANNONBALL_SET_POS_X(temp_x);
-                ++temp4;
-            }
-
-            // ...and now we'll figure out if Valrigard is above or below us.
-
-            if (temp1 < temp3) {
-                // Above - go in -Y
-                CANNONBALL_SET_NEG_Y(temp_x);
-            } else {
-                // Below - go in +Y
-                CANNONBALL_SET_POS_Y(temp_x);
-                temp4 += 0b10;
-            }
-
-            // If this is too much work to do in one frame, we *could* use
-            // enemies.timer[x] to ensure the rest of this happens next frame.
-
-            // dx
-            temp0 = abs_subtract(temp0, temp2);
-            if ((temp0 & 0x0f) > 8) { temp0 += 0x10; } // Round metatile x up.
-            // This increases the accuracy somewhat.
-
-            // dy
-            temp1 = abs_subtract(temp1, temp3);
-
-            // bitpack the dydx (thus converting it into metatile coords)
-            // Then look it up in brads_lookup.
-            coordinates = (temp1 & 0xf0) + (temp0 >> 4);
-
-            temp2 = brads_lookup(coordinates);
-
-            enemies.extra[x] = temp2;
+            // values of temp0 through temp3 are pseudo-parameters for this.
+            fire_at_target();
+            // values of temp0 and temp4 are pseudo-returns for this.
+            enemies.extra[x] = temp0;
 
             // temppointer will be a pointer to the correct sprite lookup table.
             AsmSet2ByteFromPtrAtIndexVar(temppointer, cannon_sprite_quadrant_lookup_table, temp4);
 
             // Within the sprite lookup table, figure out the sprite.
-            if (temp2 > 0x30) { // over 0x30 brads
+            if (temp0 > 0x30) { // over 0x30 brads
                 temp3 = temppointer[2]; // y-axis aligned
-            } else if (temp2 > 0x10) { // over 0x10 brads
+            } else if (temp0 > 0x10) { // over 0x10 brads
                 temp3 = temppointer[1]; // diagonal
             } else { // 0x10 or fewer brads
                 temp3 = temppointer[0]; // x-axis aligned
@@ -2301,6 +2198,64 @@ void cannon_ai(void) {
 
 }
 
+void fire_at_target(void) {
+    // Aim a cannonball or other projectile at Valrigard.
+
+    // Note that his function does have parameters and a return value, but to avoid using the stack, 
+    // they're passed in via the temp variables:
+    //
+    // temp_x: the index of the projectile/thing we're moving in the enemy database.
+    // temp0, temp1: the target's center x and y values, respectively (i.e the exact pixel we want to aim enemy #temp_x at)
+    // temp2, temp3: the source's center x and y values, respectively
+
+    // This function *does* actually have return values, but to avoid using the stack,
+    // they're passed out via the temp variables:
+    //
+    // temp0: primary return -- the brads_lookup(coordinates) results.
+    // temp4: used as an index for cannon_sprite_quadrant_lookup_table 
+    // (any other future uses of it will) also make use of this in a similar way)
+
+    temp4 = 0;
+
+    // Let's figure out if our target is to our left or right.
+    if (temp0 < temp2) {
+        // if Valrigard's center X is less, then the cannonball will go in the negative X direction.
+        CANNONBALL_SET_NEG_X(temp_x);
+    } else {
+        // ...otherwise, it'll go in the positive x direction.
+        CANNONBALL_SET_POS_X(temp_x);
+        ++temp4;
+    }
+
+    // ...and now we'll figure out if Valrigard is above or below us.
+
+    if (temp1 < temp3) {
+        // Above - go in -Y
+        CANNONBALL_SET_NEG_Y(temp_x);
+    } else {
+        // Below - go in +Y
+        CANNONBALL_SET_POS_Y(temp_x);
+        temp4 += 0b10;
+    }
+
+    // If this is too much work to do in one frame, we *could* use
+    // enemies.timer[x] to ensure the rest of this happens next frame.
+
+    // dx
+    temp0 = abs_subtract(temp0, temp2);
+    if ((temp0 & 0x0f) > 8) { temp0 += 0x10; } // Round metatile x up.
+    // This increases the accuracy somewhat.
+
+    // dy
+    temp1 = abs_subtract(temp1, temp3);
+
+    // bitpack the dydx (thus converting it into metatile coords)
+    // Then look it up in brads_lookup.
+    coordinates = (temp1 & 0xf0) + (temp0 >> 4);
+
+    temp0 = brads_lookup(coordinates);
+}
+
 void cannonball_ai(void) {
     // Continue moving forward in the direction fired. If I hit a solid metatile, die.
 
@@ -2310,11 +2265,27 @@ void cannonball_ai(void) {
     // extra[x] should be the sub_x.
     // extra2[x] should be the sub_y.
 
+    // To start, we need to find the correct brads (binary radians) value for this cannonball.
     // brads
     temp_x = x-1;
     temp1 = enemies.extra[temp_x];
     
+    // The middle of this routine is shared between multiple enemies that move in diagonal lines.
     cannonball_ai_sub();
+
+    // The end of this routine will determine the behavior of this projectile when it collides with a solid tile.
+    // In this case, we just want it to disappear.
+    if (METATILE_IS_SOLID(collision)) {
+        // Clear the enemy type and flags. (Both must be cleared.)
+        enemies.type[x] = ENEMY_NONE;
+        enemies.flags[x] = 0;
+
+        // Note: These will turn into Spikeballs (with id 0, because that's the AI+Sprite combo I chose for id 0 at the moment)
+        // on impact if the flags byte is not set to zero.
+        // This could be used to make a new type of cannon/ball if we're really looking to expand what we're doing.
+
+        // It's possible we want to play a sound effect or animation here.
+    }
 }
 
 void cannonball_ai_sub(void) {
@@ -2329,11 +2300,6 @@ void cannonball_ai_sub(void) {
     temp3 = sin_lookup(temp1);
 
     // Among enemies, only cannonballs will really have sub_x and sub_y.
-
-    // (It's possible I'm prematurely optimizing for RAM space. Not sure.)
-    // (If there's enough space, perhaps a sub_x and a sub_y array are appropriate
-    // as additional properties of "enemies" - but at the same time, I've only got
-    // 2k of RAM in total...)
 
     // Since there will only ever be a maximum of MAX_ENEMIES/2 cannonballs onscreen
     // at once (as for each cannonball there must also be a cannon), 
@@ -2429,6 +2395,7 @@ void cannonball_ai_sub(void) {
     // The y value we're looking at is in low_byte(temp5).
     // The x value we're looking at is in temp1.
 
+    // (don't change temp1 and temp5 after this in this subroutine, these might be useful assumptions later.)
     coordinates = (temp1 >> 4) + (low_byte(temp5) & 0xf0);
 
     // Check for a collision in the center.
@@ -2440,19 +2407,6 @@ void cannonball_ai_sub(void) {
     //collision = temppointer[coordinates];
     AsmSet1ByteFromZpPtrAtIndexVar(collision, temppointer, coordinates);
 
-    if (METATILE_IS_SOLID(collision)) {
-        // Clear the lower nibble, then return.
-
-        // Clear the enemy type and flags. (Both are necessary.)
-        enemies.type[x] = ENEMY_NONE;
-        enemies.flags[x] = 0; 
-
-        // Note: These will turn into Spikeballs (with id 0, because that's the AI+Sprite combo I chose for id 0 at the moment)
-        // on impact if the flags byte is not set to zero.
-        // This could be used to make a new type of cannon if we're really looking to expand what we're doing.
-
-        // It's possible we want to play a sound effect or animation here.
-    }
 }
 
 void acid_ai(void) {
@@ -2631,17 +2585,17 @@ void boss_ai(void) {
 
     // Timers will need to exist for both invincibility frames and animation frames.
 
-    temp0 = enemies.timer[x];
-    ++temp0;
-    enemies.timer[x] = temp0;
-
     temp0 = enemies.extra2[x];
     ++temp0;
     enemies.extra2[x] = temp0;
 
+    temp0 = enemies.timer[x];
+    ++temp0;
+    enemies.timer[x] = temp0;
+
     // Now figure out the correct dispatch:
     AsmCallFunctionAtPtrOffsetByIndexVar(boss_ai_functions, boss_state);
-
+    // temp0 will be pre-initialized with the new value of enemies.timer[x] so let's use that.
 }
 
 void death_effect_timer_ai(void) {
