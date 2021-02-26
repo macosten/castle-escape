@@ -26,11 +26,11 @@ Automatic generation of FCEUX symbols requires python3, but the build should sti
 
 ## Future Challenges/Worries:
 
-* Speed. cc65 isn't terrible, but it's not always the most performant. Some functions may be more performant if I compile them in an alternate compiler, or if I manually optimize them.
-* Cannons in particular feel like they'll be tricky to implement fully.
-* Stars/Collectables don't always disappear immediately when collected. I suspect this is because I'm missing something small/fundamental, but I haven't figured out what it is yet.
+* Speed. cc65 isn't terrible, but it's not always the most performant. Some functions may be more performant if I compile them in an alternate compiler, or if I manually optimize them. While I've gotten
+* Music. I have to learn Famitracker, and probably also come up with appropriate music myself.
 
 ## Thanks to...
 
 * nesdoug (For the documentation!)
 * rainwarrior (For originally writing `fceux_symbols.py`)
+* Tuï (Some SFX have been adapted from their work)
