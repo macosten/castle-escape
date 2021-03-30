@@ -123,7 +123,7 @@ void draw_sun(void);
 void draw_boss(void);
 void draw_purple_death_effect(void);
 void draw_splyke_death_effect(void);
-void draw_magic_bolt(void);
+void draw_boss_fireball(void);
 
 void draw_score(void);
 void draw_energy(void);
@@ -176,6 +176,7 @@ void acid_drop_ai(void);
 void splyke_ai(void);
 void sun_ai(void);
 void boss_ai(void);
+void boss_fireball_ai(void);
 
 void death_effect_timer_ai(void);
 
@@ -826,7 +827,12 @@ void load_level_new(void) {
             // Make room for the next enemy to be an acid drop.
             ++x;
         } else if (temp1 == 8) { // ENEMY_BOSS
-            x += 3; // Make room for magic bolts.
+            ++x; // += 3; // Make room for magic bolts.
+            enemies.type[x] = ENEMY_NONE;
+            ++x;
+            enemies.type[x] = ENEMY_NONE;
+            ++x;
+            enemies.type[x] = ENEMY_NONE;
         }
 
         ++y; // Next byte.
@@ -921,7 +927,7 @@ const void (* const draw_func_pointers[])(void) = {
     draw_boss,        // 8 - ENEMY_BOSS;
     draw_cannonball,  // 9 - ENEMY_CANNONBALL;
     draw_acid_drop,   // 10 - ENEMY_ACIDDROP;
-    draw_magic_bolt,  // 11 - ENEMY_BOSS_MAGIC_BOLT;
+    draw_boss_fireball,  // 11 - ENEMY_BOSS_FIREBALL;
     draw_purple_death_effect, // 12 - ENEMY_PURPLE_DEATH_EFFECT;
     draw_splyke_death_effect, // 13 - ENEMY_SPLYKE_DEATH_EFFECT;
 };
@@ -975,11 +981,11 @@ void draw_sprites(void) {
     // Debug HUD, drawn last because it's the least important.
     //oam_spr(232, 42, collision_D, 2);
     
-    //oam_spr(200, 50, debug_tile_x >> 4, 1);
-    //oam_spr(208, 50, debug_tile_x & 0x0f, 1);
+    oam_spr(200, 50, debug_tile_x >> 4, 1);
+    oam_spr(208, 50, debug_tile_x & 0x0f, 1);
     
-    //oam_spr(224, 50, debug_tile_y >> 4, 1);
-    //oam_spr(232, 50, debug_tile_y & 0x0f, 1);
+    oam_spr(224, 50, debug_tile_y >> 4, 1);
+    oam_spr(232, 50, debug_tile_y & 0x0f, 1);
 
     // Animate the animated palette.
 
@@ -1176,8 +1182,11 @@ void draw_splyke_death_effect(void) {
     oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
-void draw_magic_bolt(void) {
-    temp3 = enemies.timer[x] >> 3;
+void draw_boss_fireball(void) {
+
+    draw_cannonball();
+
+    /*temp3 = enemies.timer[x] >> 3;
 
     if (temp3 == 3) { 
         temp3 = 0;
@@ -1185,10 +1194,10 @@ void draw_magic_bolt(void) {
     }
 
     oam_spr(temp_x, temp_y, boss_magic_offset_table[temp3], 0);
-
-    temp3 = enemies.timer[x]; 
-    ++temp3;
-    enemies.timer[x] = temp3;   
+    */
+    //temp3 = enemies.timer[x]; 
+    //++temp3;
+    //enemies.timer[x] = temp3;   
 }
 
 // MARK: -- Movement.
@@ -1900,7 +1909,7 @@ const void (* const ai_pointers[])(void) = {
     boss_ai,            // 8 - ENEMY_BOSS;
     cannonball_ai,      // 9 - ENEMY_CANNONBALL;
     acid_drop_ai,       // 10 - ENEMY_ACIDDROP;
-    cannonball_ai,      // 11 - ENEMY_BOSS_MAGIC_BOLT;
+    boss_fireball_ai,      // 11 - ENEMY_BOSS_FIREBALL;
     death_effect_timer_ai, // 12 - ENEMY_PURPLE_DEATH_EFFECT;
     death_effect_timer_ai, // 13 - ENEMY_SPLYKE_DEATH_EFFECT;
 };
@@ -2288,6 +2297,29 @@ void cannonball_ai(void) {
     }
 }
 
+void boss_fireball_ai(void) {
+    // Continue moving forward in the direction fired. If I hit a solid metatile, die.
+
+    // extra[x] should be sub_x (as cannonball_ai_sub will expect this)
+    // extra2[x] should be sub_y (for the same reasons)
+
+    // timer[x] will store the brads for this projectile.
+
+    // Get the brads
+    temp1 = enemies.timer[x];
+    // call cannonball_ai_sub as the main logic will be identical
+    cannonball_ai_sub();
+
+    pal_col(0, 0x10);
+
+    // Disappear on contact with a solid tile.
+    if (METATILE_IS_SOLID(collision)) {
+        // Clear the enemy type and flags. (Both must be cleared.)
+        enemies.type[x] = ENEMY_NONE;
+        enemies.flags[x] = 0;
+    }
+}
+
 void cannonball_ai_sub(void) {
     // Any projectile-like object will have its AI here.
 
@@ -2554,7 +2586,7 @@ void splyke_ai(void) {
 
 }
 
-const void (* const boss_ai_functions[])(void) = { // defined in boss_ai.h
+const void (* const boss_ai_functions[])(void) = { // defined+implemented in boss_ai.h+.c
     boss_ai_intro,
     boss_ai_idle,
     boss_ai_ascending,

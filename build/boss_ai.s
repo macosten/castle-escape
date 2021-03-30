@@ -13,6 +13,7 @@
 	.export		_boss_ai_idle
 	.export		_boss_ai_ascending
 	.export		_boss_ai_descending
+	.import		_pal_col
 	.importzp	_TEMP
 	.import		_rand8
 	.import		_add_scroll_y_fast_sub
@@ -24,6 +25,7 @@
 	.importzp	_temp4
 	.importzp	_x
 	.importzp	_temp_x
+	.importzp	_temp_y
 	.importzp	_coordinates
 	.importzp	_collision
 	.importzp	_collision_U
@@ -37,6 +39,9 @@
 	.importzp	_temppointer
 	.importzp	_temp_mutablepointer
 	.importzp	_hitbox
+	.importzp	_valrigard
+	.importzp	_debug_tile_x
+	.importzp	_debug_tile_y
 	.import		_cmaps
 	.import		_boss_dialog
 	.import		_active_dboxdata
@@ -47,6 +52,7 @@
 	.import		_fire_at_target
 	.import		_cannonball_ai_sub
 	.import		_bg_collision
+	.export		_boss_shoot_fireball
 	.export		_boss_ai_intro
 	.export		_boss_collide_sub
 
@@ -66,7 +72,7 @@
 	ldy     _x
 	lda     _enemies+384,y
 	cmp     _temp0
-	bne     L002B
+	bne     L0086
 ;
 ; boss_state = BOSS_STATE_ASCENDING;
 ;
@@ -129,7 +135,7 @@
 ;
 ; }
 ;
-L002B:	rts
+L0086:	rts
 
 .endproc
 
@@ -153,9 +159,16 @@ L002B:	rts
 ;
 	jsr     _cannonball_ai_sub
 ;
+; if (temp0 & 1) { cannonball_ai_sub(); }
+;
+	lda     _temp0
+	and     #$01
+	beq     L019A
+	jsr     _cannonball_ai_sub
+;
 ; enemy_is_using_bg_collision = 1;
 ;
-	lda     #$01
+L019A:	lda     #$01
 	sta     _enemy_is_using_bg_collision
 ;
 ; hitbox.x = enemies.x[x];
@@ -187,61 +200,61 @@ L002B:	rts
 ;
 	lda     _collision_U
 	cmp     #$02
-	bcc     L012B
+	bcc     L019E
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$20
-	bne     L012B
+	bne     L019E
 	ldy     _x
 	lda     _enemies+256,y
 	ora     #$20
 ;
 ; else if (collision_D >= 2 && CANNONBALL_Y_DIRECTION(x)) { CANNONBALL_SET_NEG_Y(x); }
 ;
-	jmp     L013D
-L012B:	lda     _collision_D
+	jmp     L01B0
+L019E:	lda     _collision_D
 	cmp     #$02
-	bcc     L012F
+	bcc     L01A2
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$20
-	beq     L012F
+	beq     L01A2
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$DF
-L013D:	sta     _TEMP
+L01B0:	sta     _TEMP
 	ldy     _x
 	lda     _TEMP
 	sta     _enemies+256,y
 ;
 ; if (collision_L >= 2 && !CANNONBALL_X_DIRECTION(x)) { CANNONBALL_SET_POS_X(x); }
 ;
-L012F:	lda     _collision_L
+L01A2:	lda     _collision_L
 	cmp     #$02
-	bcc     L0133
+	bcc     L01A6
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$40
-	bne     L0133
+	bne     L01A6
 	ldy     _x
 	lda     _enemies+256,y
 	ora     #$40
 ;
 ; else if (collision_R >= 2 && CANNONBALL_X_DIRECTION(x)) { CANNONBALL_SET_NEG_X(x); }
 ;
-	jmp     L013E
-L0133:	lda     _collision_R
+	jmp     L01B1
+L01A6:	lda     _collision_R
 	cmp     #$02
 	lda     #$00
-	bcc     L0138
+	bcc     L01AB
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$40
-	beq     L0138
+	beq     L01AB
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$BF
-L013E:	sta     _TEMP
+L01B1:	sta     _TEMP
 	ldy     _x
 	lda     _TEMP
 	sta     _enemies+256,y
@@ -249,11 +262,47 @@ L013E:	sta     _TEMP
 ; enemy_is_using_bg_collision = 0;
 ;
 	lda     #$00
-L0138:	sta     _enemy_is_using_bg_collision
+L01AB:	sta     _enemy_is_using_bg_collision
+;
+; if (rand8() < 64) { boss_shoot_fireball(); }
+;
+	jsr     _rand8
+	cmp     #$40
+	bcs     L0105
+	jsr     _boss_shoot_fireball
+;
+; temp1 = enemies.extra[x]; // This gets modified by cannonball_ai_sub.
+;
+L0105:	ldy     _x
+	lda     _enemies+384,y
+	sta     _temp1
+;
+; temp0 = enemies.timer[x]; // (Already should be set to this)
+;
+	ldy     _x
+	lda     _enemies+512,y
+	sta     _temp0
+;
+; if (temp0 == temp1) { 
+;
+	lda     _temp1
+	cmp     _temp0
+	bne     L0110
+;
+; boss_state = BOSS_STATE_DESCENDING;
+;
+	lda     #$03
+	sta     _boss_state
+;
+; enemies.timer[x] = 0;
+;
+	ldy     _x
+	lda     #$00
+	sta     _enemies+512,y
 ;
 ; }
 ;
-	rts
+L0110:	rts
 
 .endproc
 
@@ -355,7 +404,7 @@ L0138:	sta     _enemy_is_using_bg_collision
 	ldy     _collision
 	lda     _metatile_property_lookup_table,y
 	and     #$01
-	beq     L0110
+	beq     L0181
 ;
 ; enemies.extra[x] = rand8();
 ;
@@ -363,9 +412,9 @@ L0138:	sta     _enemy_is_using_bg_collision
 	ldx     #>(_enemies+384)
 	clc
 	adc     _x
-	bcc     L0117
+	bcc     L0188
 	inx
-L0117:	jsr     pushax
+L0188:	jsr     pushax
 	jsr     _rand8
 	ldy     #$00
 	jsr     staspidx
@@ -377,7 +426,7 @@ L0117:	jsr     pushax
 ;
 ; enemies.nt[x] = high_byte(temp5);
 ;
-L0110:	ldy     _x
+L0181:	ldy     _x
 	lda     _temp5+1
 	sta     _enemies+192,y
 ;
@@ -390,6 +439,158 @@ L0110:	ldy     _x
 ; }
 ;
 	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ boss_shoot_fireball (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_boss_shoot_fireball: near
+
+.segment	"CODE"
+
+;
+; for (temp_x = x+1; temp_x < enemies.count; ++temp_x) {
+;
+	lda     _x
+	clc
+	adc     #$01
+	sta     _temp_x
+	cmp     _enemies+576
+	bcc     L01B3
+;
+; }
+;
+	rts
+;
+; debug_tile_x = GET_ENEMY_TYPE(temp_x);
+;
+L01B3:	ldy     _x
+	lda     _enemies+320,y
+	sta     _debug_tile_x
+;
+; debug_tile_y = enemies.count;
+;
+	lda     _enemies+576
+	sta     _debug_tile_y
+;
+; if (GET_ENEMY_TYPE(temp_x) == ENEMY_NONE) { // ENEMY_NONE
+;
+	ldy     _x
+	lda     _enemies+320,y
+	beq     L01B4
+;
+; }
+;
+	rts
+;
+; enemies.type[temp_x] = ENEMY_BOSS_FIREBALL;
+;
+L01B4:	ldy     _temp_x
+	lda     #$0B
+	sta     _enemies+320,y
+;
+; temp0 = enemies.x[x] + 6;
+;
+	ldy     _x
+	lda     _enemies,y
+	clc
+	adc     #$06
+	sta     _temp0
+;
+; temp1 = enemies.actual_y[x] + 6;
+;
+	ldy     _x
+	lda     _enemies+128,y
+	clc
+	adc     #$06
+	sta     _temp1
+;
+; temp2 = enemies.nt[x];
+;
+	ldy     _x
+	lda     _enemies+192,y
+	sta     _temp2
+;
+; enemies.x[temp_x] = temp0;
+;
+	ldy     _temp_x
+	lda     _temp0
+	sta     _enemies,y
+;
+; enemies.actual_y[temp_x] = temp1;
+;
+	ldy     _temp_x
+	lda     _temp1
+	sta     _enemies+128,y
+;
+; enemies.nt[temp_x] = temp2;
+;
+	ldy     _temp_x
+	lda     _temp2
+	sta     _enemies+192,y
+;
+; temp0 = high_byte(valrigard.x) + (VALRIGARD_WIDTH/2);
+;
+	lda     _valrigard+1
+	clc
+	adc     #$05
+	sta     _temp0
+;
+; temp1 = high_byte(valrigard.y) + 4; // Tweaked for maximum accuracy - may need to be tweaked more.
+;
+	lda     _valrigard+3
+	clc
+	adc     #$04
+	sta     _temp1
+;
+; temp2 = enemies.x[x] + 6; // ENEMY_WIDTH/2
+;
+	ldy     _x
+	lda     _enemies,y
+	clc
+	adc     #$06
+	sta     _temp2
+;
+; enemies.x[temp_x] = temp2;
+;
+	ldy     _temp_x
+	lda     _temp2
+	sta     _enemies,y
+;
+; temp3 = enemies.y[x] + 6; // ENEMY_HEIGHT/2
+;
+	ldy     _x
+	lda     _enemies+64,y
+	clc
+	adc     #$06
+	sta     _temp3
+;
+; enemies.y[temp_y] = temp3;
+;
+	ldy     _temp_y
+	lda     _temp3
+	sta     _enemies+64,y
+;
+; fire_at_target();
+;
+	jsr     _fire_at_target
+;
+; enemies.timer[temp_x] = temp0; // the brads value for this fireball.
+;
+	ldy     _temp_x
+	lda     _temp0
+	sta     _enemies+512,y
+;
+; pal_col(0, 0x20);
+;
+	lda     #$00
+	jsr     pusha
+	lda     #$20
+	jmp     _pal_col
 
 .endproc
 

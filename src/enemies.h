@@ -17,7 +17,7 @@
 // (probably; I'm still not sure about the cannonball, since the original game would have an equivalent of a 16x16 ball)
 #define ENEMY_CANNONBALL 9
 #define ENEMY_ACIDDROP 10
-#define ENEMY_BOSS_MAGIC_BOLT 11
+#define ENEMY_BOSS_FIREBALL 11
 
 // These are "enemies" in a programming sense, but not in a gameplay sense.
 #define ENEMY_PURPLE_DEATH_EFFECT 12

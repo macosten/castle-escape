@@ -1,12 +1,15 @@
 #include "boss_ai.h"
 
+#include "constants.h"
 #include "structs.h"
+#include "enemies.h"
 #include "player_macros.h"
 #include "enemy_macros.h"
 #include "lib/neslib.h"
 #include "lib/nesdoug.h"
 #include "asm/macros.h"
 
+#include "player_macros.h"
 #include "other_macros.h"
 #include "metatiles.h"
 
@@ -20,6 +23,7 @@ ZEROPAGE_EXTERN(unsigned char, temp3);
 ZEROPAGE_EXTERN(unsigned char, temp4);
 ZEROPAGE_EXTERN(unsigned char, x);
 ZEROPAGE_EXTERN(unsigned char, temp_x);
+ZEROPAGE_EXTERN(unsigned char, temp_y);
 ZEROPAGE_EXTERN(unsigned char, coordinates);
 ZEROPAGE_EXTERN(unsigned char, collision);
 ZEROPAGE_EXTERN(unsigned char, collision_U);
@@ -36,8 +40,11 @@ ZEROPAGE_EXTERN(const unsigned char *, temppointer);
 ZEROPAGE_EXTERN(unsigned char *, temp_mutablepointer);
 
 ZEROPAGE_EXTERN(Hitbox, hitbox);
+ZEROPAGE_EXTERN(Player, valrigard);
 
 ZEROPAGE_EXTERN(unsigned int, score);
+ZEROPAGE_EXTERN(unsigned char, debug_tile_x);
+ZEROPAGE_EXTERN(unsigned char, debug_tile_y);
 
 extern const unsigned char * const cmaps[];
 
@@ -49,6 +56,7 @@ extern DialogBoxData active_dboxdata;
 extern Enemies enemies;
 
 extern unsigned char boss_state;
+#define BOSS_STATE_INTRO 0
 #define BOSS_STATE_IDLE 1
 #define BOSS_STATE_ASCENDING 2
 #define BOSS_STATE_DESCENDING 3
@@ -63,6 +71,73 @@ extern void trigger_dialog_box(void);
 extern void fire_at_target(void);
 extern void cannonball_ai_sub(void);
 extern void bg_collision(void);
+
+// extra[x] will be a logic timer target. 
+// extra2[x] will be an animation timer.
+// timer[x] will be a logic/frame timer.
+// extra memory is available for this enemy at boss_memory.
+
+// Trigger the dialog box if it hasn't been triggered yet.
+
+// The Kau Wizard should have multiple (potential) states:
+// BOSS_STATE_DESCENDING -- Flying to the ground (probably after shooting fireballs). this == 1.
+// BOSS_STATE_IDLE -- Idle and vulnerable -- only vulnerable in this state. this == 2.
+// BOSS_STATE_ASCENDING -- Flying upwards. Shoots fireballs in this mode. this == 3.
+
+// There's also an implicit BOSS_STATE_INTRO
+
+void boss_shoot_fireball(void) {
+    // Find a free space for a fireball...
+    for (temp_x = 0; temp_x < enemies.count; ++temp_x) {
+        temp1 = GET_ENEMY_TYPE(temp_x);
+        
+        debug_tile_x = GET_ENEMY_TYPE(temp_x);
+        debug_tile_y = enemies.count;
+        // TODO: Bugged -- Fireballs don't currently fire properly.
+        if (GET_ENEMY_TYPE(temp_x) == ENEMY_NONE) { // ENEMY_NONE
+
+            enemies.type[temp_x] = ENEMY_BOSS_FIREBALL;
+
+            // Move the fireball into place.
+            temp0 = enemies.x[x] + 6;
+            temp1 = enemies.actual_y[x] + 6;
+            temp2 = enemies.nt[x];
+
+            enemies.x[temp_x] = temp0;
+            enemies.actual_y[temp_x] = temp1;
+            enemies.nt[temp_x] = temp2;
+
+
+
+
+            // target center x and y
+            temp0 = high_byte(valrigard.x) + (VALRIGARD_WIDTH/2);
+            temp1 = high_byte(valrigard.y) + 4; // Tweaked for maximum accuracy - may need to be tweaked more.
+            
+
+            // source center x and y
+            temp2 = enemies.x[x] + 6; // ENEMY_WIDTH/2
+            enemies.x[temp_x] = temp2;
+
+            temp3 = enemies.y[x] + 6; // ENEMY_HEIGHT/2
+            enemies.y[temp_y] = temp3;
+
+
+            // values of temp0 through temp3 are pseudo-parameters for this.
+            fire_at_target();
+            // values of temp0 and temp4 are pseudo-returns for this.
+            enemies.timer[temp_x] = temp0; // the brads value for this fireball.
+
+            pal_col(0, 0x20);
+
+            return;
+        }
+        return;
+
+    }
+
+    
+}
 
 void boss_ai_intro(void) {
     SET_DIRECTION_RIGHT();
@@ -113,7 +188,12 @@ void boss_ai_ascending(void) {
 
     temp1 = BOSS_BRADS_TARGET;
     // Move diagonally.
+
+    // Using this subroutine *does* mean the path will be a little strange because we're overloading the functionality of 
+    // extra[x] and extra2[x], but I like the effect this has, so I'll keep it this way.
     cannonball_ai_sub();
+    // Every other frame, move again.
+    if (temp0 & 1) { cannonball_ai_sub(); }
     // temppointer is set to the correct cmap for us to check collisions against.
 
     // Bounce off the wall, if necessary.
@@ -136,6 +216,17 @@ void boss_ai_ascending(void) {
     enemy_is_using_bg_collision = 0;
 
     // TODO -- figure out when to stop or re-aim. Add fireball shooting.
+
+    // Consider shooting a fireball at Valrigard.
+
+    if (rand8() < 64) { boss_shoot_fireball(); }
+
+    temp1 = enemies.extra[x]; // This gets modified by cannonball_ai_sub.
+    temp0 = enemies.timer[x]; // (Already should be set to this)
+    if (temp0 == temp1) { 
+        boss_state = BOSS_STATE_DESCENDING;
+        enemies.timer[x] = 0;
+    }
 
 }
 
