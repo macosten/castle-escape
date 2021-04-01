@@ -88,50 +88,44 @@ extern void bg_collision(void);
 
 void boss_shoot_fireball(void) {
     // Find a free space for a fireball...
-    for (temp_x = 0; temp_x < enemies.count; ++temp_x) {
+    for (temp_x = x; temp_x < enemies.count; ++temp_x) {
+        
         temp1 = GET_ENEMY_TYPE(temp_x);
         
-        debug_tile_x = GET_ENEMY_TYPE(temp_x);
-        debug_tile_y = enemies.count;
         // TODO: Bugged -- Fireballs don't currently fire properly.
-        if (GET_ENEMY_TYPE(temp_x) == ENEMY_NONE) { // ENEMY_NONE
 
-            enemies.type[temp_x] = ENEMY_BOSS_FIREBALL;
+        if (IS_ENEMY_ACTIVE(temp_x)) { continue; } // ENEMY_NONE
 
-            // Move the fireball into place.
-            temp0 = enemies.x[x] + 6;
-            temp1 = enemies.actual_y[x] + 6;
-            temp2 = enemies.nt[x];
+        enemies.type[temp_x] = ENEMY_BOSS_FIREBALL;
 
-            enemies.x[temp_x] = temp0;
-            enemies.actual_y[temp_x] = temp1;
-            enemies.nt[temp_x] = temp2;
+        // Move the fireball into place.
+        temp0 = enemies.x[x] + 6;
+        temp1 = enemies.actual_y[x] + 6;
+        temp2 = enemies.nt[x];
+
+        enemies.x[temp_x] = temp0;
+        enemies.actual_y[temp_x] = temp1;
+        enemies.nt[temp_x] = temp2;
 
 
-
-
-            // target center x and y
-            temp0 = high_byte(valrigard.x) + (VALRIGARD_WIDTH/2);
-            temp1 = high_byte(valrigard.y) + 4; // Tweaked for maximum accuracy - may need to be tweaked more.
+        // target center x and y
+        temp0 = high_byte(valrigard.x) + (VALRIGARD_WIDTH/2);
+        temp1 = high_byte(valrigard.y) + 4; // Tweaked for maximum accuracy - may need to be tweaked more.
             
 
-            // source center x and y
-            temp2 = enemies.x[x] + 6; // ENEMY_WIDTH/2
-            enemies.x[temp_x] = temp2;
+        // source center x and y
+        temp2 = enemies.x[x] + 6; // ENEMY_WIDTH/2
+        enemies.x[temp_x] = temp2;
 
-            temp3 = enemies.y[x] + 6; // ENEMY_HEIGHT/2
-            enemies.y[temp_y] = temp3;
+        temp3 = enemies.y[x] + 6; // ENEMY_HEIGHT/2
+        enemies.y[temp_y] = temp3;
 
 
-            // values of temp0 through temp3 are pseudo-parameters for this.
-            fire_at_target();
-            // values of temp0 and temp4 are pseudo-returns for this.
-            enemies.timer[temp_x] = temp0; // the brads value for this fireball.
+        // values of temp0 through temp3 are pseudo-parameters for this.
+        fire_at_target();
+        // values of temp0 and temp4 are pseudo-returns for this.
+        enemies.timer[temp_x] = temp0; // the brads value for this fireball.
 
-            pal_col(0, 0x20);
-
-            return;
-        }
         return;
 
     }
@@ -219,7 +213,7 @@ void boss_ai_ascending(void) {
 
     // Consider shooting a fireball at Valrigard.
 
-    if (rand8() < 64) { boss_shoot_fireball(); }
+    if (rand8() > 251) { boss_shoot_fireball(); }
 
     temp1 = enemies.extra[x]; // This gets modified by cannonball_ai_sub.
     temp0 = enemies.timer[x]; // (Already should be set to this)

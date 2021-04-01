@@ -981,11 +981,11 @@ void draw_sprites(void) {
     // Debug HUD, drawn last because it's the least important.
     //oam_spr(232, 42, collision_D, 2);
     
-    oam_spr(200, 50, debug_tile_x >> 4, 1);
-    oam_spr(208, 50, debug_tile_x & 0x0f, 1);
+    //oam_spr(200, 50, debug_tile_x >> 4, 1);
+    //oam_spr(208, 50, debug_tile_x & 0x0f, 1);
     
-    oam_spr(224, 50, debug_tile_y >> 4, 1);
-    oam_spr(232, 50, debug_tile_y & 0x0f, 1);
+    //oam_spr(224, 50, debug_tile_y >> 4, 1);
+    //oam_spr(232, 50, debug_tile_y & 0x0f, 1);
 
     // Animate the animated palette.
 
@@ -1658,7 +1658,7 @@ void check_spr_objects(void) {
 
     // Check enemies...
     for (x = 0; x < enemies.count; ++x) {
-        // (Partially) unrolled loop.
+        // Formerly a (partially) unrolled loop.
         if (GET_ENEMY_TYPE(x)) {
             // Check to see where this enemy is supposed to be.
 
@@ -1680,23 +1680,6 @@ void check_spr_objects(void) {
             // not the enemy's native nametable, it'll be shifted down (positive y) by 16.
 
             // Let's counteract that...
-            if (nt_current != enemies.nt[x]) { 
-                temp0 = enemies.y[x] - 16;
-                enemies.y[x] = temp0;
-            }
-        }
-        ++x;
-
-        if (GET_ENEMY_TYPE(x)) {
-            high_byte(temp5) = enemies.nt[x];
-            low_byte(temp5) = enemies.actual_y[x];
-            temp5 -= scroll_y;
-            if (high_byte(temp5)) {
-                DEACTIVATE_ENEMY(x);
-                continue;
-            }
-            ACTIVATE_ENEMY(x);
-            enemies.y[x] = low_byte(temp5);
             if (nt_current != enemies.nt[x]) { 
                 temp0 = enemies.y[x] - 16;
                 enemies.y[x] = temp0;
@@ -1795,7 +1778,7 @@ void sprite_collisions(void) {
     // The width and height of this will actually be different depending on the enemy's type.
 
     for (x = 0; x < enemies.count; ++x) {
-        // (Partially) unrolled loop.
+        // Formerly a (Partially) unrolled loop.
         if(IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
 
@@ -1815,26 +1798,7 @@ void sprite_collisions(void) {
                 AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
             }
         }
-        ++x;
-        if(IS_ENEMY_ACTIVE(x)) {
-            temp1 = GET_ENEMY_TYPE(x);
-
-            // Determine the enemy hitbox size.
-            hitbox2.width = enemy_hitbox_width_lookup_table[temp1];
-            if (!hitbox2.width) { continue; } // Continue if width of the hitbox is 0.
-
-            hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
-            
-            hitbox2.x = enemies.x[x];
-            hitbox2.x += enemy_hitbox_x_offset_lookup_table[temp1];
-
-            hitbox2.y = enemies.y[x];
-
-            check_collision(temp0, hitbox, hitbox2);
-            if (temp0) {
-                AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
-            }
-        }
+        
     }
 
 }
@@ -1919,16 +1883,11 @@ void enemy_movement(void) {
     // This one's a bit of an uncharted realm. 
     // I'm thinking we'll want to optimize this one somehow...
     for (x = 0; x < enemies.count; ++x) {
-        // (Partially) unrolled loop.
+        // Formerly a (Partially) unrolled loop.
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
             // An assembly macro (defined in asm/macros.h) is used here to ensure that this is efficient.
             // Do we want to delete (set type to ENEMY_NONE) any projectiles (CANNONBALL/ACIDDROP) that go offscreen?
-            AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
-        }
-        ++x;
-        if (IS_ENEMY_ACTIVE(x)) {
-            temp1 = GET_ENEMY_TYPE(x);
             AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
         }
     }
@@ -2309,8 +2268,6 @@ void boss_fireball_ai(void) {
     temp1 = enemies.timer[x];
     // call cannonball_ai_sub as the main logic will be identical
     cannonball_ai_sub();
-
-    pal_col(0, 0x10);
 
     // Disappear on contact with a solid tile.
     if (METATILE_IS_SOLID(collision)) {

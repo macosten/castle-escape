@@ -13,7 +13,6 @@
 	.export		_boss_ai_idle
 	.export		_boss_ai_ascending
 	.export		_boss_ai_descending
-	.import		_pal_col
 	.importzp	_TEMP
 	.import		_rand8
 	.import		_add_scroll_y_fast_sub
@@ -40,8 +39,6 @@
 	.importzp	_temp_mutablepointer
 	.importzp	_hitbox
 	.importzp	_valrigard
-	.importzp	_debug_tile_x
-	.importzp	_debug_tile_y
 	.import		_cmaps
 	.import		_boss_dialog
 	.import		_active_dboxdata
@@ -72,7 +69,7 @@
 	ldy     _x
 	lda     _enemies+384,y
 	cmp     _temp0
-	bne     L0086
+	bne     L0080
 ;
 ; boss_state = BOSS_STATE_ASCENDING;
 ;
@@ -135,7 +132,7 @@
 ;
 ; }
 ;
-L0086:	rts
+L0080:	rts
 
 .endproc
 
@@ -163,12 +160,12 @@ L0086:	rts
 ;
 	lda     _temp0
 	and     #$01
-	beq     L019A
+	beq     L0194
 	jsr     _cannonball_ai_sub
 ;
 ; enemy_is_using_bg_collision = 1;
 ;
-L019A:	lda     #$01
+L0194:	lda     #$01
 	sta     _enemy_is_using_bg_collision
 ;
 ; hitbox.x = enemies.x[x];
@@ -200,61 +197,61 @@ L019A:	lda     #$01
 ;
 	lda     _collision_U
 	cmp     #$02
-	bcc     L019E
+	bcc     L0198
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$20
-	bne     L019E
+	bne     L0198
 	ldy     _x
 	lda     _enemies+256,y
 	ora     #$20
 ;
 ; else if (collision_D >= 2 && CANNONBALL_Y_DIRECTION(x)) { CANNONBALL_SET_NEG_Y(x); }
 ;
-	jmp     L01B0
-L019E:	lda     _collision_D
+	jmp     L01AA
+L0198:	lda     _collision_D
 	cmp     #$02
-	bcc     L01A2
+	bcc     L019C
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$20
-	beq     L01A2
+	beq     L019C
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$DF
-L01B0:	sta     _TEMP
+L01AA:	sta     _TEMP
 	ldy     _x
 	lda     _TEMP
 	sta     _enemies+256,y
 ;
 ; if (collision_L >= 2 && !CANNONBALL_X_DIRECTION(x)) { CANNONBALL_SET_POS_X(x); }
 ;
-L01A2:	lda     _collision_L
+L019C:	lda     _collision_L
 	cmp     #$02
-	bcc     L01A6
+	bcc     L01A0
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$40
-	bne     L01A6
+	bne     L01A0
 	ldy     _x
 	lda     _enemies+256,y
 	ora     #$40
 ;
 ; else if (collision_R >= 2 && CANNONBALL_X_DIRECTION(x)) { CANNONBALL_SET_NEG_X(x); }
 ;
-	jmp     L01B1
-L01A6:	lda     _collision_R
+	jmp     L01AB
+L01A0:	lda     _collision_R
 	cmp     #$02
 	lda     #$00
-	bcc     L01AB
+	bcc     L01A5
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$40
-	beq     L01AB
+	beq     L01A5
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$BF
-L01B1:	sta     _TEMP
+L01AB:	sta     _TEMP
 	ldy     _x
 	lda     _TEMP
 	sta     _enemies+256,y
@@ -262,18 +259,18 @@ L01B1:	sta     _TEMP
 ; enemy_is_using_bg_collision = 0;
 ;
 	lda     #$00
-L01AB:	sta     _enemy_is_using_bg_collision
+L01A5:	sta     _enemy_is_using_bg_collision
 ;
-; if (rand8() < 64) { boss_shoot_fireball(); }
+; if (rand8() > 251) { boss_shoot_fireball(); }
 ;
 	jsr     _rand8
-	cmp     #$40
-	bcs     L0105
+	cmp     #$FC
+	bcc     L00FF
 	jsr     _boss_shoot_fireball
 ;
 ; temp1 = enemies.extra[x]; // This gets modified by cannonball_ai_sub.
 ;
-L0105:	ldy     _x
+L00FF:	ldy     _x
 	lda     _enemies+384,y
 	sta     _temp1
 ;
@@ -287,7 +284,7 @@ L0105:	ldy     _x
 ;
 	lda     _temp1
 	cmp     _temp0
-	bne     L0110
+	bne     L010A
 ;
 ; boss_state = BOSS_STATE_DESCENDING;
 ;
@@ -302,7 +299,7 @@ L0105:	ldy     _x
 ;
 ; }
 ;
-L0110:	rts
+L010A:	rts
 
 .endproc
 
@@ -404,7 +401,7 @@ L0110:	rts
 	ldy     _collision
 	lda     _metatile_property_lookup_table,y
 	and     #$01
-	beq     L0181
+	beq     L017B
 ;
 ; enemies.extra[x] = rand8();
 ;
@@ -412,9 +409,9 @@ L0110:	rts
 	ldx     #>(_enemies+384)
 	clc
 	adc     _x
-	bcc     L0188
+	bcc     L0182
 	inx
-L0188:	jsr     pushax
+L0182:	jsr     pushax
 	jsr     _rand8
 	ldy     #$00
 	jsr     staspidx
@@ -426,7 +423,7 @@ L0188:	jsr     pushax
 ;
 ; enemies.nt[x] = high_byte(temp5);
 ;
-L0181:	ldy     _x
+L017B:	ldy     _x
 	lda     _temp5+1
 	sta     _enemies+192,y
 ;
@@ -453,43 +450,37 @@ L0181:	ldy     _x
 .segment	"CODE"
 
 ;
-; for (temp_x = x+1; temp_x < enemies.count; ++temp_x) {
+; for (temp_x = x; temp_x < enemies.count; ++temp_x) {
 ;
 	lda     _x
-	clc
-	adc     #$01
 	sta     _temp_x
+	ldx     #$00
+L01AD:	lda     _temp_x
 	cmp     _enemies+576
-	bcc     L01B3
+	txa
+	sbc     #$00
+	bcc     L01AF
 ;
 ; }
 ;
 	rts
 ;
-; debug_tile_x = GET_ENEMY_TYPE(temp_x);
+; temp1 = GET_ENEMY_TYPE(temp_x);
 ;
-L01B3:	ldy     _x
+L01AF:	ldy     _x
 	lda     _enemies+320,y
-	sta     _debug_tile_x
+	sta     _temp1
 ;
-; debug_tile_y = enemies.count;
+; if (IS_ENEMY_ACTIVE(temp_x)) { continue; } // ENEMY_NONE
 ;
-	lda     _enemies+576
-	sta     _debug_tile_y
-;
-; if (GET_ENEMY_TYPE(temp_x) == ENEMY_NONE) { // ENEMY_NONE
-;
-	ldy     _x
-	lda     _enemies+320,y
-	beq     L01B4
-;
-; }
-;
-	rts
+	ldy     _temp_x
+	lda     _enemies+256,y
+	and     #$80
+	jne     L01AE
 ;
 ; enemies.type[temp_x] = ENEMY_BOSS_FIREBALL;
 ;
-L01B4:	ldy     _temp_x
+	ldy     _temp_x
 	lda     #$0B
 	sta     _enemies+320,y
 ;
@@ -585,12 +576,14 @@ L01B4:	ldy     _temp_x
 	lda     _temp0
 	sta     _enemies+512,y
 ;
-; pal_col(0, 0x20);
+; return;
 ;
-	lda     #$00
-	jsr     pusha
-	lda     #$20
-	jmp     _pal_col
+	rts
+;
+; for (temp_x = x; temp_x < enemies.count; ++temp_x) {
+;
+L01AE:	inc     _temp_x
+	jmp     L01AD
 
 .endproc
 
