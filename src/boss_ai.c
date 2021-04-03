@@ -23,7 +23,6 @@ ZEROPAGE_EXTERN(unsigned char, temp3);
 ZEROPAGE_EXTERN(unsigned char, temp4);
 ZEROPAGE_EXTERN(unsigned char, x);
 ZEROPAGE_EXTERN(unsigned char, temp_x);
-ZEROPAGE_EXTERN(unsigned char, temp_y);
 ZEROPAGE_EXTERN(unsigned char, coordinates);
 ZEROPAGE_EXTERN(unsigned char, collision);
 ZEROPAGE_EXTERN(unsigned char, collision_U);
@@ -64,8 +63,9 @@ extern unsigned char boss_state;
 extern unsigned char boss_memory[];
 
 #define BOSS_BRADS_TARGET boss_memory[0]
-#define BOSS_TARGET_X boss_memory[1]
-#define BOSS_TARGET_Y boss_memory[2]
+#define BOSS_FIREBALL_COOLDOWN boss_memory[1]
+#define BOSS_HP boss_memory[2]
+#define BOSS_IFRAMES 
 
 extern void trigger_dialog_box(void);
 extern void fire_at_target(void);
@@ -88,13 +88,13 @@ extern void bg_collision(void);
 
 void boss_shoot_fireball(void) {
     // Find a free space for a fireball...
-    for (temp_x = x; temp_x < enemies.count; ++temp_x) {
-        
-        temp1 = GET_ENEMY_TYPE(temp_x);
-        
-        // TODO: Bugged -- Fireballs don't currently fire properly.
 
+    temp1 = x + 4;
+    for (temp_x = x+1; temp_x < temp1; ++temp_x) {
+        
         if (IS_ENEMY_ACTIVE(temp_x)) { continue; } // ENEMY_NONE
+
+        //temp1 = GET_ENEMY_TYPE(temp_x);
 
         enemies.type[temp_x] = ENEMY_BOSS_FIREBALL;
 
@@ -110,7 +110,7 @@ void boss_shoot_fireball(void) {
 
         // target center x and y
         temp0 = high_byte(valrigard.x) + (VALRIGARD_WIDTH/2);
-        temp1 = high_byte(valrigard.y) + 4; // Tweaked for maximum accuracy - may need to be tweaked more.
+        temp1 = high_byte(valrigard.y) + 4;
             
 
         // source center x and y
@@ -118,13 +118,15 @@ void boss_shoot_fireball(void) {
         enemies.x[temp_x] = temp2;
 
         temp3 = enemies.y[x] + 6; // ENEMY_HEIGHT/2
-        enemies.y[temp_y] = temp3;
+        enemies.y[temp_x] = temp3;
 
 
         // values of temp0 through temp3 are pseudo-parameters for this.
         fire_at_target();
         // values of temp0 and temp4 are pseudo-returns for this.
         enemies.timer[temp_x] = temp0; // the brads value for this fireball.
+
+        BOSS_FIREBALL_COOLDOWN = 32;
 
         return;
 
@@ -136,6 +138,9 @@ void boss_shoot_fireball(void) {
 void boss_ai_intro(void) {
     SET_DIRECTION_RIGHT();
     active_dboxdata = boss_dialog;
+
+    BOSS_HP = 3;
+
     trigger_dialog_box();
     boss_state = BOSS_STATE_DESCENDING;
 }
@@ -213,7 +218,15 @@ void boss_ai_ascending(void) {
 
     // Consider shooting a fireball at Valrigard.
 
-    if (rand8() > 251) { boss_shoot_fireball(); }
+    if (BOSS_FIREBALL_COOLDOWN) { --BOSS_FIREBALL_COOLDOWN; }
+    else {
+        if (rand8() > 250) { 
+            boss_shoot_fireball(); ;
+        }
+    }
+
+    //if (rand8() > 251) { boss_shoot_fireball(); }
+    
 
     temp1 = enemies.extra[x]; // This gets modified by cannonball_ai_sub.
     temp0 = enemies.timer[x]; // (Already should be set to this)

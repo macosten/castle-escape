@@ -82,7 +82,7 @@ Enemies enemies;
 
 // Extra memory used for bosses or the like.
 unsigned char boss_state;
-unsigned char boss_memory[32];
+unsigned char boss_memory[8];
 
 #define BOSS_DIALOG_ALREADY_GIVEN 128
 
@@ -156,7 +156,8 @@ void bg_collision_sub_collision_u(void);
 void check_spr_objects(void); // For enemies
 void sprite_collisions(void);
 
-void collision_with_inert(void);
+void empty_function(void);
+
 void collision_with_killable_slashable(void);
 void collision_with_inert_slashable(void);
 void collision_with_unkillable_unslashable(void);
@@ -916,7 +917,7 @@ void calculate_shuffle_array(void) {
 
 // A lookup table for enemy draw functions.
 const void (* const draw_func_pointers[])(void) = {
-    draw_korbat,      // 0 - ENEMY_NONE;
+    empty_function,   // 0 - ENEMY_NONE;
     draw_korbat,      // 1 - ENEMY_KORBAT;
     draw_grarrl,      // 2 - ENEMY_GRARRL;
     draw_splyke,      // 3 - ENEMY_SPLYKE;
@@ -1742,20 +1743,20 @@ const unsigned char const enemy_hitbox_x_offset_lookup_table[] = {
 };
 
 const void (* const collision_functions[])(void) = {
-    collision_with_inert,                   // None
+    empty_function,                   // None
     collision_with_killable_slashable,      // Korbat
     collision_with_killable_slashable,      // Grarrl
     collision_with_splyke,                  // Splyke
     collision_with_inert_slashable,    // Cannon
-    collision_with_inert,                   // Acidpool
+    empty_function,                   // Acidpool
     collision_with_unkillable_unslashable,  // Spikeball
     collision_with_unkillable_unslashable,  // Sun
     collision_with_boss,                    // Boss
     collision_with_unkillable_unslashable,  // Cannonball
     collision_with_unkillable_unslashable,  // Aciddrop
     collision_with_unkillable_unslashable,  // Magic Bolt
-    collision_with_inert,                   // Purple Death Effect
-    collision_with_inert,                   // Splyke Death Effect
+    empty_function,                   // Purple Death Effect
+    empty_function,                   // Splyke Death Effect
 };
 
 // Check for sprite collisions with the player.
@@ -1806,7 +1807,9 @@ void sprite_collisions(void) {
 // A collision with something that doesn't inherently react.
 // It's possible that calls to this can be optimized away.
 // (i.e skip if a certain condition?)
-void collision_with_inert(void) { }
+
+// collision_with_inert:
+void empty_function(void) { }
 
 void collision_with_killable_slashable(void) {
     if (!IS_SWINGING_SWORD) { 
@@ -1857,12 +1860,13 @@ void collision_with_splyke(void) {
 }
 
 void collision_with_boss(void) {
-    game_mode = MODE_GAME_OVER; // Just end the level for now.
+    // game_mode = MODE_GAME_OVER; // Just end the level for now.
+
 }
 
 // A lookup table for enemy AI functions.
 const void (* const ai_pointers[])(void) = {
-    korbat_ai,          // 0 - ENEMY_NONE;
+    empty_function,     // 0 - ENEMY_NONE;
     korbat_ai,          // 1 - ENEMY_KORBAT;
     spikeball_ai,       // 2 - ENEMY_GRARRL;
     splyke_ai,          // 3 - ENEMY_SPLYKE;
@@ -2274,6 +2278,7 @@ void boss_fireball_ai(void) {
         // Clear the enemy type and flags. (Both must be cleared.)
         enemies.type[x] = ENEMY_NONE;
         enemies.flags[x] = 0;
+        enemies.nt[x] = 0xff; // Make extra-sure it's interpreted as being off-screen...
     }
 }
 
