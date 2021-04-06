@@ -1184,21 +1184,13 @@ void draw_splyke_death_effect(void) {
 }
 
 void draw_boss_fireball(void) {
+    // This enemy's timer[x] is used to save its angle, so we'll need to figure out another way to animate/flicker this
+    temp3 = enemies.timer[x]; 
+    temp3 += get_frame_count();
+    temp3 &= 1;
+    temp3 += BOSS_MAGIC_SPRITE_OFFSET;
 
-    draw_cannonball();
-
-    /*temp3 = enemies.timer[x] >> 3;
-
-    if (temp3 == 3) { 
-        temp3 = 0;
-        enemies.timer[x] = 0;
-    }
-
-    oam_spr(temp_x, temp_y, boss_magic_offset_table[temp3], 0);
-    */
-    //temp3 = enemies.timer[x]; 
-    //++temp3;
-    //enemies.timer[x] = temp3;   
+    oam_spr(temp_x, temp_y, temp3, 0);
 }
 
 // MARK: -- Movement.
@@ -1282,7 +1274,7 @@ void movement(void) {
         } else {
             // Otherwise, movement is more nuanced.
             valrigard.velocity_y -= GRAVITY;
-            if (valrigard.velocity_y < -SPEED) valrigard.velocity_y = -SPEED;
+            if (valrigard.velocity_y < -SPEED) { valrigard.velocity_y = -SPEED; }
         }
         
         energy -= 1;
@@ -1295,7 +1287,7 @@ void movement(void) {
     } else {
         
         valrigard.velocity_y += GRAVITY;
-        if (valrigard.velocity_y > MAX_FALL) valrigard.velocity_y = MAX_FALL;
+        if (valrigard.velocity_y > MAX_FALL) { valrigard.velocity_y = MAX_FALL; }
         
     }
     
@@ -1563,8 +1555,14 @@ void bg_collision_sub_collision_u(void) {
     // Pull RNG!
     temp0 = rand8();
 
+    // (temp1 & 0xf0) == ( (high_byte(valrigard.x) + VALRIGARD_HEIGHT/2 ) & 0xf0))
+    advanced_conditional = (high_byte(valrigard.x) + VALRIGARD_HEIGHT/2 ) & 0xf0;
+
+    // Should be fine because whenever we poll the pads we immediately check the values after.
+    // This will have to become a hard rule rather than just a personal idiosyncrasy... 
+
     if (temp4 == QUESTION_BLOCK && (temp3 & 0x0f) == 0x0f 
-        && (temp1 & 0xf0) == ( (high_byte(valrigard.x) + VALRIGARD_HEIGHT/2 ) & 0xf0)) {
+        && (temp1 & 0xf0) == advanced_conditional ){
 
         temp_mutablepointer[coordinates] = BONKED_QUESTION_BLOCK;
 
@@ -2278,7 +2276,6 @@ void boss_fireball_ai(void) {
         // Clear the enemy type and flags. (Both must be cleared.)
         enemies.type[x] = ENEMY_NONE;
         enemies.flags[x] = 0;
-        enemies.nt[x] = 0xff; // Make extra-sure it's interpreted as being off-screen...
     }
 }
 
@@ -2570,8 +2567,7 @@ void boss_ai(void) {
     // BOSS_STATE_ASCENDING -- Flying upwards. Shoots fireballs in this mode.
 
     // Always do the following:
-
-    if (high_byte(valrigard.x) > enemies.x[x]) {
+    if (enemies.x[x] < high_byte(valrigard.x) ) {
         ENEMY_SET_DIRECTION_RIGHT(x);
     } else {
         ENEMY_SET_DIRECTION_LEFT(x);

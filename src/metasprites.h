@@ -298,7 +298,7 @@ const unsigned char const sun1[] = {
 // These are single sprites, so these are just their tile IDs in bank 1.
 #define ACIDDROP_SPRITE_OFFSET 0x17
 #define CANNONBALL_SPRITE_OFFSET 0x18
-#define BOSS_MAGIC_SPRITE_OFFSET 0x10
+#define BOSS_MAGIC_SPRITE_OFFSET 0x80
 /*const unsigned char const acid_drop[]= {
       0xff, 0xff, 0x17,3,
   128
