@@ -31,6 +31,7 @@ ZEROPAGE_EXTERN(unsigned char, collision_L);
 ZEROPAGE_EXTERN(unsigned char, collision_R);
 ZEROPAGE_EXTERN(unsigned char, player_flags);
 ZEROPAGE_EXTERN(unsigned char, enemy_is_using_bg_collision);
+ZEROPAGE_EXTERN(unsigned char, game_mode);
 
 ZEROPAGE_EXTERN(unsigned int, temp5);
 ZEROPAGE_EXTERN(unsigned int, temp6);
@@ -59,6 +60,7 @@ extern unsigned char boss_state;
 #define BOSS_STATE_IDLE 1
 #define BOSS_STATE_ASCENDING 2
 #define BOSS_STATE_DESCENDING 3
+#define BOSS_STATE_DAMAGED 4
 
 extern unsigned char boss_memory[];
 
@@ -84,7 +86,6 @@ extern void bg_collision(void);
 // BOSS_STATE_IDLE -- Idle and vulnerable -- only vulnerable in this state. this == 2.
 // BOSS_STATE_ASCENDING -- Flying upwards. Shoots fireballs in this mode. this == 3.
 
-// There's also an implicit BOSS_STATE_INTRO
 
 void boss_shoot_fireball(void) {
     // Find a free space for a fireball...
@@ -135,6 +136,35 @@ void boss_shoot_fireball(void) {
     
 }
 
+void boss_start_flying(void) {
+    // Change state.
+    boss_state = BOSS_STATE_ASCENDING;
+
+    // Setup for fire_at_target:
+
+    // Pick some amount of distance to fly.
+    temp0 = enemies.x[x];
+    temp0 += rand8() & 0b00111111; // x -- MSB is sign
+    //temp0 += 1;
+
+    temp1 = enemies.y[x];
+    temp1 += rand8() & 0b00111111; // y -- MSB is sign
+    //temp1 += 1;
+
+
+    temp2 = enemies.x[x];
+    temp3 = enemies.y[x];
+
+    // We're "firing" ourselves, so:
+    temp_x = x;
+
+    fire_at_target();
+
+    BOSS_BRADS_TARGET = temp0;
+    // Consider: if this is below a certain value/in a certain range, 
+    // modify it somehow to make it impossible for the boss to move only in X
+}
+
 void boss_ai_intro(void) {
     SET_DIRECTION_RIGHT();
     active_dboxdata = boss_dialog;
@@ -152,33 +182,7 @@ void boss_ai_idle(void) {
 
     // Wait some number of frames
     if (temp0 == enemies.extra[x]) {
-        // Change state.
-        boss_state = BOSS_STATE_ASCENDING;
-
-        // Setup for fire_at_target:
-
-        // Pick some amount of distance to fly.
-        temp0 = enemies.x[x];
-        temp0 += rand8() & 0b00111111; // x -- MSB is sign
-        //temp0 += 1;
-
-        temp1 = enemies.y[x];
-        temp1 += rand8() & 0b00111111; // y -- MSB is sign
-        //temp1 += 1;
-
-
-        temp2 = enemies.x[x];
-        temp3 = enemies.y[x];
-
-        // We're "firing" ourselves, so:
-        temp_x = x;
-
-        fire_at_target();
-
-        BOSS_BRADS_TARGET = temp0;
-        // Consider: if this is below a certain value/in a certain range, 
-        // modify it somehow to make it impossible for the boss to move only in X
-
+        boss_start_flying(); // Start flying
     }
 
 }
@@ -278,11 +282,61 @@ void boss_ai_descending(void) {
 
     if (METATILE_IS_SOLID(collision)) {
         // Set initial state for BOSS_STATE_IDLE logic.
-        enemies.extra[x] = rand8();
+        temp0 = rand8();
+        enemies.extra[x] = temp0;
         boss_state = BOSS_STATE_IDLE;
     }
 
     // Update the actual enemy model itself.
     enemies.nt[x] = high_byte(temp5);
     enemies.actual_y[x] = low_byte(temp5);
+}
+
+void boss_ai_damaged(void) {
+    // I got slashed and am currently in my invincibility frames.
+    if (temp0 == 0) {
+        boss_start_flying();
+    } else if (temp0 & 0b11 == 0b11) {
+        // Rise up in the air slowly.
+        high_byte(temp5) = enemies.nt[x];
+        low_byte(temp5) = enemies.actual_y[x];
+
+        temp1 = enemies.x[x] + 8; 
+        
+        // UP (adding to y)
+        temp6 = sub_scroll_y(1, temp5);
+
+        temp2 = low_byte(temp6); // Y of tile of interest
+        temp4 = high_byte(temp6); // NT of tile of interest
+        
+        coordinates = (temp1 >> 4) + (temp2 & 0xf0);
+
+        // Which cmap should I look at?
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp4);
+        AsmSet1ByteFromZpPtrAtIndexVar(collision, temppointer, coordinates);
+
+        if (!METATILE_IS_SOLID(collision)) {
+            // Update the actual enemy model itself only if we're not colliding.
+            enemies.nt[x] = high_byte(temp6);
+            enemies.actual_y[x] = low_byte(temp6);
+        }
+        
+    } 
+
+}
+
+void collision_with_boss(void) {
+    // game_mode = MODE_GAME_OVER; // Just end the level for now.
+    if (IS_SWINGING_SWORD && boss_state == BOSS_STATE_IDLE) {
+        --BOSS_HP;
+        if (BOSS_HP == 0) {
+            game_mode = MODE_GAME_OVER; // End the level.
+        }
+        enemies.timer[x] = 127; // ~2 seconds of iframes (these will be incremented until it overflows);
+        boss_state = BOSS_STATE_DAMAGED;
+
+        // Point upward
+
+    } 
+
 }

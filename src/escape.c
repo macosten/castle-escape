@@ -162,8 +162,7 @@ void collision_with_killable_slashable(void);
 void collision_with_inert_slashable(void);
 void collision_with_unkillable_unslashable(void);
 void collision_with_splyke(void);
-void collision_with_boss(void);
-
+extern void collision_with_boss(void);
 
 void enemy_movement(void);
 
@@ -190,6 +189,7 @@ extern void boss_ai_intro(void);
 extern void boss_ai_idle(void);
 extern void boss_ai_ascending(void);
 extern void boss_ai_descending(void);
+extern void boss_ai_damaged(void);
 
 extern unsigned char const * titlescreen;
 
@@ -1148,6 +1148,13 @@ void draw_sun(void) {
 void draw_boss(void) {
     // extra2 is the animation timer for this enemy as timer[] is used for timing and other logic.
 
+    temp3 = enemies.extra2[x]; // Copy that timer here.
+
+    // Blink if damaged.
+    if (boss_state == 4 && temp3 & 0b10) { // BOSS_STATE_DAMAGED
+        return; // without drawing anything.
+    }
+
     // IDLE --
     temp4 = ENEMY_DIRECTION(x);
 
@@ -1160,7 +1167,6 @@ void draw_boss(void) {
         AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_body_sprite_idle_lookup_table, temp4);
     } else { 
         // Flying
-        temp3 = enemies.extra2[x];
         temp3 >>= 2;
         temp3 &= 0b110; // Mask the frame number.
         temp4 = temp3 | ENEMY_DIRECTION(x);
@@ -1857,10 +1863,7 @@ void collision_with_splyke(void) {
     // Yes tornado, Yes swinging: do nothing.
 }
 
-void collision_with_boss(void) {
-    // game_mode = MODE_GAME_OVER; // Just end the level for now.
-
-}
+// void collision_with_boss(void) -- moved to boss_ai.c
 
 // A lookup table for enemy AI functions.
 const void (* const ai_pointers[])(void) = {
@@ -2550,6 +2553,7 @@ const void (* const boss_ai_functions[])(void) = { // defined+implemented in bos
     boss_ai_idle,
     boss_ai_ascending,
     boss_ai_descending,
+    boss_ai_damaged
 };
 
 void boss_ai(void) {
