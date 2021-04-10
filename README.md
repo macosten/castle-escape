@@ -26,7 +26,7 @@ Automatic generation of FCEUX symbols requires python3, but the build should sti
 
 ## Future Challenges/Worries:
 
-* Speed. cc65 isn't terrible, but it's not always the most performant. Some functions may be more performant if I compile them in an alternate compiler, or if I manually optimize them. While I've gotten
+* Speed. cc65 isn't terrible, but it's not always the most performant. Some functions may be more performant if I compile them in an alternate compiler, or if I manually optimize them.
 * Music. I have to learn Famitracker, and probably also come up with appropriate music myself.
 
 ## Thanks to...
