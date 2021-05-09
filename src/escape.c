@@ -8,7 +8,7 @@
 #include "mmc1/bank_helpers.h" // MMC1 utility functions.
 
 #include "structs.h" // Some general-purpose structs are defined here (these will probably be moved).
-#include "metasprites.h" // Metasprite data is defined here.
+#include "metasprite_lookup_tables.h" // Metasprite data is defined here.
 #include "metatiles.h" // Metatile data is defined here.
 #include "levels.h" // Level data is defined here (in a bunch of headers).
 #include "enemies.h"
@@ -190,6 +190,11 @@ extern void boss_ai_idle(void);
 extern void boss_ai_ascending(void);
 extern void boss_ai_descending(void);
 extern void boss_ai_damaged(void);
+extern void boss_ai_dying(void);
+
+extern void draw_boss_flying(void);
+extern void draw_boss_idle(void);
+extern void draw_boss_dying(void);
 
 extern unsigned char const * titlescreen;
 
@@ -216,127 +221,7 @@ const unsigned char * const cannon_sprite_quadrant_lookup_table[] = {cannon_ul_s
 
 
 // Lookup tables for valrigard's sprite.
-#pragma rodata-name(push, "BANK5") // Metasprite Bank.
 
-const unsigned char * const valrigard_idle_sprite_lookup_table[] = {
-    valrigard_idle_left, valrigard_idle_right
-};
-
-const unsigned char * const valrigard_sword_swing_sprite_lookup_table[] = {
-    // Animation for swinging (reversed): (Left, Right)
-    valrigard_swing_left_followthrough, valrigard_swing_right_followthrough,              
-    valrigard_swing_left_followthrough, valrigard_swing_right_followthrough,
-    valrigard_swing_left_followthrough, valrigard_swing_right_followthrough,
-    valrigard_idle_left,                valrigard_idle_right,               
-    valrigard_swing_left_high,          valrigard_swing_right_high,
-    valrigard_swing_left_mid,           valrigard_swing_right_mid,           
-    valrigard_swing_left_low,           valrigard_swing_right_low,
-    valrigard_swing_left_low,           valrigard_swing_right_low,
-};
-
-const unsigned char * const valrigard_dead_sprite_lookup_table[] = {
-    valrigard_dead_left, valrigard_dead_right
-};
-
-const unsigned char * const valrigard_flying_sprite_lookup_table[] = {
-    // Animation for flying (reversed): (Left, Right)
-    valrigard_flying_left1, valrigard_flying_right1,
-    valrigard_flying_left1, valrigard_flying_right1,
-    valrigard_flying_left2, valrigard_flying_right2,
-    valrigard_flying_left2, valrigard_flying_right2,
-    valrigard_flying_left1, valrigard_flying_right1,
-    valrigard_idle_left,    valrigard_idle_right,
-    valrigard_flying_left0, valrigard_flying_right0,
-    valrigard_flying_left0, valrigard_flying_right0,
-};
-
-
-// Lookup tables for enemy sprites (not yet animated).
-const unsigned char * const korbat_sprite_lookup_table[] = {
-    korbat_left, korbat_right,
-    korbat_flap1_left, korbat_flap1_right,
-    korbat_flap2_left, korbat_flap2_right,
-    korbat_flap3_left, korbat_flap3_right,
-    korbat_flap4_left, korbat_flap4_right,
-    korbat_flap5_left, korbat_flap5_right,
-    korbat_flap6_left, korbat_flap6_right,
-    korbat_flap6_left, korbat_flap6_right,
-    korbat_flap5_left, korbat_flap5_right,
-    korbat_flap4_left, korbat_flap4_right,
-    korbat_flap3_left, korbat_flap3_right,
-    korbat_flap2_left, korbat_flap2_right,
-    korbat_flap1_left, korbat_flap1_right,
-    korbat_left, korbat_right,
-};
-
-
-const unsigned char * const grarrl_sprite_lookup_table[] = {
-    grarrl_left, grarrl_right,
-    grarrl_backfoot_step0_left, grarrl_backfoot_step0_right,
-    grarrl_backfoot_step1_left, grarrl_backfoot_step1_right,
-    grarrl_left, grarrl_right,
-    grarrl_frontfoot_step0_left, grarrl_frontfoot_step0_right,
-    grarrl_frontfoot_step1_left, grarrl_frontfoot_step1_right,
-};
-
-// Cannon lookup tables.
-const unsigned char * const cannon_sprite_lookup_table[] = {cannon_up, cannon_up_left, cannon_left, cannon_down_left, cannon_down, cannon_down_right, cannon_right, cannon_up_right};
-
-// const unsigned char const enemy_contact_behavior_lookup_table[] = {0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1}
-
-// Frames here are in reverse order so that they can be array-indexed and then have the index decremented.
-const unsigned char * const acidblob_sprite_lookup_table[] = {acidblob0, acidblob3, acidblob0, acidblob1, acidblob2, acidblob1, acidblob0};
-
-const unsigned char * const sun_sprite_lookup_table[] = {sun0, sun1};
-
-// Indexed by a 4-bit number with bits arranged as follows:
-// [Moving (idle/tornado)][Frame Number MSB][Frame Number LSB][Direction (left/right)]
-const unsigned char * const splyke_sprite_lookup_table[] = {
-    splyke_idle_left0,  splyke_idle_right0,     splyke_idle_left0,  splyke_idle_right0,
-    splyke_idle_left1,  splyke_idle_right1,     splyke_idle_left1,  splyke_idle_right1,
-    splyke_tornado0,    splyke_tornado0,        splyke_tornado1,    splyke_tornado1,
-    splyke_tornado2,    splyke_tornado2,        splyke_tornado1,    splyke_tornado1
-};
-
-const unsigned char * const purple_death_effect_sprite_lookup_table[] = {
-    purple_death_effect1, purple_death_effect1, purple_death_effect0
-};
-
-const unsigned char * const splyke_death_effect_sprite_lookup_table[] = {
-    splyke_death_effect1, splyke_death_effect1, splyke_death_effect0
-};
-
-const unsigned char * const energy_bar_lookup_table[] = {
-    energy_bar_0, energy_bar_1, energy_bar_2, energy_bar_3, energy_bar_4, energy_bar_5, energy_bar_6, energy_bar_7,
-    energy_bar_8, energy_bar_9, energy_bar_a, energy_bar_b, energy_bar_c, energy_bar_d, energy_bar_e, energy_bar_f
-};
-
-const unsigned char * const boss_body_sprite_idle_lookup_table[] = {
-    boss_body_idle_left0, boss_body_idle_right0,
-};
-
-const unsigned char * const boss_head_sprite_lookup_table[] = {
-    boss_head_eye_open_mouth_closed_left, boss_head_eye_open_mouth_closed_right,
-    boss_head_eye_closed_mouth_closed_left, boss_head_eye_closed_mouth_closed_right,
-};
-
-const unsigned char * const boss_body_sprite_flying_lookup_table[] = {
-    boss_body_flying_left0, boss_body_flying_right0,
-    boss_body_flying_left1, boss_body_flying_right1,
-    boss_body_flying_left2, boss_body_flying_right2,
-    boss_body_flying_left3, boss_body_flying_right3,
-};
-
-/*const unsigned char * const * const boss_body_sprite_state_meta_lookup_table[] = {
-    boss_body_sprite_flying_lookup_table, // Into
-    boss_body_sprite_idle_lookup_table, // BOSS_STATE_IDLE
-    boss_body_sprite_flying_lookup_table, // BOSS_STATE_ASCENDING
-    boss_body_sprite_flying_lookup_table, // BOSS_STATE_DESCENDING
-};*/ // Alternate solution to problem currently using branch logic
-
-const unsigned char const boss_magic_offset_table[] = { 0x80, 0x81, 0x82 };
-
-#pragma rodata-name(pop)
 
 void main (void) {
 
@@ -1145,35 +1030,39 @@ void draw_sun(void) {
     oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
+const void (* const draw_boss_functions[])(void) = { // defined+implemented in boss_ai.h+.c
+    draw_boss_flying,
+    draw_boss_idle,
+    draw_boss_flying,
+    draw_boss_flying,
+    draw_boss_flying,
+    draw_boss_dying
+};
+
 void draw_boss(void) {
     // extra2 is the animation timer for this enemy as timer[] is used for timing and other logic.
 
     temp3 = enemies.extra2[x]; // Copy that timer here.
 
-    // Blink if damaged.
+   
     if (boss_state == 4 && temp3 & 0b10) { // BOSS_STATE_DAMAGED
+        // Blink if damaged.
         return; // without drawing anything.
     }
 
-    // IDLE --
+
     temp4 = ENEMY_DIRECTION(x);
 
-    AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_head_sprite_lookup_table, temp4);
-    oam_meta_spr(temp_x, temp_y, temppointer);
-
-    if (boss_state == 1) { // BOSS_STATE_IDLE
-        // Idle
-        temp4 = ENEMY_DIRECTION(x);
-        AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_body_sprite_idle_lookup_table, temp4);
-    } else { 
-        // Flying
-        temp3 >>= 2;
-        temp3 &= 0b110; // Mask the frame number.
-        temp4 = temp3 | ENEMY_DIRECTION(x);
-        AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_body_sprite_flying_lookup_table, temp4);
+    // Draw the head...
+    if (boss_state != 5) { // not BOSS_STATE_DYING:
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_head_sprite_lookup_table, temp4);
+        oam_meta_spr(temp_x, temp_y, temppointer);
     }
 
-    
+    // And then the body.
+    temp0 = boss_state;
+    AsmCallFunctionAtPtrOffsetByIndexVar(draw_boss_functions, temp0);
+
     oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
@@ -2274,8 +2163,8 @@ void boss_fireball_ai(void) {
     // call cannonball_ai_sub as the main logic will be identical
     cannonball_ai_sub();
 
-    // Disappear on contact with a solid tile.
-    if (METATILE_IS_SOLID(collision)) {
+    // Disappear on contact with a solid tile, or if the boss is dead/dying.
+    if (METATILE_IS_SOLID(collision) || boss_state == 5 /*BOSS_STATE_DYING*/) {
         // Clear the enemy type and flags. (Both must be cleared.)
         enemies.type[x] = ENEMY_NONE;
         enemies.flags[x] = 0;
@@ -2553,7 +2442,8 @@ const void (* const boss_ai_functions[])(void) = { // defined+implemented in bos
     boss_ai_idle,
     boss_ai_ascending,
     boss_ai_descending,
-    boss_ai_damaged
+    boss_ai_damaged,
+    boss_ai_dying
 };
 
 void boss_ai(void) {

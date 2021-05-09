@@ -670,6 +670,15 @@ const unsigned char const purple_death_effect1[] = {
   128
 };
 
+// only used in the boss's death animation
+const unsigned char const purple_death_effect2[] = {
+      0xff, 0xff, 0x2E,2,
+      0x07, 0xff, 0x2E,2|OAM_FLIP_H,
+      0xff, 0x07, 0x2E,2|OAM_FLIP_V,
+      0x07, 0x07, 0x2E,2|OAM_FLIP_H|OAM_FLIP_V,
+  128
+};
+
 const unsigned char const splyke_death_effect0[] = {
       0xff, 0xff, 0x2C,0,
       0x07, 0xff, 0x2C,0|OAM_FLIP_H,

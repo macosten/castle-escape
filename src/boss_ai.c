@@ -16,6 +16,7 @@
 extern unsigned char TEMP[];
 #pragma zpsym("TEMP");
 
+// Required externs.
 ZEROPAGE_EXTERN(unsigned char, temp0);
 ZEROPAGE_EXTERN(unsigned char, temp1);
 ZEROPAGE_EXTERN(unsigned char, temp2);
@@ -48,6 +49,11 @@ ZEROPAGE_EXTERN(unsigned char, debug_tile_y);
 
 extern const unsigned char * const cmaps[];
 
+extern const unsigned char * const boss_body_sprite_idle_lookup_table[];
+extern const unsigned char * const boss_head_sprite_lookup_table[];
+extern const unsigned char * const boss_body_sprite_flying_lookup_table[];
+extern const unsigned char * const boss_dying_sprite_lookup_table[];
+
 extern const DialogBoxData const boss_dialog;
 // extern const DialogBoxData const defeat_dialog;
 
@@ -61,6 +67,7 @@ extern unsigned char boss_state;
 #define BOSS_STATE_ASCENDING 2
 #define BOSS_STATE_DESCENDING 3
 #define BOSS_STATE_DAMAGED 4
+#define BOSS_STATE_DYING 5
 
 extern unsigned char boss_memory[];
 
@@ -228,8 +235,6 @@ void boss_ai_ascending(void) {
             boss_shoot_fireball(); ;
         }
     }
-
-    //if (rand8() > 251) { boss_shoot_fireball(); }
     
 
     temp1 = enemies.extra[x]; // This gets modified by cannonball_ai_sub.
@@ -296,7 +301,7 @@ void boss_ai_damaged(void) {
     // I got slashed and am currently in my invincibility frames.
     if (temp0 == 0) {
         boss_start_flying();
-    } else if (temp0 & 0b11 == 0b11) {
+    } else if ((temp0 & 0b11) == 0b11) {
         // Rise up in the air slowly.
         high_byte(temp5) = enemies.nt[x];
         low_byte(temp5) = enemies.actual_y[x];
@@ -325,18 +330,53 @@ void boss_ai_damaged(void) {
 
 }
 
+void boss_ai_dying(void) {
+    // Just do the death animation, and end the level after 2 seconds.
+    if (enemies.timer[x] == 0) {
+        game_mode = MODE_GAME_OVER;
+    }
+}
+
+const unsigned char const boss_state_deadliness[] = {
+    0,
+    0,
+    1,
+    1,
+    0,
+    0
+};
+
 void collision_with_boss(void) {
     // game_mode = MODE_GAME_OVER; // Just end the level for now.
     if (IS_SWINGING_SWORD && boss_state == BOSS_STATE_IDLE) {
         --BOSS_HP;
         if (BOSS_HP == 0) {
-            game_mode = MODE_GAME_OVER; // End the level.
+            boss_state = BOSS_STATE_DYING; // Begin to end the level.
+            sfx_play(SFX_ENEMY_KILL, 0);
+        } else {
+            boss_state = BOSS_STATE_DAMAGED;
         }
-        enemies.timer[x] = 127; // ~2 seconds of iframes (these will be incremented until it overflows);
-        boss_state = BOSS_STATE_DAMAGED;
-
-        // Point upward
-
-    } 
-
+        enemies.timer[x] = 127; // ~2 seconds of iframes (these will be incremented until it overflows)
+    } else if (boss_state_deadliness[boss_state]) {
+        SET_STATUS_DEAD();
+    }
 }
+
+void draw_boss_flying(void) {
+    // Flying
+    temp3 >>= 2;
+    temp3 &= 0b110; // Mask the frame number.
+    temp4 |= temp3;// | ENEMY_DIRECTION(x);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_body_sprite_flying_lookup_table, temp4);
+}
+
+void draw_boss_idle(void) {
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_body_sprite_idle_lookup_table, temp4);
+}
+
+void draw_boss_dying(void) {
+    temp3 >>= 2;
+    temp3 &= 0b11;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_dying_sprite_lookup_table, temp3);
+}
+

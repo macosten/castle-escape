@@ -14,8 +14,13 @@
 	.export		_boss_ai_ascending
 	.export		_boss_ai_descending
 	.export		_boss_ai_damaged
+	.export		_boss_ai_dying
 	.export		_collision_with_boss
+	.export		_draw_boss_flying
+	.export		_draw_boss_idle
+	.export		_draw_boss_dying
 	.importzp	_TEMP
+	.import		_sfx_play
 	.import		_rand8
 	.import		_add_scroll_y_fast_sub
 	.import		_sub_scroll_y
@@ -43,6 +48,9 @@
 	.importzp	_hitbox
 	.importzp	_valrigard
 	.import		_cmaps
+	.import		_boss_body_sprite_idle_lookup_table
+	.import		_boss_body_sprite_flying_lookup_table
+	.import		_boss_dying_sprite_lookup_table
 	.import		_boss_dialog
 	.import		_active_dboxdata
 	.import		_enemies
@@ -56,6 +64,17 @@
 	.export		_boss_start_flying
 	.export		_boss_ai_intro
 	.export		_boss_collide_sub
+	.export		_boss_state_deadliness
+
+.segment	"RODATA"
+
+_boss_state_deadliness:
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$01
+	.byte	$00
+	.byte	$00
 
 ; ---------------------------------------------------------------
 ; void __near__ boss_ai_idle (void)
@@ -108,12 +127,12 @@
 ;
 	lda     _temp0
 	and     #$01
-	beq     L01FD
+	beq     L024F
 	jsr     _cannonball_ai_sub
 ;
 ; enemy_is_using_bg_collision = 1;
 ;
-L01FD:	lda     #$01
+L024F:	lda     #$01
 	sta     _enemy_is_using_bg_collision
 ;
 ; hitbox.x = enemies.x[x];
@@ -145,61 +164,61 @@ L01FD:	lda     #$01
 ;
 	lda     _collision_U
 	cmp     #$02
-	bcc     L0201
+	bcc     L0253
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$20
-	bne     L0201
+	bne     L0253
 	ldy     _x
 	lda     _enemies+256,y
 	ora     #$20
 ;
 ; else if (collision_D >= 2 && CANNONBALL_Y_DIRECTION(x)) { CANNONBALL_SET_NEG_Y(x); }
 ;
-	jmp     L0213
-L0201:	lda     _collision_D
+	jmp     L0265
+L0253:	lda     _collision_D
 	cmp     #$02
-	bcc     L0205
+	bcc     L0257
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$20
-	beq     L0205
+	beq     L0257
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$DF
-L0213:	sta     _TEMP
+L0265:	sta     _TEMP
 	ldy     _x
 	lda     _TEMP
 	sta     _enemies+256,y
 ;
 ; if (collision_L >= 2 && !CANNONBALL_X_DIRECTION(x)) { CANNONBALL_SET_POS_X(x); }
 ;
-L0205:	lda     _collision_L
+L0257:	lda     _collision_L
 	cmp     #$02
-	bcc     L0209
+	bcc     L025B
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$40
-	bne     L0209
+	bne     L025B
 	ldy     _x
 	lda     _enemies+256,y
 	ora     #$40
 ;
 ; else if (collision_R >= 2 && CANNONBALL_X_DIRECTION(x)) { CANNONBALL_SET_NEG_X(x); }
 ;
-	jmp     L0214
-L0209:	lda     _collision_R
+	jmp     L0266
+L025B:	lda     _collision_R
 	cmp     #$02
 	lda     #$00
-	bcc     L020E
+	bcc     L0260
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$40
-	beq     L020E
+	beq     L0260
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$BF
-L0214:	sta     _TEMP
+L0266:	sta     _TEMP
 	ldy     _x
 	lda     _TEMP
 	sta     _enemies+256,y
@@ -207,7 +226,7 @@ L0214:	sta     _TEMP
 ; enemy_is_using_bg_collision = 0;
 ;
 	lda     #$00
-L020E:	sta     _enemy_is_using_bg_collision
+L0260:	sta     _enemy_is_using_bg_collision
 ;
 ; if (BOSS_FIREBALL_COOLDOWN) { --BOSS_FIREBALL_COOLDOWN; }
 ;
@@ -417,10 +436,11 @@ L0188:	ldy     _x
 ;
 	jeq     _boss_start_flying
 ;
-; } else if (temp0 & 0b11 == 0b11) {
+; } else if ((temp0 & 0b11) == 0b11) {
 ;
-	and     #$01
-	bne     L0218
+	and     #$03
+	cmp     #$03
+	beq     L026A
 ;
 ; }
 ;
@@ -428,7 +448,7 @@ L0188:	ldy     _x
 ;
 ; high_byte(temp5) = enemies.nt[x];
 ;
-L0218:	ldy     _x
+L026A:	ldy     _x
 	lda     _enemies+192,y
 	sta     _temp5+1
 ;
@@ -501,7 +521,7 @@ L0218:	ldy     _x
 	ldy     _collision
 	lda     _metatile_property_lookup_table,y
 	and     #$01
-	bne     L01D7
+	bne     L01D9
 ;
 ; enemies.nt[x] = high_byte(temp6);
 ;
@@ -517,7 +537,35 @@ L0218:	ldy     _x
 ;
 ; }
 ;
-L01D7:	rts
+L01D9:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ boss_ai_dying (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_boss_ai_dying: near
+
+.segment	"CODE"
+
+;
+; if (enemies.timer[x] == 0) {
+;
+	ldy     _x
+	lda     _enemies+512,y
+	bne     L01E9
+;
+; game_mode = MODE_GAME_OVER;
+;
+	lda     #$04
+	sta     _game_mode
+;
+; }
+;
+L01E9:	rts
 
 .endproc
 
@@ -536,35 +584,166 @@ L01D7:	rts
 ;
 	lda     _player_flags
 	and     #$04
-	beq     L021A
+	beq     L01F6
 	lda     _boss_state
 	cmp     #$01
-	beq     L021D
-L021A:	rts
+	bne     L01F6
 ;
 ; --BOSS_HP;
 ;
-L021D:	dec     _boss_memory+2
+	dec     _boss_memory+2
 ;
 ; if (BOSS_HP == 0) {
 ;
-	bne     L01EE
+	bne     L0270
 ;
-; game_mode = MODE_GAME_OVER; // End the level.
+; boss_state = BOSS_STATE_DYING; // Begin to end the level.
 ;
-	lda     #$04
-	sta     _game_mode
+	lda     #$05
+	sta     _boss_state
 ;
-; enemies.timer[x] = 127; // ~2 seconds of iframes (these will be incremented until it overflows);
+; sfx_play(SFX_ENEMY_KILL, 0);
 ;
-L01EE:	ldy     _x
-	lda     #$7F
-	sta     _enemies+512,y
+	lda     #$02
+	jsr     pusha
+	lda     #$00
+	jsr     _sfx_play
+;
+; } else {
+;
+	jmp     L0205
 ;
 ; boss_state = BOSS_STATE_DAMAGED;
 ;
-	lda     #$04
+L0270:	lda     #$04
 	sta     _boss_state
+;
+; enemies.timer[x] = 127; // ~2 seconds of iframes (these will be incremented until it overflows)
+;
+L0205:	ldy     _x
+	lda     #$7F
+	sta     _enemies+512,y
+;
+; } else if (boss_state_deadliness[boss_state]) {
+;
+	rts
+L01F6:	ldy     _boss_state
+	lda     _boss_state_deadliness,y
+	beq     L020D
+;
+; SET_STATUS_DEAD();
+;
+	lda     _player_flags
+	ora     #$02
+	sta     _player_flags
+;
+; }
+;
+L020D:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ draw_boss_flying (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_draw_boss_flying: near
+
+.segment	"CODE"
+
+;
+; temp3 >>= 2;
+;
+	lda     _temp3
+	lsr     a
+	lsr     a
+	sta     _temp3
+;
+; temp3 &= 0b110; // Mask the frame number.
+;
+	and     #$06
+	sta     _temp3
+;
+; temp4 |= temp3;// | ENEMY_DIRECTION(x);
+;
+	ora     _temp4
+	sta     _temp4
+;
+; AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_body_sprite_flying_lookup_table, temp4);
+;
+	asl     a
+	tay
+	lda     _boss_body_sprite_flying_lookup_table,y
+	sta     _temppointer
+	lda     _boss_body_sprite_flying_lookup_table+1,y
+	sta     _temppointer+1
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ draw_boss_idle (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_draw_boss_idle: near
+
+.segment	"CODE"
+
+;
+; AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_body_sprite_idle_lookup_table, temp4);
+;
+	lda     _temp4
+	asl     a
+	tay
+	lda     _boss_body_sprite_idle_lookup_table,y
+	sta     _temppointer
+	lda     _boss_body_sprite_idle_lookup_table+1,y
+	sta     _temppointer+1
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ draw_boss_dying (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_draw_boss_dying: near
+
+.segment	"CODE"
+
+;
+; temp3 >>= 2;
+;
+	lda     _temp3
+	lsr     a
+	lsr     a
+	sta     _temp3
+;
+; temp3 &= 0b11;
+;
+	and     #$03
+	sta     _temp3
+;
+; AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_dying_sprite_lookup_table, temp3);
+;
+	asl     a
+	tay
+	lda     _boss_dying_sprite_lookup_table,y
+	sta     _temppointer
+	lda     _boss_dying_sprite_lookup_table+1,y
+	sta     _temppointer+1
 ;
 ; }
 ;
@@ -597,11 +776,11 @@ L01EE:	ldy     _x
 	adc     #$01
 	sta     _temp_x
 	ldx     #$00
-L021E:	lda     _temp_x
+L0271:	lda     _temp_x
 	cmp     _temp1
 	txa
 	sbc     #$00
-	bcc     L0220
+	bcc     L0273
 ;
 ; }
 ;
@@ -609,10 +788,10 @@ L021E:	lda     _temp_x
 ;
 ; if (IS_ENEMY_ACTIVE(temp_x)) { continue; } // ENEMY_NONE
 ;
-L0220:	ldy     _temp_x
+L0273:	ldy     _temp_x
 	lda     _enemies+256,y
 	and     #$80
-	jne     L021F
+	jne     L0272
 ;
 ; enemies.type[temp_x] = ENEMY_BOSS_FIREBALL;
 ;
@@ -723,8 +902,8 @@ L0220:	ldy     _temp_x
 ;
 ; for (temp_x = x+1; temp_x < temp1; ++temp_x) {
 ;
-L021F:	inc     _temp_x
-	jmp     L021E
+L0272:	inc     _temp_x
+	jmp     L0271
 
 .endproc
 
