@@ -14,13 +14,16 @@
 
 // Generally preferring defines like this over enums as enums are ints
 // under the hood, and ints are 2 bytes (which makes them slower). 
-#define MODE_TITLE 0
+#define MODE_LEVEL_SELECT 0
 #define MODE_GAME 1
 #define MODE_PAUSE 2
 #define MODE_LEVEL_WELCOME_SCREEN 3
-#define MODE_GAME_OVER 4 
+#define MODE_LEVEL_COMPLETE 4 
 #define MODE_GAME_SHOWING_TEXT 5
-// #define MODE_LEVEL_COMPLETE 6
+
+// Should the game continue to the next level, or exit the game when we finish this?
+#define LEVEL_UP_BEHAVIOR_EXIT 0
+#define LEVEL_UP_BEHAVIOR_CONTINUE 1
 
 #define MAX_UP 0x4000 // The lowest Y value the player can have before the screen attempts to scroll up.
 #define MIN_DOWN 0x8000 // The highest Y value the player can have before the screen attempts to scroll down.
@@ -60,5 +63,12 @@
 #define SFX_MENU_BEEP 4
 #define SFX_BUMP 5
 #define SFX_ACID_DROP 6
+
+
+// ===
+// Which menu are we looking at? We'll keep track with a constant.
+#define MENU_SELECT_GAME_TYPE 0
+#define MENU_SELECT_GAME_LEVEL 1
+// #define MENU_WHATEVER_I_WANT 2
 
 #endif

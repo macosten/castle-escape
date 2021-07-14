@@ -333,7 +333,7 @@ void boss_ai_damaged(void) {
 void boss_ai_dying(void) {
     // Just do the death animation, and end the level after 2 seconds.
     if (enemies.timer[x] == 0) {
-        game_mode = MODE_GAME_OVER;
+        game_mode = MODE_LEVEL_COMPLETE;
     }
 }
 
@@ -347,7 +347,7 @@ const unsigned char const boss_state_deadliness[] = {
 };
 
 void collision_with_boss(void) {
-    // game_mode = MODE_GAME_OVER; // Just end the level for now.
+    // game_mode = MODE_LEVEL_COMPLETE; // Just end the level for now.
     if (IS_SWINGING_SWORD && boss_state == BOSS_STATE_IDLE) {
         --BOSS_HP;
         if (BOSS_HP == 0) {

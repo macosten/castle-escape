@@ -558,7 +558,7 @@ L01D9:	rts
 	lda     _enemies+512,y
 	bne     L01E9
 ;
-; game_mode = MODE_GAME_OVER;
+; game_mode = MODE_LEVEL_COMPLETE;
 ;
 	lda     #$04
 	sta     _game_mode

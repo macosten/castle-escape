@@ -56,6 +56,7 @@ unsigned char player_flags; // All of these flags should be such that the defaul
 // See cmacros.h for macros operating on this.
 
 unsigned char game_mode; // A byte that generally tells the game how to behave depending on what's set.
+unsigned char game_level_advance_behavior; // A byte that tells the game what to do when a level ends.
 
 int address; // Used with get_ppu_addr and buffer_4_mt because they don't use pointer types for some reason.
 
@@ -122,7 +123,7 @@ unsigned char debug_tile_y;
 // Added to valrigard.x when standing on a conveyor belt.
 signed char conveyor_delta;
 
-unsigned char menu_index;
+unsigned char menu; // Used to keep track of which menu the game is displaying, or was previously displaying.
 
 unsigned int tile_clear_queue[4]; // Each element is one result of get_ppu_addr
 unsigned char tile_clear_to_type_queue[4]; // This is the tile ID to replace the cleared tile with.

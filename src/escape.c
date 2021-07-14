@@ -137,6 +137,7 @@ void load_level_new(void);
 
 void calculate_shuffle_array(void);
 
+void load_game_type_selector(void);
 void load_level_selector(void);
 void load_game_over_screen(void);
 void load_level_welcome_screen(void);
@@ -182,6 +183,11 @@ void death_effect_timer_ai(void);
 
 void fire_at_target(void);
 
+// Menu functions.
+void menu_level_select(void);
+void menu_game_type_select(void);
+
+// Functions in other files.
 extern void dialog_box_handler(void);
 extern void trigger_dialog_box(DialogBoxData const * dboxdata);
 
@@ -219,8 +225,11 @@ const unsigned char const cannon_dr_sprite_lookup_table[] = {2, 3, 4};
 const unsigned char const cannon_dl_sprite_lookup_table[] = {6, 5, 4};
 const unsigned char * const cannon_sprite_quadrant_lookup_table[] = {cannon_ul_sprite_lookup_table, cannon_ur_sprite_lookup_table, cannon_dl_sprite_lookup_table, cannon_dr_sprite_lookup_table};
 
-
-// Lookup tables for valrigard's sprite.
+// Lookup table so the game knows what to do at a given menu.
+const void (* const menu_logic_functions[])(void) = {
+    menu_game_type_select,
+    menu_level_select
+};
 
 
 void main (void) {
@@ -244,6 +253,7 @@ void main (void) {
     // Set the level index to the first level.
     level_index = 0;
 
+    // TODO: make a "Change Menu" function that then dispatches to a different "init" for each menu.
     load_level_selector();
 
     // pal_bright set to zero by show_title_screen(). Set it back to 4.
@@ -260,66 +270,15 @@ void main (void) {
 
     while (1){
 
-        while (game_mode == MODE_TITLE) { 
+        while (game_mode == MODE_LEVEL_SELECT) { 
             ppu_wait_nmi();
             // set_music_speed, etc
 
-            // Just listen for desired inputs.
-            pad1 = pad_poll(0); // read the first controller
-            pad1_new = get_pad_new(0);
-            
             // Clear the VRAM buffer if it gets used for anything...
             clear_vram_buffer();
 
-            // I suppose if we ever want the game to start immediately,
-            // We can just set this to if (1) for debugging.
-            if (pad1_new & PAD_UP) {
-                // level_index = 0;
-                sfx_play(SFX_MENU_BEEP, 0);
-                score = 0; // Reset the score.
-                begin_level();
-                break; // Prevent the execution of any of the following code.
-            } 
-
-            if (pad1_new & PAD_LEFT) {
-                // Decrement the level index, or purposefully underflow it.
-                if (level_index != 0) {
-                    --level_index;
-                } else {
-                    level_index = NUMBER_OF_LEVELS - 1;
-                }
-
-            } else if (pad1_new & PAD_RIGHT) {
-                // Increment the level index, or purposefully overflow it.
-                ++level_index;
-                if (level_index == NUMBER_OF_LEVELS) {
-                    level_index = 0;
-                }
-
-            }
-
-            if (pad1_new & PAD_LEFT | pad1_new & PAD_RIGHT) {
-                // Code shared between what we'd do with either button press.
-                sfx_play(SFX_MENU_BEEP, 0);
-
-                // Update the level name shown on the screen.
-                // We must take into account that a remainder of the previous level name will be shown
-                // if the length of the next one is less than the length of the current one.
-                //memfill(&cmap, ' ', 28); // 28 accounts for the border of 2 tiles from each side
-                for (temp0 = 0; temp0 < 28; ++temp0) { cmap[temp0] = ' '; }
-
-                AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
-                temp0 = strlen(temppointer);
-                for (temp1 = 0; temp1 < temp0; ++temp1) {
-                    //temp2 = temppointer[temp1];
-                    AsmSet1ByteFromZpPtrAtIndexVar(temp2, temppointer, temp1);
-                    cmap[temp1] = temp2;
-                }
-                multi_vram_buffer_horz(cmap, 28, NTADR_A(3, 10));
-            }
-
-
-
+            // Call the correct menu function.
+            AsmCallFunctionAtPtrOffsetByIndexVar(menu_logic_functions, menu);
         }
 
         // The game is active and we're drawing frames.
@@ -390,7 +349,7 @@ void main (void) {
 
             handle_tile_clear_queue();
 
-            if (game_mode == MODE_GAME_OVER) {
+            if (game_mode == MODE_LEVEL_COMPLETE) {
                 load_game_over_screen();
             }
 
@@ -426,8 +385,7 @@ void main (void) {
 
         }
 
-        // For now, "game over" is "you win"
-        while (game_mode == MODE_GAME_OVER) {
+        while (game_mode == MODE_LEVEL_COMPLETE) {
             ppu_wait_nmi();
 
             pad1 = pad_poll(0);
@@ -438,7 +396,6 @@ void main (void) {
             }
 
         }
-        
         
     }
     
@@ -476,6 +433,76 @@ void put_str_sub(void) {
 
 const char const title_string[] = "Castle Escape Alpha";
 const char const author_string[] = "By macosten";
+
+void load_game_type_selector(void) {
+    ppu_off();
+    clear_screen();
+
+    game_mode = MODE_LEVEL_SELECT;
+
+    put_str(NTADR_A(3, 2), title_string);
+    put_str(NTADR_A(3, 4), author_string);
+    put_str(NTADR_A(3, 6), __DATE__);
+    put_str(NTADR_A(15, 6), __TIME__);
+    
+}
+
+void menu_level_select(void) {
+    // Listen for desired inputs.
+    pad1 = pad_poll(0); // read the first controller
+    pad1_new = get_pad_new(0);
+            
+    // I suppose if we ever want the game to start immediately,
+    // We can just set this to if (1) for debugging.
+    if (pad1_new & PAD_UP) {
+        // level_index = 0;
+        sfx_play(SFX_MENU_BEEP, 0);
+        score = 0; // Reset the score.
+        begin_level();
+        return; // Prevent the execution of any of the following code.
+    } 
+
+    if (pad1_new & PAD_LEFT) {
+        // Decrement the level index, or purposefully underflow it.
+        if (level_index != 0) {
+            --level_index;
+        } else {
+            level_index = NUMBER_OF_LEVELS - 1;
+        }
+
+    } else if (pad1_new & PAD_RIGHT) {
+        // Increment the level index, or purposefully overflow it.
+        ++level_index;
+        if (level_index == NUMBER_OF_LEVELS) {
+            level_index = 0;
+        }
+    }
+
+    if (pad1_new & PAD_LEFT | pad1_new & PAD_RIGHT) {
+        // Code shared between what we'd do with either button press.
+        sfx_play(SFX_MENU_BEEP, 0);
+
+        // Update the level name shown on the screen.
+        // We must take into account that a remainder of the previous level name will be shown
+        // if the length of the next one is less than the length of the current one.
+        //memfill(&cmap, ' ', 28); // 28 accounts for the border of 2 tiles from each side
+        for (temp0 = 0; temp0 < 28; ++temp0) { cmap[temp0] = ' '; }
+
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
+        temp0 = strlen(temppointer);
+        for (temp1 = 0; temp1 < temp0; ++temp1) {
+            //temp2 = temppointer[temp1];
+            AsmSet1ByteFromZpPtrAtIndexVar(temp2, temppointer, temp1);
+            cmap[temp1] = temp2;
+        }
+        multi_vram_buffer_horz(cmap, 28, NTADR_A(3, 10));
+    }
+}
+
+void menu_game_type_select(void) {
+    menu = MENU_SELECT_GAME_LEVEL; // This menu is not implemented yet.
+}
+
 const char const instruction_string[] = "Press Up to start";
 
 #define MENU_SELECTOR_SPRITE 0x10
@@ -485,7 +512,7 @@ void load_level_selector(void) {
     ppu_off();
     clear_screen();
 
-    game_mode = MODE_TITLE;
+    game_mode = MODE_LEVEL_SELECT;
 
     //multi_vram_buffer_horz(title_string, sizeof(title_string), NTADR_A(3, 2));
     put_str(NTADR_A(3, 2), title_string);
@@ -506,7 +533,7 @@ void load_game_over_screen(void) {
     ppu_off();
     clear_screen();
     // Set the game mode properly.
-    game_mode = MODE_GAME_OVER;
+    game_mode = MODE_LEVEL_COMPLETE;
 
     // Write the message.
     multi_vram_buffer_horz(level_complete_string, sizeof(level_complete_string), NTADR_A(3, 5));
@@ -1222,7 +1249,7 @@ void movement(void) {
         if (energy > MAX_ENERGY) energy = MAX_ENERGY;
 
         if (TOUCHING_YELLOW_DOOR && (pad1 & PAD_UP)) {
-            game_mode = MODE_GAME_OVER;
+            game_mode = MODE_LEVEL_COMPLETE;
         }
     }
 
@@ -1435,7 +1462,7 @@ void bg_collision_sub(void) {
         //SET_STATUS_DEAD();
         SET_TOUCHING_SPIKES();
     } else if (temp0 & METATILE_RED_DOOR) {
-        game_mode = MODE_GAME_OVER;
+        game_mode = MODE_LEVEL_COMPLETE;
     }
 
 }
