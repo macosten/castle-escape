@@ -27,7 +27,8 @@
 
 #include "lib/lzgmini_6502.h" // My version of liblzg, interfaced to work with cc65.
 
-#include "titlescreen.h"
+#include "titlescreen.h" // Title screen and associated data+functions
+#include "menu_screens.h" // compressed menu data
 
 #pragma bss-name(push, "BSS")
 
@@ -137,8 +138,6 @@ void load_level_new(void);
 
 void calculate_shuffle_array(void);
 
-void load_game_type_selector(void);
-void load_level_selector(void);
 void load_game_over_screen(void);
 void load_level_welcome_screen(void);
 
@@ -184,8 +183,12 @@ void death_effect_timer_ai(void);
 void fire_at_target(void);
 
 // Menu functions.
+void switch_menu();
+
 void menu_level_select(void);
 void menu_game_type_select(void);
+
+void load_level_selector(void);
 
 // Functions in other files.
 extern void dialog_box_handler(void);
@@ -231,6 +234,17 @@ const void (* const menu_logic_functions[])(void) = {
     menu_level_select
 };
 
+// Lookup table so the game knows how to initialize a given menu.
+const void (* const menu_load_functions[])(void) = {
+    empty_function,
+    load_level_selector,
+};
+
+const unsigned char * const menu_compressed_data[] = {
+    game_select_screen,
+    level_select_screen,
+    about_screen,
+};
 
 void main (void) {
 
@@ -249,12 +263,15 @@ void main (void) {
 
     set_prg_bank(4);
     show_title_screen();
+    set_prg_bank(5);
         
     // Set the level index to the first level.
     level_index = 0;
 
+    menu = 1;
     // TODO: make a "Change Menu" function that then dispatches to a different "init" for each menu.
-    load_level_selector();
+    //load_level_selector();
+    switch_menu();
 
     // pal_bright set to zero by show_title_screen(). Set it back to 4.
     pal_bright(4);
@@ -392,7 +409,8 @@ void main (void) {
             pad1_new = get_pad_new(0);
 
             if (pad1_new & PAD_DOWN) {
-                load_level_selector();
+                menu = 1;
+                switch_menu();
             }
 
         }
@@ -431,20 +449,38 @@ void put_str_sub(void) {
     }
 }
 
-const char const title_string[] = "Castle Escape Alpha";
-const char const author_string[] = "By macosten";
-
-void load_game_type_selector(void) {
+void switch_menu(void) {
+    // We always want to do these things before changing a menu:
     ppu_off();
     clear_screen();
 
     game_mode = MODE_LEVEL_SELECT;
 
-    put_str(NTADR_A(3, 2), title_string);
-    put_str(NTADR_A(3, 4), author_string);
-    put_str(NTADR_A(3, 6), __DATE__);
-    put_str(NTADR_A(15, 6), __TIME__);
-    
+    // Decode the menu visuals from libLZG'd data in the Menu Data Bank to WRAM.
+
+    set_prg_bank(MENU_DATA_BANK);
+
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, menu_compressed_data, menu);
+    LZG_decode(temppointer, cmap);
+
+    // Write the buffer to VRAM.
+    vram_write(cmap, (32*30));
+
+    // Do a menu-specific thing.
+    AsmCallFunctionAtPtrOffsetByIndexVar(menu_load_functions, menu);
+
+    // Turn the PPU back on.
+    ppu_on_all();
+}
+
+const char const instruction_string[] = "Select a level...";
+
+#define MENU_SELECTOR_SPRITE 0x10
+
+void load_level_selector(void) {
+    // Print the currently-selected level's name.
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
+    put_str(NTADR_A(3, 12), temppointer);
 }
 
 void menu_level_select(void) {
@@ -495,7 +531,7 @@ void menu_level_select(void) {
             AsmSet1ByteFromZpPtrAtIndexVar(temp2, temppointer, temp1);
             cmap[temp1] = temp2;
         }
-        multi_vram_buffer_horz(cmap, 28, NTADR_A(3, 10));
+        multi_vram_buffer_horz(cmap, 28, NTADR_A(3, 12));
     }
 }
 
@@ -503,29 +539,6 @@ void menu_game_type_select(void) {
     menu = MENU_SELECT_GAME_LEVEL; // This menu is not implemented yet.
 }
 
-const char const instruction_string[] = "Press Up to start";
-
-#define MENU_SELECTOR_SPRITE 0x10
-
-void load_level_selector(void) {
-    // Eventually we'll want to make a nicer title screen and vram_unrle it, but for now, a simple one:
-    ppu_off();
-    clear_screen();
-
-    game_mode = MODE_LEVEL_SELECT;
-
-    //multi_vram_buffer_horz(title_string, sizeof(title_string), NTADR_A(3, 2));
-    put_str(NTADR_A(3, 2), title_string);
-    put_str(NTADR_A(3, 4), author_string);
-    put_str(NTADR_A(3, 6), __DATE__);
-    put_str(NTADR_A(15, 6), __TIME__);
-    put_str(NTADR_A(3, 8), instruction_string);
-
-    AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
-    put_str(NTADR_A(3, 10), temppointer);
-
-    ppu_on_all();
-}
 
 const char const level_complete_string[] = "Level complete!";
 const char const down_to_restart_string[] = "Down to restart.";
