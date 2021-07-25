@@ -297,6 +297,7 @@ void main (void) {
 
             // Clear the VRAM buffer if it gets used for anything...
             clear_vram_buffer();
+            oam_clear(); // ...and the OAM, in case we use a sprite.
 
             // Call the correct menu function.
             AsmCallFunctionAtPtrOffsetByIndexVar(menu_logic_functions, menu);
@@ -558,8 +559,6 @@ void menu_game_type_select(void) {
     pad1 = pad_poll(0); // read the first controller
     pad1_new = get_pad_new(0);
 
-    oam_clear(); // Since we show the cursor as a sprite.
-
     if (pad1_new & PAD_DOWN) {
         ++menu_selection;
         if (menu_selection == GAME_TYPE_MENU_OPTIONS) {  // Wrap around
@@ -620,8 +619,6 @@ void menu_about_screen(void) {
     }
 }
 
-
-// TODO: Make this "Game Complete" screen into a menu.
 // Menu -- Game Complete.
 void load_game_complete_screen(void) {
     // Set the game mode properly.
@@ -632,11 +629,10 @@ void menu_game_complete_screen(void) {
     pad1 = pad_poll(0);
     pad1_new = get_pad_new(0);
 
-    oam_clear(); // Since we use a sprite on this menu.
-
     if (pad1_new) {
         menu = 0;
         switch_menu();
+        return;
     }
 
     oam_meta_spr(123, 146, valrigard_idle_right);
