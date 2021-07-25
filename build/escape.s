@@ -10671,13 +10671,13 @@ _game_type_select_menu_links:
 	.byte	$01
 	.byte	$02
 _game_type_select_menu_selector_x:
-	.byte	$50
-	.byte	$40
-	.byte	$50
+	.byte	$54
+	.byte	$44
+	.byte	$54
 _game_type_select_menu_selector_y:
-	.byte	$68
-	.byte	$78
-	.byte	$88
+	.byte	$67
+	.byte	$77
+	.byte	$87
 _level_complete_string:
 	.byte	$4C,$65,$76,$65,$6C,$20,$63,$6F,$6D,$70,$6C,$65,$74,$65,$21,$00
 _down_to_restart_string:
@@ -10830,7 +10830,7 @@ L250D:
 L2509:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$34,$00
 L292D:
-	.byte	$31,$30,$3A,$34,$32,$3A,$35,$34,$00
+	.byte	$31,$32,$3A,$31,$35,$3A,$34,$35,$00
 L250B:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$35,$00
 L2505:
@@ -17689,7 +17689,7 @@ L28F7:	lda     _pad1_new
 	lda     #$00
 	jsr     _sfx_play
 ;
-; oam_spr(game_type_select_menu_selector_x[menu_selection], game_type_select_menu_selector_y[menu_selection], MENU_SELECTOR_SPRITE, 0);
+; oam_spr(game_type_select_menu_selector_x[menu_selection], game_type_select_menu_selector_y[menu_selection], 0x10, 0);
 ;
 L2905:	ldy     _menu_selection
 	lda     _game_type_select_menu_selector_x,y

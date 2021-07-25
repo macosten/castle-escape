@@ -549,15 +549,15 @@ const unsigned char const game_type_select_menu_links[] = {
 };
 
 const unsigned char const game_type_select_menu_selector_x[] = {
-    10 * 8,
-    8 * 8,
-    10 * 8,
+    10 * 8 + 4,
+    8 * 8 + 4,
+    10 * 8 + 4,
 };
 
 const unsigned char const game_type_select_menu_selector_y[] = {
-    13 * 8,
-    15 * 8,
-    17 * 8,
+    13 * 8 - 1,
+    15 * 8 - 1,
+    17 * 8 - 1,
 };
 
 #define GAME_TYPE_MENU_OPTIONS 3
@@ -604,7 +604,7 @@ void menu_game_type_select(void) {
     }
 
     // Show the cursor.
-    oam_spr(game_type_select_menu_selector_x[menu_selection], game_type_select_menu_selector_y[menu_selection], MENU_SELECTOR_SPRITE, 0);
+    oam_spr(game_type_select_menu_selector_x[menu_selection], game_type_select_menu_selector_y[menu_selection], 0x10, 0);
 
 }
 
