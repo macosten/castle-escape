@@ -3,6 +3,8 @@
 #define MENU_DATA_BANK 5
 #pragma rodata-name(push, "BANK5")
 
+#define MENU_GAME_SELECT 0
+
 const unsigned char const game_select_screen[] = { // main_menu_screen
 	76,90,71,0,0,3,192,0,0,0,86,7,98,21,92,1,
 	0,1,2,3,32,32,3,31,3,31,3,29,3,21,83,101,
@@ -13,6 +15,8 @@ const unsigned char const game_select_screen[] = { // main_menu_screen
 	229,246,247,3,59,247,
 };
 
+#define MENU_LEVEL_SELECT 1
+
 const unsigned char const level_select_screen[] = {
 	76,90,71,0,0,3,192,0,0,0,83,166,111,20,9,1,
 	0,1,2,3,32,32,3,31,3,31,3,29,3,21,83,101,
@@ -22,6 +26,8 @@ const unsigned char const level_select_screen[] = {
 	99,107,1,27,92,3,30,3,15,130,229,3,59,229,246,247,
 	3,59,247,
 };
+
+#define MENU_ABOUT_SCREEN 2
 
 const unsigned char const about_screen[] = {
 	76,90,71,0,0,3,192,0,0,0,127,23,177,34,188,1,

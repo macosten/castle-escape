@@ -65,10 +65,4 @@
 #define SFX_ACID_DROP 6
 
 
-// ===
-// Which menu are we looking at? We'll keep track with a constant.
-#define MENU_SELECT_GAME_TYPE 0
-#define MENU_SELECT_GAME_LEVEL 1
-// #define MENU_WHATEVER_I_WANT 2
-
 #endif

@@ -187,8 +187,10 @@ void switch_menu();
 
 void menu_level_select(void);
 void menu_game_type_select(void);
+void menu_about_screen(void);
 
 void load_level_selector(void);
+void load_about_screen(void);
 
 // Functions in other files.
 extern void dialog_box_handler(void);
@@ -231,13 +233,15 @@ const unsigned char * const cannon_sprite_quadrant_lookup_table[] = {cannon_ul_s
 // Lookup table so the game knows what to do at a given menu.
 const void (* const menu_logic_functions[])(void) = {
     menu_game_type_select,
-    menu_level_select
+    menu_level_select,
+    menu_about_screen,
 };
 
-// Lookup table so the game knows how to initialize a given menu.
+// If a menu needs something extra/special to be done before showing it, it'll do so in one of these functions.
 const void (* const menu_load_functions[])(void) = {
-    empty_function,
+    empty_function, // If no special action needs to be taken
     load_level_selector,
+    load_about_screen,
 };
 
 const unsigned char * const menu_compressed_data[] = {
@@ -253,7 +257,7 @@ void main (void) {
     // use the second set of tiles for sprites
     // both bg and sprites are set to 0 by default
     // Set the swappable bank like this:
-    set_prg_bank(0);
+    //set_prg_bank(0);
     set_chr_bank_0(0);
     //set_chr_bank_1(1);
     bank_spr(1);
@@ -263,14 +267,11 @@ void main (void) {
 
     set_prg_bank(4);
     show_title_screen();
-    set_prg_bank(5);
         
     // Set the level index to the first level.
     level_index = 0;
 
-    menu = 1;
-    // TODO: make a "Change Menu" function that then dispatches to a different "init" for each menu.
-    //load_level_selector();
+    //menu = MENU_GAME_SELECT; // = 0
     switch_menu();
 
     // pal_bright set to zero by show_title_screen(). Set it back to 4.
@@ -454,7 +455,12 @@ void switch_menu(void) {
     ppu_off();
     clear_screen();
 
-    game_mode = MODE_LEVEL_SELECT;
+    // Devensive programming: clear these buffers.
+    clear_vram_buffer();
+    oam_clear();
+
+    game_mode = MODE_LEVEL_SELECT; // Ensure the correct game mode is active.
+    menu_selection = 0; // Just to make sure we don't accidentally point to an invalid menu item somehow.
 
     // Decode the menu visuals from libLZG'd data in the Menu Data Bank to WRAM.
 
@@ -473,9 +479,9 @@ void switch_menu(void) {
     ppu_on_all();
 }
 
-const char const instruction_string[] = "Select a level...";
-
 #define MENU_SELECTOR_SPRITE 0x10
+
+// Menu -- Level Select.
 
 void load_level_selector(void) {
     // Print the currently-selected level's name.
@@ -490,8 +496,7 @@ void menu_level_select(void) {
             
     // I suppose if we ever want the game to start immediately,
     // We can just set this to if (1) for debugging.
-    if (pad1_new & PAD_UP) {
-        // level_index = 0;
+    if (pad1_new & PAD_UP || pad1_new & PAD_A) {
         sfx_play(SFX_MENU_BEEP, 0);
         score = 0; // Reset the score.
         begin_level();
@@ -535,11 +540,96 @@ void menu_level_select(void) {
     }
 }
 
+// Menu -- Game Type Select.
+
+const unsigned char const game_type_select_menu_links[] = { 
+    MENU_GAME_SELECT,
+    MENU_LEVEL_SELECT,
+    MENU_ABOUT_SCREEN,
+};
+
+const unsigned char const game_type_select_menu_selector_x[] = {
+    10 * 8,
+    8 * 8,
+    10 * 8,
+};
+
+const unsigned char const game_type_select_menu_selector_y[] = {
+    13 * 8,
+    15 * 8,
+    17 * 8,
+};
+
+#define GAME_TYPE_MENU_OPTIONS 3
 void menu_game_type_select(void) {
-    menu = MENU_SELECT_GAME_LEVEL; // This menu is not implemented yet.
+    // Listen for desired inputs.
+    pad1 = pad_poll(0); // read the first controller
+    pad1_new = get_pad_new(0);
+
+    oam_clear(); // Since we show the cursor as a sprite.
+
+    if (pad1_new & PAD_DOWN) {
+        ++menu_selection;
+        if (menu_selection == GAME_TYPE_MENU_OPTIONS) {  // Wrap around
+            menu_selection = 0;
+        }
+    }
+
+    if (pad1_new & PAD_UP) {
+        if (menu_selection != 0) {
+            --menu_selection;
+        } else {
+            menu_selection = GAME_TYPE_MENU_OPTIONS - 1;
+        }
+    }
+
+    if (pad1_new & PAD_A | pad1_new & PAD_RIGHT) {
+        switch (menu_selection) {
+            case 0: // Gauntlet
+                // new Gauntlet game at level 1.
+                level_index = 0;
+                score = 0;
+                begin_level();
+                return;
+            default:
+                menu = game_type_select_menu_links[menu_selection];
+                switch_menu();
+                return;
+        }
+    }
+
+    if (pad1_new & PAD_UP | pad1_new & PAD_DOWN | pad1_new & PAD_A) {
+        // Code shared between what we'd do with either button press.
+        sfx_play(SFX_MENU_BEEP, 0);
+    }
+
+    // Show the cursor.
+    oam_spr(game_type_select_menu_selector_x[menu_selection], game_type_select_menu_selector_y[menu_selection], MENU_SELECTOR_SPRITE, 0);
+
+}
+
+// Menu -- About.
+
+void load_about_screen(void) {
+    put_str(NTADR_A(6, 6), __DATE__);
+    put_str(NTADR_A(18, 6), __TIME__);
+}
+
+void menu_about_screen(void) {
+    // Listen for desired inputs.
+    pad1 = pad_poll(0); // read the first controller
+    pad1_new = get_pad_new(0);
+
+    if (pad1_new) {
+        // Go back.
+        sfx_play(SFX_MENU_BEEP, 0);
+        menu = MENU_GAME_SELECT;
+        switch_menu();
+    }
 }
 
 
+// TODO: Make this "Game Complete" screen into a menu.
 const char const level_complete_string[] = "Level complete!";
 const char const down_to_restart_string[] = "Down to restart.";
 void load_game_over_screen(void) {

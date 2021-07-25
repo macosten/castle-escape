@@ -124,6 +124,7 @@ unsigned char debug_tile_y;
 signed char conveyor_delta;
 
 unsigned char menu; // Used to keep track of which menu the game is displaying, or was previously displaying.
+unsigned char menu_selection; // Used to keep track of what item is selected in a menu.
 
 unsigned int tile_clear_queue[4]; // Each element is one result of get_ppu_addr
 unsigned char tile_clear_to_type_queue[4]; // This is the tile ID to replace the cleared tile with.
