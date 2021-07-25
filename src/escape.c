@@ -137,8 +137,6 @@ void begin_level(void);
 void load_level_new(void);
 
 void calculate_shuffle_array(void);
-
-void load_game_over_screen(void);
 void load_level_welcome_screen(void);
 
 void clear_screen(void);
@@ -188,9 +186,11 @@ void switch_menu();
 void menu_level_select(void);
 void menu_game_type_select(void);
 void menu_about_screen(void);
+void menu_game_complete_screen(void);
 
 void load_level_selector(void);
 void load_about_screen(void);
+void load_game_complete_screen(void);
 
 // Functions in other files.
 extern void dialog_box_handler(void);
@@ -235,6 +235,7 @@ const void (* const menu_logic_functions[])(void) = {
     menu_game_type_select,
     menu_level_select,
     menu_about_screen,
+    menu_game_complete_screen,
 };
 
 // If a menu needs something extra/special to be done before showing it, it'll do so in one of these functions.
@@ -242,12 +243,14 @@ const void (* const menu_load_functions[])(void) = {
     empty_function, // If no special action needs to be taken
     load_level_selector,
     load_about_screen,
+    load_game_complete_screen,
 };
 
 const unsigned char * const menu_compressed_data[] = {
     game_select_screen,
     level_select_screen,
     about_screen,
+    game_complete_screen,
 };
 
 void main (void) {
@@ -288,7 +291,7 @@ void main (void) {
 
     while (1){
 
-        while (game_mode == MODE_LEVEL_SELECT) { 
+        while (game_mode == MODE_MENU) { 
             ppu_wait_nmi();
             // set_music_speed, etc
 
@@ -368,7 +371,9 @@ void main (void) {
             handle_tile_clear_queue();
 
             if (game_mode == MODE_LEVEL_COMPLETE) {
-                load_game_over_screen();
+                menu = MENU_COMPLETE_SCREEN;
+                switch_menu();
+                //load_game_complete_screen();
             }
 
             // Debug: clear death status.
@@ -400,19 +405,6 @@ void main (void) {
             // And no screen-drawing (other than what the dialog box code does).
 
             dialog_box_handler();
-
-        }
-
-        while (game_mode == MODE_LEVEL_COMPLETE) {
-            ppu_wait_nmi();
-
-            pad1 = pad_poll(0);
-            pad1_new = get_pad_new(0);
-
-            if (pad1_new & PAD_DOWN) {
-                menu = 1;
-                switch_menu();
-            }
 
         }
         
@@ -459,7 +451,7 @@ void switch_menu(void) {
     clear_vram_buffer();
     oam_clear();
 
-    game_mode = MODE_LEVEL_SELECT; // Ensure the correct game mode is active.
+    game_mode = MODE_MENU; // Ensure the correct game mode is active.
     menu_selection = 0; // Just to make sure we don't accidentally point to an invalid menu item somehow.
 
     // Decode the menu visuals from libLZG'd data in the Menu Data Bank to WRAM.
@@ -630,20 +622,24 @@ void menu_about_screen(void) {
 
 
 // TODO: Make this "Game Complete" screen into a menu.
-const char const level_complete_string[] = "Level complete!";
-const char const down_to_restart_string[] = "Down to restart.";
-void load_game_over_screen(void) {
-    ppu_off();
-    clear_screen();
+// Menu -- Game Complete.
+void load_game_complete_screen(void) {
     // Set the game mode properly.
-    game_mode = MODE_LEVEL_COMPLETE;
+    game_mode = MODE_MENU;
+}
 
-    // Write the message.
-    multi_vram_buffer_horz(level_complete_string, sizeof(level_complete_string), NTADR_A(3, 5));
-    multi_vram_buffer_horz(down_to_restart_string, sizeof(down_to_restart_string), NTADR_A(3, 7));
+void menu_game_complete_screen(void) {
+    pad1 = pad_poll(0);
+    pad1_new = get_pad_new(0);
 
-    // Turn the PPU back on.
-    ppu_on_all();
+    oam_clear(); // Since we use a sprite on this menu.
+
+    if (pad1_new) {
+        menu = 0;
+        switch_menu();
+    }
+
+    oam_meta_spr(123, 146, valrigard_idle_right);
 }
 
 void load_level_welcome_screen(void) {

@@ -14,7 +14,7 @@
 
 // Generally preferring defines like this over enums as enums are ints
 // under the hood, and ints are 2 bytes (which makes them slower). 
-#define MODE_LEVEL_SELECT 0
+#define MODE_MENU 0
 #define MODE_GAME 1
 #define MODE_PAUSE 2
 #define MODE_LEVEL_WELCOME_SCREEN 3
