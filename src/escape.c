@@ -371,10 +371,18 @@ void main (void) {
 
             handle_tile_clear_queue();
 
+            // TODO: Make this a flag instead of a separate game mode.
             if (game_mode == MODE_LEVEL_COMPLETE) {
-                menu = MENU_COMPLETE_SCREEN;
-                switch_menu();
-                //load_game_complete_screen();
+                
+                if (game_level_advance_behavior == LEVEL_UP_BEHAVIOR_EXIT || level_index == NUMBER_OF_LEVELS - 1) {
+                    menu = MENU_COMPLETE_SCREEN;
+                    switch_menu();
+                } else { // == LEVEL_UP_BEHAVIOR_CONTINUE and there are levels left
+                    // Next level.
+                    level_index += 1;
+                    begin_level();
+                }
+
             }
 
             // Debug: clear death status.
@@ -383,7 +391,7 @@ void main (void) {
             }
 
             // debug:
-            //gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
         }
 
@@ -580,10 +588,12 @@ void menu_game_type_select(void) {
                 // new Gauntlet game at level 1.
                 level_index = 0;
                 score = 0;
+                game_level_advance_behavior = LEVEL_UP_BEHAVIOR_CONTINUE;
                 begin_level();
                 return;
             default:
                 menu = game_type_select_menu_links[menu_selection];
+                game_level_advance_behavior = LEVEL_UP_BEHAVIOR_EXIT;
                 switch_menu();
                 return;
         }

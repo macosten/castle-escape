@@ -53,7 +53,7 @@ unsigned char player_sword_timer;
 //unsigned char player_timer;
 
 unsigned char player_flags; // All of these flags should be such that the default value for this byte when starting a level is 0
-// See cmacros.h for macros operating on this.
+// See macros.h for macros operating on this.
 
 unsigned char game_mode; // A byte that generally tells the game how to behave depending on what's set.
 unsigned char game_level_advance_behavior; // A byte that tells the game what to do when a level ends.

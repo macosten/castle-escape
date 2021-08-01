@@ -33,6 +33,7 @@ ZEROPAGE_EXTERN(unsigned char, collision_R);
 ZEROPAGE_EXTERN(unsigned char, player_flags);
 ZEROPAGE_EXTERN(unsigned char, enemy_is_using_bg_collision);
 ZEROPAGE_EXTERN(unsigned char, game_mode);
+ZEROPAGE_EXTERN(unsigned char, game_level_advance_behavior);
 
 ZEROPAGE_EXTERN(unsigned int, temp5);
 ZEROPAGE_EXTERN(unsigned int, temp6);
@@ -331,8 +332,9 @@ void boss_ai_damaged(void) {
 }
 
 void boss_ai_dying(void) {
-    // Just do the death animation, and end the level after 2 seconds.
+    // Just do the death animation, and end the game after 2 seconds.
     if (enemies.timer[x] == 0) {
+        game_level_advance_behavior = LEVEL_UP_BEHAVIOR_EXIT;
         game_mode = MODE_LEVEL_COMPLETE;
     }
 }
@@ -347,7 +349,6 @@ const unsigned char const boss_state_deadliness[] = {
 };
 
 void collision_with_boss(void) {
-    // game_mode = MODE_LEVEL_COMPLETE; // Just end the level for now.
     if (IS_SWINGING_SWORD && boss_state == BOSS_STATE_IDLE) {
         --BOSS_HP;
         if (BOSS_HP == 0) {

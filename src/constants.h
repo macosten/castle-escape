@@ -23,7 +23,7 @@
 
 // Should the game continue to the next level, or exit the game when we finish this?
 #define LEVEL_UP_BEHAVIOR_EXIT 0
-#define LEVEL_UP_BEHAVIOR_CONTINUE 1
+#define LEVEL_UP_BEHAVIOR_CONTINUE 1 
 
 #define MAX_UP 0x4000 // The lowest Y value the player can have before the screen attempts to scroll up.
 #define MIN_DOWN 0x8000 // The highest Y value the player can have before the screen attempts to scroll down.
@@ -56,6 +56,8 @@
 #define LEFT_CONVEYOR_DELTA -127
 #define RIGHT_CONVEYOR_DELTA 127
 
+// ===
+// Constants for sound effects.
 #define SFX_SWORD_SLASH 0
 #define SFX_STAR_COLLECT 1
 #define SFX_ENEMY_KILL 2
@@ -63,6 +65,5 @@
 #define SFX_MENU_BEEP 4
 #define SFX_BUMP 5
 #define SFX_ACID_DROP 6
-
 
 #endif
