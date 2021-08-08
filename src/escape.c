@@ -87,6 +87,9 @@ unsigned char boss_memory[8];
 
 #define BOSS_DIALOG_ALREADY_GIVEN 128
 
+// Score as it was when the level started. If you die, your score will be reset to this.
+unsigned int previous_score;
+
 #pragma bss-name(pop)
 
 #pragma bss-name(push, "XRAM")
@@ -336,7 +339,7 @@ void main (void) {
             check_spr_objects();
 
             // Check the status of the sword swing.
-            swing_sword();
+            if (!STATUS_DEAD) { swing_sword(); }
 
             // Check sprite collisions
             sprite_collisions();
@@ -373,21 +376,33 @@ void main (void) {
 
             // TODO: Make this a flag instead of a separate game mode.
             if (game_mode == MODE_LEVEL_COMPLETE) {
-                
+                // Figure out what to do based on the selected game mode.
                 if (game_level_advance_behavior == LEVEL_UP_BEHAVIOR_EXIT || level_index == NUMBER_OF_LEVELS - 1) {
                     menu = MENU_COMPLETE_SCREEN;
                     switch_menu();
                 } else { // == LEVEL_UP_BEHAVIOR_CONTINUE and there are levels left
                     // Next level.
                     level_index += 1;
+                    previous_score = score; // Bank the score
                     begin_level();
                 }
 
+            } 
+            else if (STATUS_DEAD && high_byte(valrigard.y) == high_byte(old_y)) {
+                // Whenever we stop moving down (this should still work if we drop off the bottom of the screen):
+                // Frame 1 of this, play whatever death music we end up getting.
+                ++player_death_timer;
+                // After that music ends after however many frames:
+                if (player_death_timer == 120) {
+                    score = previous_score; // Revert score to pre-death value
+                    begin_level(); // Restart this level.    
+                }
             }
 
             // Debug: clear death status.
             if (pad1 & PAD_DOWN) {
                 SET_STATUS_ALIVE();
+                player_death_timer = 0;
             }
 
             // debug:
@@ -499,7 +514,8 @@ void menu_level_select(void) {
     // We can just set this to if (1) for debugging.
     if (pad1_new & PAD_UP || pad1_new & PAD_A) {
         sfx_play(SFX_MENU_BEEP, 0);
-        score = 0; // Reset the score.
+        score = 0; // Reset the score...
+        previous_score = 0; // and the previous score.
         begin_level();
         return; // Prevent the execution of any of the following code.
     } 
@@ -639,7 +655,7 @@ void menu_game_complete_screen(void) {
     pad1 = pad_poll(0);
     pad1_new = get_pad_new(0);
 
-    if (pad1_new) {
+    if (pad1_new) { // TODO: Make this only activate on a B button press?
         menu = 0;
         switch_menu();
         return;
@@ -715,6 +731,9 @@ void begin_level(void) {
 
     //set_scroll_x(1); // Yeah... this game won't need to scroll in the X direction.
 
+    // In case we died after the first level of a gauntlet and needed to reset the score, re-decimalize it:
+    convert_to_decimal(score);
+
     // Reset Valrigard's energy.
     energy = MAX_ENERGY;
 
@@ -725,6 +744,7 @@ void begin_level(void) {
     // Reset a few variables related to the player.
     player_flags = 0; 
     scroll_count = 0; 
+    player_death_timer = 0;
 
     // Reset boss flags.
     boss_state = 0;
@@ -1226,9 +1246,13 @@ void movement(void) {
 
     // Handle X.
     old_x = valrigard.x;
-    
+
+    if (STATUS_DEAD) {
+        // Don't respond to this input if we're dead.
+        valrigard.velocity_x = 0;
+    }
     // Left
-    if (pad1 & PAD_LEFT) {
+    else if (pad1 & PAD_LEFT) {
         // DIRECTION = LEFT;
         //player_flags &= 0b11111110;
         SET_DIRECTION_LEFT();
@@ -1293,8 +1317,10 @@ void movement(void) {
     old_y = valrigard.y;
 
     // MARK: - Gravity
-    
-    if (pad1 & PAD_UP && energy > 0) { // If we're holding up on the DPad...
+    if (STATUS_DEAD) { // Fall at maximum speed if we're dead.
+        valrigard.velocity_y = MAX_FALL;
+    }
+    else if (pad1 & PAD_UP && energy > 0) { // If we're holding up on the DPad...
         
         if (collision_D) { // If grounded...
             valrigard.velocity_y = -SPEED; // Top speed!
@@ -1346,17 +1372,22 @@ void movement(void) {
     }
     else if (collision_D) {
         high_byte(valrigard.y) -= eject_D;
-        // if ... (something was here, but I removed it)
-        // Apply the conveyor delta.
-        valrigard.x += conveyor_delta;
-
-        energy += 4;
-        if (energy > MAX_ENERGY) energy = MAX_ENERGY;
-
-        if (TOUCHING_YELLOW_DOOR && (pad1 & PAD_UP)) {
-            game_mode = MODE_LEVEL_COMPLETE;
+        // Only do this if we're alive:
+        if (!STATUS_DEAD) { 
+            // Apply the conveyor delta.
+            valrigard.x += conveyor_delta;
+            // Recharge energy.
+            energy += 4;
+            if (energy > MAX_ENERGY) { energy = MAX_ENERGY; }
+            // Recognize entering a yellow door.
+            if (TOUCHING_YELLOW_DOOR && (pad1 & PAD_UP)) {
+                game_mode = MODE_LEVEL_COMPLETE;
+            }
         }
     }
+
+    // Nothing below this matters if we're already dead. Skip it if we are.
+    if (STATUS_DEAD) { return; }
 
     // Check if we touched spikes. 
     // The same apparent hitbox for spikes should be more forgiving than that of the solid blocks so this should do that.
@@ -1375,7 +1406,7 @@ void movement(void) {
     }
     
     // MARK: - Deal with scrolling
-    
+
     temp5 = valrigard.y;
     if (valrigard.y < MAX_UP && scroll_y > min_scroll_y) {
         temp1 = (MAX_UP - valrigard.y + 0x80) >> 8; // "the numbers work better with +80 (like 0.5)". I'll take his word for it.

@@ -50,7 +50,7 @@ unsigned char eject_U;
 
 unsigned char player_frame_timer;
 unsigned char player_sword_timer;
-//unsigned char player_timer;
+unsigned char player_death_timer;
 
 unsigned char player_flags; // All of these flags should be such that the default value for this byte when starting a level is 0
 // See macros.h for macros operating on this.
@@ -89,12 +89,8 @@ unsigned char energy;
 unsigned int score;
 unsigned char enemy_score;
 
-// At 100, you should get an extra life!
-unsigned char stars;
-
 // 255 frames / 60 fps (NTSC) = 4.25 seconds
 // Should we also take PAL machines into account and try to change frame counts in these cases?
-unsigned char timer; // Intended to use for general purpose timing.
 
 // No songs yet. I might look into FamiStudio...
 unsigned char song;
@@ -102,8 +98,7 @@ unsigned char song;
 // enum {SFX_FLAP, ...};
 
 // Level information.
-unsigned char nt_min; // lower bound (included) in the range of nametables we're allowed to scroll in right now.
-unsigned char nt_max; // upper bound (not included) in the range of nametables we're allowed to scroll in right now.
+unsigned char nt_max; // upper bound (not included) in the range of nametables we're allowed to scroll in right now. (The lower bound is always 0)
 unsigned char nt_current; // The nametable Valrigard is currently in. This should help us determine what other nametable to load when scrolling...?
 
 Player valrigard; // A width of 12 makes Valrigard's hitbox a bit more forgiving. It also happens to match up with his nose.
@@ -115,7 +110,7 @@ Hitbox hitbox2; // This hitbox is used for enemies.
 unsigned char shuffle_offset;
 unsigned char shuffle_maximum;
 
-// Debug variables that get rendered to the screen each frame.
+// Debug variables that can be rendered to the screen each frame as a janky printout.
 // These will be removed in the future.
 unsigned char debug_tile_x;
 unsigned char debug_tile_y;
