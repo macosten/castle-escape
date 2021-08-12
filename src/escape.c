@@ -331,6 +331,7 @@ void main (void) {
             RESET_TOUCHING_YELLOW_DOOR();
             RESET_TOUCHING_SPIKES();
             RESET_SCORE_CHANGED_THIS_FRAME();
+            RESET_IS_WALKING();
 
             // Move the player.
             movement();
@@ -1065,6 +1066,9 @@ void draw_player(void) {
     } else if (pad1 & PAD_UP && energy > 0) { // Flying
         temp0 = (player_frame_timer & 0b11111110) | DIRECTION;
         AsmSet2ByteFromPtrAtIndexVar(temppointer, valrigard_flying_sprite_lookup_table, temp0);
+    } else if (IS_WALKING) { // Walking
+        temp0 = ((player_walking_timer & 0b11111100) | (DIRECTION << 1)) >> 1;
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, valrigard_walking_sprite_lookup_table, temp0);
     } else { // Idle
         temp0 = DIRECTION;
         AsmSet2ByteFromPtrAtIndexVar(temppointer, valrigard_idle_sprite_lookup_table, temp0);
@@ -1382,6 +1386,14 @@ void movement(void) {
             // Recognize entering a yellow door.
             if (TOUCHING_YELLOW_DOOR && (pad1 & PAD_UP)) {
                 game_mode = MODE_LEVEL_COMPLETE;
+            }
+            // Detect: are we walking?
+            if (pad1 & (PAD_LEFT | PAD_RIGHT)) {
+                SET_IS_WALKING();
+                ++player_walking_timer;
+                if (player_walking_timer > 23) {
+                    player_walking_timer = 0;
+                }
             }
         }
     }

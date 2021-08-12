@@ -51,6 +51,7 @@ unsigned char eject_U;
 unsigned char player_frame_timer;
 unsigned char player_sword_timer;
 unsigned char player_death_timer;
+unsigned char player_walking_timer;
 
 unsigned char player_flags; // All of these flags should be such that the default value for this byte when starting a level is 0
 // See macros.h for macros operating on this.

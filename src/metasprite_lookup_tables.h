@@ -37,6 +37,15 @@ const unsigned char * const valrigard_flying_sprite_lookup_table[] = {
     valrigard_flying_left0, valrigard_flying_right0,
 };
 
+const unsigned char * const valrigard_walking_sprite_lookup_table[] = {
+    // Animation for walking (reversed): (Left, Right)
+    valrigard_idle_left,     valrigard_walking_right0,// These should each last twice as long. 
+    valrigard_walking_left3, valrigard_walking_right1,
+    valrigard_walking_left2, valrigard_idle_right,
+    valrigard_idle_left,     valrigard_walking_right2,
+    valrigard_walking_left1, valrigard_walking_right3,
+    valrigard_walking_left0, valrigard_idle_right,
+};
 
 // Lookup tables for enemy sprites (not yet animated).
 const unsigned char * const korbat_sprite_lookup_table[] = {
