@@ -513,7 +513,7 @@ void menu_level_select(void) {
             
     // I suppose if we ever want the game to start immediately,
     // We can just set this to if (1) for debugging.
-    if (pad1_new & PAD_UP || pad1_new & PAD_A) {
+    if (pad1_new & (PAD_UP | PAD_A)) { // Eventually we'll only want A to submit this.
         sfx_play(SFX_MENU_BEEP, 0);
         score = 0; // Reset the score...
         previous_score = 0; // and the previous score.
@@ -537,7 +537,7 @@ void menu_level_select(void) {
         }
     }
 
-    if (pad1_new & PAD_LEFT | pad1_new & PAD_RIGHT) {
+    if (pad1_new & (PAD_LEFT | PAD_RIGHT)) {
         // Code shared between what we'd do with either button press.
         sfx_play(SFX_MENU_BEEP, 0);
 
@@ -599,7 +599,7 @@ void menu_game_type_select(void) {
         }
     }
 
-    if (pad1_new & PAD_A | pad1_new & PAD_RIGHT) {
+    if (pad1_new & (PAD_A | PAD_RIGHT)) {
         switch (menu_selection) {
             case 0: // Gauntlet
                 // new Gauntlet game at level 1.
@@ -616,10 +616,12 @@ void menu_game_type_select(void) {
         }
     }
 
-    if (pad1_new & PAD_UP | pad1_new & PAD_DOWN | pad1_new & PAD_A) {
-        // Code shared between what we'd do with either button press.
+    if (pad1_new & (PAD_UP | PAD_DOWN | PAD_A | PAD_RIGHT)) {
+        // Code shared between what we'd do with any supported button press.
         sfx_play(SFX_MENU_BEEP, 0);
     }
+
+    // Eventually I'll want make Right do nothing, but it's convenient for testing with Mednafen as my laptop doesn't have a keypad so there's no A/B.
 
     // Show the cursor.
     oam_spr(game_type_select_menu_selector_x[menu_selection], game_type_select_menu_selector_y[menu_selection], 0x10, 0);
@@ -684,8 +686,8 @@ void load_level_welcome_screen(void) {
 
     // Actually copy the text.
     for (temp2 = 0; temp2 < temp0; ++temp2) {
-        AsmSet1ByteFromZpPtrAtIndexVar(temp3, temppointer, temp2);
-        AsmSet1ByteAtZpPtrWithOffset(temp_mutablepointer, temp2, temp3);
+        AsmSet1ByteFromZpPtrAtIndexVar(temp3, temppointer, temp2); //temp3 = temppointer[temp2];
+        AsmSet1ByteAtZpPtrWithOffset(temp_mutablepointer, temp2, temp3); //temp_mutablepointer[temp2] = temp3;
     }
 
     // Write what we've buffered to cmap into vram. (That WRAM sure is convenient...)
@@ -1579,7 +1581,8 @@ void bg_collision_sub(void) {
         SET_TOUCHING_YELLOW_DOOR();
     } else if (temp0 & METATILE_POWERUP) {
         // Collect the powerup.
-        temp_mutablepointer[coordinates] = EMPTY_TILE;
+        //temp_mutablepointer[coordinates] = EMPTY_TILE;
+        AsmSet1ByteAtZpPtrWithConstOffset(temp_mutablepointer, coordinates, EMPTY_TILE);
 
         // But what powerup was it?
         if (temp4 == STAR_TILE) { 
@@ -1634,7 +1637,8 @@ void bg_collision_sub_collision_u(void) {
     if (temp4 == QUESTION_BLOCK && (temp3 & 0x0f) == 0x0f 
         && (temp1 & 0xf0) == advanced_conditional ){
 
-        temp_mutablepointer[coordinates] = BONKED_QUESTION_BLOCK;
+        //temp_mutablepointer[coordinates] = BONKED_QUESTION_BLOCK;
+        AsmSet1ByteAtZpPtrWithConstOffset(temp_mutablepointer, coordinates, BONKED_QUESTION_BLOCK);
 
         // Figure out the correct bonus amount.
         if (temp0 > 128) { ++score; }
@@ -2218,11 +2222,14 @@ void cannon_ai(void) {
 
             // Within the sprite lookup table, figure out the sprite.
             if (temp0 > 0x30) { // over 0x30 brads
-                temp3 = temppointer[2]; // y-axis aligned
+                //temp3 = temppointer[2]; // y-axis aligned
+                AsmSet1ByteFromZpPtrAtConst(temp3, temppointer, 2);
             } else if (temp0 > 0x10) { // over 0x10 brads
-                temp3 = temppointer[1]; // diagonal
+                //temp3 = temppointer[1]; // diagonal
+                AsmSet1ByteFromZpPtrAtConst(temp3, temppointer, 1);
             } else { // 0x10 or fewer brads
-                temp3 = temppointer[0]; // x-axis aligned
+                //temp3 = temppointer[0]; // x-axis aligned
+                AsmSet1ByteFromZpPtrAtConst(temp3, temppointer, 0);
             }
             enemies.extra2[x] = temp3;
 

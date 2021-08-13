@@ -13,6 +13,7 @@
 	__asm__("lda %v, %s", pointer, Y); \
 	__asm__("sta %v", variable); \
 }
+
 // When used, something like
 // temp0 = array[i];
 // becomes:
@@ -23,6 +24,18 @@
 	__asm__("lda (%v), %s", zppointer, Y); \
 	__asm__("sta %v", variable); \
 }
+
+// When used, something like
+// temp0 = array[5];
+// becomes:
+// AsmSet1ByteFromPtrAtConst(temp0, array, 5);
+
+#define AsmSet1ByteFromZpPtrAtConst(variable, zppointer, uint8const) { \
+	__asm__("ldy #%b", uint8const); \
+	__asm__("lda (%v), %s", zppointer, Y); \
+	__asm__("sta %v", variable); \
+}
+
 
 // When used, something like
 // array[i] = temp0;
@@ -42,6 +55,16 @@
 #define AsmSet1ByteAtZpPtrWithOffset(pointer, offset, variable) {\
 	__asm__("ldy %v", offset);\
 	__asm__("lda %v", variable);\
+	__asm__("sta (%v), %s", pointer, Y);\
+}
+
+// When used, something like
+// temppointer[i] = CONSTANT_VALUE
+// becomes:
+// AsmSet1ByteAtZpPtrWithConstOffset(temppointer, i, CONSTANT_VALUE);
+#define AsmSet1ByteAtZpPtrWithConstOffset(pointer, offset, uint8const) {\
+	__asm__("ldy %v", offset);\
+	__asm__("lda #%b", uint8const);\
 	__asm__("sta (%v), %s", pointer, Y);\
 }
 
