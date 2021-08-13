@@ -1766,8 +1766,8 @@ const unsigned char const enemy_hitbox_width_lookup_table[] = {
     13, // Splyke
     13, // Cannon
     0,  // Acidpool
-    13, // Spikeball
-    13, // Sun
+    11, // Spikeball
+    11, // Sun
     13, // Boss
     6,  // Cannonball
     6,  // Aciddrop
@@ -1783,8 +1783,8 @@ const unsigned char const enemy_hitbox_height_lookup_table[] = {
     13, // Splyke
     13, // Cannon
     0,  // Acidpool
-    13, // Spikeball
-    13, // Sun
+    11, // Spikeball
+    11, // Sun
     13, // Boss
     6,  // Cannonball
     6,  // Aciddrop
@@ -1800,7 +1800,25 @@ const unsigned char const enemy_hitbox_x_offset_lookup_table[] = {
     1, // Cannon
     0,
     0,
+    1, // Spikeball
+    2, // Sun
     0,
+    1, // Cannonball
+    1, // Aciddrop
+    1, // Magic Bolt
+    0,
+    0,
+};
+// Remember to check these values against the offsets given to their metasprites
+// Some of these have 0xff (-1) as a sprite offset, so keep that in mind.
+const unsigned char const enemy_hitbox_y_offset_lookup_table[] = {
+    0,
+    0,
+    0,
+    0, // Cannon
+    0,
+    0,
+    1, // Spikeball
     1, // Sun
     0,
     1, // Cannonball
@@ -1861,6 +1879,7 @@ void sprite_collisions(void) {
             hitbox2.x += enemy_hitbox_x_offset_lookup_table[temp1];
 
             hitbox2.y = enemies.y[x];
+            hitbox2.y += enemy_hitbox_y_offset_lookup_table[temp1];
 
             check_collision(temp0, hitbox, hitbox2);
             if (temp0) {
