@@ -1415,6 +1415,7 @@ void movement(void) {
         bg_collision();
 
         if (TOUCHING_SPIKES) { // If we're still touching spikes even with a smaller hitbox, we die.
+            if (!STATUS_DEAD) { sfx_play(SFX_SMACK, 0); }
             SET_STATUS_DEAD();
         }
     }
@@ -1610,7 +1611,6 @@ void bg_collision_sub(void) {
     } else if (temp0 & METATILE_CONVEYOR_RIGHT) {
         conveyor_delta = RIGHT_CONVEYOR_DELTA;
     } else if (temp0 & METATILE_SPIKES) {
-        //SET_STATUS_DEAD();
         SET_TOUCHING_SPIKES();
     } else if (temp0 & METATILE_RED_DOOR) {
         game_mode = MODE_LEVEL_COMPLETE;
@@ -1904,6 +1904,7 @@ void empty_function(void) { }
 
 void collision_with_killable_slashable(void) {
     if (!IS_SWINGING_SWORD) { 
+        if (!STATUS_DEAD) { sfx_play(SFX_SMACK, 0); }
         SET_STATUS_DEAD();
     }
     else {
@@ -1931,12 +1932,14 @@ void collision_with_inert_slashable(void) {
 
 void collision_with_unkillable_unslashable(void) {
     // Just die.
+    if (!STATUS_DEAD) { sfx_play(SFX_SMACK, 0); }
     SET_STATUS_DEAD();
 }
 
 void collision_with_splyke(void) {
     if (!IS_SWINGING_SWORD) { // Not swinging the sword?
         // Die.
+        if (!STATUS_DEAD) { sfx_play(SFX_SMACK, 0); }
         SET_STATUS_DEAD();
     } else if (!SPLYKE_IS_MOVING_AROUND(x)){ // Not tornado:
         // Kill this.

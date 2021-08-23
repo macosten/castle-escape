@@ -65,5 +65,6 @@
 #define SFX_MENU_BEEP 4
 #define SFX_BUMP 5
 #define SFX_ACID_DROP 6
+#define SFX_SMACK 7
 
 #endif
