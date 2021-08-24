@@ -319,7 +319,7 @@ detectNTSC:
     .include "music/famitone2.s" ; or whatever music code we end up using
 
 music_data:
-    .include "music/kirby_boss.s"
+    .include "music/sfx/music.s"
 
 sounds_data:
     .include "music/sfx/sfx.s"

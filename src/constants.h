@@ -67,4 +67,9 @@
 #define SFX_ACID_DROP 6
 #define SFX_SMACK 7
 
+// ===
+// Constants for songs/their names.
+#define MENU_SONG 0
+#define LEVEL_SONG_0 1
+
 #endif

@@ -289,8 +289,8 @@ void main (void) {
 
     // ppu_on_all(); // turn on screen
 
-    //music_play(0);
-    //set_music_speed(5);
+    music_play(MENU_SONG);
+    set_music_speed(5);
 
     while (1){
 
@@ -312,7 +312,6 @@ void main (void) {
             ppu_wait_nmi(); // wait till beginning of the frame
             // the sprites are pushed from a buffer to the OAM during nmi
 
-            // set_music_speed(64);
             // For now, just set the same chr bank every frame
         
             set_chr_bank_0(0);
@@ -407,7 +406,7 @@ void main (void) {
             }
 
             // debug:
-            // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
         }
 
@@ -652,6 +651,8 @@ void menu_about_screen(void) {
 void load_game_complete_screen(void) {
     // Set the game mode properly.
     game_mode = MODE_MENU;
+    // Stop the music (or possibly play a victory tune?)
+    music_stop();
 }
 
 void menu_game_complete_screen(void) {
@@ -661,6 +662,7 @@ void menu_game_complete_screen(void) {
     if (pad1_new) { // TODO: Make this only activate on a B button press?
         menu = 0;
         switch_menu();
+        music_play(MENU_SONG);
         return;
     }
 
@@ -712,6 +714,7 @@ void load_level_welcome_screen(void) {
 }
 
 void begin_level(void) {
+    music_stop(); // Or music_play(level_start_song_or_whatever);
     // Show the welcome screen - the screen that says the level's name (and that gives a bit of respite between levels).
     load_level_welcome_screen();
 
@@ -732,7 +735,7 @@ void begin_level(void) {
     // ...and calculate this level's shuffle_array.
     calculate_shuffle_array();
 
-    //set_scroll_x(1); // Yeah... this game won't need to scroll in the X direction.
+    //set_scroll_x(1); // This game shouldn't need to scroll in the X direction.
 
     // In case we died after the first level of a gauntlet and needed to reset the score, re-decimalize it:
     convert_to_decimal(score);
@@ -754,6 +757,8 @@ void begin_level(void) {
 
     // Turn the PPU back on.
     ppu_on_all();
+
+    music_play(LEVEL_SONG_0); // music_play(level_music) -- maybe this can be selected randomly from a list?
 }
 
 void load_level_new(void) {

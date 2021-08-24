@@ -93,10 +93,7 @@ unsigned char enemy_score;
 // 255 frames / 60 fps (NTSC) = 4.25 seconds
 // Should we also take PAL machines into account and try to change frame counts in these cases?
 
-// No songs yet. I might look into FamiStudio...
 unsigned char song;
-// enum {SONG_NAME1, SONG_NAME2};
-// enum {SFX_FLAP, ...};
 
 // Level information.
 unsigned char nt_max; // upper bound (not included) in the range of nametables we're allowed to scroll in right now. (The lower bound is always 0)
