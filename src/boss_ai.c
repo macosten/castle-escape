@@ -137,6 +137,8 @@ void boss_shoot_fireball(void) {
 
         BOSS_FIREBALL_COOLDOWN = 32;
 
+        sfx_play(SFX_CANNON_FIRE, 0);
+
         return;
 
     }
@@ -180,6 +182,7 @@ void boss_ai_intro(void) {
     BOSS_HP = 3;
 
     trigger_dialog_box();
+    music_play(BOSS_SONG);
     boss_state = BOSS_STATE_DESCENDING;
 }
 
@@ -379,5 +382,6 @@ void draw_boss_dying(void) {
     temp3 >>= 2;
     temp3 &= 0b11;
     AsmSet2ByteFromPtrAtIndexVar(temppointer, boss_dying_sprite_lookup_table, temp3);
+    music_stop();
 }
 

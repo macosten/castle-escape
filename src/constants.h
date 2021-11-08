@@ -71,5 +71,7 @@
 // Constants for songs/their names.
 #define MENU_SONG 0
 #define LEVEL_SONG_0 1
+#define LEVEL_SONG_1 2 // Might not get used
+#define BOSS_SONG 3
 
 #endif

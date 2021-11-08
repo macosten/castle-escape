@@ -20,6 +20,8 @@
 	.export		_draw_boss_idle
 	.export		_draw_boss_dying
 	.importzp	_TEMP
+	.import		_music_play
+	.import		_music_stop
 	.import		_sfx_play
 	.import		_rand8
 	.import		_add_scroll_y_fast_sub
@@ -128,12 +130,12 @@ _boss_state_deadliness:
 ;
 	lda     _temp0
 	and     #$01
-	beq     L0252
+	beq     L0258
 	jsr     _cannonball_ai_sub
 ;
 ; enemy_is_using_bg_collision = 1;
 ;
-L0252:	lda     #$01
+L0258:	lda     #$01
 	sta     _enemy_is_using_bg_collision
 ;
 ; hitbox.x = enemies.x[x];
@@ -165,61 +167,61 @@ L0252:	lda     #$01
 ;
 	lda     _collision_U
 	cmp     #$02
-	bcc     L0256
+	bcc     L025C
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$20
-	bne     L0256
+	bne     L025C
 	ldy     _x
 	lda     _enemies+256,y
 	ora     #$20
 ;
 ; else if (collision_D >= 2 && CANNONBALL_Y_DIRECTION(x)) { CANNONBALL_SET_NEG_Y(x); }
 ;
-	jmp     L0268
-L0256:	lda     _collision_D
+	jmp     L026E
+L025C:	lda     _collision_D
 	cmp     #$02
-	bcc     L025A
+	bcc     L0260
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$20
-	beq     L025A
+	beq     L0260
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$DF
-L0268:	sta     _TEMP
+L026E:	sta     _TEMP
 	ldy     _x
 	lda     _TEMP
 	sta     _enemies+256,y
 ;
 ; if (collision_L >= 2 && !CANNONBALL_X_DIRECTION(x)) { CANNONBALL_SET_POS_X(x); }
 ;
-L025A:	lda     _collision_L
+L0260:	lda     _collision_L
 	cmp     #$02
-	bcc     L025E
+	bcc     L0264
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$40
-	bne     L025E
+	bne     L0264
 	ldy     _x
 	lda     _enemies+256,y
 	ora     #$40
 ;
 ; else if (collision_R >= 2 && CANNONBALL_X_DIRECTION(x)) { CANNONBALL_SET_NEG_X(x); }
 ;
-	jmp     L0269
-L025E:	lda     _collision_R
+	jmp     L026F
+L0264:	lda     _collision_R
 	cmp     #$02
 	lda     #$00
-	bcc     L0263
+	bcc     L0269
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$40
-	beq     L0263
+	beq     L0269
 	ldy     _x
 	lda     _enemies+256,y
 	and     #$BF
-L0269:	sta     _TEMP
+L026F:	sta     _TEMP
 	ldy     _x
 	lda     _TEMP
 	sta     _enemies+256,y
@@ -227,23 +229,23 @@ L0269:	sta     _TEMP
 ; enemy_is_using_bg_collision = 0;
 ;
 	lda     #$00
-L0263:	sta     _enemy_is_using_bg_collision
+L0269:	sta     _enemy_is_using_bg_collision
 ;
 ; if (BOSS_FIREBALL_COOLDOWN) { --BOSS_FIREBALL_COOLDOWN; }
 ;
 	lda     _boss_memory+1
-	beq     L0107
+	beq     L010C
 	dec     _boss_memory+1
 ;
 ; else {
 ;
-	jmp     L010C
+	jmp     L0111
 ;
 ; if (rand8() > 250) { 
 ;
-L0107:	jsr     _rand8
+L010C:	jsr     _rand8
 	cmp     #$FB
-	bcc     L010C
+	bcc     L0111
 ;
 ; boss_shoot_fireball(); ;
 ;
@@ -251,7 +253,7 @@ L0107:	jsr     _rand8
 ;
 ; temp1 = enemies.extra[x]; // This gets modified by cannonball_ai_sub.
 ;
-L010C:	ldy     _x
+L0111:	ldy     _x
 	lda     _enemies+384,y
 	sta     _temp1
 ;
@@ -265,7 +267,7 @@ L010C:	ldy     _x
 ;
 	lda     _temp1
 	cmp     _temp0
-	bne     L0118
+	bne     L011D
 ;
 ; boss_state = BOSS_STATE_DESCENDING;
 ;
@@ -280,7 +282,7 @@ L010C:	ldy     _x
 ;
 ; }
 ;
-L0118:	rts
+L011D:	rts
 
 .endproc
 
@@ -382,7 +384,7 @@ L0118:	rts
 	ldy     _collision
 	lda     _metatile_property_lookup_table,y
 	and     #$01
-	beq     L0189
+	beq     L018E
 ;
 ; temp0 = rand8();
 ;
@@ -402,7 +404,7 @@ L0118:	rts
 ;
 ; enemies.nt[x] = high_byte(temp5);
 ;
-L0189:	ldy     _x
+L018E:	ldy     _x
 	lda     _temp5+1
 	sta     _enemies+192,y
 ;
@@ -441,7 +443,7 @@ L0189:	ldy     _x
 ;
 	and     #$03
 	cmp     #$03
-	beq     L026D
+	beq     L0273
 ;
 ; }
 ;
@@ -449,7 +451,7 @@ L0189:	ldy     _x
 ;
 ; high_byte(temp5) = enemies.nt[x];
 ;
-L026D:	ldy     _x
+L0273:	ldy     _x
 	lda     _enemies+192,y
 	sta     _temp5+1
 ;
@@ -522,7 +524,7 @@ L026D:	ldy     _x
 	ldy     _collision
 	lda     _metatile_property_lookup_table,y
 	and     #$01
-	bne     L01DA
+	bne     L01DF
 ;
 ; enemies.nt[x] = high_byte(temp6);
 ;
@@ -538,7 +540,7 @@ L026D:	ldy     _x
 ;
 ; }
 ;
-L01DA:	rts
+L01DF:	rts
 
 .endproc
 
@@ -557,7 +559,7 @@ L01DA:	rts
 ;
 	ldy     _x
 	lda     _enemies+512,y
-	bne     L01EA
+	bne     L01EF
 ;
 ; game_level_advance_behavior = LEVEL_UP_BEHAVIOR_EXIT;
 ;
@@ -570,7 +572,7 @@ L01DA:	rts
 ;
 ; }
 ;
-L01EA:	rts
+L01EF:	rts
 
 .endproc
 
@@ -589,10 +591,10 @@ L01EA:	rts
 ;
 	lda     _player_flags
 	and     #$04
-	beq     L01F9
+	beq     L01FE
 	lda     _boss_state
 	cmp     #$01
-	bne     L01F9
+	bne     L01FE
 ;
 ; --BOSS_HP;
 ;
@@ -600,7 +602,7 @@ L01EA:	rts
 ;
 ; if (BOSS_HP == 0) {
 ;
-	bne     L0273
+	bne     L0279
 ;
 ; boss_state = BOSS_STATE_DYING; // Begin to end the level.
 ;
@@ -616,25 +618,25 @@ L01EA:	rts
 ;
 ; } else {
 ;
-	jmp     L0208
+	jmp     L020D
 ;
 ; boss_state = BOSS_STATE_DAMAGED;
 ;
-L0273:	lda     #$04
+L0279:	lda     #$04
 	sta     _boss_state
 ;
 ; enemies.timer[x] = 127; // ~2 seconds of iframes (these will be incremented until it overflows)
 ;
-L0208:	ldy     _x
+L020D:	ldy     _x
 	lda     #$7F
 	sta     _enemies+512,y
 ;
 ; } else if (boss_state_deadliness[boss_state]) {
 ;
 	rts
-L01F9:	ldy     _boss_state
+L01FE:	ldy     _boss_state
 	lda     _boss_state_deadliness,y
-	beq     L0210
+	beq     L0215
 ;
 ; SET_STATUS_DEAD();
 ;
@@ -644,7 +646,7 @@ L01F9:	ldy     _boss_state
 ;
 ; }
 ;
-L0210:	rts
+L0215:	rts
 
 .endproc
 
@@ -750,9 +752,9 @@ L0210:	rts
 	lda     _boss_dying_sprite_lookup_table+1,y
 	sta     _temppointer+1
 ;
-; }
+; music_stop();
 ;
-	rts
+	jmp     _music_stop
 
 .endproc
 
@@ -781,11 +783,11 @@ L0210:	rts
 	adc     #$01
 	sta     _temp_x
 	ldx     #$00
-L0274:	lda     _temp_x
+L027A:	lda     _temp_x
 	cmp     _temp1
 	txa
 	sbc     #$00
-	bcc     L0276
+	bcc     L027C
 ;
 ; }
 ;
@@ -793,10 +795,10 @@ L0274:	lda     _temp_x
 ;
 ; if (IS_ENEMY_ACTIVE(temp_x)) { continue; } // ENEMY_NONE
 ;
-L0276:	ldy     _temp_x
+L027C:	ldy     _temp_x
 	lda     _enemies+256,y
 	and     #$80
-	jne     L0275
+	jne     L027B
 ;
 ; enemies.type[temp_x] = ENEMY_BOSS_FIREBALL;
 ;
@@ -901,14 +903,17 @@ L0276:	ldy     _temp_x
 	lda     #$20
 	sta     _boss_memory+1
 ;
-; return;
+; sfx_play(SFX_CANNON_FIRE, 0);
 ;
-	rts
+	lda     #$03
+	jsr     pusha
+	lda     #$00
+	jmp     _sfx_play
 ;
 ; for (temp_x = x+1; temp_x < temp1; ++temp_x) {
 ;
-L0275:	inc     _temp_x
-	jmp     L0274
+L027B:	inc     _temp_x
+	jmp     L027A
 
 .endproc
 
@@ -1025,6 +1030,11 @@ L0275:	inc     _temp_x
 ; trigger_dialog_box();
 ;
 	jsr     _trigger_dialog_box
+;
+; music_play(BOSS_SONG);
+;
+	lda     #$03
+	jsr     _music_play
 ;
 ; boss_state = BOSS_STATE_DESCENDING;
 ;

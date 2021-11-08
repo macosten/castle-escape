@@ -406,7 +406,7 @@ void main (void) {
             }
 
             // debug:
-            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
         }
 
