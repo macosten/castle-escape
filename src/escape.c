@@ -391,18 +391,20 @@ void main (void) {
             else if (STATUS_DEAD && high_byte(valrigard.y) == high_byte(old_y)) {
                 // Whenever we stop moving down (this should still work if we drop off the bottom of the screen):
                 // Frame 1 of this, play whatever death music we end up getting.
-                ++player_death_timer;
+                if (player_death_timer == 0) { music_play(DEATH_SONG); }
+                if (get_frame_count() & 1) { ++player_death_timer; }
                 // After that music ends after however many frames:
-                if (player_death_timer == 120) {
+                if (player_death_timer == 150) {
                     score = previous_score; // Revert score to pre-death value
                     begin_level(); // Restart this level.    
                 }
             }
 
             // Debug: clear death status.
-            if (pad1 & PAD_DOWN) {
+            if (pad1 & PAD_DOWN && STATUS_DEAD) {
                 SET_STATUS_ALIVE();
                 player_death_timer = 0;
+                music_play(LEVEL_SONG_0);
             }
 
             // debug:
@@ -702,7 +704,7 @@ void load_level_welcome_screen(void) {
     oam_meta_spr(120, 114, valrigard_idle_left);
 
     // Not going to set the game mode this time because we'll call ppu_wait_nmi here directly.
-    for (temp0 = 0; temp0 < 120; ++temp0) {
+    for (temp0 = 0; temp0 < 150; ++temp0) {
         ppu_wait_nmi();
 
         // Allow someone to escape this screen early by just pressing a button.
@@ -714,7 +716,7 @@ void load_level_welcome_screen(void) {
 }
 
 void begin_level(void) {
-    music_stop(); // Or music_play(level_start_song_or_whatever);
+    music_play(LEVEL_BEGIN_SONG);
     // Show the welcome screen - the screen that says the level's name (and that gives a bit of respite between levels).
     load_level_welcome_screen();
 
@@ -1420,7 +1422,10 @@ void movement(void) {
         bg_collision();
 
         if (TOUCHING_SPIKES) { // If we're still touching spikes even with a smaller hitbox, we die.
-            if (!STATUS_DEAD) { sfx_play(SFX_SMACK, 0); }
+            if (!STATUS_DEAD) { 
+                sfx_play(SFX_SMACK, 0);
+                music_stop();
+            }
             SET_STATUS_DEAD();
         }
     }
@@ -1909,7 +1914,10 @@ void empty_function(void) { }
 
 void collision_with_killable_slashable(void) {
     if (!IS_SWINGING_SWORD) { 
-        if (!STATUS_DEAD) { sfx_play(SFX_SMACK, 0); }
+        if (!STATUS_DEAD) { 
+            sfx_play(SFX_SMACK, 0);
+            music_stop();
+        }
         SET_STATUS_DEAD();
     }
     else {
@@ -1937,14 +1945,21 @@ void collision_with_inert_slashable(void) {
 
 void collision_with_unkillable_unslashable(void) {
     // Just die.
-    if (!STATUS_DEAD) { sfx_play(SFX_SMACK, 0); }
+    if (!STATUS_DEAD) { 
+        sfx_play(SFX_SMACK, 0);
+        music_stop();
+    }
     SET_STATUS_DEAD();
+    
 }
 
 void collision_with_splyke(void) {
     if (!IS_SWINGING_SWORD) { // Not swinging the sword?
         // Die.
-        if (!STATUS_DEAD) { sfx_play(SFX_SMACK, 0); }
+        if (!STATUS_DEAD) { 
+            sfx_play(SFX_SMACK, 0);
+            music_stop();
+        }
         SET_STATUS_DEAD();
     } else if (!SPLYKE_IS_MOVING_AROUND(x)){ // Not tornado:
         // Kill this.

@@ -73,5 +73,7 @@
 #define LEVEL_SONG_0 1
 #define LEVEL_SONG_1 2 // Might not get used
 #define BOSS_SONG 3
+#define DEATH_SONG 4
+#define LEVEL_BEGIN_SONG 5
 
 #endif
