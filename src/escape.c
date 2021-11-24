@@ -577,6 +577,12 @@ void menu_level_select(void) {
         }
         multi_vram_buffer_horz(cmap, 28, NTADR_A(3, 12));
     }
+
+    if (pad1_new & PAD_B) {
+        menu = MENU_GAME_SELECT;
+        switch_menu();
+        return;
+    }
 }
 
 // Menu -- Game Type Select.
@@ -640,7 +646,7 @@ void menu_game_type_select(void) {
         }
     }
 
-    if (pad1_new & (PAD_UP | PAD_DOWN | PAD_A)) {
+    if (pad1_new & (PAD_UP | PAD_DOWN | PAD_A | PAD_RIGHT)) {
         // Code shared between what we'd do with any supported button press.
         sfx_play(SFX_MENU_BEEP, 0);
     }
