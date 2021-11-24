@@ -30,6 +30,8 @@
 #include "titlescreen.h" // Title screen and associated data+functions
 #include "menu_screens.h" // compressed menu data
 
+#include "checksum.h"
+
 #pragma bss-name(push, "BSS")
 
 
@@ -93,13 +95,21 @@ unsigned int previous_score;
 #pragma bss-name(pop)
 
 #pragma bss-name(push, "XRAM")
-
+// XRAM is 8K long in total.
 // Collision maps.
 #define CMAP_COUNT 6
 
 unsigned char cmap[240 * CMAP_COUNT];
 
 // There's space for more, but I'm leaving it at this for now.
+
+// XRAM is now also battery-saved, to support things like high scores.
+unsigned int checksum; // A checksum can detect if the saved data is valid.
+unsigned int level_high_scores[256];
+unsigned int gauntlet_high_score;
+
+Settings settings;
+// We want to recalculate our checksum whenever we change any of these values, though.
 
 #pragma bss-name(pop)
 
@@ -271,9 +281,11 @@ void main (void) {
     set_vram_buffer(); // do at least once, sets a pointer to a buffer
     clear_vram_buffer();
 
+    check_checksum();
+
     set_prg_bank(4);
     show_title_screen();
-        
+
     // Set the level index to the first level.
     level_index = 0;
 
@@ -376,8 +388,16 @@ void main (void) {
 
             // TODO: Make this a flag instead of a separate game mode.
             if (game_mode == MODE_LEVEL_COMPLETE) {
-                // Figure out what to do based on the selected game mode.
-                if (game_level_advance_behavior == LEVEL_UP_BEHAVIOR_EXIT || level_index == NUMBER_OF_LEVELS - 1) {
+                // Check for a new high score.
+                AsmSet2ByteFromPtrAtIndexVar(temp5, level_high_scores, level_index);
+                temp6 = score - previous_score;
+                if (temp5 < temp6) {
+                    level_high_scores[level_index] = score;
+                    update_checksum();
+                }
+
+                // Figure out what to do next based on the selected game mode.
+                if (game_level_advance_behavior == LEVEL_UP_BEHAVIOR_EXIT || level_index == NUMBER_OF_LEVELS - 1) {                    
                     menu = MENU_COMPLETE_SCREEN;
                     switch_menu();
                 } else { // == LEVEL_UP_BEHAVIOR_CONTINUE and there are levels left
@@ -512,9 +532,9 @@ void menu_level_select(void) {
     pad1 = pad_poll(0); // read the first controller
     pad1_new = get_pad_new(0);
             
-    // I suppose if we ever want the game to start immediately,
+    // If we ever want the game to start immediately,
     // We can just set this to if (1) for debugging.
-    if (pad1_new & (PAD_UP | PAD_A)) { // Eventually we'll only want A to submit this.
+    if (pad1_new & PAD_A) {
         sfx_play(SFX_MENU_BEEP, 0);
         score = 0; // Reset the score...
         previous_score = 0; // and the previous score.
@@ -565,11 +585,13 @@ const unsigned char const game_type_select_menu_links[] = {
     MENU_GAME_SELECT,
     MENU_LEVEL_SELECT,
     MENU_ABOUT_SCREEN,
+    MENU_ABOUT_SCREEN,
 };
 
 const unsigned char const game_type_select_menu_selector_x[] = {
     10 * 8 + 4,
     8 * 8 + 4,
+    10 * 8 + 4,
     10 * 8 + 4,
 };
 
@@ -577,9 +599,10 @@ const unsigned char const game_type_select_menu_selector_y[] = {
     13 * 8 - 1,
     15 * 8 - 1,
     17 * 8 - 1,
+    19 * 8 - 1,
 };
 
-#define GAME_TYPE_MENU_OPTIONS 3
+#define GAME_TYPE_MENU_OPTIONS 4
 void menu_game_type_select(void) {
     // Listen for desired inputs.
     pad1 = pad_poll(0); // read the first controller
@@ -600,7 +623,7 @@ void menu_game_type_select(void) {
         }
     }
 
-    if (pad1_new & (PAD_A | PAD_RIGHT)) {
+    if (pad1_new & PAD_A) {
         switch (menu_selection) {
             case 0: // Gauntlet
                 // new Gauntlet game at level 1.
@@ -617,7 +640,7 @@ void menu_game_type_select(void) {
         }
     }
 
-    if (pad1_new & (PAD_UP | PAD_DOWN | PAD_A | PAD_RIGHT)) {
+    if (pad1_new & (PAD_UP | PAD_DOWN | PAD_A)) {
         // Code shared between what we'd do with any supported button press.
         sfx_play(SFX_MENU_BEEP, 0);
     }

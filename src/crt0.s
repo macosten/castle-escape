@@ -117,7 +117,7 @@ _TEMP = TEMP
     .byte $4e,$45,$53,$1a
     .byte <NES_PRG_BANKS
     .byte <NES_CHR_BANKS
-    .byte <NES_MIRRORING|(<NES_MAPPER<<4)
+    .byte <NES_MIRRORING|(<NES_MAPPER<<4)|2
     .byte <NES_MAPPER&$f0
     .byte 1 ;8k of PRG RAM
     .res 7,0

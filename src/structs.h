@@ -46,4 +46,11 @@ typedef struct EnemyDatabase {
     unsigned char count; // How many enemies are actually loaded into RAM.
 } Enemies;
 
+typedef union Settings_t {
+    struct {
+        unsigned int enable_revival : 1;
+    };
+    unsigned int raw_value;
+} Settings;
+
 #endif
