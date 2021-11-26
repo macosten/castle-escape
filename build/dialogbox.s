@@ -259,7 +259,7 @@ _dbox_current_string:
 ; if (scroll_count == 0) {
 ;
 	lda     _scroll_count
-	bne     L0161
+	bne     L0160
 ;
 ; dbox_y += 0x20;
 ;
@@ -270,9 +270,9 @@ _dbox_current_string:
 ;
 ; if (dbox_y > 0x20) { // ...but there are only two rows.
 ;
-L0161:	lda     _dbox_y
+L0160:	lda     _dbox_y
 	cmp     #$21
-	bcc     L0096
+	bcc     L0095
 ;
 ; dbox_status = DBOX_STATUS_DRAWING_TEXT;
 ;
@@ -290,7 +290,7 @@ L0161:	lda     _dbox_y
 ;
 ; }
 ;
-L0096:	rts
+L0095:	rts
 
 .endproc
 
@@ -328,7 +328,7 @@ L0096:	rts
 ;
 	ldx     #$00
 	lda     _temp0
-	bne     L0165
+	bne     L0164
 ;
 ; dbox_status = DBOX_STATUS_AWAITING_BUTTON;
 ;
@@ -342,17 +342,17 @@ L0096:	rts
 ; } else if (temp0 == '\n') {
 ;
 	rts
-L0165:	lda     _temp0
+L0164:	lda     _temp0
 	cmp     #$0A
 ;
 ; } else {
 ;
-	beq     L016B
+	beq     L016A
 ;
 ; if (nt == 0) {
 ;
 	lda     _nt
-	bne     L0167
+	bne     L0166
 ;
 ; address = NTADR_A(dbox_x, dbox_y);
 ;
@@ -370,11 +370,11 @@ L0165:	lda     _temp0
 ;
 ; } else {
 ;
-	jmp     L0169
+	jmp     L0168
 ;
 ; address = NTADR_C(dbox_x, dbox_y);
 ;
-L0167:	lda     _dbox_y
+L0166:	lda     _dbox_y
 	jsr     aslax4
 	stx     tmp1
 	asl     a
@@ -385,7 +385,7 @@ L0167:	lda     _dbox_y
 	sta     _address
 	lda     tmp1
 	ora     #$28
-L0169:	sta     _address+1
+L0168:	sta     _address+1
 ;
 ; one_vram_buffer(temp0, address);
 ;
@@ -403,11 +403,11 @@ L0169:	sta     _address+1
 ;
 	lda     _dbox_x
 	cmp     #$1E
-	bcc     L00C7
+	bcc     L00C6
 ;
 ; dbox_x = TEXT_START_X;
 ;
-L016B:	lda     #$02
+L016A:	lda     #$02
 	sta     _dbox_x
 ;
 ; ++dbox_y;
@@ -416,7 +416,7 @@ L016B:	lda     #$02
 ;
 ; }
 ;
-L00C7:	rts
+L00C6:	rts
 
 .endproc
 
@@ -439,7 +439,7 @@ L00C7:	rts
 ; if (pad1_new) {
 ;
 	lda     _pad1_new
-	beq     L00CF
+	beq     L00CE
 ;
 ; ++dbox_string_index;
 ;
@@ -450,7 +450,7 @@ L00C7:	rts
 	ldx     #$00
 	lda     _active_dboxdata+4
 	cmp     _dbox_string_index
-	bne     L0170
+	bne     L016F
 ;
 ; dbox_status = DBOX_STATUS_ERASING_BOX;
 ;
@@ -463,16 +463,16 @@ L00C7:	rts
 ;
 ; } else {
 ;
-	jmp     L016E
+	jmp     L016D
 ;
 ; dbox_current_string = active_dboxdata.strings[dbox_string_index];
 ;
-L0170:	lda     _dbox_string_index
+L016F:	lda     _dbox_string_index
 	asl     a
-	bcc     L016F
+	bcc     L016E
 	inx
 	clc
-L016F:	adc     _active_dboxdata+2
+L016E:	adc     _active_dboxdata+2
 	sta     ptr1
 	txa
 	adc     _active_dboxdata+2+1
@@ -513,7 +513,7 @@ L016F:	adc     _active_dboxdata+2
 ;
 ; temp1 = dbox_y >> 3;
 ;
-L00CF:	lda     _dbox_y
+L00CE:	lda     _dbox_y
 	lsr     a
 	lsr     a
 	lsr     a
@@ -544,7 +544,7 @@ L00CF:	lda     _dbox_y
 ;
 	lda     _dbox_y
 	and     #$1F
-L016E:	sta     _dbox_y
+L016D:	sta     _dbox_y
 ;
 ; }
 ;
@@ -601,7 +601,7 @@ L016E:	sta     _dbox_y
 ; if (scroll_count == 0) {
 ;
 	lda     _scroll_count
-	bne     L0171
+	bne     L0170
 ;
 ; dbox_y += 0x20;
 ;
@@ -612,9 +612,9 @@ L016E:	sta     _dbox_y
 ;
 ; if (dbox_y > 0x20) {
 ;
-L0171:	lda     _dbox_y
+L0170:	lda     _dbox_y
 	cmp     #$21
-	bcc     L015B
+	bcc     L015A
 ;
 ; game_mode = MODE_GAME;
 ;
@@ -628,7 +628,7 @@ L0171:	lda     _dbox_y
 ;
 ; }
 ;
-L015B:	rts
+L015A:	rts
 
 .endproc
 
@@ -647,9 +647,9 @@ L015B:	rts
 ;
 	lda     #$00
 	sta     _temp0
-L0172:	lda     _temp0
+L0171:	lda     _temp0
 	cmp     #$02
-	bcs     L0173
+	bcs     L0172
 ;
 ; dbox_x = dbox_erase_text_x_values[dbox_erase_text_frame];
 ;
@@ -693,13 +693,13 @@ L0172:	lda     _temp0
 ; for (temp0 = 0; temp0 < 2; ++temp0) {
 ;
 	inc     _temp0
-	jmp     L0172
+	jmp     L0171
 ;
 ; if (dbox_erase_text_frame == 4) {
 ;
-L0173:	lda     _dbox_erase_text_frame
+L0172:	lda     _dbox_erase_text_frame
 	cmp     #$04
-	bne     L012F
+	bne     L012E
 ;
 ; dbox_status = DBOX_STATUS_DRAWING_TEXT;
 ;
@@ -717,7 +717,7 @@ L0173:	lda     _dbox_erase_text_frame
 ;
 ; }
 ;
-L012F:	rts
+L012E:	rts
 
 .endproc
 
@@ -736,7 +736,7 @@ L012F:	rts
 ;
 	ldx     #$00
 	lda     _nt
-	bne     L0175
+	bne     L0174
 ;
 ; return NTADR_A(dbox_x, dbox_y);
 ;
@@ -751,11 +751,11 @@ L012F:	rts
 	pha
 	lda     tmp1
 	ora     #$20
-	jmp     L0176
+	jmp     L0175
 ;
 ; return NTADR_C(dbox_x, dbox_y);
 ;
-L0175:	lda     _dbox_y
+L0174:	lda     _dbox_y
 	jsr     aslax4
 	stx     tmp1
 	asl     a
@@ -766,7 +766,7 @@ L0175:	lda     _dbox_y
 	pha
 	lda     tmp1
 	ora     #$28
-L0176:	tax
+L0175:	tax
 	pla
 ;
 ; }

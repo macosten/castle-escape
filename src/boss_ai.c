@@ -362,6 +362,10 @@ void collision_with_boss(void) {
         }
         enemies.timer[x] = 127; // ~2 seconds of iframes (these will be incremented until it overflows)
     } else if (boss_state_deadliness[boss_state]) {
+        if (!STATUS_DEAD) {
+            sfx_play(SFX_SMACK, 0);
+            music_stop();
+        }
         SET_STATUS_DEAD();
     }
 }

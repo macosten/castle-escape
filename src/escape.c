@@ -17,6 +17,7 @@
 
 #include "player_macros.h"
 #include "enemy_macros.h"
+#include "settings_macros.h"
 
 #include "tilemaps/compressed_welcome_screen.h"
 
@@ -108,7 +109,8 @@ unsigned int checksum; // A checksum can detect if the saved data is valid.
 unsigned int level_high_scores[256];
 unsigned int gauntlet_high_score;
 
-Settings settings;
+unsigned char settings_memory[1];
+
 // We want to recalculate our checksum whenever we change any of these values, though.
 
 #pragma bss-name(pop)
@@ -200,10 +202,12 @@ void menu_level_select(void);
 void menu_game_type_select(void);
 void menu_about_screen(void);
 void menu_game_complete_screen(void);
+void menu_settings(void);
 
 void load_level_selector(void);
 void load_about_screen(void);
 void load_game_complete_screen(void);
+void load_settings_menu(void);
 
 // Functions in other files.
 extern void dialog_box_handler(void);
@@ -249,6 +253,7 @@ const void (* const menu_logic_functions[])(void) = {
     menu_level_select,
     menu_about_screen,
     menu_game_complete_screen,
+    menu_settings,
 };
 
 // If a menu needs something extra/special to be done before showing it, it'll do so in one of these functions.
@@ -257,6 +262,7 @@ const void (* const menu_load_functions[])(void) = {
     load_level_selector,
     load_about_screen,
     load_game_complete_screen,
+    load_settings_menu,
 };
 
 const unsigned char * const menu_compressed_data[] = {
@@ -264,6 +270,7 @@ const unsigned char * const menu_compressed_data[] = {
     level_select_screen,
     about_screen,
     game_complete_screen,
+    settings_screen,
 };
 
 void main (void) {
@@ -421,7 +428,7 @@ void main (void) {
             }
 
             // Debug: clear death status.
-            if (pad1 & PAD_DOWN && STATUS_DEAD) {
+            if (pad1 & PAD_DOWN && STATUS_DEAD && SETTINGS_IS_DOWN_TO_REVIVE_ENABLED) {
                 SET_STATUS_ALIVE();
                 player_death_timer = 0;
                 music_play(LEVEL_SONG_0);
@@ -435,8 +442,6 @@ void main (void) {
         while (game_mode == MODE_GAME_SHOWING_TEXT) {
             // The mode the game is in while a dialog box should block all movement.
             ppu_wait_nmi(); 
-
-            // Music...?
 
             set_chr_bank_0(0);
             pad1 = pad_poll(0); // read the first controller
@@ -590,7 +595,7 @@ void menu_level_select(void) {
 const unsigned char const game_type_select_menu_links[] = { 
     MENU_GAME_SELECT,
     MENU_LEVEL_SELECT,
-    MENU_ABOUT_SCREEN,
+    MENU_SETTINGS,
     MENU_ABOUT_SCREEN,
 };
 
@@ -646,12 +651,10 @@ void menu_game_type_select(void) {
         }
     }
 
-    if (pad1_new & (PAD_UP | PAD_DOWN | PAD_A | PAD_RIGHT)) {
+    if (pad1_new & (PAD_UP | PAD_DOWN | PAD_A)) {
         // Code shared between what we'd do with any supported button press.
         sfx_play(SFX_MENU_BEEP, 0);
     }
-
-    // Eventually I'll want make Right do nothing, but it's convenient for testing with Mednafen as my laptop doesn't have a keypad so there's no A/B.
 
     // Show the cursor.
     oam_spr(game_type_select_menu_selector_x[menu_selection], game_type_select_menu_selector_y[menu_selection], 0x10, 0);
@@ -698,6 +701,96 @@ void menu_game_complete_screen(void) {
     }
 
     oam_meta_spr(123, 146, valrigard_idle_right);
+}
+
+// Menu -- Settings
+
+const unsigned char const settings_menu_selector_x = 5 * 8 + 4; // in pixels
+const unsigned char const settings_menu_toggle_text_x = 25; // in tiles
+
+const unsigned char const settings_menu_selector_y[] = { // in pixels, not tiles
+    7 * 8 - 1,
+    19 * 8 - 1,
+};
+
+const unsigned char const settings_menu_text_y[] = { // in tiles, not pixels
+    7,
+    0xff,
+}; // Could this be better if we define it as "constant plus (n * offset)" (e.g. [2] = 7+(1*2) = 9?)
+
+#define SETTINGS_OPTIONS 2
+
+void load_settings_menu(void) {
+    // All the toggles should be pre-populated with "Off" and "On"
+    for (temp0 = 0; temp0 < SETTINGS_OPTIONS - 1; ++temp0) {
+        // Map temp0 to a given bit in settings_memory
+        temp1 = temp0 & 0b111; // Index for bitmask
+        temp1 = settings_bitmask_lookup_table[temp1]; // bitmask for settings bit
+        temp2 = settings_memory[temp0 >> 3] & temp1; // 
+
+        temp5 = NTADR_A(settings_menu_toggle_text_x, settings_menu_text_y[temp0]);
+        
+        temppointer = temp2 ? string_on : string_off;
+        put_str(temp5, temppointer);
+    }
+}
+
+
+void menu_settings(void) {
+    pad1 = pad_poll(0);
+    pad1_new = get_pad_new(0);
+
+    if (pad1_new & (PAD_UP | PAD_DOWN | PAD_A | PAD_B)) {
+        // Code shared between what we'd do with any supported button press.
+        sfx_play(SFX_MENU_BEEP, 0);
+    }
+
+    if (pad1_new & PAD_DOWN) {
+        ++menu_selection;
+        if (menu_selection == SETTINGS_OPTIONS) {  // Wrap around
+            menu_selection = 0;
+        }
+    }
+
+    if (pad1_new & PAD_UP) {
+        if (menu_selection != 0) {
+            --menu_selection;
+        } else {
+            menu_selection = SETTINGS_OPTIONS - 1;
+        }
+    }
+
+    if (pad1_new & PAD_A) {
+        switch (menu_selection) {
+            case SETTINGS_OPTIONS - 1: // Actual menu option:
+                // Clear all saved data
+
+                // We might want to offer an "Are you sure?" prompt before actually clearing the data, but for now:
+                clear_saved_data();
+                menu = MENU_GAME_SELECT;
+                switch_menu();
+                return;
+            case 0: // Toggle Down To Revive
+                SETTINGS_TOGGLE_DOWN_TO_REVIVE(); // This will save an unnecessary ldx/stx 
+                temp0 = SETTINGS_IS_DOWN_TO_REVIVE_ENABLED; // These aren't all located in the same bit, so...
+                goto DO_FOR_ALL_SETTINGS_TOGGLES;
+            DO_FOR_ALL_SETTINGS_TOGGLES:
+            default:
+                temp5 = NTADR_A(settings_menu_toggle_text_x, settings_menu_text_y[menu_selection]);
+                temppointer = temp0 ? string_on : string_off;
+                multi_vram_buffer_horz(temppointer, 3, temp5);
+                break;
+        }
+    }
+
+    if (pad1_new & PAD_B) { // Back to main menu
+        menu = MENU_GAME_SELECT;
+        switch_menu();
+        return;
+    }
+
+    // Show the cursor.
+    oam_spr(settings_menu_selector_x, settings_menu_selector_y[menu_selection], 0x10, 0);
 }
 
 void load_level_welcome_screen(void) {

@@ -14,7 +14,7 @@ extern unsigned int checksum;
 extern unsigned int level_high_scores[]; // [256] ints ong
 extern unsigned int gauntlet_high_score;
 
-extern Settings settings;
+extern unsigned char settings_memory[];
 
 // Our checksum will basically just be the sum of every saved value in memory, disregarding overflow.
 
@@ -28,7 +28,7 @@ void clear_saved_data(void) {
         ((unsigned char *)level_high_scores + 256)[temp0] = 0;
         if (temp0 == 255) { break; }
     }
-    settings.raw_value = 0;
+    settings_memory[0] = 0;
 }
 
 void calculate_checksum(void) {
@@ -37,7 +37,7 @@ void calculate_checksum(void) {
         temp5 += level_high_scores[temp0];
         if (temp0 == 255) { break; }
     }
-    temp5 += settings.raw_value;
+    temp5 += settings_memory[0];
 }
 
 void update_checksum(void) {

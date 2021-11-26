@@ -7,4 +7,6 @@ void update_checksum(void);
 
 void check_checksum(void);
 
+void clear_saved_data(void);
+
 #endif

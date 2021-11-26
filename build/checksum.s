@@ -13,13 +13,13 @@
 	.export		_calculate_checksum
 	.export		_update_checksum
 	.export		_check_checksum
+	.export		_clear_saved_data
 	.importzp	_temp0
 	.importzp	_temp5
 	.import		_checksum
 	.import		_level_high_scores
 	.import		_gauntlet_high_score
-	.import		_settings
-	.export		_clear_saved_data
+	.import		_settings_memory
 
 ; ---------------------------------------------------------------
 ; void __near__ calculate_checksum (void)
@@ -47,12 +47,12 @@
 ; temp5 += level_high_scores[temp0];
 ;
 	tax
-L0044:	lda     _temp0
+L0045:	lda     _temp0
 	asl     a
-	bcc     L0043
+	bcc     L0044
 	inx
 	clc
-L0043:	adc     #<(_level_high_scores)
+L0044:	adc     #<(_level_high_scores)
 	sta     ptr1
 	txa
 	adc     #>(_level_high_scores)
@@ -73,21 +73,21 @@ L0043:	adc     #<(_level_high_scores)
 ;
 	lda     _temp0
 	cmp     #$FF
-	beq     L002C
+	beq     L0046
 ;
 ; for (temp0 = 0; ; ++temp0) {
 ;
 	ldx     #$00
 	inc     _temp0
-	jmp     L0044
+	jmp     L0045
 ;
-; temp5 += settings.raw_value;
+; temp5 += settings_memory[0];
 ;
-L002C:	lda     _settings
+L0046:	lda     _settings_memory
 	clc
 	adc     _temp5
 	sta     _temp5
-	lda     _settings+1
+	tya
 	adc     _temp5+1
 	sta     _temp5+1
 ;
@@ -145,12 +145,12 @@ L002C:	lda     _settings
 	lda     _temp5
 	ldx     _temp5+1
 	cpx     _checksum+1
-	bne     L0045
+	bne     L0047
 	cmp     _checksum
 ;
 ; clear_saved_data();
 ;
-L0045:	jne     _clear_saved_data
+L0047:	jne     _clear_saved_data
 ;
 ; }
 ;
@@ -186,7 +186,7 @@ L0045:	jne     _clear_saved_data
 ;
 ; ((unsigned char *)level_high_scores)[temp0] = 0;
 ;
-L0016:	ldy     _temp0
+L0015:	ldy     _temp0
 	lda     #$00
 	sta     _level_high_scores,y
 ;
@@ -199,18 +199,17 @@ L0016:	ldy     _temp0
 ;
 	lda     _temp0
 	cmp     #$FF
-	beq     L0046
+	beq     L0048
 ;
 ; for (temp0 = 0; ; ++temp0) {
 ;
 	inc     _temp0
-	jmp     L0016
+	jmp     L0015
 ;
-; settings.raw_value = 0;
+; settings_memory[0] = 0;
 ;
-L0046:	lda     #$00
-	sta     _settings
-	sta     _settings+1
+L0048:	lda     #$00
+	sta     _settings_memory
 ;
 ; }
 ;
