@@ -19,13 +19,14 @@ const unsigned char const game_select_screen[] = { // main_menu_screen
 #define MENU_LEVEL_SELECT 1
 
 const unsigned char const level_select_screen[] = {
-	76,90,71,0,0,3,192,0,0,0,83,166,111,20,9,1,
+	76,90,71,0,0,3,192,0,0,0,98,252,241,24,59,1,
 	0,1,2,3,32,32,3,31,3,31,3,29,3,21,83,101,
 	108,101,99,116,32,97,32,76,101,118,101,108,58,1,30,79,
-	3,31,3,31,3,28,60,47,62,58,32,67,104,111,111,115,
-	101,1,19,24,65,58,1,38,149,3,20,66,58,32,66,97,
-	99,107,1,27,92,3,30,3,15,130,229,3,59,229,246,247,
-	3,59,247,
+	3,28,72,105,103,104,32,83,99,111,114,101,1,30,110,3,
+	31,3,28,3,9,60,47,62,58,32,67,104,111,111,115,101,
+	1,19,24,65,58,1,38,149,3,20,66,58,32,66,97,99,
+	107,1,27,92,3,30,3,15,130,229,3,59,229,246,247,3,
+	59,247,
 };
 
 #define MENU_ABOUT_SCREEN 2
@@ -77,7 +78,6 @@ const unsigned char const settings_screen[] = {
 
 const char const * string_on = "On ";
 const char const * string_off = "Off";
-
 const char const * string_are_you_sure = "Are you sure?     ";
 
 #pragma rodata-name(pop)

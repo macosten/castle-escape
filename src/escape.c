@@ -399,7 +399,7 @@ void main (void) {
                 AsmSet2ByteFromPtrAtIndexVar(temp5, level_high_scores, level_index);
                 temp6 = score - previous_score;
                 if (temp5 < temp6) {
-                    level_high_scores[level_index] = score;
+                    level_high_scores[level_index] = temp6;
                     update_checksum();
                 }
 
@@ -526,10 +526,35 @@ void switch_menu(void) {
 
 // Menu -- Level Select.
 
+void prepare_score_string(void) {
+    // Since the above function leaves score_string reversed and still actual digit values rather than characters:
+    // Reverse the array:
+    temp0 = score_string[0];
+    score_string[0] = score_string[4];
+    score_string[4] = temp0;
+    temp0 = score_string[1];
+    score_string[1] = score_string[3];
+    score_string[3] = temp0;
+
+    temp1 = 0;
+    for (temp0 = 0; temp0 < 5; ++temp0) {
+        temp1 |= score_string[temp0];
+        if (temp1 || temp0 == 4) { // Don't display trailing zeroes
+            score_string[temp0] += '0';    
+        }
+        
+    }
+}
+
 void load_level_selector(void) {
     // Print the currently-selected level's name.
     AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
     put_str(NTADR_A(3, 12), temppointer);
+
+    AsmSet2ByteFromPtrAtIndexVar(temp5, level_high_scores, level_index);
+    convert_to_decimal(temp5);
+    prepare_score_string();
+    multi_vram_buffer_horz(score_string, 5, NTADR_A(14, 14));
 }
 
 void menu_level_select(void) {
@@ -581,6 +606,14 @@ void menu_level_select(void) {
             cmap[temp1] = temp2;
         }
         multi_vram_buffer_horz(cmap, 28, NTADR_A(3, 12));
+
+        // Do the same for the displayed high score (minus trickery, since this will always be of the same length):
+        // High Score: 65535
+        //temp5 = level_high_scores[level_index];
+        AsmSet2ByteFromPtrAtIndexVar(temp5, level_high_scores, level_index);
+        convert_to_decimal(temp5);
+        prepare_score_string();
+        multi_vram_buffer_horz(score_string, 5, NTADR_A(14, 14));
     }
 
     if (pad1_new & PAD_B) {
