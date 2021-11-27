@@ -450,7 +450,7 @@ void main (void) {
             }
 
             // debug:
-            // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
         }
 
@@ -1155,6 +1155,8 @@ void calculate_shuffle_array(void) {
 
 }
 
+// Metasprite Bank: Bank 5
+#pragma rodata-name(push, "BANK5")
 // A lookup table for enemy draw functions.
 const void (* const draw_func_pointers[])(void) = {
     empty_function,   // 0 - ENEMY_NONE;
@@ -1172,6 +1174,7 @@ const void (* const draw_func_pointers[])(void) = {
     draw_purple_death_effect, // 12 - ENEMY_PURPLE_DEATH_EFFECT;
     draw_splyke_death_effect, // 13 - ENEMY_SPLYKE_DEATH_EFFECT;
 };
+#pragma rodata-name(pop)
 
 void draw_sprites(void) {
     // Ensure the metasprite bank is banked.
@@ -1193,7 +1196,7 @@ void draw_sprites(void) {
 
     // draw enemies
     for (y = 0; y < shuffle_leg_size; ++y) {
-        // Unrolling this loop is a bit inconsistent from frame to frame, so I didn't.
+        // Unrolled loop (2):
 
         //x = shuffle_array[y + shuffle_offset];
         temp1 = y + shuffle_offset;
@@ -1209,6 +1212,42 @@ void draw_sprites(void) {
 
                 temp0 = GET_ENEMY_TYPE(x);
                 // An assembly macro (defined in asm/macros.h) is used here to ensure that this is efficient.
+                AsmCallFunctionAtPtrOffsetByIndexVar(draw_func_pointers, temp0);
+            }
+        }
+        ++y;
+
+        temp1 = y + shuffle_offset;
+        AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
+        if (IS_ENEMY_ACTIVE(x)) {  
+            temp_x = enemies_x[x];
+            temp_y = enemies_y[x];
+            if (temp_y < 0xf0) {
+                temp0 = GET_ENEMY_TYPE(x);
+                AsmCallFunctionAtPtrOffsetByIndexVar(draw_func_pointers, temp0);
+            }
+        }
+        ++y;
+
+        temp1 = y + shuffle_offset;
+        AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
+        if (IS_ENEMY_ACTIVE(x)) {  
+            temp_x = enemies_x[x];
+            temp_y = enemies_y[x];
+            if (temp_y < 0xf0) {
+                temp0 = GET_ENEMY_TYPE(x);
+                AsmCallFunctionAtPtrOffsetByIndexVar(draw_func_pointers, temp0);
+            }
+        }
+        ++y;
+
+        temp1 = y + shuffle_offset;
+        AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
+        if (IS_ENEMY_ACTIVE(x)) {  
+            temp_x = enemies_x[x];
+            temp_y = enemies_y[x];
+            if (temp_y < 0xf0) {
+                temp0 = GET_ENEMY_TYPE(x);
                 AsmCallFunctionAtPtrOffsetByIndexVar(draw_func_pointers, temp0);
             }
         }
@@ -1250,6 +1289,9 @@ void draw_sprites(void) {
 
 }
 
+// Let's put all the drawing functions+other data in Bank 5 with the metasprites
+#pragma rodata-name(push, "BANK5")
+#pragma code-name(push, "BANK5")
 void draw_player(void) {
 
     temp1 = high_byte(valrigard.x);
@@ -1445,6 +1487,8 @@ void draw_boss_fireball(void) {
 
     oam_spr(temp_x, temp_y, temp3, 0);
 }
+#pragma code-name(pop)
+#pragma rodata-name(pop)
 
 // MARK: -- Movement.
 
@@ -1934,7 +1978,7 @@ void check_spr_objects(void) {
 
     // Check enemies...
     for (x = 0; x < enemies_count; ++x) {
-        // Formerly a (partially) unrolled loop.
+        // Unrolled loop (2):
         if (GET_ENEMY_TYPE(x)) {
             // Check to see where this enemy is supposed to be.
 
@@ -1956,6 +2000,26 @@ void check_spr_objects(void) {
             // not the enemy's native nametable, it'll be shifted down (positive y) by 16.
 
             // Let's counteract that...
+            if (nt_current != enemies_nt[x]) { 
+                temp0 = enemies_y[x] - 16;
+                enemies_y[x] = temp0;
+            }
+        }
+        ++x;
+
+        if (GET_ENEMY_TYPE(x)) {
+            high_byte(temp5) = enemies_nt[x];
+            low_byte(temp5) = enemies_actual_y[x];
+            
+            temp5 -= scroll_y;
+            if (high_byte(temp5)) {
+                DEACTIVATE_ENEMY(x);
+                continue;
+            }
+            
+            ACTIVATE_ENEMY(x);
+            enemies_y[x] = low_byte(temp5);
+
             if (nt_current != enemies_nt[x]) { 
                 temp0 = enemies_y[x] - 16;
                 enemies_y[x] = temp0;
@@ -2072,7 +2136,7 @@ void sprite_collisions(void) {
     // The width and height of this will actually be different depending on the enemy's type.
 
     for (x = 0; x < enemies_count; ++x) {
-        // Formerly a (Partially) unrolled loop.
+        // Unrolled loop (2).
         if(IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
 
@@ -2088,6 +2152,22 @@ void sprite_collisions(void) {
             hitbox2.y = enemies_y[x];
             hitbox2.y += enemy_hitbox_y_offset_lookup_table[temp1];
 
+            check_collision(temp0, hitbox, hitbox2);
+            if (temp0) {
+                AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
+            }
+        }
+        ++x;
+
+        if(IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+            hitbox2.width = enemy_hitbox_width_lookup_table[temp1];
+            if (!hitbox2.width) { continue; }
+            hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
+            hitbox2.x = enemies_x[x];
+            hitbox2.x += enemy_hitbox_x_offset_lookup_table[temp1];
+            hitbox2.y = enemies_y[x];
+            hitbox2.y += enemy_hitbox_y_offset_lookup_table[temp1];
             check_collision(temp0, hitbox, hitbox2);
             if (temp0) {
                 AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
@@ -2191,11 +2271,26 @@ void enemy_movement(void) {
     // This one's a bit of an uncharted realm. 
     // I'm thinking we'll want to optimize this one somehow...
     for (x = 0; x < enemies_count; ++x) {
-        // Formerly a (Partially) unrolled loop.
+        // Unrolled loop (4):
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
             // An assembly macro (defined in asm/macros.h) is used here to ensure that this is efficient.
             // Do we want to delete (set type to ENEMY_NONE) any projectiles (CANNONBALL/ACIDDROP) that go offscreen?
+            AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
+        }
+        ++x;
+        if (IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+            AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
+        }
+        ++x;
+        if (IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+            AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
+        }
+        ++x;
+        if (IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
             AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
         }
     }
@@ -2450,9 +2545,7 @@ void cannon_ai(void) {
             enemies_extra2[x] = temp3;
 
         }
-    } 
-
-    if (enemies_timer[x] == 0) {
+    } else if (enemies_timer[x] == 0) {
         // Fire the cannonball.
         enemies_timer[x] = 120;
 
