@@ -25,6 +25,9 @@
 #include "tilemaps/level18.h"
 #include "tilemaps/level19.h"
 #include "tilemaps/level20.h"
+
+#include "tilemaps/level_user_neoman17777.h"
+
 #include "tilemaps/level_debug_tiledump.h"
 #include "tilemaps/level_star_test.h"
 #include "tilemaps/level_enemies_test.h"
@@ -57,8 +60,11 @@ const unsigned char const level_nt_length[] = {
     3,
     1, // Level 18
     6,
-    1,
-    //
+    1, // Level 20
+    // User Levels
+    6,
+
+    // Debug Levels
     1, // tiledump
     3, // star test
     3, // enemies test
@@ -87,7 +93,10 @@ const unsigned char const valrigard_starting_nt[] = {
     0, // Level 18
     0,
     0,
-    //
+    // User Levels
+    5,
+
+    // Debug Levels
     0, // Tiledump
     0, // Star Test
     2,
@@ -119,7 +128,10 @@ const unsigned char const valrigard_inital_coords[] = {
     0x4d,
     0x64,
     0x4c, // 20
-    //
+    // User Levels
+    0x4d,
+
+    // Debug Levels
     0x4d,
     0x30,
     0x4d,
@@ -149,6 +161,9 @@ const unsigned char * const level_compressed_nametable_pointers[] = {
     level18,
     level19,
     level20,
+
+    level_neoman17777,
+
     level_debug_tiledump,
     level_star_test,
     level_enemies_test,
@@ -178,7 +193,10 @@ const unsigned char const level_nametable_banks[] = {
     0,
     0,
     0,
-    //
+    // User Levels
+    0,
+
+    // Debug Levels
     0,
     0,
     0,
@@ -207,6 +225,9 @@ const char * const level_names[] = {
     "Level 18",
     "Level 19",
     "Level 20",
+
+    "Sloth's Basement (neoman17777)",
+
     "Tile Dump",
     "Star Test",
     "Enemy Test",
@@ -215,7 +236,7 @@ const char * const level_names[] = {
 };
 
 // Convenient ROM value that shows the number of levels implemented.
-#define NUMBER_OF_LEVELS 25
+#define NUMBER_OF_LEVELS 26
 
 // Max of MAX_ENEMIES enemies.
 // Be aware that cannons and acid blobs functionally take up 2 slots
@@ -247,6 +268,9 @@ const unsigned char * const level_enemy_data[] = {
     level18_enemy,
     empty_enemy, // 19
     level20_enemy,
+
+    level_neoman17777_enemy,
+
     level_debug_tiledump_enemy,
     empty_enemy,
     level_enemies_test_enemy,

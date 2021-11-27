@@ -60,7 +60,16 @@ extern const DialogBoxData const boss_dialog;
 
 extern DialogBoxData active_dboxdata;
 
-extern Enemies enemies;
+extern unsigned char enemies_x[];
+extern unsigned char enemies_y[];
+extern unsigned char enemies_actual_y[];
+extern unsigned char enemies_nt[];
+extern unsigned char enemies_flags[];
+extern unsigned char enemies_type[];
+extern unsigned char enemies_extra[];
+extern unsigned char enemies_extra2[];
+extern unsigned char enemies_timer[];
+extern unsigned char enemies_count;
 
 extern unsigned char boss_state;
 #define BOSS_STATE_INTRO 0
@@ -105,16 +114,16 @@ void boss_shoot_fireball(void) {
 
         //temp1 = GET_ENEMY_TYPE(temp_x);
 
-        enemies.type[temp_x] = ENEMY_BOSS_FIREBALL;
+        enemies_type[temp_x] = ENEMY_BOSS_FIREBALL;
 
         // Move the fireball into place.
-        temp0 = enemies.x[x] + 6;
-        temp1 = enemies.actual_y[x] + 6;
-        temp2 = enemies.nt[x];
+        temp0 = enemies_x[x] + 6;
+        temp1 = enemies_actual_y[x] + 6;
+        temp2 = enemies_nt[x];
 
-        enemies.x[temp_x] = temp0;
-        enemies.actual_y[temp_x] = temp1;
-        enemies.nt[temp_x] = temp2;
+        enemies_x[temp_x] = temp0;
+        enemies_actual_y[temp_x] = temp1;
+        enemies_nt[temp_x] = temp2;
 
 
         // target center x and y
@@ -123,17 +132,17 @@ void boss_shoot_fireball(void) {
             
 
         // source center x and y
-        temp2 = enemies.x[x] + 6; // ENEMY_WIDTH/2
-        enemies.x[temp_x] = temp2;
+        temp2 = enemies_x[x] + 6; // ENEMY_WIDTH/2
+        enemies_x[temp_x] = temp2;
 
-        temp3 = enemies.y[x] + 6; // ENEMY_HEIGHT/2
-        enemies.y[temp_x] = temp3;
+        temp3 = enemies_y[x] + 6; // ENEMY_HEIGHT/2
+        enemies_y[temp_x] = temp3;
 
 
         // values of temp0 through temp3 are pseudo-parameters for this.
         fire_at_target();
         // values of temp0 and temp4 are pseudo-returns for this.
-        enemies.timer[temp_x] = temp0; // the brads value for this fireball.
+        enemies_timer[temp_x] = temp0; // the brads value for this fireball.
 
         BOSS_FIREBALL_COOLDOWN = 32;
 
@@ -153,17 +162,17 @@ void boss_start_flying(void) {
     // Setup for fire_at_target:
 
     // Pick some amount of distance to fly.
-    temp0 = enemies.x[x];
+    temp0 = enemies_x[x];
     temp0 += rand8() & 0b00111111; // x -- MSB is sign
     //temp0 += 1;
 
-    temp1 = enemies.y[x];
+    temp1 = enemies_y[x];
     temp1 += rand8() & 0b00111111; // y -- MSB is sign
     //temp1 += 1;
 
 
-    temp2 = enemies.x[x];
-    temp3 = enemies.y[x];
+    temp2 = enemies_x[x];
+    temp3 = enemies_y[x];
 
     // We're "firing" ourselves, so:
     temp_x = x;
@@ -192,7 +201,7 @@ void boss_ai_idle(void) {
     // trigger_dialog_box();
 
     // Wait some number of frames
-    if (temp0 == enemies.extra[x]) {
+    if (temp0 == enemies_extra[x]) {
         boss_start_flying(); // Start flying
     }
 
@@ -214,8 +223,8 @@ void boss_ai_ascending(void) {
     // Do some sort of bg_collision().
     enemy_is_using_bg_collision = 1;
 
-    hitbox.x = enemies.x[x];
-    hitbox.y = enemies.y[x];
+    hitbox.x = enemies_x[x];
+    hitbox.y = enemies_y[x];
     hitbox.width = 16;
     hitbox.height = 16;
 
@@ -236,16 +245,16 @@ void boss_ai_ascending(void) {
     if (BOSS_FIREBALL_COOLDOWN) { --BOSS_FIREBALL_COOLDOWN; }
     else {
         if (rand8() > 250) { 
-            boss_shoot_fireball(); ;
+            boss_shoot_fireball();
         }
     }
     
 
-    temp1 = enemies.extra[x]; // This gets modified by cannonball_ai_sub.
-    temp0 = enemies.timer[x]; // (Already should be set to this)
+    temp1 = enemies_extra[x]; // This gets modified by cannonball_ai_sub.
+    temp0 = enemies_timer[x]; // (Already should be set to this)
     if (temp0 == temp1) { 
         boss_state = BOSS_STATE_DESCENDING;
-        enemies.timer[x] = 0;
+        enemies_timer[x] = 0;
     }
 
 }
@@ -271,10 +280,10 @@ void boss_collide_sub(void) {
 void boss_ai_descending(void) {
     // Look for a solid block underneath me.
     // Adapted from sun_ai.
-    high_byte(temp5) = enemies.nt[x];
-    low_byte(temp5) = enemies.actual_y[x];
+    high_byte(temp5) = enemies_nt[x];
+    low_byte(temp5) = enemies_actual_y[x];
 
-    temp1 = enemies.x[x] + 8; 
+    temp1 = enemies_x[x] + 8; 
     
     // DOWN (adding to y)
     add_scroll_y(temp5, 1, temp5);
@@ -292,13 +301,13 @@ void boss_ai_descending(void) {
     if (METATILE_IS_SOLID(collision)) {
         // Set initial state for BOSS_STATE_IDLE logic.
         temp0 = rand8();
-        enemies.extra[x] = temp0;
+        enemies_extra[x] = temp0;
         boss_state = BOSS_STATE_IDLE;
     }
 
     // Update the actual enemy model itself.
-    enemies.nt[x] = high_byte(temp5);
-    enemies.actual_y[x] = low_byte(temp5);
+    enemies_nt[x] = high_byte(temp5);
+    enemies_actual_y[x] = low_byte(temp5);
 }
 
 void boss_ai_damaged(void) {
@@ -307,10 +316,10 @@ void boss_ai_damaged(void) {
         boss_start_flying();
     } else if ((temp0 & 0b11) == 0b11) {
         // Rise up in the air slowly.
-        high_byte(temp5) = enemies.nt[x];
-        low_byte(temp5) = enemies.actual_y[x];
+        high_byte(temp5) = enemies_nt[x];
+        low_byte(temp5) = enemies_actual_y[x];
 
-        temp1 = enemies.x[x] + 8; 
+        temp1 = enemies_x[x] + 8; 
         
         // UP (adding to y)
         temp6 = sub_scroll_y(1, temp5);
@@ -326,8 +335,8 @@ void boss_ai_damaged(void) {
 
         if (!METATILE_IS_SOLID(collision)) {
             // Update the actual enemy model itself only if we're not colliding.
-            enemies.nt[x] = high_byte(temp6);
-            enemies.actual_y[x] = low_byte(temp6);
+            enemies_nt[x] = high_byte(temp6);
+            enemies_actual_y[x] = low_byte(temp6);
         }
         
     } 
@@ -336,7 +345,7 @@ void boss_ai_damaged(void) {
 
 void boss_ai_dying(void) {
     // Just do the death animation, and end the game after 2 seconds.
-    if (enemies.timer[x] == 0) {
+    if (enemies_timer[x] == 0) {
         game_level_advance_behavior = LEVEL_UP_BEHAVIOR_EXIT;
         game_mode = MODE_LEVEL_COMPLETE;
     }
@@ -360,7 +369,7 @@ void collision_with_boss(void) {
         } else {
             boss_state = BOSS_STATE_DAMAGED;
         }
-        enemies.timer[x] = 127; // ~2 seconds of iframes (these will be incremented until it overflows)
+        enemies_timer[x] = 127; // ~2 seconds of iframes (these will be incremented until it overflows)
     } else if (boss_state_deadliness[boss_state]) {
         if (!STATUS_DEAD) {
             sfx_play(SFX_SMACK, 0);

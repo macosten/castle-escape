@@ -2,6 +2,8 @@
 // Castle Escape
 //
 
+// #include <stddef.h>
+
 #include "lib/neslib.h" // Shiru's library. Some functions were modified to reduce stack usage.
 #include "lib/nesdoug.h" // dougeff's library. Some functions were modified to reduce stack usage.
 
@@ -82,7 +84,20 @@ I don't really know what the ideal pattern would be, though.
 */
 
 // Enemy memory.
-Enemies enemies;
+
+unsigned char enemies_x[MAX_ENEMIES]; // The x value of this enemy.
+unsigned char enemies_y[MAX_ENEMIES]; // The y value this will be rendered at (after taking scrolling, etc into account)
+unsigned char enemies_actual_y[MAX_ENEMIES]; // The "actual" y value of this enemy, in absolute terms.
+unsigned char enemies_nt[MAX_ENEMIES]; // The nametable this lives in. Sort of like a high byte of actual_y.
+// Todo: Now that we have lots of extra RAM, should flags_type[] be separated into flags[] and type[]?
+unsigned char enemies_flags[MAX_ENEMIES]; // high nibble is flags (including direction and active/inactive), low nibble is type.
+unsigned char enemies_type[MAX_ENEMIES];
+unsigned char enemies_extra[MAX_ENEMIES]; // The use of this depends on the enemy.
+unsigned char enemies_extra2[MAX_ENEMIES]; // The use of this depends on the enemy.
+// Examples of what the extra bytes will contain: animation frame numbers, cached return values, subpixel values...
+unsigned char enemies_timer[MAX_ENEMIES]; // A timer value - most likely an animation timer. Probably gets decremented once per frame.
+unsigned char enemies_count; // How many enemies are actually loaded into RAM.
+
 
 // Extra memory used for bosses or the like.
 unsigned char boss_state;
@@ -350,28 +365,28 @@ void main (void) {
             RESET_TOUCHING_SPIKES();
             RESET_SCORE_CHANGED_THIS_FRAME();
             RESET_IS_WALKING();
-
+            
             // Move the player.
             movement();
             
             // Check to see what's on-screen
             check_spr_objects();
-
+            
             // Check the status of the sword swing.
             if (!STATUS_DEAD) { swing_sword(); }
-
+            gray_line();
             // Check sprite collisions
             sprite_collisions();
-            
-            // Move enemies.
+            gray_line();
+            // Move enemies
             enemy_movement();
-            
+            gray_line();
             set_scroll_y(scroll_y);
             
             if (SCORE_CHANGED_THIS_FRAME) { convert_to_decimal(score); }
             
             draw_sprites();
-            
+            gray_line();
             // Draw tiles on the edge of the screen.
             if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
                 //draw_screen_D();
@@ -999,7 +1014,17 @@ void load_level_new(void) {
     // Load Enemies
 
     // Clear the enemy database.
-    memfill(&enemies, 0, sizeof(enemies));
+    // It's ideal to do this in one call since each call to memfill takes a surprising amount of ROM
+    memfill(&enemies_x, 0, MAX_ENEMIES * 9);
+    // memfill(&enemies_y, 0, MAX_ENEMIES);
+    // memfill(&enemies_actual_y, 0, MAX_ENEMIES);
+    // memfill(&enemies_nt, 0, MAX_ENEMIES);
+    // memfill(&enemies_flags, 0, MAX_ENEMIES);
+    // memfill(&enemies_type, 0, MAX_ENEMIES);
+    // memfill(&enemies_extra, 0, MAX_ENEMIES);
+    // memfill(&enemies_extra2, 0, MAX_ENEMIES);
+    // memfill(&enemies_timer, 0, MAX_ENEMIES);
+    enemies_count = 0;
 
     // Switch back to the metadata bank.
     set_prg_bank(LEVEL_METADATA_BANK);
@@ -1009,73 +1034,73 @@ void load_level_new(void) {
 
     for (x = 0, y = 0; x < MAX_ENEMIES; ++x){
 
-        enemies.y[x] = 0;
+        enemies_y[x] = 0;
         AsmSet1ByteFromZpPtrAtIndexVar(temp1, temppointer, y); // Get a byte of data - the bitpacked coords.
 
         if (temp1 == 0xff) break; // 0xff terminates the enemy data.
 
         temp2 = temp1 & 0xf0;
-        enemies.x[x] = temp2;
+        enemies_x[x] = temp2;
 
         temp2 = (temp1 & 0x0f) << 4;
-        enemies.actual_y[x] = temp2;
+        enemies_actual_y[x] = temp2;
 
         ++y; // Next byte:
 
         AsmSet1ByteFromZpPtrAtIndexVar(temp1, temppointer, y); // the namtetable byte.
-        enemies.nt[x] = temp1;
+        enemies_nt[x] = temp1;
 
         ++y; // Next byte:
 
         AsmSet1ByteFromZpPtrAtIndexVar(temp1, temppointer, y); // the type byte.
-        enemies.type[x] = temp1; 
+        enemies_type[x] = temp1; 
 
         temp1 = GET_ENEMY_TYPE(x);
         if (temp1 == 4) { // ENEMY_CANNON
             // Load in the next enemy as a cannonball.
             ++x;
-            enemies.type[x] = ENEMY_CANNONBALL;
+            enemies_type[x] = ENEMY_CANNONBALL;
         } else if (temp1 == 5) { // ENEMY_ACIDPOOL
             // extra[x] for this enemy should be a number of frames to wait between acid drops.
             // This varied from drop to drop in the original so I'll make it somewhat random.
             temp2 = rand8() | 0b10000000;
-            enemies.extra[x] = temp2;
+            enemies_extra[x] = temp2;
             // Make room for the next enemy to be an acid drop.
             ++x;
         } else if (temp1 == 8) { // ENEMY_BOSS
             ++x; // += 3; // Make room for magic bolts.
-            enemies.type[x] = ENEMY_NONE;
+            enemies_type[x] = ENEMY_NONE;
             ++x;
-            enemies.type[x] = ENEMY_NONE;
+            enemies_type[x] = ENEMY_NONE;
             ++x;
-            enemies.type[x] = ENEMY_NONE;
+            enemies_type[x] = ENEMY_NONE;
         }
 
         ++y; // Next byte.
         
     }
 
-    // Save the number of loaded enemies.
-    enemies.count = x+1;
+    // Save the number of loaded enemies_
+    enemies_count = x+1;
     
     // Set all the other enemies to be NONEs.
     for(++x; x < MAX_ENEMIES; ++x) {
-        enemies.type[x] = ENEMY_NONE;
+        enemies_type[x] = ENEMY_NONE;
     }
 
     // This can probably be clumped with the above code, but for clarity,
-    // we'll now initialize the extra[x] and extra2[x] values for enemies.
+    // we'll now initialize the extra[x] and extra2[x] values for enemies
 
-    for (x = 0; x < enemies.count; ++x) {
+    for (x = 0; x < enemies_count; ++x) {
         switch (GET_ENEMY_TYPE(x)) {
             case 5: // ENEMY_ACIDPOOL
                 // Add a random timer from 128 to 255 frames.
-                enemies.timer[x] = 0b10000000;
+                enemies_timer[x] = 0b10000000;
                 // fallthrough
             case 4: // ENEMY_CANNON
                 // Add a random timer from 0 to 127 frames.
                 temp0 = rand8() & 0b01111111;
-                enemies.timer[x] = temp0;
+                enemies_timer[x] = temp0;
                 break;
             default:
                 // Most enemies do not need special initialization here.
@@ -1087,7 +1112,7 @@ void load_level_new(void) {
 
 void calculate_shuffle_array(void) {
     temp0 = 0; // Index in the shuffle array
-    shuffle_leg_size = enemies.count; // Shuffle array leg size. (1/4 the size of the shuffle array.)
+    shuffle_leg_size = enemies_count; // Shuffle array leg size. (1/4 the size of the shuffle array.)
     // First quarter: 0...n
     for (x = 0; x < shuffle_leg_size; ++x) {
         shuffle_array[temp0] = x;
@@ -1111,7 +1136,7 @@ void calculate_shuffle_array(void) {
     }
 
     // Fourth quarter: descending odds from n to 0, then evens from n to 0
-    // ...or switch odds and evens here (it depends on the parity of enemies.count).
+    // ...or switch odds and evens here (it depends on the parity of enemies_count).
     // It shouldn't really matter either way.
     for (x = shuffle_leg_size - 1; ; x -= 2) {
         shuffle_array[temp0] = x;
@@ -1158,7 +1183,7 @@ void draw_sprites(void) {
     // draw valrigard
     draw_player();
     
-    // Drawing the HUD before the enemies.
+    // Drawing the HUD before the enemies
     // Trying to shoehorn the HUD into the shuffle array proved too costly in terms of performance...
     
     if (game_mode != MODE_GAME_SHOWING_TEXT) {
@@ -1166,7 +1191,7 @@ void draw_sprites(void) {
         draw_energy();
     }
 
-    // draw enemies.
+    // draw enemies
     for (y = 0; y < shuffle_leg_size; ++y) {
         // Unrolling this loop is a bit inconsistent from frame to frame, so I didn't.
 
@@ -1174,12 +1199,12 @@ void draw_sprites(void) {
         temp1 = y + shuffle_offset;
         AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
         if (IS_ENEMY_ACTIVE(x)) {  
-            temp_x = enemies.x[x];
+            temp_x = enemies_x[x];
             // Not that we should have enemies ever in these X values, 
             // but if we do someday, these lines will be here, waiting to be uncommented.
             //if (temp_x == 0) ++temp_x; // Basing this off NESDoug's report of problems with temp_x = 0.
             //if (temp_x > 0xf0) continue;
-            temp_y = enemies.y[x];
+            temp_y = enemies_y[x];
             if (temp_y < 0xf0) {
 
                 temp0 = GET_ENEMY_TYPE(x);
@@ -1291,10 +1316,10 @@ void draw_energy(void) {
 // For all the draw_ functions, temp_x and temp_y are important
 
 void draw_korbat(void) {
-    temp3 = enemies.timer[x] & 0b11110; // Derive the frame number from the timer.
+    temp3 = enemies_timer[x] & 0b11110; // Derive the frame number from the timer.
     if (temp3 >= (14 << 1)) { // Clamp the frame number to 14.
         temp3 = 0;
-        enemies.timer[x] = 0;
+        enemies_timer[x] = 0;
     }
 
     temp3 = temp3 | ENEMY_DIRECTION(x);
@@ -1304,10 +1329,10 @@ void draw_korbat(void) {
 }
 
 void draw_grarrl(void) {
-    temp3 = enemies.timer[x] & 0b111000; // Derive the frame number from the timer.
+    temp3 = enemies_timer[x] & 0b111000; // Derive the frame number from the timer.
     if (temp3 >= (6 << 3)) { // Clamp the frame number to 6.
         temp3 = 0;
-        enemies.timer[x] = 0;
+        enemies_timer[x] = 0;
     }
 
     temp3 = (temp3 >> 2) | ENEMY_DIRECTION(x); // Last 2 bits just make the animation slower.
@@ -1322,7 +1347,7 @@ void draw_spikeball(void) {
 
 void draw_cannon(void) {
     // Figure out direction of cannon
-    temp3 = enemies.extra2[x];
+    temp3 = enemies_extra2[x];
     AsmSet2ByteFromPtrAtIndexVar(temppointer, cannon_sprite_lookup_table, temp3); 
     oam_meta_spr(temp_x, temp_y, temppointer);
 }
@@ -1334,7 +1359,7 @@ void draw_cannonball(void) {
 void draw_acid(void) {
     // Tweak these numbers (and the number this is set to in acid_blob_ai) 
     // to adjust the animation speed.
-    temp3 = enemies.extra2[x] >> 1;
+    temp3 = enemies_extra2[x] >> 1;
     AsmSet2ByteFromPtrAtIndexVar(temppointer, acidblob_sprite_lookup_table, temp3);
     oam_meta_spr(temp_x, temp_y, temppointer);
 }
@@ -1349,7 +1374,7 @@ void draw_splyke(void) {
     // lsb is the direction.
     // msb is if this splyke is moving around or not (tornado if set or idle if not).
     // The middle two bits are the frame number in the respective animation.
-    temp3 = enemies.extra2[x] & 0b110; // Mask the frame number.
+    temp3 = enemies_extra2[x] & 0b110; // Mask the frame number.
     temp4 = ENEMY_DIRECTION(x) | temp3;
     temp4 = temp4 | SPLYKE_IS_MOVING_AROUND(x) >> 2;
     AsmSet2ByteFromPtrAtIndexVar(temppointer, splyke_sprite_lookup_table, temp4);
@@ -1358,7 +1383,7 @@ void draw_splyke(void) {
 
 void draw_sun(void) {
     // Tweak these numbers to adjust the flashing speed
-    temp3 = (enemies.actual_y[x] & 15) >> 3;
+    temp3 = (enemies_actual_y[x] & 15) >> 3;
     AsmSet2ByteFromPtrAtIndexVar(temppointer, sun_sprite_lookup_table, temp3);
     oam_meta_spr(temp_x, temp_y, temppointer);
 }
@@ -1375,7 +1400,7 @@ const void (* const draw_boss_functions[])(void) = { // defined+implemented in b
 void draw_boss(void) {
     // extra2 is the animation timer for this enemy as timer[] is used for timing and other logic.
 
-    temp3 = enemies.extra2[x]; // Copy that timer here.
+    temp3 = enemies_extra2[x]; // Copy that timer here.
 
    
     if (boss_state == 4 && temp3 & 0b10) { // BOSS_STATE_DAMAGED
@@ -1400,20 +1425,20 @@ void draw_boss(void) {
 }
 
 void draw_purple_death_effect(void) {
-    temp3 = enemies.timer[x] >> 2; // 12 frames -> 3 valid positions
+    temp3 = enemies_timer[x] >> 2; // 12 frames -> 3 valid positions
     AsmSet2ByteFromPtrAtIndexVar(temppointer, purple_death_effect_sprite_lookup_table, temp3);
     oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
 void draw_splyke_death_effect(void) {
-    temp3 = enemies.timer[x] >> 2; // 12 frames -> 3 valid positions
+    temp3 = enemies_timer[x] >> 2; // 12 frames -> 3 valid positions
     AsmSet2ByteFromPtrAtIndexVar(temppointer, splyke_death_effect_sprite_lookup_table, temp3);
     oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
 void draw_boss_fireball(void) {
     // This enemy's timer[x] is used to save its angle, so we'll need to figure out another way to animate/flicker this
-    temp3 = enemies.timer[x]; 
+    temp3 = enemies_timer[x]; 
     temp3 += get_frame_count();
     temp3 &= 1;
     temp3 += BOSS_MAGIC_SPRITE_OFFSET;
@@ -1908,14 +1933,14 @@ void check_spr_objects(void) {
     nt_current = high_byte(scroll_y);
 
     // Check enemies...
-    for (x = 0; x < enemies.count; ++x) {
+    for (x = 0; x < enemies_count; ++x) {
         // Formerly a (partially) unrolled loop.
         if (GET_ENEMY_TYPE(x)) {
             // Check to see where this enemy is supposed to be.
 
-            //temp5 = (enemies.nt[x] << 8) + enemies.actual_y[x];
-            high_byte(temp5) = enemies.nt[x];
-            low_byte(temp5) = enemies.actual_y[x];
+            //temp5 = (enemies_nt[x] << 8) + enemies_actual_y[x];
+            high_byte(temp5) = enemies_nt[x];
+            low_byte(temp5) = enemies_actual_y[x];
             
             temp5 -= scroll_y;
             if (high_byte(temp5)) {
@@ -1925,22 +1950,22 @@ void check_spr_objects(void) {
             }
             
             ACTIVATE_ENEMY(x); // This enemy is active if it's on-screen.
-            enemies.y[x] = low_byte(temp5);
+            enemies_y[x] = low_byte(temp5);
 
             // If the topmost nametable currently on-screen (nt_current) is
             // not the enemy's native nametable, it'll be shifted down (positive y) by 16.
 
             // Let's counteract that...
-            if (nt_current != enemies.nt[x]) { 
-                temp0 = enemies.y[x] - 16;
-                enemies.y[x] = temp0;
+            if (nt_current != enemies_nt[x]) { 
+                temp0 = enemies_y[x] - 16;
+                enemies_y[x] = temp0;
             }
         }
 
     }
 }
 
-// Widths and heights for enemies.
+// Widths and heights for enemies
 const unsigned char const enemy_hitbox_width_lookup_table[] = {
     0,  // None
     13, // Korbat 
@@ -2046,7 +2071,7 @@ void sprite_collisions(void) {
     // hitbox2 == an enemy's hitbox.
     // The width and height of this will actually be different depending on the enemy's type.
 
-    for (x = 0; x < enemies.count; ++x) {
+    for (x = 0; x < enemies_count; ++x) {
         // Formerly a (Partially) unrolled loop.
         if(IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
@@ -2057,10 +2082,10 @@ void sprite_collisions(void) {
 
             hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
             
-            hitbox2.x = enemies.x[x];
+            hitbox2.x = enemies_x[x];
             hitbox2.x += enemy_hitbox_x_offset_lookup_table[temp1];
 
-            hitbox2.y = enemies.y[x];
+            hitbox2.y = enemies_y[x];
             hitbox2.y += enemy_hitbox_y_offset_lookup_table[temp1];
 
             check_collision(temp0, hitbox, hitbox2);
@@ -2090,8 +2115,8 @@ void collision_with_killable_slashable(void) {
     }
     else {
         // Turn this into a particle effect.
-        enemies.type[x] = ENEMY_PURPLE_DEATH_EFFECT;
-        enemies.timer[x] = 12;
+        enemies_type[x] = ENEMY_PURPLE_DEATH_EFFECT;
+        enemies_timer[x] = 12;
         score += 1; // Add to the score 
         SET_SCORE_CHANGED_THIS_FRAME();
 
@@ -2131,8 +2156,8 @@ void collision_with_splyke(void) {
         SET_STATUS_DEAD();
     } else if (!SPLYKE_IS_MOVING_AROUND(x)){ // Not tornado:
         // Kill this.
-        enemies.type[x] = ENEMY_SPLYKE_DEATH_EFFECT;
-        enemies.timer[x] = 12;
+        enemies_type[x] = ENEMY_SPLYKE_DEATH_EFFECT;
+        enemies_timer[x] = 12;
         score += 1;
         SET_SCORE_CHANGED_THIS_FRAME();
 
@@ -2165,7 +2190,7 @@ const void (* const ai_pointers[])(void) = {
 void enemy_movement(void) {
     // This one's a bit of an uncharted realm. 
     // I'm thinking we'll want to optimize this one somehow...
-    for (x = 0; x < enemies.count; ++x) {
+    for (x = 0; x < enemies_count; ++x) {
         // Formerly a (Partially) unrolled loop.
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
@@ -2185,22 +2210,22 @@ void korbat_ai(void) {
 
     // Increment the timer. The meaning of the timer will depend on the enemy.
     // Intermediate variable used here because the compiled code is better this way.
-    temp0 = enemies.timer[x];
+    temp0 = enemies_timer[x];
     ++temp0;
-    enemies.timer[x] = temp0;
+    enemies_timer[x] = temp0;
 
     temp3 = ENEMY_DIRECTION(x);
 
-    temp1 = enemies.x[x];
+    temp1 = enemies_x[x];
 
     // If we're going right, we actually want to look to the right of us.
     temp1 += leftright_movement_offset_lookup_table[temp3];
 
-    temp2 = enemies.actual_y[x] + 6; // center y
+    temp2 = enemies_actual_y[x] + 6; // center y
     coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
 
     // Which cmap should I look at?
-    temp0 = enemies.nt[x];
+    temp0 = enemies_nt[x];
 
     //temppointer = cmaps[temp0];
     AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp0);
@@ -2215,9 +2240,9 @@ void korbat_ai(void) {
 
     temp1 = leftright_movement_moving_lookup_table[temp3];
     
-    temp0 = enemies.x[x] + temp1;
+    temp0 = enemies_x[x] + temp1;
 
-    enemies.x[x] = temp0;
+    enemies_x[x] = temp0;
 
 }
 
@@ -2230,28 +2255,28 @@ void spikeball_ai(void) {
     
     // Increment the timer. The meaning of the timer will depend on the enemy.
     // Intermediate variable used here because the compiled code is better this way.
-    temp0 = enemies.timer[x];
+    temp0 = enemies_timer[x];
     ++temp0;
-    enemies.timer[x] = temp0;
+    enemies_timer[x] = temp0;
 
     temp3 = ENEMY_DIRECTION(x);
 
-    temp1 = enemies.x[x];
+    temp1 = enemies_x[x];
 
     // If we're going right, we actually want to look to the right of us.
     temp1 += leftright_movement_offset_lookup_table[temp3];
 
     // First, check beneath us.
 
-    temp2 = enemies.actual_y[x] + 18; // Y beneath us
+    temp2 = enemies_actual_y[x] + 18; // Y beneath us
 
     // Account for being on the edge of a nametable by checking. 
     // If temp2 >= 0xf0, then we were on the bottom of a nametable and should look at the other one.
     if (temp2 >= 0xf0) {
-        temp4 = enemies.nt[x] + 1;
+        temp4 = enemies_nt[x] + 1;
         temp2 = 0;
     } else {
-        temp4 = enemies.nt[x];
+        temp4 = enemies_nt[x];
     }
 
     coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
@@ -2269,11 +2294,11 @@ void spikeball_ai(void) {
     } else { // Don't flip twice -- this causes a bug if we're on an edge and there's a block ahead of us, but not one block down+ahead of us.
        // Now, check ahead of us.
 
-        temp2 = enemies.actual_y[x] + 6; // center y
+        temp2 = enemies_actual_y[x] + 6; // center y
         coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
 
         // Which cmap should I look at?
-        temp4 = enemies.nt[x];
+        temp4 = enemies_nt[x];
 
         //temppointer = cmaps[temp4];
         AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp4);
@@ -2289,9 +2314,9 @@ void spikeball_ai(void) {
 
     temp1 = leftright_movement_moving_lookup_table[temp3];
 
-    temp0 = enemies.x[x] + temp1;
+    temp0 = enemies_x[x] + temp1;
 
-    enemies.x[x] = temp0;
+    enemies_x[x] = temp0;
 
 }
 
@@ -2303,10 +2328,10 @@ void sun_ai(void) {
 
     // We'll make use of the add_scroll_y and sub_scroll_y functions for this...
 
-    high_byte(temp5) = enemies.nt[x];
-    low_byte(temp5) = enemies.actual_y[x];
+    high_byte(temp5) = enemies_nt[x];
+    low_byte(temp5) = enemies_actual_y[x];
 
-    temp1 = enemies.x[x] + 6; 
+    temp1 = enemies_x[x] + 6; 
     
     if (temp3 == UP) { // subtracting from y
         temp5 = sub_scroll_y(1, temp5);
@@ -2338,21 +2363,21 @@ void sun_ai(void) {
     }
 
     // Update the actual enemy model itself.
-    enemies.nt[x] = high_byte(temp5);
-    enemies.actual_y[x] = low_byte(temp5);
+    enemies_nt[x] = high_byte(temp5);
+    enemies_actual_y[x] = low_byte(temp5);
 
 }
 
 void acid_drop_ai(void) {
     // If I'm touching a solid metatile, die. Otherwise, go down.
 
-    high_byte(temp5) = enemies.nt[x];
-    low_byte(temp5) = enemies.actual_y[x];
+    high_byte(temp5) = enemies_nt[x];
+    low_byte(temp5) = enemies_actual_y[x];
 
     add_scroll_y(temp5, 1, temp5);
     add_scroll_y(temp6, 6, temp5); // 8 being the cosmetic projectile height
 
-    coordinates = (enemies.x[x] >> 4) + (low_byte(temp6) & 0xf0);
+    coordinates = (enemies_x[x] >> 4) + (low_byte(temp6) & 0xf0);
 
     // Which cmap should I look at?
     //temppointer = cmaps[high_byte(temp6)];
@@ -2364,11 +2389,11 @@ void acid_drop_ai(void) {
 
     if (METATILE_IS_SOLID(collision)) {
         // Clear the type and flags, then return.
-        enemies.type[x] = ENEMY_NONE;
-        enemies.flags[x] = 0;
+        enemies_type[x] = ENEMY_NONE;
+        enemies_flags[x] = 0;
     } else {
-        enemies.nt[x] = high_byte(temp5);
-        enemies.actual_y[x] = low_byte(temp5);
+        enemies_nt[x] = high_byte(temp5);
+        enemies_actual_y[x] = low_byte(temp5);
     }
 
 }
@@ -2386,27 +2411,27 @@ void cannon_ai(void) {
     // Decrement the timer this frame.
     // That'll be *slightly* longer than 1 second on NTSC systems, and
     // it'll be more like 1.28 seconds on PAL systems.
-    temp0 = enemies.timer[x];
+    temp0 = enemies_timer[x];
     --temp0;
-    enemies.timer[x] = temp0;
+    enemies_timer[x] = temp0;
 
-    if (enemies.timer[x] == 20) { 
+    if (enemies_timer[x] == 20) { 
 
         // If the high nibble is 0...
-        if (!(enemies.extra2[x] & 0xf0)) {
+        if (!(enemies_extra2[x] & 0xf0)) {
             
             // target center x and y
             temp0 = high_byte(valrigard.x) + (VALRIGARD_WIDTH/2);
             temp1 = high_byte(valrigard.y) + 4; // Tweaked for maximum accuracy - may need to be tweaked more.
 
             // source center x and y
-            temp2 = enemies.x[x] + 6; // ENEMY_WIDTH/2
-            temp3 = enemies.y[x] + 6; // ENEMY_HEIGHT/2
+            temp2 = enemies_x[x] + 6; // ENEMY_WIDTH/2
+            temp3 = enemies_y[x] + 6; // ENEMY_HEIGHT/2
 
             // values of temp0 through temp3 are pseudo-parameters for this.
             fire_at_target();
             // values of temp0 and temp4 are pseudo-returns for this.
-            enemies.extra[x] = temp0;
+            enemies_extra[x] = temp0;
 
             // temppointer will be a pointer to the correct sprite lookup table.
             AsmSet2ByteFromPtrAtIndexVar(temppointer, cannon_sprite_quadrant_lookup_table, temp4);
@@ -2422,27 +2447,27 @@ void cannon_ai(void) {
                 //temp3 = temppointer[0]; // x-axis aligned
                 AsmSet1ByteFromZpPtrAtConst(temp3, temppointer, 0);
             }
-            enemies.extra2[x] = temp3;
+            enemies_extra2[x] = temp3;
 
         }
     } 
 
-    if (enemies.timer[x] == 0) {
+    if (enemies_timer[x] == 0) {
         // Fire the cannonball.
-        enemies.timer[x] = 120;
+        enemies_timer[x] = 120;
 
         sfx_play(SFX_CANNON_FIRE, 0);
 
         // Move the cannonball into place.
-        temp0 = enemies.x[x] + 3;
-        temp1 = enemies.actual_y[x] + 3;
-        temp2 = enemies.nt[x];
+        temp0 = enemies_x[x] + 3;
+        temp1 = enemies_actual_y[x] + 3;
+        temp2 = enemies_nt[x];
 
-        enemies.x[temp_x] = temp0;
-        enemies.actual_y[temp_x] = temp1;
-        enemies.nt[temp_x] = temp2;
+        enemies_x[temp_x] = temp0;
+        enemies_actual_y[temp_x] = temp1;
+        enemies_nt[temp_x] = temp2;
 
-        enemies.type[temp_x] = ENEMY_CANNONBALL;
+        enemies_type[temp_x] = ENEMY_CANNONBALL;
 
     }
     // Subtract from a (randomly-seeded?) timer of some sort.
@@ -2493,7 +2518,7 @@ void fire_at_target(void) {
     }
 
     // If this is too much work to do in one frame, we *could* use
-    // enemies.timer[x] to ensure the rest of this happens next frame.
+    // enemies_timer[x] to ensure the rest of this happens next frame.
 
     // dx
     temp0 = abs_subtract(temp0, temp2);
@@ -2522,7 +2547,7 @@ void cannonball_ai(void) {
     // To start, we need to find the correct brads (binary radians) value for this cannonball.
     // brads
     temp_x = x-1;
-    temp1 = enemies.extra[temp_x];
+    temp1 = enemies_extra[temp_x];
     
     // The middle of this routine is shared between multiple enemies that move in diagonal lines.
     cannonball_ai_sub();
@@ -2531,8 +2556,8 @@ void cannonball_ai(void) {
     // In this case, we just want it to disappear.
     if (METATILE_IS_SOLID(collision)) {
         // Clear the enemy type and flags. (Both must be cleared.)
-        enemies.type[x] = ENEMY_NONE;
-        enemies.flags[x] = 0;
+        enemies_type[x] = ENEMY_NONE;
+        enemies_flags[x] = 0;
 
         // Note: These will turn into Spikeballs (with id 0, because that's the AI+Sprite combo I chose for id 0 at the moment)
         // on impact if the flags byte is not set to zero.
@@ -2551,15 +2576,15 @@ void boss_fireball_ai(void) {
     // timer[x] will store the brads for this projectile.
 
     // Get the brads
-    temp1 = enemies.timer[x];
+    temp1 = enemies_timer[x];
     // call cannonball_ai_sub as the main logic will be identical
     cannonball_ai_sub();
 
     // Disappear on contact with a solid tile, or if the boss is dead/dying.
     if (METATILE_IS_SOLID(collision) || boss_state == 5 /*BOSS_STATE_DYING*/) {
         // Clear the enemy type and flags. (Both must be cleared.)
-        enemies.type[x] = ENEMY_NONE;
-        enemies.flags[x] = 0;
+        enemies_type[x] = ENEMY_NONE;
+        enemies_flags[x] = 0;
     }
 }
 
@@ -2582,8 +2607,8 @@ void cannonball_ai_sub(void) {
 
     // Deal with the x-direction first.
 
-    high_byte(temp5) = enemies.x[x];
-    low_byte(temp5) = enemies.extra[x];
+    high_byte(temp5) = enemies_x[x];
+    low_byte(temp5) = enemies_extra[x];
 
     if (CANNONBALL_X_DIRECTION(x)) {
         // Positive X - add temp2
@@ -2597,13 +2622,13 @@ void cannonball_ai_sub(void) {
         temp1 = high_byte(temp5) + 0xff;
     }
     // Save the high and low bytes.
-    enemies.x[x] = high_byte(temp5);
-    enemies.extra[x] = low_byte(temp5);
+    enemies_x[x] = high_byte(temp5);
+    enemies_extra[x] = low_byte(temp5);
 
     // It's a bit strange because we have a sub_y and a super_y (nt) in this case, 
     // but we'll take care of the sub_y first...
-    high_byte(temp6) = enemies.actual_y[x];
-    low_byte(temp6) = enemies.extra2[x];
+    high_byte(temp6) = enemies_actual_y[x];
+    low_byte(temp6) = enemies_extra2[x];
 
     
     if (CANNONBALL_Y_DIRECTION(x)) {
@@ -2611,12 +2636,12 @@ void cannonball_ai_sub(void) {
         temp6 += temp3;
 
         // Save the low byte to the appropriate place.
-        enemies.extra2[x] = low_byte(temp6);
+        enemies_extra2[x] = low_byte(temp6);
         
         // Move the actual_y value into the low byte
         low_byte(temp6) = high_byte(temp6);
         // and make nt the new high byte.
-        high_byte(temp6) = enemies.nt[x];
+        high_byte(temp6) = enemies_nt[x];
 
         // Using add_scroll_y(0, ___) will 
         // correct the value if the low byte is > 0xef.
@@ -2624,10 +2649,10 @@ void cannonball_ai_sub(void) {
         add_scroll_y(temp6, 0x00, temp6);
 
         // Save the corrected nt.
-        enemies.nt[x] = high_byte(temp6);
+        enemies_nt[x] = high_byte(temp6);
 
         // Save the actual_y value.
-        enemies.actual_y[x] = low_byte(temp6);
+        enemies_actual_y[x] = low_byte(temp6);
 
         // Figure out where the collision should be detected.
         add_scroll_y(temp5, 7, temp6);
@@ -2637,12 +2662,12 @@ void cannonball_ai_sub(void) {
         temp6 -= temp3;
 
         // Return the low byte to the appropriate place.
-        enemies.extra2[x] = low_byte(temp6);
+        enemies_extra2[x] = low_byte(temp6);
 
         // Move the actual_y value into the low byte
         low_byte(temp6) = high_byte(temp6);
         // and make nt the new high byte.
-        high_byte(temp6) = enemies.nt[x];
+        high_byte(temp6) = enemies_nt[x];
 
         // Bugfix: prevent the cannonball from getting stuck at the edge of a nametable.
 
@@ -2654,10 +2679,10 @@ void cannonball_ai_sub(void) {
         }
 
         // Save the corrected nt.
-        enemies.nt[x] = high_byte(temp6);
+        enemies_nt[x] = high_byte(temp6);
 
         // Save the actual_y value.
-        enemies.actual_y[x] = low_byte(temp6);
+        enemies_actual_y[x] = low_byte(temp6);
         
         // Figure out where the collision should be detected.
         add_scroll_y(temp5, 1, temp6);
@@ -2692,38 +2717,38 @@ void acid_ai(void) {
 
     // Animations for this won't yet be implemented, but for now:
     // Animate this enemy.
-    if (enemies.extra2[x]) {
-        temp0 = enemies.extra2[x];
+    if (enemies_extra2[x]) {
+        temp0 = enemies_extra2[x];
         --temp0;
-        enemies.extra2[x] = temp0;
+        enemies_extra2[x] = temp0;
     }
 
     // The next enemy should be an acid drop. If it's active, don't do anything.
     temp_x = x + 1;
     if (IS_ENEMY_ACTIVE(temp_x)) { return; }
 
-    temp0 = enemies.timer[x];
+    temp0 = enemies_timer[x];
     --temp0;
-    enemies.timer[x] = temp0;
+    enemies_timer[x] = temp0;
     if (temp0 == 0) {
         // Reset our timer.
-        temp0 = enemies.extra[x];
-        enemies.timer[x] = temp0;
+        temp0 = enemies_extra[x];
+        enemies_timer[x] = temp0;
 
         // Move the acid drop into place.
         temp0 = rand8() & 0b111; // Bottom 3 bits, 0 - 7
-        temp1 = enemies.x[x] + temp0; 
-        temp2 = enemies.actual_y[x];
-        temp3 = enemies.nt[x];
+        temp1 = enemies_x[x] + temp0; 
+        temp2 = enemies_actual_y[x];
+        temp3 = enemies_nt[x];
 
-        enemies.x[temp_x] = temp1;
-        enemies.actual_y[temp_x] = temp2;
-        enemies.nt[temp_x] = temp3;
+        enemies_x[temp_x] = temp1;
+        enemies_actual_y[temp_x] = temp2;
+        enemies_nt[temp_x] = temp3;
 
         // Set the enemy in motion.
-        enemies.type[temp_x] = ENEMY_ACIDDROP;
+        enemies_type[temp_x] = ENEMY_ACIDDROP;
 
-        enemies.extra2[x] = 12; // ACIDBLOB_ANIMATION_FRAME_COUNT
+        enemies_extra2[x] = 12; // ACIDBLOB_ANIMATION_FRAME_COUNT
 
         sfx_play(SFX_ACID_DROP, 0);
 
@@ -2747,8 +2772,8 @@ void splyke_ai(void) {
     temp1 = SPLYKE_IS_MOVING_AROUND(x);
 
     // Increment the animation counter...
-    temp2 = (enemies.extra2[x] + 1) & 7; // Bitmask the animation counter to 7. (this will get >> 1'd in draw_sprites)
-    enemies.extra2[x] = temp2;
+    temp2 = (enemies_extra2[x] + 1) & 7; // Bitmask the animation counter to 7. (this will get >> 1'd in draw_sprites)
+    enemies_extra2[x] = temp2;
 
     if (temp0 == 0 && temp1 == 0) {
         // If we're standing still and we roll a 0...
@@ -2763,7 +2788,7 @@ void splyke_ai(void) {
 
         temp3 = ENEMY_DIRECTION(x);
 
-        temp1 = enemies.x[x];
+        temp1 = enemies_x[x];
 
         // If we're going right, we actually want to look to the right of us.
         temp1 += leftright_movement_offset_lookup_table[temp3];
@@ -2772,15 +2797,15 @@ void splyke_ai(void) {
 
         // First, check beneath us.
 
-        temp2 = enemies.actual_y[x] + 18; // Y beneath us
+        temp2 = enemies_actual_y[x] + 18; // Y beneath us
         
         // Account for being on the edge of a nametable by checking. 
         // If temp2 >= 0xf0, then we were on the bottom of a nametable and should look at the other one.
         if (temp2 >= 0xf0) {
-            temp4 = enemies.nt[x] + 1;
+            temp4 = enemies_nt[x] + 1;
             temp2 = 0;
         } else {
-            temp4 = enemies.nt[x];
+            temp4 = enemies_nt[x];
         }
 
         coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
@@ -2799,11 +2824,11 @@ void splyke_ai(void) {
         } else { // Don't flip twice.
             // Now, check ahead of us.
 
-            temp2 = enemies.actual_y[x] + 6; // center y
+            temp2 = enemies_actual_y[x] + 6; // center y
             coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
 
             // Which cmap should I look at?
-            temp4 = enemies.nt[x];
+            temp4 = enemies_nt[x];
 
             //temppointer = cmaps[temp4];
             AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp4);
@@ -2821,9 +2846,9 @@ void splyke_ai(void) {
         temp1 = leftright_movement_moving_lookup_table[temp3];
         temp1 += temp1;
 
-        temp0 = enemies.x[x] + temp1;
+        temp0 = enemies_x[x] + temp1;
 
-        enemies.x[x] = temp0;
+        enemies_x[x] = temp0;
 
     }
 
@@ -2853,7 +2878,7 @@ void boss_ai(void) {
     // BOSS_STATE_ASCENDING -- Flying upwards. Shoots fireballs in this mode.
 
     // Always do the following:
-    if (enemies.x[x] < high_byte(valrigard.x) ) {
+    if (enemies_x[x] < high_byte(valrigard.x) ) {
         ENEMY_SET_DIRECTION_RIGHT(x);
     } else {
         ENEMY_SET_DIRECTION_LEFT(x);
@@ -2861,28 +2886,28 @@ void boss_ai(void) {
 
     // Timers will need to exist for both invincibility frames and animation frames.
 
-    temp0 = enemies.extra2[x];
+    temp0 = enemies_extra2[x];
     ++temp0;
-    enemies.extra2[x] = temp0;
+    enemies_extra2[x] = temp0;
 
-    temp0 = enemies.timer[x];
+    temp0 = enemies_timer[x];
     ++temp0;
-    enemies.timer[x] = temp0;
+    enemies_timer[x] = temp0;
 
     // Now figure out the correct dispatch:
     AsmCallFunctionAtPtrOffsetByIndexVar(boss_ai_functions, boss_state);
-    // temp0 will be pre-initialized with the new value of enemies.timer[x] so let's use that.
+    // temp0 will be pre-initialized with the new value of enemies_timer[x] so let's use that.
 }
 
 void death_effect_timer_ai(void) {
     // Decrement this thing's timer, then check if it's zero.
-    temp0 = enemies.timer[x];
+    temp0 = enemies_timer[x];
     --temp0;
-    enemies.timer[x] = temp0;
+    enemies_timer[x] = temp0;
 
     if (temp0 == 0){
         // If it's zero, turn this into a None and clear its flags.
-        enemies.type[x] = ENEMY_NONE;
-        enemies.flags[x] = 0;
+        enemies_type[x] = ENEMY_NONE;
+        enemies_flags[x] = 0;
     }
 }

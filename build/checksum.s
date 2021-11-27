@@ -47,12 +47,12 @@
 ; temp5 += level_high_scores[temp0];
 ;
 	tax
-L0045:	lda     _temp0
+L003C:	lda     _temp0
 	asl     a
-	bcc     L0044
+	bcc     L003B
 	inx
 	clc
-L0044:	adc     #<(_level_high_scores)
+L003B:	adc     #<(_level_high_scores)
 	sta     ptr1
 	txa
 	adc     #>(_level_high_scores)
@@ -73,17 +73,17 @@ L0044:	adc     #<(_level_high_scores)
 ;
 	lda     _temp0
 	cmp     #$FF
-	beq     L0046
+	beq     L003D
 ;
 ; for (temp0 = 0; ; ++temp0) {
 ;
 	ldx     #$00
 	inc     _temp0
-	jmp     L0045
+	jmp     L003C
 ;
 ; temp5 += settings_memory[0];
 ;
-L0046:	lda     _settings_memory
+L003D:	lda     _settings_memory
 	clc
 	adc     _temp5
 	sta     _temp5
@@ -145,12 +145,12 @@ L0046:	lda     _settings_memory
 	lda     _temp5
 	ldx     _temp5+1
 	cpx     _checksum+1
-	bne     L0047
+	bne     L003E
 	cmp     _checksum
 ;
 ; clear_saved_data();
 ;
-L0047:	jne     _clear_saved_data
+L003E:	jne     _clear_saved_data
 ;
 ; }
 ;
@@ -186,7 +186,7 @@ L0047:	jne     _clear_saved_data
 ;
 ; ((unsigned char *)level_high_scores)[temp0] = 0;
 ;
-L0015:	ldy     _temp0
+L000C:	ldy     _temp0
 	lda     #$00
 	sta     _level_high_scores,y
 ;
@@ -199,16 +199,16 @@ L0015:	ldy     _temp0
 ;
 	lda     _temp0
 	cmp     #$FF
-	beq     L0048
+	beq     L003F
 ;
 ; for (temp0 = 0; ; ++temp0) {
 ;
 	inc     _temp0
-	jmp     L0015
+	jmp     L000C
 ;
 ; settings_memory[0] = 0;
 ;
-L0048:	lda     #$00
+L003F:	lda     #$00
 	sta     _settings_memory
 ;
 ; }
