@@ -32,6 +32,9 @@
 #include "tilemaps/level_downloader_test.h"
 
 // Some of this stuff might be able to live in another PRG bank if bank 7 gets too full.
+#define LEVEL_METADATA_BANK 0
+
+#pragma rodata-name(push, "BANK0")
 
 // Length of a level in nametables.
 const unsigned char const level_nt_length[] = {
@@ -251,3 +254,4 @@ const unsigned char * const level_enemy_data[] = {
     level_macosten_enemy,
 };
 
+#pragma rodata-name(pop)

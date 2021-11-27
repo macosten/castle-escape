@@ -547,6 +547,8 @@ void prepare_score_string(void) {
 }
 
 void load_level_selector(void) {
+    // Ensure the level metadata is visible. (This is important!)
+    set_prg_bank(LEVEL_METADATA_BANK);
     // Print the currently-selected level's name.
     AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
     put_str(NTADR_A(3, 12), temppointer);
@@ -597,7 +599,7 @@ void menu_level_select(void) {
         // if the length of the next one is less than the length of the current one.
         //memfill(&cmap, ' ', 28); // 28 accounts for the border of 2 tiles from each side
         for (temp0 = 0; temp0 < 28; ++temp0) { cmap[temp0] = ' '; }
-
+        // set_prg_bank(LEVEL_METADATA_BANK); -- this should be the active bank
         AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
         temp0 = strlen(temppointer);
         for (temp1 = 0; temp1 < temp0; ++temp1) {
@@ -835,6 +837,7 @@ void load_level_welcome_screen(void) {
 
     // Add the level name...
     // Try centering it: calculate the text's offset from the left side of the screen.
+    set_prg_bank(LEVEL_METADATA_BANK);
     AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
     temp0 = strlen(temppointer);
     temp1 = 16;
@@ -919,6 +922,9 @@ void begin_level(void) {
 }
 
 void load_level_new(void) {
+    // Working with metadata, so switch to the level metadata bank
+    set_prg_bank(LEVEL_METADATA_BANK);
+
     nt_max = level_nt_length[level_index];
     nt_current = valrigard_starting_nt[level_index];
     high_byte(scroll_y) = nt_current; // The high byte of scroll_y is the nametable we're currently in (0-255).
@@ -940,11 +946,15 @@ void load_level_new(void) {
     // +2 to eliminate a bug in which Valrigard could clip through the ceiling and wrap around to the bottom of the 
     // nametable when holding up at the start of a level (this would happen on the Star Test level).
 
-    // Load the level into RAM.
+    // Decompress level data.
+
+    // Get the correct address.
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, level_compressed_nametable_pointers, level_index);
+
+    // Actually make the memory visible/switch banks.
     set_prg_bank(level_nametable_banks[level_index]);
 
-    // New: decompress level data.
-    AsmSet2ByteFromPtrAtIndexVar(temppointer, level_compressed_nametable_pointers, level_index);
+    // Decompress.
     LZG_decode(temppointer, cmap);
 
     // Load inital room data into the PPU.
@@ -990,6 +1000,9 @@ void load_level_new(void) {
 
     // Clear the enemy database.
     memfill(&enemies, 0, sizeof(enemies));
+
+    // Switch back to the metadata bank.
+    set_prg_bank(LEVEL_METADATA_BANK);
 
     // Load the enemy data for the current level.
     AsmSet2ByteFromPtrAtIndexVar(temppointer, level_enemy_data, level_index);
