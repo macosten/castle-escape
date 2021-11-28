@@ -1080,7 +1080,7 @@ void load_level_new(void) {
         
     }
 
-    // Save the number of loaded enemies_
+    // Save the number of loaded enemies
     enemies_count = x+1;
     
     // Set all the other enemies to be NONEs.
@@ -1217,7 +1217,7 @@ void draw_sprites(void) {
         }
         ++y;
 
-        temp1 = y + shuffle_offset;
+        ++temp1;
         AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
         if (IS_ENEMY_ACTIVE(x)) {  
             temp_x = enemies_x[x];
@@ -1229,7 +1229,7 @@ void draw_sprites(void) {
         }
         ++y;
 
-        temp1 = y + shuffle_offset;
+        ++temp1;
         AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
         if (IS_ENEMY_ACTIVE(x)) {  
             temp_x = enemies_x[x];
@@ -1241,7 +1241,7 @@ void draw_sprites(void) {
         }
         ++y;
 
-        temp1 = y + shuffle_offset;
+        ++temp1;
         AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
         if (IS_ENEMY_ACTIVE(x)) {  
             temp_x = enemies_x[x];
@@ -1974,8 +1974,44 @@ void check_spr_objects(void) {
     
     nt_current = high_byte(scroll_y);
 
-    // Check enemies...
+    lowest_enemy_index = 0xff;
+    enemy_limit = 0;
+
     for (x = 0; x < enemies_count; ++x) {
+        if (GET_ENEMY_TYPE(x)) {
+            // Check to see where this enemy is supposed to be.
+
+            //temp5 = (enemies_nt[x] << 8) + enemies_actual_y[x];
+            high_byte(temp5) = enemies_nt[x];
+            low_byte(temp5) = enemies_actual_y[x];
+            
+            temp5 -= scroll_y;
+            if (high_byte(temp5)) {
+                // This enemy isn't on-screen, deactivate it...
+                DEACTIVATE_ENEMY(x);
+                continue;
+            }
+            
+            ACTIVATE_ENEMY(x); // This enemy is active if it's on-screen.
+            enemies_y[x] = low_byte(temp5);
+
+            // If the topmost nametable currently on-screen (nt_current) is
+            // not the enemy's native nametable, it'll be shifted down (positive y) by 16.
+
+            // Let's counteract that...
+            if (nt_current != enemies_nt[x]) { 
+                temp0 = enemies_y[x] - 16;
+                enemies_y[x] = temp0;
+            }
+            enemy_limit = x + 1;
+            lowest_enemy_index = x;
+            break;
+        }
+    }
+
+
+    // Check enemies...
+    for (x; x < enemies_count; ++x) {
         // Unrolled loop (2):
         if (GET_ENEMY_TYPE(x)) {
             // Check to see where this enemy is supposed to be.
@@ -2002,6 +2038,7 @@ void check_spr_objects(void) {
                 temp0 = enemies_y[x] - 16;
                 enemies_y[x] = temp0;
             }
+            enemy_limit = x + 1;
         }
         ++x;
 
@@ -2022,6 +2059,7 @@ void check_spr_objects(void) {
                 temp0 = enemies_y[x] - 16;
                 enemies_y[x] = temp0;
             }
+            enemy_limit = x + 1;
         }
 
     }
@@ -2135,7 +2173,9 @@ void sprite_collisions(void) {
 
     // To save on CPU time, we'll only check half of the collisions on each frame.
     // depending on the parity of get_frame_count(), we'll check only indexes of the same parity for a collision.
-    for (x = get_frame_count() & 1; x < enemies_count; x += 2) {
+    x = get_frame_count() & 1;
+    x += lowest_enemy_index;
+    for (x; x < enemy_limit; x += 2) {
         // Not unrolled
         if(IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
@@ -2157,7 +2197,7 @@ void sprite_collisions(void) {
                 AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
             }
         }
-                
+
     }
 
 }
@@ -2254,14 +2294,14 @@ const void (* const ai_pointers[])(void) = {
 void enemy_movement(void) {
     // This one's a bit of an uncharted realm. 
     // I'm thinking we'll want to optimize this one somehow...
-    for (x = 0; x < enemies_count; ++x) {
+    for (x = lowest_enemy_index; x < enemy_limit; ++x) {
         // Unrolled loop (4):
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
             // An assembly macro (defined in asm/macros.h) is used here to ensure that this is efficient.
             // Do we want to delete (set type to ENEMY_NONE) any projectiles (CANNONBALL/ACIDDROP) that go offscreen?
             AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
-        }
+        }/*
         ++x;
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
@@ -2276,7 +2316,7 @@ void enemy_movement(void) {
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
             AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
-        }
+        }*/
     }
 
 }

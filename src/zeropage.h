@@ -134,6 +134,10 @@ unsigned char enemy_is_using_bg_collision;
 // Used to save intermediate values of advanced logic/conditionals.
 unsigned char advanced_conditional;
 
+// Keeps track of the highest and lowest index this frame with an active enemy.
+unsigned char enemy_limit; // equal to the highest index plus one
+unsigned char lowest_enemy_index;
+
 // ~?? zp bytes left? (see ZP_LAST in labels.txt)
 
 #pragma bss-name(pop)
