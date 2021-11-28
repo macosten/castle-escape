@@ -226,7 +226,7 @@ const char * const level_names[] = {
     "Level 19",
     "Level 20",
 
-    "Sloth's Basement (neoman17777)",
+    "User: neoman17777",
 
     "Tile Dump",
     "Star Test",

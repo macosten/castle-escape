@@ -1196,7 +1196,7 @@ void draw_sprites(void) {
 
     // draw enemies
     for (y = 0; y < shuffle_leg_size; ++y) {
-        // Unrolled loop (2):
+        // Unrolled loop (4):
 
         //x = shuffle_array[y + shuffle_offset];
         temp1 = y + shuffle_offset;
@@ -1972,8 +1972,6 @@ void draw_screen_sub(void) {
 // Check to see what's on-screen.
 void check_spr_objects(void) {
     
-    // This will be used later. Let's only make it update once.
-    // Todo: make it only update once a frame? Save a few clock cycles that way?
     nt_current = high_byte(scroll_y);
 
     // Check enemies...
@@ -2135,8 +2133,10 @@ void sprite_collisions(void) {
     // hitbox2 == an enemy's hitbox.
     // The width and height of this will actually be different depending on the enemy's type.
 
-    for (x = 0; x < enemies_count; ++x) {
-        // Unrolled loop (2).
+    // To save on CPU time, we'll only check half of the collisions on each frame.
+    // depending on the parity of get_frame_count(), we'll check only indexes of the same parity for a collision.
+    for (x = get_frame_count() & 1; x < enemies_count; x += 2) {
+        // Not unrolled
         if(IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
 
@@ -2157,23 +2157,7 @@ void sprite_collisions(void) {
                 AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
             }
         }
-        ++x;
-
-        if(IS_ENEMY_ACTIVE(x)) {
-            temp1 = GET_ENEMY_TYPE(x);
-            hitbox2.width = enemy_hitbox_width_lookup_table[temp1];
-            if (!hitbox2.width) { continue; }
-            hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
-            hitbox2.x = enemies_x[x];
-            hitbox2.x += enemy_hitbox_x_offset_lookup_table[temp1];
-            hitbox2.y = enemies_y[x];
-            hitbox2.y += enemy_hitbox_y_offset_lookup_table[temp1];
-            check_collision(temp0, hitbox, hitbox2);
-            if (temp0) {
-                AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
-            }
-        }
-        
+                
     }
 
 }

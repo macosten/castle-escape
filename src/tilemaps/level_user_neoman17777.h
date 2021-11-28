@@ -1,7 +1,5 @@
 #pragma rodata-name(push, "BANK0")
 
-const char * const level_neoman17777_name = "Sloth's basement";
-
 const unsigned char const level_neoman17777_enemy[] = {
     0xab, 0, 4,
     0x1d, 0, 1,
