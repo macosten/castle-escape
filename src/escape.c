@@ -343,21 +343,6 @@ void main (void) {
         // The game is active and we're drawing frames.
         while (game_mode == MODE_GAME) {
 
-            ppu_wait_nmi(); // wait till beginning of the frame
-            // the sprites are pushed from a buffer to the OAM during nmi
-
-            // For now, just set the same chr bank every frame
-        
-            set_chr_bank_0(0);
-            pad1 = pad_poll(0); // read the first controller
-            pad1_new = get_pad_new(0); 
-
-            // pad1 contains buttons that are currently pressed.
-            // pad1_new contains newly-pressed buttons - they won't be designated here in the next frame.
-            // It's useful for times we don't want button holds to retrigger something (say, pausing and unpausing).
-            
-            clear_vram_buffer();
-
             // Reset anything that's supposed to be reset at the start of a frame.
             conveyor_delta = 0;
             did_headbonk = 0;
@@ -365,28 +350,44 @@ void main (void) {
             RESET_TOUCHING_SPIKES();
             RESET_SCORE_CHANGED_THIS_FRAME();
             RESET_IS_WALKING();
+
+            pad1 = pad_poll(0); // read the first controller
+            pad1_new = get_pad_new(0); 
+            // pad1 contains buttons that are currently pressed.
+            // pad1_new contains newly-pressed buttons - they won't be designated here in the next frame.
+            // It's useful for times we don't want button holds to retrigger something (say, pausing and unpausing).
+
+            ppu_wait_nmi(); // wait till beginning of the frame
+            // the sprites are pushed from a buffer to the OAM during nmi
+
+            // If we need to, we can se the chr bank every frame...
+            //set_chr_bank_0(0);
             
+            clear_vram_buffer();
+
             // Move the player.
             movement();
             
             // Check to see what's on-screen
             check_spr_objects();
             
-            // Check the status of the sword swing.
-            if (!STATUS_DEAD) { swing_sword(); }
-            gray_line();
-            // Check sprite collisions
-            sprite_collisions();
-            gray_line();
+            // Do the following only if we're not dead:
+            if (!STATUS_DEAD) { 
+                // Check the status of the sword swing.
+                swing_sword();
+                // Check sprite collisions
+                sprite_collisions();
+            }
+
             // Move enemies
             enemy_movement();
-            gray_line();
+
             set_scroll_y(scroll_y);
             
             if (SCORE_CHANGED_THIS_FRAME) { convert_to_decimal(score); }
             
             draw_sprites();
-            gray_line();
+            
             // Draw tiles on the edge of the screen.
             if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
                 //draw_screen_D();
@@ -557,7 +558,6 @@ void prepare_score_string(void) {
         if (temp1 || temp0 == 4) { // Don't display trailing zeroes
             score_string[temp0] += '0';    
         }
-        
     }
 }
 
@@ -1734,7 +1734,7 @@ void bg_collision(void){
 
     // Upper left... 
 
-    add_scroll_y(temp5, temp3, scroll_y); // upper left
+    temp5 = temp6; // Equivalent to add_scroll_y(temp5, temp3, scroll_y);
     temp3 = low_byte(temp5); // low byte y
 
     temp1 = hitbox.x; // x left
@@ -2063,6 +2063,11 @@ void check_spr_objects(void) {
         }
 
     }
+    // Possible bugfix if we have problems running out of bounds in enemy_movement
+    // temp0 = enemy_limit - 8;
+    // if (temp0 < lowest_enemy_index) { 
+    //     lowest_enemy_index = temp0;
+    // }
 }
 
 // Widths and heights for enemies
@@ -2176,13 +2181,13 @@ void sprite_collisions(void) {
     x = get_frame_count() & 1;
     x += lowest_enemy_index;
     for (x; x < enemy_limit; x += 2) {
-        // Not unrolled
+        // Unrolled loop (2):
         if(IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
 
             // Determine the enemy hitbox size.
             hitbox2.width = enemy_hitbox_width_lookup_table[temp1];
-            if (!hitbox2.width) { continue; } // Continue if width of the hitbox is 0.
+            //if (!hitbox2.width) { continue; } // Continue if width of the hitbox is 0.
 
             hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
             
@@ -2192,6 +2197,21 @@ void sprite_collisions(void) {
             hitbox2.y = enemies_y[x];
             hitbox2.y += enemy_hitbox_y_offset_lookup_table[temp1];
 
+            check_collision(temp0, hitbox, hitbox2);
+            if (temp0) {
+                AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
+            }
+        }
+        x += 2;
+        if(IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+            hitbox2.width = enemy_hitbox_width_lookup_table[temp1];
+            //if (!hitbox2.width) { continue; }
+            hitbox2.height = enemy_hitbox_height_lookup_table[temp1];
+            hitbox2.x = enemies_x[x];
+            hitbox2.x += enemy_hitbox_x_offset_lookup_table[temp1];
+            hitbox2.y = enemies_y[x];
+            hitbox2.y += enemy_hitbox_y_offset_lookup_table[temp1];
             check_collision(temp0, hitbox, hitbox2);
             if (temp0) {
                 AsmCallFunctionAtPtrOffsetByIndexVar(collision_functions, temp1);
@@ -2295,13 +2315,19 @@ void enemy_movement(void) {
     // This one's a bit of an uncharted realm. 
     // I'm thinking we'll want to optimize this one somehow...
     for (x = lowest_enemy_index; x < enemy_limit; ++x) {
-        // Unrolled loop (4):
+        // Unrolled loop (8):
+        // Will this cause an issue if x > MAX_ENEMIES? Do we want to check this at some point?
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
             // An assembly macro (defined in asm/macros.h) is used here to ensure that this is efficient.
             // Do we want to delete (set type to ENEMY_NONE) any projectiles (CANNONBALL/ACIDDROP) that go offscreen?
             AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
-        }/*
+        }
+        ++x;
+        if (IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+            AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
+        }
         ++x;
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
@@ -2316,7 +2342,22 @@ void enemy_movement(void) {
         if (IS_ENEMY_ACTIVE(x)) {
             temp1 = GET_ENEMY_TYPE(x);
             AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
-        }*/
+        }
+        ++x;
+        if (IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+            AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
+        }
+        ++x;
+        if (IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+            AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
+        }
+        ++x;
+        if (IS_ENEMY_ACTIVE(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+            AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
+        }
     }
 
 }
@@ -2328,19 +2369,27 @@ void korbat_ai(void) {
     // Then, move forward.
 
     // Increment the timer. The meaning of the timer will depend on the enemy.
-    // Intermediate variable used here because the compiled code is better this way.
-    temp0 = enemies_timer[x];
-    ++temp0;
-    enemies_timer[x] = temp0;
+
+    // register y  = enemies_timer[x];
+    __asm__("ldx %v", x); // register x = x (the in-memory variable);
+    __asm__("ldy %v, %s", enemies_timer, X);
+    //
+    // ++register y;
+    __asm__("iny");
+    
+    // enemies_timer[x] = register y;
+    __asm__("tya");
+    __asm__("sta %v, %s", enemies_timer, X);
 
     temp3 = ENEMY_DIRECTION(x);
+
+    temp2 = enemies_actual_y[x] + 6; // center y
 
     temp1 = enemies_x[x];
 
     // If we're going right, we actually want to look to the right of us.
     temp1 += leftright_movement_offset_lookup_table[temp3];
 
-    temp2 = enemies_actual_y[x] + 6; // center y
     coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
 
     // Which cmap should I look at?
@@ -2373,10 +2422,17 @@ void spikeball_ai(void) {
     // Should also be used for Grarrls.
     
     // Increment the timer. The meaning of the timer will depend on the enemy.
-    // Intermediate variable used here because the compiled code is better this way.
-    temp0 = enemies_timer[x];
-    ++temp0;
-    enemies_timer[x] = temp0;
+
+    // register y  = enemies_timer[x];
+    __asm__("ldx %v", x); // register x = x (the in-memory variable);
+    __asm__("ldy %v, %s", enemies_timer, X);
+    //
+    // ++register y;
+    __asm__("iny");
+    
+    // enemies_timer[x] = register y;
+    __asm__("tya");
+    __asm__("sta %v, %s", enemies_timer, X);
 
     temp3 = ENEMY_DIRECTION(x);
 
@@ -2391,11 +2447,11 @@ void spikeball_ai(void) {
 
     // Account for being on the edge of a nametable by checking. 
     // If temp2 >= 0xf0, then we were on the bottom of a nametable and should look at the other one.
+
+    temp4 = enemies_nt[x];
     if (temp2 >= 0xf0) {
-        temp4 = enemies_nt[x] + 1;
+        ++temp4;
         temp2 = 0;
-    } else {
-        temp4 = enemies_nt[x];
     }
 
     coordinates = (temp1 >> 4) + (temp2 & 0xf0); 
@@ -2527,12 +2583,25 @@ void cannon_ai(void) {
     temp_x = x + 1;
     if (IS_ENEMY_ACTIVE(temp_x)) { return; }
 
+    // Subtract from a (randomly-seeded) timer.
+    // If that timer == 0, turn to valrigard, then "fire a new cannonball" 
+    // (i.e set the cannonball's x to my x, y to my y, etc).
+    // Don't forget to tell it what direction it should be going in as well.
+
     // Decrement the timer this frame.
     // That'll be *slightly* longer than 1 second on NTSC systems, and
     // it'll be more like 1.28 seconds on PAL systems.
-    temp0 = enemies_timer[x];
-    --temp0;
-    enemies_timer[x] = temp0;
+
+    // register y  = enemies_timer[x];
+    __asm__("ldx %v", x); // register x = x (the in-memory variable);
+    __asm__("ldy %v, %s", enemies_timer, X);
+    //
+    // --register y;
+    __asm__("dey");
+    
+    // enemies_timer[x] = register y;
+    __asm__("tya");
+    __asm__("sta %v, %s", enemies_timer, X);
 
     if (enemies_timer[x] == 20) { 
 
@@ -2587,10 +2656,6 @@ void cannon_ai(void) {
         enemies_type[temp_x] = ENEMY_CANNONBALL;
 
     }
-    // Subtract from a (randomly-seeded?) timer of some sort.
-    // If that timer == 0, turn to valrigard, then "fire a new cannonball" 
-    // (i.e set the cannonball's x to my x, y to my y, etc).
-    // Don't forget to tell it what direction it should be going in as well.
 
 }
 
@@ -2835,18 +2900,32 @@ void acid_ai(void) {
     // Animations for this won't yet be implemented, but for now:
     // Animate this enemy.
     if (enemies_extra2[x]) {
-        temp0 = enemies_extra2[x];
-        --temp0;
-        enemies_extra2[x] = temp0;
+        //register y = enemies_extra2[x];
+        //--register y;
+        //enemies_extra2[x] = register y;
+        __asm__("ldx %v", x);
+        __asm__("ldy %v, %s", enemies_extra2, X);
+        __asm__("dey");
+        __asm__("tya");
+        __asm__("sta %v, %s", enemies_extra2, X);
     }
 
     // The next enemy should be an acid drop. If it's active, don't do anything.
     temp_x = x + 1;
     if (IS_ENEMY_ACTIVE(temp_x)) { return; }
 
-    temp0 = enemies_timer[x];
-    --temp0;
-    enemies_timer[x] = temp0;
+    // register y  = enemies_timer[x];
+    __asm__("ldx %v", x); // register x = x (the in-memory variable);
+    __asm__("ldy %v, %s", enemies_timer, X);
+    // --register y;
+    __asm__("dey");
+    // enemies_timer[x] = register y;
+    __asm__("tya");
+    __asm__("sta %v, %s", enemies_timer, X);
+
+    // Store temp0 appropriately for the following line
+    __asm__("sta %v", temp0);
+
     if (temp0 == 0) {
         // Reset our timer.
         temp0 = enemies_extra[x];
