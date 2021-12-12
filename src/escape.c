@@ -1503,32 +1503,13 @@ void movement(void) {
     }
     // Left
     else if (pad1 & PAD_LEFT) {
-        // DIRECTION = LEFT;
-        //player_flags &= 0b11111110;
         SET_DIRECTION_LEFT();
-        
-        if (valrigard.x <= 0x0200) { // Changed by 1 from nesdoug's example because Valrigard's hitbox is narrower by 1 pixel on both sides
-            valrigard.velocity_x = 0;
-            valrigard.x = 0x200;
-        } else if (valrigard.x < 0x0600) { // Don't allow us to wrap to the other side
-            valrigard.velocity_x = -0x100;
-        } else {
-            valrigard.velocity_x = -SPEED;
-        }
+        valrigard.velocity_x = -SPEED;
     }
     // Right
     else if (pad1 & PAD_RIGHT){
         SET_DIRECTION_RIGHT();
-        
-        if (valrigard.x >= 0xf000) {  // Also changed by 1 from nesdoug's example because Valrigard's hitbox is narrower by 1 pixel on both sides
-            // If VALRIGARD_WIDTH was 15, we'd change this >= into a >...
-            valrigard.velocity_x = 0;
-            valrigard.x = 0xf000; // ...and we'd add 0x100 to this constant here (and the 0x200 in the PAD_LEFT block would be a 0x100)
-        } else if (valrigard.x > 0xec00) { // Don't allow us to wrap to the other side
-            valrigard.velocity_x = 0x100;
-        } else {
-            valrigard.velocity_x = SPEED;
-        }
+        valrigard.velocity_x = SPEED;
     }
     // Neither Left nor Right
     else {
@@ -1539,9 +1520,7 @@ void movement(void) {
     valrigard.x += valrigard.velocity_x;
     // The collision routine also requires an 8-bit value anyway.
 
-    if((high_byte(valrigard.x) < 0x01)||(high_byte(valrigard.x) > 0xf8)) { // make sure no wrap around to the other side
-        valrigard.x = 0x100;
-    }
+    // conveyor_delta can still modify our x value, so we won't check its validity until after we apply it.
     
     //L_R_switch = 1; // Shrinks the Y values in bg_coll. This makes head/foot collisions less problematic (examine this)
     
@@ -1642,6 +1621,13 @@ void movement(void) {
                 }
             }
         }
+    }
+
+    // Now, make sure not to wrap around to the other side.
+    if (high_byte(valrigard.x) < 0x02) { // 0x200 because speed is 0x150, so it needs to be greater
+        valrigard.x = 0x0200; // This also ensures that none of Valrigard's pixels will be cut off
+    } else if (high_byte(valrigard.x) > 0xf2) { // This also ensures no pixels get cut off
+        valrigard.x = 0xf200;
     }
 
     // Nothing below this matters if we're already dead. Skip it if we are.
@@ -3082,13 +3068,22 @@ void boss_ai(void) {
 
     // Timers will need to exist for both invincibility frames and animation frames.
 
-    temp0 = enemies_extra2[x];
-    ++temp0;
-    enemies_extra2[x] = temp0;
+    //++enemies_extra2[x];
+    __asm__("ldx %v", x);
+    __asm__("ldy %v, %s", enemies_extra2, X);
+    __asm__("iny");
+    __asm__("tya");
+    __asm__("sta %v, %s", enemies_extra2, X);
 
-    temp0 = enemies_timer[x];
-    ++temp0;
-    enemies_timer[x] = temp0;
+    // ++enemies_timer[x];
+    //__asm__("ldx %v", x);
+    __asm__("ldy %v, %s", enemies_timer, X);
+    __asm__("iny");
+    __asm__("tya");
+    __asm__("sta %v, %s", enemies_timer, X);
+
+    // For the next comparison:
+    __asm__("sta %v", temp0);
 
     // Now figure out the correct dispatch:
     AsmCallFunctionAtPtrOffsetByIndexVar(boss_ai_functions, boss_state);
@@ -3097,9 +3092,13 @@ void boss_ai(void) {
 
 void death_effect_timer_ai(void) {
     // Decrement this thing's timer, then check if it's zero.
-    temp0 = enemies_timer[x];
-    --temp0;
-    enemies_timer[x] = temp0;
+    __asm__("ldx %v", x);
+    __asm__("ldy %v, %s", enemies_timer, X);
+    __asm__("dey");
+    __asm__("tya");
+    __asm__("sta %v, %s", enemies_timer, X);
+
+    __asm__("sta %v", temp0);
 
     if (temp0 == 0){
         // If it's zero, turn this into a None and clear its flags.

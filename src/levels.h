@@ -33,6 +33,7 @@
 #include "tilemaps/level_enemies_test.h"
 #include "tilemaps/level_question_block_test.h"
 #include "tilemaps/level_downloader_test.h"
+#include "tilemaps/level_screen_edge_test.h"
 
 // Some of this stuff might be able to live in another PRG bank if bank 7 gets too full.
 #define LEVEL_METADATA_BANK 0
@@ -70,6 +71,7 @@ const unsigned char const level_nt_length[] = {
     3, // enemies test
     1,
     6, // downloader test
+    1,
 };
 
 const unsigned char const valrigard_starting_nt[] = {
@@ -102,6 +104,7 @@ const unsigned char const valrigard_starting_nt[] = {
     2,
     0,
     5,
+    0,
 };
 
 // It's awfully convenient that nametables are no more than 16 metatiles in dimension
@@ -137,6 +140,7 @@ const unsigned char const valrigard_inital_coords[] = {
     0x4d,
     0x4d,
     0x4d,
+    0x4d,
 };
 
 // Pointers to compressed level data.
@@ -169,6 +173,7 @@ const unsigned char * const level_compressed_nametable_pointers[] = {
     level_enemies_test,
     level_question_block_test,
     level_macosten,
+    level_screen_edge_test,
 };
 
 // The banks in which each level's data is actually located.
@@ -197,6 +202,7 @@ const unsigned char const level_nametable_banks[] = {
     0,
 
     // Debug Levels
+    0,
     0,
     0,
     0,
@@ -233,10 +239,11 @@ const char * const level_names[] = {
     "Enemy Test",
     "? Block Test",
     "Downloader Test",
+    "Screen Edge Test",
 };
 
 // Convenient ROM value that shows the number of levels implemented.
-#define NUMBER_OF_LEVELS 26
+#define NUMBER_OF_LEVELS 27
 
 // Max of MAX_ENEMIES enemies.
 // Be aware that cannons and acid blobs functionally take up 2 slots
@@ -276,6 +283,7 @@ const unsigned char * const level_enemy_data[] = {
     level_enemies_test_enemy,
     empty_enemy,
     level_macosten_enemy,
+    level_screen_edge_test_enemy,
 };
 
 #pragma rodata-name(pop)
