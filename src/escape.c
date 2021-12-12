@@ -1294,9 +1294,6 @@ void draw_sprites(void) {
 #pragma code-name(push, "BANK5")
 void draw_player(void) {
 
-    temp1 = high_byte(valrigard.x);
-    temp2 = high_byte(valrigard.y);
-
     // I'm less worried about flattening (into one lookup table)/optimizing Valrigard's sprites
     // if only because this will only be called once per frame while the others may be called
     // more than once per frame.
@@ -1311,14 +1308,15 @@ void draw_player(void) {
         temp0 = (player_frame_timer & 0b11111110) | DIRECTION;
         AsmSet2ByteFromPtrAtIndexVar(temppointer, valrigard_flying_sprite_lookup_table, temp0);
     } else if (IS_WALKING) { // Walking
-        temp0 = ((player_walking_timer & 0b11111100) | (DIRECTION << 1)) >> 1;
+        temp0 = ((player_walking_timer & 0b11111100) | (DIRECTION << 1));
+        temp0 = temp0 >> 1;
         AsmSet2ByteFromPtrAtIndexVar(temppointer, valrigard_walking_sprite_lookup_table, temp0);
     } else { // Idle
         temp0 = DIRECTION;
         AsmSet2ByteFromPtrAtIndexVar(temppointer, valrigard_idle_sprite_lookup_table, temp0);
     }
 
-    oam_meta_spr(temp1, temp2, temppointer);
+    oam_meta_spr(high_byte(valrigard.x), high_byte(valrigard.y), temppointer);
 
     // Decrement the player frame timer if it's nonzero.
     if (player_frame_timer) { 
