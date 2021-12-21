@@ -69,8 +69,10 @@ const unsigned char * const korbat_sprite_lookup_table[] = {
 const unsigned char * const grarrl_sprite_lookup_table[] = {
     grarrl_left, grarrl_right,
     grarrl_backfoot_step0_left, grarrl_backfoot_step0_right,
+    grarrl_backfoot_step0_left, grarrl_backfoot_step0_right,
     grarrl_backfoot_step1_left, grarrl_backfoot_step1_right,
     grarrl_left, grarrl_right,
+    grarrl_frontfoot_step0_left, grarrl_frontfoot_step0_right,
     grarrl_frontfoot_step0_left, grarrl_frontfoot_step0_right,
     grarrl_frontfoot_step1_left, grarrl_frontfoot_step1_right,
 };

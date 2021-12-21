@@ -1369,14 +1369,10 @@ void draw_korbat(void) {
 }
 
 void draw_grarrl(void) {
-    temp3 = enemies_timer[x] & 0b111000; // Derive the frame number from the timer.
-    if (temp3 >= (6 << 3)) { // Clamp the frame number to 6.
-        temp3 = 0;
-        enemies_timer[x] = 0;
-    }
-
-    temp3 = (temp3 >> 2) | ENEMY_DIRECTION(x); // Last 2 bits just make the animation slower.
-
+    temp3 = enemies_timer[x] & 0b11111;
+    enemies_timer[x] = temp3;
+    //temp3 &= 0b111000; // Derive the frame number from the timer.
+    temp3 = ((temp3 & 0b11100) >> 1) | ENEMY_DIRECTION(x);
     AsmSet2ByteFromPtrAtIndexVar(temppointer, grarrl_sprite_lookup_table, temp3); 
     oam_meta_spr(temp_x, temp_y, temppointer);
 }
