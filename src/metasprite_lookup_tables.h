@@ -57,23 +57,33 @@ const unsigned char * const korbat_sprite_lookup_table[] = {
     korbat_flap5_left, korbat_flap5_right,
     korbat_flap6_left, korbat_flap6_right,
     korbat_flap6_left, korbat_flap6_right,
+    korbat_flap6_left, korbat_flap6_right,
     korbat_flap5_left, korbat_flap5_right,
     korbat_flap4_left, korbat_flap4_right,
     korbat_flap3_left, korbat_flap3_right,
     korbat_flap2_left, korbat_flap2_right,
     korbat_flap1_left, korbat_flap1_right,
     korbat_left, korbat_right,
+    korbat_left, korbat_right,
 };
 
 
 const unsigned char * const grarrl_sprite_lookup_table[] = {
     grarrl_left, grarrl_right,
+    grarrl_left, grarrl_right,
+    grarrl_backfoot_step0_left, grarrl_backfoot_step0_right,
+    grarrl_backfoot_step0_left, grarrl_backfoot_step0_right,
     grarrl_backfoot_step0_left, grarrl_backfoot_step0_right,
     grarrl_backfoot_step0_left, grarrl_backfoot_step0_right,
     grarrl_backfoot_step1_left, grarrl_backfoot_step1_right,
+    grarrl_backfoot_step1_left, grarrl_backfoot_step1_right,
+    grarrl_left, grarrl_right,
     grarrl_left, grarrl_right,
     grarrl_frontfoot_step0_left, grarrl_frontfoot_step0_right,
     grarrl_frontfoot_step0_left, grarrl_frontfoot_step0_right,
+    grarrl_frontfoot_step0_left, grarrl_frontfoot_step0_right,
+    grarrl_frontfoot_step0_left, grarrl_frontfoot_step0_right,
+    grarrl_frontfoot_step1_left, grarrl_frontfoot_step1_right,
     grarrl_frontfoot_step1_left, grarrl_frontfoot_step1_right,
 };
 

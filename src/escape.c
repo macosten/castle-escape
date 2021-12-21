@@ -1208,12 +1208,11 @@ void draw_sprites(void) {
             //if (temp_x == 0) ++temp_x; // Basing this off NESDoug's report of problems with temp_x = 0.
             //if (temp_x > 0xf0) continue;
             temp_y = enemies_y[x];
-            if (temp_y < 0xf0) {
-
+            //if (temp_y < 0xf0) { // this 'if' seems unnecessary
                 temp0 = GET_ENEMY_TYPE(x);
                 // An assembly macro (defined in asm/macros.h) is used here to ensure that this is efficient.
                 AsmCallFunctionAtPtrOffsetByIndexVar(draw_func_pointers, temp0);
-            }
+            //}
         }
         ++y;
 
@@ -1222,10 +1221,8 @@ void draw_sprites(void) {
         if (IS_ENEMY_ACTIVE(x)) {  
             temp_x = enemies_x[x];
             temp_y = enemies_y[x];
-            if (temp_y < 0xf0) {
-                temp0 = GET_ENEMY_TYPE(x);
-                AsmCallFunctionAtPtrOffsetByIndexVar(draw_func_pointers, temp0);
-            }
+            temp0 = GET_ENEMY_TYPE(x);
+            AsmCallFunctionAtPtrOffsetByIndexVar(draw_func_pointers, temp0);
         }
         ++y;
 
@@ -1234,10 +1231,8 @@ void draw_sprites(void) {
         if (IS_ENEMY_ACTIVE(x)) {  
             temp_x = enemies_x[x];
             temp_y = enemies_y[x];
-            if (temp_y < 0xf0) {
-                temp0 = GET_ENEMY_TYPE(x);
-                AsmCallFunctionAtPtrOffsetByIndexVar(draw_func_pointers, temp0);
-            }
+            temp0 = GET_ENEMY_TYPE(x);
+            AsmCallFunctionAtPtrOffsetByIndexVar(draw_func_pointers, temp0);
         }
         ++y;
 
@@ -1246,10 +1241,8 @@ void draw_sprites(void) {
         if (IS_ENEMY_ACTIVE(x)) {  
             temp_x = enemies_x[x];
             temp_y = enemies_y[x];
-            if (temp_y < 0xf0) {
-                temp0 = GET_ENEMY_TYPE(x);
-                AsmCallFunctionAtPtrOffsetByIndexVar(draw_func_pointers, temp0);
-            }
+            temp0 = GET_ENEMY_TYPE(x);
+            AsmCallFunctionAtPtrOffsetByIndexVar(draw_func_pointers, temp0);
         }
 
     }
@@ -1356,23 +1349,36 @@ void draw_energy(void) {
 // For all the draw_ functions, temp_x and temp_y are important
 
 void draw_korbat(void) {
-    temp3 = enemies_timer[x] & 0b11110; // Derive the frame number from the timer.
-    if (temp3 >= (14 << 1)) { // Clamp the frame number to 14.
-        temp3 = 0;
-        enemies_timer[x] = 0;
-    }
 
-    temp3 = temp3 | ENEMY_DIRECTION(x);
+    // Load the timer and clamp it to 16 frames plus the extra slowdown bit
+    __asm__("ldy %v", x);
+    __asm__("lda %v, %s", enemies_timer, Y);
+    __asm__("and #%b", 0b11111);
+
+    __asm__("sta %v, %s", enemies_timer, Y);
+    __asm__("and #%b", 0b11110);
+    __asm__("sta %v", temp3);
+
+
+    temp3 |= ENEMY_DIRECTION(x);
 
     AsmSet2ByteFromPtrAtIndexVar(temppointer, korbat_sprite_lookup_table, temp3); 
     oam_meta_spr(temp_x, temp_y, temppointer);
 }
 
 void draw_grarrl(void) {
-    temp3 = enemies_timer[x] & 0b11111;
-    enemies_timer[x] = temp3;
-    //temp3 &= 0b111000; // Derive the frame number from the timer.
-    temp3 = ((temp3 & 0b11100) >> 1) | ENEMY_DIRECTION(x);
+
+    // Load the timer and clamp it to 16 frames plus the extra slowdown bit
+    __asm__("ldy %v", x);
+    __asm__("lda %v, %s", enemies_timer, Y);
+    __asm__("and #%b", 0b11111);
+
+    __asm__("sta %v, %s", enemies_timer, Y);
+    __asm__("and #%b", 0b11110);
+    __asm__("sta %v", temp3);
+
+    temp3 |= ENEMY_DIRECTION(x);
+
     AsmSet2ByteFromPtrAtIndexVar(temppointer, grarrl_sprite_lookup_table, temp3); 
     oam_meta_spr(temp_x, temp_y, temppointer);
 }
