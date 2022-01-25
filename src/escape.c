@@ -155,6 +155,7 @@ void draw_boss(void);
 void draw_purple_death_effect(void);
 void draw_splyke_death_effect(void);
 void draw_boss_fireball(void);
+void draw_floating_numbers_effect(void);
 
 void draw_score(void);
 void draw_energy(void);
@@ -1081,7 +1082,7 @@ void load_level_new(void) {
     }
 
     // Save the number of loaded enemies
-    enemies_count = x+1;
+    enemies_count = x+1+4; // Plus a bit of leeway for floating number effects
     
     // Set all the other enemies to be NONEs.
     for(++x; x < MAX_ENEMIES; ++x) {
@@ -1173,6 +1174,7 @@ const void (* const draw_func_pointers[])(void) = {
     draw_boss_fireball,  // 11 - ENEMY_BOSS_FIREBALL;
     draw_purple_death_effect, // 12 - ENEMY_PURPLE_DEATH_EFFECT;
     draw_splyke_death_effect, // 13 - ENEMY_SPLYKE_DEATH_EFFECT;
+    draw_floating_numbers_effect, // 14 - ENEMY_FLOATING_NUMBERS_EFFECT;
 };
 #pragma rodata-name(pop)
 
@@ -1487,6 +1489,16 @@ void draw_boss_fireball(void) {
 
     oam_spr(temp_x, temp_y, temp3, 0);
 }
+
+void draw_floating_numbers_effect(void) {
+    // This enemy's timer[x] is used to help look up what its Y offset should be.
+    temp3 = enemies_extra[x];
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, floating_numbers_sprite_lookup_table, temp3);
+    temp0 = enemies_timer[x];
+    temp_y += floating_numbers_y_offset_lookup_table[temp0];
+    oam_meta_spr(temp_x, temp_y, temppointer);
+}
+
 #pragma code-name(pop)
 #pragma rodata-name(pop)
 
@@ -1874,11 +1886,27 @@ void bg_collision_sub_collision_u(void) {
         AsmSet1ByteAtZpPtrWithConstOffset(temp_mutablepointer, coordinates, BONKED_QUESTION_BLOCK);
 
         // Figure out the correct bonus amount.
-        if (temp0 > 128) { ++score; }
-        else if (temp0 > 86) { score += 2; }
-        else if (temp0 > 43) { score += 3; }
-        else if (temp0 > 2) { score += 4; }
-        else { score += 100; } /*if (temp0 < 3)*/ 
+        if (temp0 > 128) { 
+            ++score;
+            temp0 = 0; // Will be used to select which sprite the floating number effect should use
+        }
+        else if (temp0 > 86) { 
+            score += 2;
+            temp0 = 1;
+        }
+        else if (temp0 > 43) { 
+            score += 3;
+            temp0 = 2;
+        }
+        else if (temp0 > 2) { 
+            score += 4;
+            temp0 = 3;
+        }
+        else { 
+            score += 100;
+            temp0 = 4;
+        }
+        score += temp0;
         SET_SCORE_CHANGED_THIS_FRAME();
 
         did_headbonk = 1;
@@ -1893,11 +1921,22 @@ void bg_collision_sub_collision_u(void) {
         AsmSet2ByteAtPtrWithOffset(tile_clear_queue, tile_clear_back, address);
         tile_clear_to_type_queue[tile_clear_back] = BONKED_QUESTION_BLOCK;
 
-        // Turns out it's actually more complicated to update a single tile's attribute mid-game;
-        // as-is this recolors a 2 by 2 mt area (not ideal).
-        //address = get_at_addr(nt, temp1, temp3 & 0xf0);
-        //AsmSet2ByteAtPtrWithOffset(tile_clear_attr_addr_queue, tile_clear_back, address);
-        
+        // Create a "floating numbers" entity at the end of the enemy database
+        enemies_extra[enemy_limit] = temp0;
+        enemies_timer[enemy_limit] = 32;
+        temp0 = (temp1 & 0xf0) + 6;
+        enemies_x[enemy_limit] = temp0;
+        enemies_actual_y[enemy_limit] = temp3;
+        enemies_nt[enemy_limit] = nt_current;      
+        enemies_type[enemy_limit] = ENEMY_FLOATING_NUMBERS_EFFECT;
+        ++enemy_limit;
+        if (enemies_count <= enemy_limit) { 
+            // In case we have a lot of floating number effects on screen at once
+            enemies_count = enemy_limit;
+            calculate_shuffle_array(); // don't like having to do this, but we have to
+        }
+
+
         ++tile_clear_back;
         tile_clear_back &= 0b11;
 
@@ -2072,6 +2111,7 @@ const unsigned char const enemy_hitbox_width_lookup_table[] = {
     6,  // Magic Bolt
     0,  // Purple Death Effect
     0,  // Splyke Death Effect
+    0,  // Floating Numbers (from hitting a ? box) 
 };
 
 const unsigned char const enemy_hitbox_height_lookup_table[] = {
@@ -2087,7 +2127,9 @@ const unsigned char const enemy_hitbox_height_lookup_table[] = {
     6,  // Cannonball
     6,  // Aciddrop
     6,  // Magic Bolt
-    0,  // ...Particle effect of some sort? 
+    0,  // Purple Death Effect
+    0,  // Splyke Death Effect
+    0,  // Floating Numbers (from hitting a ? box) 
 };
 
 // In case the hitbox isn't quite centered in the sprite:
@@ -2104,6 +2146,7 @@ const unsigned char const enemy_hitbox_x_offset_lookup_table[] = {
     1, // Cannonball
     1, // Aciddrop
     1, // Magic Bolt
+    0,
     0,
     0,
 };
@@ -2124,6 +2167,7 @@ const unsigned char const enemy_hitbox_y_offset_lookup_table[] = {
     1, // Magic Bolt
     0,
     0,
+    0,
 };
 
 const void (* const collision_functions[])(void) = {
@@ -2141,6 +2185,7 @@ const void (* const collision_functions[])(void) = {
     collision_with_unkillable_unslashable,  // Magic Bolt
     empty_function,                   // Purple Death Effect
     empty_function,                   // Splyke Death Effect
+    empty_function,                   // Floating Numbers
 };
 
 // Check for sprite collisions with the player.
@@ -2294,6 +2339,7 @@ const void (* const ai_pointers[])(void) = {
     boss_fireball_ai,      // 11 - ENEMY_BOSS_FIREBALL;
     death_effect_timer_ai, // 12 - ENEMY_PURPLE_DEATH_EFFECT;
     death_effect_timer_ai, // 13 - ENEMY_SPLYKE_DEATH_EFFECT;
+    death_effect_timer_ai, // 14 - ENEMY_FLOATING_NUMBERS_EFFECT;
 };
 
 // Enemy AI.

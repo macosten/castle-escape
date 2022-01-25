@@ -892,4 +892,31 @@ const unsigned char const energy_bar_f[] = {
   128
 };
 
+const unsigned char const points_1[] = {
+     0,-24, 0x01, 3,
+  128
+};
+
+const unsigned char const points_2[] = {
+     0,-24, 0x02, 3,
+  128
+};
+
+const unsigned char const points_3[] = {
+     0,-24, 0x03, 3,
+  128
+};
+
+const unsigned char const points_4[] = {
+     0,-24, 0x04, 3,
+  128
+};
+
+const unsigned char const points_100[] = {
+  0xf8,-24, 0x01, 3,
+     0,-24, 0x00, 3,
+     8,-24, 0x00, 3,
+  128
+};
+
 #pragma rodata-name(pop)

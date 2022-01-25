@@ -141,5 +141,14 @@ const unsigned char * const boss_dying_sprite_lookup_table[] = {
 
 const unsigned char const boss_magic_offset_table[] = { 0x80, 0x81, 0x82 };
 
+const unsigned char * const floating_numbers_sprite_lookup_table[] = {
+    points_1, points_2, points_3, points_4, points_100
+};
+
+const unsigned char const floating_numbers_y_offset_lookup_table[] = {
+    0, -5, -8, -9, -11, -12, -12, -13, -14, -14, -15, -15, -15, -16, -16, -16,
+    -16, -16, -16, -15, -15, -15, -14, -14, -13, -12, -12, -11, -9, -8, -5, 0
+};
+
 #pragma rodata-name(pop)
 

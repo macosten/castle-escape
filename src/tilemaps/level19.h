@@ -4,9 +4,6 @@
 
 #pragma rodata-name(push, "BANK0")
 
-// bitpacked coords (0xXY), nt, direction (or other info) + type
-// 0xff terminates
-
 const unsigned char const level19[] = {
 	76,90,71,0,0,5,160,0,0,1,233,0,190,63,90,1,
 	1,2,3,16,4,13,16,7,6,44,16,1,6,44,28,29,
