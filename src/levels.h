@@ -35,8 +35,12 @@
 #include "tilemaps/level_downloader_test.h"
 #include "tilemaps/level_screen_edge_test.h"
 
+#include "tilemaps/level_bonus01.h"
+#include "tilemaps/level_bonus02.h"
+
 // Some of this stuff might be able to live in another PRG bank if bank 7 gets too full.
 #define LEVEL_METADATA_BANK 0
+#define BONUS_LEVEL_DATA_BANK 0
 
 #pragma rodata-name(push, "BANK0")
 
@@ -72,6 +76,10 @@ const unsigned char const level_nt_length[] = {
     1,
     6, // downloader test
     1,
+    
+    // Bonus Levels
+    3,
+    3,
 };
 
 const unsigned char const valrigard_starting_nt[] = {
@@ -104,6 +112,10 @@ const unsigned char const valrigard_starting_nt[] = {
     2,
     0,
     5,
+    0,
+    
+    // Bonus Levels
+    0,
     0,
 };
 
@@ -141,6 +153,10 @@ const unsigned char const valrigard_inital_coords[] = {
     0x4d,
     0x4d,
     0x4d,
+    
+    // Bonus Levels
+    0x21,
+    0x21,
 };
 
 // Pointers to compressed level data.
@@ -174,6 +190,9 @@ const unsigned char * const level_compressed_nametable_pointers[] = {
     level_question_block_test,
     level_macosten,
     level_screen_edge_test,
+    
+    level_bonus01,
+    level_bonus02,
 };
 
 // The banks in which each level's data is actually located.
@@ -208,6 +227,10 @@ const unsigned char const level_nametable_banks[] = {
     0,
     0,
     0,
+    
+    // Bonus Levels
+    0,
+    0,
 };
 
 const char * const level_names[] = {
@@ -240,10 +263,14 @@ const char * const level_names[] = {
     "? Block Test",
     "Downloader Test",
     "Screen Edge Test",
+    
+    "Bonus Level 1",
+    "Bonus Level 2",
 };
 
 // Convenient ROM value that shows the number of levels implemented.
-#define NUMBER_OF_LEVELS 27
+#define NUMBER_OF_LEVELS 29 // Includes bonus levels
+#define NUMBER_OF_BONUS_LEVELS 2 // The last X levels will be considered bonus levels.
 
 // Max of MAX_ENEMIES enemies.
 // Be aware that cannons and acid blobs functionally take up 2 slots
@@ -284,6 +311,9 @@ const unsigned char * const level_enemy_data[] = {
     empty_enemy,
     level_macosten_enemy,
     level_screen_edge_test_enemy,
+    
+    empty_enemy,
+    empty_enemy,
 };
 
 #pragma rodata-name(pop)

@@ -33,3 +33,7 @@
 #define IS_WALKING (player_flags & 64)
 #define SET_IS_WALKING() (player_flags |= 64)
 #define RESET_IS_WALKING() (player_flags &= ~64)
+// Should be checked every frame:
+#define SHOULD_GO_TO_BONUS_LEVEL (player_flags & 128)
+#define SET_SHOULD_GO_TO_BONUS_LEVEL() (player_flags |= 128)
+#define RESET_SHOULD_GO_TO_BONUS_LEVEL() (player_flags &= ~128)

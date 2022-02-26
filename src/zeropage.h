@@ -138,6 +138,7 @@ unsigned char advanced_conditional;
 unsigned char enemy_limit; // equal to the highest index plus one
 unsigned char lowest_enemy_index;
 
+unsigned char level_index_backup; // For when we need to remember the previous level due to being in a bonus level
 // ~?? zp bytes left? (see ZP_LAST in labels.txt)
 
 #pragma bss-name(pop)

@@ -311,6 +311,7 @@ void main (void) {
 
     // Set the level index to the first level.
     level_index = 0;
+    level_index_backup = 0xff; // Set the level index backup to a null value.
 
     //menu = MENU_GAME_SELECT; // = 0
     switch_menu();
@@ -412,23 +413,42 @@ void main (void) {
 
             // TODO: Make this a flag instead of a separate game mode.
             if (game_mode == MODE_LEVEL_COMPLETE) {
+                // True if this was a bonus level:
+                advanced_conditional = level_index >= NUMBER_OF_LEVELS - NUMBER_OF_BONUS_LEVELS;
+
                 // Check for a new high score.
                 AsmSet2ByteFromPtrAtIndexVar(temp5, level_high_scores, level_index);
                 temp6 = score - previous_score;
                 if (temp5 < temp6) {
-                    level_high_scores[level_index] = temp6;
+                    if (advanced_conditional && level_index_backup != 0xff) {
+                        level_high_scores[level_index_backup] = temp6;
+                    } else {
+                        level_high_scores[level_index] = temp6;
+                    }
                     update_checksum();
                 }
 
-                // Figure out what to do next based on the selected game mode.
-                if (game_level_advance_behavior == LEVEL_UP_BEHAVIOR_EXIT || level_index == NUMBER_OF_LEVELS - 1) {                    
-                    menu = MENU_COMPLETE_SCREEN;
-                    switch_menu();
-                } else { // == LEVEL_UP_BEHAVIOR_CONTINUE and there are levels left
-                    // Next level.
-                    level_index += 1;
-                    previous_score = score; // Bank the score
+                // Figure out what to do next based on the selected game mode and if we're supposed to go to a bonus level.
+                if (SHOULD_GO_TO_BONUS_LEVEL) {
+                    level_index_backup = level_index;
+                    level_index = NUMBER_OF_LEVELS - 1;
+                    level_index -= level_index_backup & 0x1; // Bitmask; change this if we add more bonus levels
+                    previous_score = score;
                     begin_level();
+                } else {
+                    if (advanced_conditional) {
+                        level_index = level_index_backup;
+                        level_index_backup = 0xff;
+                    }
+                    if (game_level_advance_behavior == LEVEL_UP_BEHAVIOR_EXIT || level_index == NUMBER_OF_LEVELS - 1) {
+                        menu = MENU_COMPLETE_SCREEN;
+                        switch_menu();
+                    } else { // == LEVEL_UP_BEHAVIOR_CONTINUE and there are levels left
+                        // Next level
+                        level_index += 1;
+                        previous_score = score; // Bank the score
+                        begin_level();
+                    }
                 }
 
             } 
@@ -452,7 +472,7 @@ void main (void) {
             }
 
             // debug:
-            gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+            //gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 
         }
 
@@ -1664,6 +1684,16 @@ void movement(void) {
             SET_STATUS_DEAD();
         }
     }
+
+    if (high_byte(valrigard.y) > 0xef) { 
+        // Valrigard is off the bottom of the screen, which *should* mean we completed a bonus level
+        if (level_index >= NUMBER_OF_LEVELS - NUMBER_OF_BONUS_LEVELS) { // If we're in a bonus level:
+            game_mode = MODE_LEVEL_COMPLETE;
+        } else {
+            // Die if not
+            SET_STATUS_DEAD();    
+        }
+    }
     
     // MARK: - Deal with scrolling
 
@@ -1859,6 +1889,7 @@ void bg_collision_sub(void) {
         SET_TOUCHING_SPIKES();
     } else if (temp0 & METATILE_RED_DOOR) {
         game_mode = MODE_LEVEL_COMPLETE;
+        SET_SHOULD_GO_TO_BONUS_LEVEL();
     }
 
 }
