@@ -417,14 +417,14 @@ void main (void) {
             // TODO: Make this a flag instead of a separate game mode.
             if (game_mode == MODE_LEVEL_COMPLETE) {
                 // True if this was a bonus level:
-                advanced_conditional = level_index >= NUMBER_OF_LEVELS - NUMBER_OF_BONUS_LEVELS;
+                advanced_conditional = level_index >= (NUMBER_OF_LEVELS - NUMBER_OF_BONUS_LEVELS);
 
                 // Check for a new high score.
                 AsmSet2ByteFromPtrAtIndexVar(temp5, level_high_scores, level_index);
                 temp6 = score - previous_score;
                 if (temp5 < temp6) {
                     if (advanced_conditional && level_index_backup != 0xff) {
-                        level_high_scores[level_index_backup] = temp6;
+                        level_high_scores[level_index_backup] = temp6 + previous_score;
                     } else {
                         level_high_scores[level_index] = temp6;
                     }
@@ -439,7 +439,7 @@ void main (void) {
                     previous_score = score;
                     begin_level();
                 } else {
-                    if (advanced_conditional) {
+                    if (advanced_conditional && level_index_backup != 0xff) {
                         level_index = level_index_backup;
                         level_index_backup = 0xff;
                     }
