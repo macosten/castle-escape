@@ -347,11 +347,8 @@ void main (void) {
 
             // Reset anything that's supposed to be reset at the start of a frame.
             conveyor_delta = 0;
-            did_headbonk = 0;
-            RESET_TOUCHING_YELLOW_DOOR();
-            RESET_TOUCHING_SPIKES();
-            RESET_SCORE_CHANGED_THIS_FRAME();
-            RESET_IS_WALKING();
+            RESET_PLAYER_FLAGS_1_START_FRAME();
+            RESET_PLAYER_FLAGS_2_START_FRAME();
 
             pad1 = pad_poll(0); // read the first controller
             pad1_new = get_pad_new(0); 
@@ -364,11 +361,17 @@ void main (void) {
 
             // If we need to, we can se the chr bank every frame...
             //set_chr_bank_0(0);
+
+            // Handle pausing/unpausing.
+            if (pad1_new & PAD_START && !STATUS_DEAD) {
+                TOGGLE_GAME_PAUSED();
+                sfx_play(SFX_MENU_BEEP, 0);
+            }
             
             clear_vram_buffer();
 
             // Move the player.
-            movement();
+            if (!GAME_PAUSED) { movement(); }
             
             // Check to see what's on-screen
             check_spr_objects();
@@ -382,7 +385,7 @@ void main (void) {
             }
 
             // Move enemies
-            enemy_movement();
+            if (!GAME_PAUSED) { enemy_movement(); }
 
             set_scroll_y(scroll_y);
             
@@ -944,7 +947,8 @@ void begin_level(void) {
     tile_clear_back = 0;
 
     // Reset a few variables related to the player.
-    player_flags = 0; 
+    player_flags = 0;
+    player_flags2 = 0; 
     scroll_count = 0; 
     player_death_timer = 0;
 
@@ -1214,6 +1218,10 @@ void draw_sprites(void) {
     if (game_mode != MODE_GAME_SHOWING_TEXT) {
         draw_score();
         draw_energy();
+    }
+
+    if (GAME_PAUSED) {
+        oam_meta_spr(108, 116, paused_text);
     }
 
     // draw enemies
@@ -1624,7 +1632,7 @@ void movement(void) {
     if(collision_U) {
         high_byte(valrigard.y) -= eject_U;
 
-        if (did_headbonk) { 
+        if (DID_HEADBONK) { 
             high_byte(valrigard.y) += 4;
             valrigard.velocity_y = 0;
             // Play head bonked sound?
@@ -1940,7 +1948,7 @@ void bg_collision_sub_collision_u(void) {
         score += temp0;
         SET_SCORE_CHANGED_THIS_FRAME();
 
-        did_headbonk = 1;
+        SET_DID_HEADBONK();
 
         sfx_play(SFX_BUMP, 0);
 

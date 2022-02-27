@@ -55,6 +55,7 @@ unsigned char player_walking_timer;
 
 unsigned char player_flags; // All of these flags should be such that the default value for this byte when starting a level is 0
 // See macros.h for macros operating on this.
+unsigned char player_flags2;
 
 unsigned char game_mode; // A byte that generally tells the game how to behave depending on what's set.
 unsigned char game_level_advance_behavior; // A byte that tells the game what to do when a level ends.
@@ -139,6 +140,7 @@ unsigned char enemy_limit; // equal to the highest index plus one
 unsigned char lowest_enemy_index;
 
 unsigned char level_index_backup; // For when we need to remember the previous level due to being in a bonus level
+
 // ~?? zp bytes left? (see ZP_LAST in labels.txt)
 
 #pragma bss-name(pop)

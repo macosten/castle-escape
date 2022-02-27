@@ -37,3 +37,15 @@
 #define SHOULD_GO_TO_BONUS_LEVEL (player_flags & 128)
 #define SET_SHOULD_GO_TO_BONUS_LEVEL() (player_flags |= 128)
 #define RESET_SHOULD_GO_TO_BONUS_LEVEL() (player_flags &= ~128)
+// Reset all the flags that should be reset each frame for the first flag byte.
+#define RESET_PLAYER_FLAGS_1_START_FRAME() (player_flags &= ~(128 + 64 + 32 + 16 + 8))
+
+#define GAME_PAUSED (player_flags2 & 1)
+#define SET_GAME_PAUSED() (player_flags2 |= 1)
+#define RESET_GAME_PAUSED() (player_flags2 &= ~1)
+#define TOGGLE_GAME_PAUSED() (player_flags2 ^= 1)
+
+#define DID_HEADBONK (player_flags2 & 2)
+#define SET_DID_HEADBONK() (player_flags2 |= 2)
+
+#define RESET_PLAYER_FLAGS_2_START_FRAME() (player_flags2 &= ~(2))
