@@ -2401,27 +2401,27 @@ _paused_text:
 	.byte	$00
 	.byte	$00
 	.byte	$F9
-	.byte	$03
+	.byte	$01
 	.byte	$08
 	.byte	$00
 	.byte	$FA
-	.byte	$03
+	.byte	$01
 	.byte	$10
 	.byte	$00
 	.byte	$FB
-	.byte	$03
+	.byte	$01
 	.byte	$18
 	.byte	$00
 	.byte	$FC
-	.byte	$03
+	.byte	$01
 	.byte	$20
 	.byte	$00
 	.byte	$FD
-	.byte	$03
+	.byte	$01
 	.byte	$28
 	.byte	$00
 	.byte	$FE
-	.byte	$03
+	.byte	$01
 	.byte	$80
 .segment	"RODATA"
 .segment	"BANK5"
@@ -12710,7 +12710,7 @@ L2A4E:
 L2A3E:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$32,$00
 L30DA:
-	.byte	$31,$33,$3A,$35,$37,$3A,$32,$38,$00
+	.byte	$31,$34,$3A,$31,$32,$3A,$30,$30,$00
 L2A46:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$36,$00
 L2A3C:

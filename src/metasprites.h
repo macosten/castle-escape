@@ -920,12 +920,12 @@ const unsigned char const points_100[] = {
 };
 
 const unsigned char const paused_text[] = {
-    0,  0, 0xF9, 3,
-    8,  0, 0xFA, 3,
-   16,  0, 0xFB, 3,
-   24,  0, 0xFC, 3,
-   32,  0, 0xFD, 3,
-   40,  0, 0xFE, 3,
+    0,  0, 0xF9, 1,
+    8,  0, 0xFA, 1,
+   16,  0, 0xFB, 1,
+   24,  0, 0xFC, 1,
+   32,  0, 0xFD, 1,
+   40,  0, 0xFE, 1,
   128
 };
 
