@@ -27,6 +27,7 @@
 #include "tilemaps/level20.h"
 
 #include "tilemaps/level_user_neoman17777.h"
+#include "tilemaps/level_user_thomas2070.h"
 
 #include "tilemaps/level_debug_tiledump.h"
 #include "tilemaps/level_star_test.h"
@@ -68,6 +69,7 @@ const unsigned char const level_nt_length[] = {
     1, // Level 20
     // User Levels
     6,
+    6,
 
     // Debug Levels
     1, // tiledump
@@ -104,6 +106,7 @@ const unsigned char const valrigard_starting_nt[] = {
     0,
     0,
     // User Levels
+    5,
     5,
 
     // Debug Levels
@@ -145,6 +148,7 @@ const unsigned char const valrigard_inital_coords[] = {
     0x4c, // 20
     // User Levels
     0x4d,
+    0x4d,
 
     // Debug Levels
     0x4d,
@@ -183,6 +187,7 @@ const unsigned char * const level_compressed_nametable_pointers[] = {
     level20,
 
     level_neoman17777,
+    level_thomas2070,
 
     level_debug_tiledump,
     level_star_test,
@@ -218,6 +223,7 @@ const unsigned char const level_nametable_banks[] = {
     0,
     0,
     // User Levels
+    0,
     0,
 
     // Debug Levels
@@ -256,6 +262,7 @@ const char * const level_names[] = {
     "Level 20",
 
     "User: neoman17777",
+    "User: thomas2070",
 
     "Tile Dump",
     "Star Test",
@@ -269,7 +276,7 @@ const char * const level_names[] = {
 };
 
 // Convenient ROM value that shows the number of levels implemented.
-#define NUMBER_OF_LEVELS 29 // Includes bonus levels
+#define NUMBER_OF_LEVELS 30 // Includes bonus levels
 #define NUMBER_OF_BONUS_LEVELS 2 // The last X levels will be considered bonus levels.
 
 // Max of MAX_ENEMIES enemies.
@@ -304,6 +311,7 @@ const unsigned char * const level_enemy_data[] = {
     level20_enemy,
 
     level_neoman17777_enemy,
+    level_thomas2070_enemy,
 
     level_debug_tiledump_enemy,
     empty_enemy,
