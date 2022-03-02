@@ -627,9 +627,21 @@ void menu_level_select(void) {
         if (level_index == NUMBER_OF_LEVELS) {
             level_index = 0;
         }
+    } else if (pad1_new & PAD_UP) {
+        // Increment the level index by 10.
+        level_index += 10;
+        if (level_index >= NUMBER_OF_LEVELS) { // Anti-overflow
+            level_index -= NUMBER_OF_LEVELS;
+        }
+    } else if (pad1_new & PAD_DOWN) {
+        // Decrement the level index by 10.
+        level_index -= 10;
+        if (level_index >= NUMBER_OF_LEVELS) { // Anti-underflow
+            level_index += NUMBER_OF_LEVELS;
+        }
     }
 
-    if (pad1_new & (PAD_LEFT | PAD_RIGHT)) {
+    if (pad1_new & (PAD_LEFT | PAD_RIGHT | PAD_UP | PAD_DOWN)) {
         // Code shared between what we'd do with either button press.
         sfx_play(SFX_MENU_BEEP, 0);
 
