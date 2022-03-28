@@ -1069,6 +1069,9 @@ void load_level_new(void) {
     // Load the enemy data for the current level.
     AsmSet2ByteFromPtrAtIndexVar(temppointer, level_enemy_data, level_index);
 
+    // Switch to the correct data bank for this level.
+    set_prg_bank(level_nametable_banks[level_index]);
+
     for (x = 0, y = 0; x < MAX_ENEMIES; ++x){
 
         enemies_y[x] = 0;
