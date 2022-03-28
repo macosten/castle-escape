@@ -1051,16 +1051,22 @@ void load_level_new(void) {
     // Load Enemies
 
     // Clear the enemy database.
-    // It's ideal to do this in one call since each call to memfill takes a surprising amount of ROM
-    memfill(&enemies_x, 0, MAX_ENEMIES * 9);
-    // memfill(&enemies_y, 0, MAX_ENEMIES);
-    // memfill(&enemies_actual_y, 0, MAX_ENEMIES);
-    // memfill(&enemies_nt, 0, MAX_ENEMIES);
-    // memfill(&enemies_flags, 0, MAX_ENEMIES);
-    // memfill(&enemies_type, 0, MAX_ENEMIES);
-    // memfill(&enemies_extra, 0, MAX_ENEMIES);
-    // memfill(&enemies_extra2, 0, MAX_ENEMIES);
-    // memfill(&enemies_timer, 0, MAX_ENEMIES);
+    // Replacing calls to memfill with regular for loop
+    for (x = 0; x < MAX_ENEMIES; ++x) { 
+        __asm__("ldy %v", x);
+        __asm__("lda #$00");
+        // Zero out all enemy arrays.
+        __asm__("sta %v, %s", enemies_x, Y);
+        __asm__("sta %v, %s", enemies_y, Y);
+        __asm__("sta %v, %s", enemies_actual_y, Y);
+        __asm__("sta %v, %s", enemies_nt, Y);
+        __asm__("sta %v, %s", enemies_flags, Y);
+        __asm__("sta %v, %s", enemies_type, Y);
+        __asm__("sta %v, %s", enemies_extra, Y);
+        __asm__("sta %v, %s", enemies_extra2, Y);
+        __asm__("sta %v, %s", enemies_timer, Y);
+    }
+
     enemies_count = 0;
 
     // Switch back to the metadata bank.
