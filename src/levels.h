@@ -33,6 +33,7 @@
 #include "tilemaps/level_user_noah1718.h"
 #include "tilemaps/level_user_snowthewanderer.h"
 #include "tilemaps/level_user_suzieq203.h"
+#include "tilemaps/level_user_tailerwitlash9.h"
 #include "tilemaps/level_user_thomas2070.h"
 
 #include "tilemaps/level_debug_tiledump.h"
@@ -82,7 +83,8 @@ const unsigned char const level_nt_length[] = {
     6, // noah1718
     6, // snowthewanderer
     6, // suzieq203
-    6, // t
+    6, // tailerwitlash9
+    6, // thomas2070
 
     // Debug Levels
     1, // tiledump
@@ -126,7 +128,8 @@ const unsigned char const valrigard_starting_nt[] = {
     5, // noah1718
     5, // snowthewanderer
     5, // suzieq203
-    5, // t
+    5, // tailerwitlash9
+    5, // thomas2070
 
     // Debug Levels
     0, // Tiledump
@@ -173,7 +176,8 @@ const unsigned char const valrigard_inital_coords[] = {
     0x4d, // noah1718
     0x4d, // snowthewanderer
     0x4d, // suzieq203
-    0x4d, // t
+    0x4d, // tailerwitlash9
+    0x4d, // thomas2070
 
     // Debug Levels
     0x4d,
@@ -218,6 +222,7 @@ const unsigned char * const level_compressed_nametable_pointers[] = {
     level_noah1718,
     level_snowthewanderer,
     level_suzieq203,
+    level_tailerwitlash9,
     level_thomas2070,
 
     level_debug_tiledump,
@@ -261,7 +266,8 @@ const unsigned char const level_nametable_banks[] = {
     0, // noah1718
     0, // snowthewanderer
     0, // suzieq203
-    0, // t
+    0, // tailerwitlash9
+    0, // thomas2070
 
     // Debug Levels
     0,
@@ -305,6 +311,7 @@ const char * const level_names[] = {
     "User: noah1718",
     "User: snowthewanderer",
     "User: suzieq203",
+    "User: tailerwitlash9",
     "User: thomas2070",
 
     "Tile Dump",
@@ -319,7 +326,7 @@ const char * const level_names[] = {
 };
 
 // Convenient ROM value that shows the number of levels implemented.
-#define NUMBER_OF_LEVELS 36 // Includes bonus levels
+#define NUMBER_OF_LEVELS 37 // Includes bonus levels
 #define NUMBER_OF_BONUS_LEVELS 2 // The last X levels will be considered bonus levels.
 
 // Max of MAX_ENEMIES enemies.
@@ -360,6 +367,7 @@ const unsigned char * const level_enemy_data[] = {
     level_noah1718_enemy,
     level_snowthewanderer_enemy,
     level_suzieq203_enemy,
+    level_tailerwitlash9_enemy,
     level_thomas2070_enemy,
 
     level_debug_tiledump_enemy,
