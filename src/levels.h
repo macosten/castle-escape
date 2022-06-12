@@ -26,6 +26,7 @@
 #include "tilemaps/level19.h"
 #include "tilemaps/level20.h"
 
+#include "tilemaps/level_user_alialio1.h"
 #include "tilemaps/level_user_betheweasel111.h"
 #include "tilemaps/level_user_jack_marek.h"
 #include "tilemaps/level_user_neoman17777.h"
@@ -72,6 +73,7 @@ const unsigned char const level_nt_length[] = {
     1, // Level 20
     // User Levels
 
+    6, // a
     6, // b
     6, // j
     6, // n
@@ -113,6 +115,7 @@ const unsigned char const valrigard_starting_nt[] = {
     0,
     0,
     // User Levels
+    5, // a
     5, // b
     5, // j
     5, // n
@@ -157,6 +160,7 @@ const unsigned char const valrigard_inital_coords[] = {
     0x64,
     0x4c, // 20
     // User Levels
+    0x4d, // a
     0x4d, // b
     0x4d, // j
     0x4d, // n
@@ -199,6 +203,7 @@ const unsigned char * const level_compressed_nametable_pointers[] = {
     level19,
     level20,
 
+    level_alialio1,
     level_betheweasel111,
     level_jack_marek,
     level_neoman17777,
@@ -239,6 +244,7 @@ const unsigned char const level_nametable_banks[] = {
     0,
     0,
     // User Levels
+    0, // a
     0, // b
     0, // j
     0, // n
@@ -280,6 +286,7 @@ const char * const level_names[] = {
     "Level 19",
     "Level 20",
 
+    "User: alialio1",
     "User: betheweasel111",
     "User: jack_marek",
     "User: neoman17777",
@@ -298,7 +305,7 @@ const char * const level_names[] = {
 };
 
 // Convenient ROM value that shows the number of levels implemented.
-#define NUMBER_OF_LEVELS 33 // Includes bonus levels
+#define NUMBER_OF_LEVELS 34 // Includes bonus levels
 #define NUMBER_OF_BONUS_LEVELS 2 // The last X levels will be considered bonus levels.
 
 // Max of MAX_ENEMIES enemies.
@@ -332,6 +339,7 @@ const unsigned char * const level_enemy_data[] = {
     empty_enemy, // 19
     level20_enemy,
 
+    level_alialio1_enemy,
     level_betheweasel111_enemy,
     level_jack_marek_enemy,
     level_neoman17777_enemy,
