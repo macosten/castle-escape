@@ -30,6 +30,7 @@
 #include "tilemaps/level_user_betheweasel111.h"
 #include "tilemaps/level_user_jack_marek.h"
 #include "tilemaps/level_user_neoman17777.h"
+#include "tilemaps/level_user_noah1718.h"
 #include "tilemaps/level_user_snowthewanderer.h"
 #include "tilemaps/level_user_suzieq203.h"
 #include "tilemaps/level_user_thomas2070.h"
@@ -77,7 +78,8 @@ const unsigned char const level_nt_length[] = {
     6, // a
     6, // b
     6, // j
-    6, // n
+    6, // neoman...
+    6, // noah1718
     6, // snowthewanderer
     6, // suzieq203
     6, // t
@@ -121,6 +123,7 @@ const unsigned char const valrigard_starting_nt[] = {
     5, // b
     5, // j
     5, // n
+    5, // noah1718
     5, // snowthewanderer
     5, // suzieq203
     5, // t
@@ -167,6 +170,7 @@ const unsigned char const valrigard_inital_coords[] = {
     0x4d, // b
     0x4d, // j
     0x4d, // n
+    0x4d, // noah1718
     0x4d, // snowthewanderer
     0x4d, // suzieq203
     0x4d, // t
@@ -211,6 +215,7 @@ const unsigned char * const level_compressed_nametable_pointers[] = {
     level_betheweasel111,
     level_jack_marek,
     level_neoman17777,
+    level_noah1718,
     level_snowthewanderer,
     level_suzieq203,
     level_thomas2070,
@@ -253,6 +258,7 @@ const unsigned char const level_nametable_banks[] = {
     0, // b
     0, // j
     0, // n
+    0, // noah1718
     0, // snowthewanderer
     0, // suzieq203
     0, // t
@@ -296,6 +302,7 @@ const char * const level_names[] = {
     "User: betheweasel111",
     "User: jack_marek",
     "User: neoman17777",
+    "User: noah1718",
     "User: snowthewanderer",
     "User: suzieq203",
     "User: thomas2070",
@@ -312,7 +319,7 @@ const char * const level_names[] = {
 };
 
 // Convenient ROM value that shows the number of levels implemented.
-#define NUMBER_OF_LEVELS 35 // Includes bonus levels
+#define NUMBER_OF_LEVELS 36 // Includes bonus levels
 #define NUMBER_OF_BONUS_LEVELS 2 // The last X levels will be considered bonus levels.
 
 // Max of MAX_ENEMIES enemies.
@@ -350,6 +357,7 @@ const unsigned char * const level_enemy_data[] = {
     level_betheweasel111_enemy,
     level_jack_marek_enemy,
     level_neoman17777_enemy,
+    level_noah1718_enemy,
     level_snowthewanderer_enemy,
     level_suzieq203_enemy,
     level_thomas2070_enemy,
