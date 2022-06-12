@@ -1348,7 +1348,7 @@ void draw_player(void) {
     } else if (IS_SWINGING_SWORD) { // Swinging sword
         temp0 = (player_frame_timer & 0b11111110) | DIRECTION;
         AsmSet2ByteFromPtrAtIndexVar(temppointer, valrigard_sword_swing_sprite_lookup_table, temp0);
-    } else if (pad1 & PAD_UP && energy > 0) { // Flying
+    } else if (pad1 & (PAD_UP | PAD_B) && energy > 0) { // Flying
         temp0 = (player_frame_timer & 0b11111110) | DIRECTION;
         AsmSet2ByteFromPtrAtIndexVar(temppointer, valrigard_flying_sprite_lookup_table, temp0);
     } else if (IS_WALKING) { // Walking
@@ -1610,7 +1610,7 @@ void movement(void) {
     if (STATUS_DEAD) { // Fall at maximum speed if we're dead.
         valrigard.velocity_y = MAX_FALL;
     }
-    else if (pad1 & PAD_UP && energy > 0) { // If we're holding up on the DPad...
+    else if (pad1 & (PAD_UP | PAD_B) && energy > 0) { // If we're holding up on the DPad...
         
         if (collision_D) { // If grounded...
             valrigard.velocity_y = -SPEED; // Top speed!
@@ -1744,7 +1744,7 @@ void movement(void) {
 }
 
 void swing_sword(void) {
-    if ((pad1 & PAD_A) && !player_sword_timer && !(pad1 & PAD_UP)) {
+    if ((pad1 & PAD_A) && !player_sword_timer && !(pad1 & (PAD_UP | PAD_B))) {
         player_sword_timer = 37;
         player_frame_timer = 14;
         SET_STATUS_SWINGING_SWORD();
