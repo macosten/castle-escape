@@ -26,7 +26,7 @@ al 008000 .__BANK5_RUN__
 al 000F33 .__BANK5_SIZE__
 al 008000 .__BANK6_LOAD__
 al 008000 .__BANK6_RUN__
-al 001042 .__BANK6_SIZE__
+al 0015A9 .__BANK6_SIZE__
 al 000316 .__BSS_LOAD__
 al 000316 .__BSS_RUN__
 al 00036A .__BSS_SIZE__
@@ -64,7 +64,7 @@ al 008F33 .__PRG5_LAST__
 al 004000 .__PRG5_SIZE__
 al 008000 .__PRG5_START__
 al 018010 .__PRG6_FILEOFFS__
-al 009042 .__PRG6_LAST__
+al 0095A9 .__PRG6_LAST__
 al 004000 .__PRG6_SIZE__
 al 008000 .__PRG6_START__
 al 01C010 .__PRG_FILEOFFS__
@@ -668,10 +668,10 @@ al 00CE2A ._xy_split
 al 000061 ._y
 al 00F3E7 .aslax4
 al 00F3F8 .callax
-al 008568 .castle_escape_music_data
 al 00F3FF .copydata
 al 00F42C .decsp3
 al 00F441 .incsp2
+al 008568 .music_data_castle_escape
 al 000030 .nmiChrTileBank
 al 00C775 .pal_copy
 al 00F44F .popa
