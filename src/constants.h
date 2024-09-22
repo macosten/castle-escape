@@ -70,10 +70,12 @@
 // ===
 // Constants for songs/their names.
 #define MENU_SONG 0
-#define LEVEL_SONG_0 1
-#define LEVEL_SONG_1 2 // Might not get used
+#define LEVEL_SONG_SNEAKY 1
+#define LEVEL_SONG_PIZZICATO 2
 #define BOSS_SONG 3
 #define DEATH_SONG 4
 #define LEVEL_BEGIN_SONG 5
+
+#define LEVEL_TRACK_COUNT 2
 
 #endif

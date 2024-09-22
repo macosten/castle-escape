@@ -108,6 +108,8 @@ unsigned char boss_memory[8];
 // Score as it was when the level started. If you die, your score will be reset to this.
 unsigned int previous_score;
 
+unsigned char game_music_track;
+
 #pragma bss-name(pop)
 
 #pragma bss-name(push, "XRAM")
@@ -288,6 +290,8 @@ const unsigned char * const menu_compressed_data[] = {
     game_complete_screen,
     settings_screen,
 };
+
+const unsigned char const eligible_level_music[] = { LEVEL_SONG_SNEAKY, LEVEL_SONG_PIZZICATO };
 
 void main (void) {
 
@@ -471,7 +475,7 @@ void main (void) {
             if (pad1 & PAD_DOWN && STATUS_DEAD && SETTINGS_IS_DOWN_TO_REVIVE_ENABLED) {
                 SET_STATUS_ALIVE();
                 player_death_timer = 0;
-                music_play(LEVEL_SONG_0);
+                music_play(game_music_track);
             }
 
             // debug:
@@ -970,7 +974,9 @@ void begin_level(void) {
     // Turn the PPU back on.
     ppu_on_all();
 
-    music_play(LEVEL_SONG_0); // music_play(level_music) -- maybe this can be selected randomly from a list?
+    // Randomly select from eligible music list
+    game_music_track = eligible_level_music[rand8() & 0x1];
+    music_play(game_music_track); // Only 2 tracks at the moment. Should add tracks in powers of 2, ideally...
 }
 
 void load_level_new(void) {
