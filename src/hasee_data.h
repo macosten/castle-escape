@@ -1,0 +1,301 @@
+// Do not try to use pointers from another bank while that bank isn't 
+// swapped in the correct place in RAM.
+// Otherwise, you'll get garbage data.
+
+#pragma rodata-name(push, "BANK1")
+
+const char * const hasee_yay_phrases[] = {
+    "Yay!!! ",
+    "Yippee!!! ",
+    "OMG PLS!!! ",
+};
+
+const char * const hasee_treat_names[] = {
+    "Yellow ",
+    "Blue ",
+    "Green ",
+    "Silver ",
+    "Golden ",
+    "Checkered ",
+    "Sponge ",
+    "Fiery ",
+    "Icy ",
+    "Rainbow ",
+    "Fish ",
+    "Grun",
+};
+
+const char * const maccy_confusion_quote = "Huh?!? What's that?!?!";
+const char * const bleh_gross_quote = "Bleh!!! Gross!!!";
+
+// Specific palettes for special Doughnutfruits
+const unsigned char const hasee_subpal_blue[] = { 0x21, 0x0f, 0x0c, 0x19 };
+const unsigned char const hasee_subpal_green_grundo[] = { 0x21, 0x0f, 0x29, 0x19 };
+const unsigned char const hasee_subpal_silver[] = { 0x21, 0x0f, 0x10, 0x00 };
+const unsigned char const hasee_subpal_golden[] = { 0x21, 0x0f, 0x29, 0x19 };
+const unsigned char const hasee_subpal_checkered[] = { 0x21, 0x0f, 0x20, 0x2D };
+const unsigned char const hasee_subpal_sponge[] = { 0x21, 0x27, 0x38, 0x37 };
+const unsigned char const hasee_subpal_fiery[] = { 0x21, 0x06, 0x16, 0x27 };
+const unsigned char const hasee_subpal_icy[] = { 0x21, 0x0C, 0x3c, 0x2c };
+const unsigned char const hasee_subpal_rainbow[] = { 0x21, 0x01, 0x38, 0x06 };
+const unsigned char const hasee_subpal_fish[] = { 0x21, 0x0f, 0x2c, 0x3c };
+
+// Metasprites.
+const unsigned char const purple_hasee_idle_left[] = {
+      0xfe, 0xfd,   0x08,   1,
+      6,    0xfd,   0x09,   1,
+      0xfe,    5,   0x18,   1,
+      6,       5,   0x19,   1,
+    128
+};
+
+const unsigned char const purple_hasee_idle_right[] = {
+         6,  0xfd,  0x08,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x09,   1|OAM_FLIP_H,
+         6,     5,  0x18,   1|OAM_FLIP_H,
+      0xfe,     5,  0x19,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const orange_hasee_idle_left[] = {
+      0xfe, 0xfd,   0x28,   1,
+      6,    0xfd,   0x29,   1,
+      0xfe,    5,   0x38,   1,
+      6,       5,   0x39,   1,
+    128
+};
+
+const unsigned char const orange_hasee_idle_right[] = {
+         6,  0xfd,  0x28,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x29,   1|OAM_FLIP_H,
+         6,     5,  0x38,   1|OAM_FLIP_H,
+      0xfe,     5,  0x39,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const purple_hasee_walk0_left[] = {
+      0xfe, 0xfd,   0x0A,   1,
+      6,    0xfd,   0x0B,   1,
+      0xfe,    5,   0x1A,   1,
+      6,       5,   0x1B,   1,
+    128
+};
+
+const unsigned char const purple_hasee_walk0_right[] = {
+         6,  0xfd,  0x0A,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x0B,   1|OAM_FLIP_H,
+         6,     5,  0x1A,   1|OAM_FLIP_H,
+      0xfe,     5,  0x1B,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const orange_hasee_walk0_left[] = {
+      0xfe, 0xfd,   0x2A,   1,
+      6,    0xfd,   0x2B,   1,
+      0xfe,    5,   0x3A,   1,
+      6,       5,   0x3B,   1,
+    128
+};
+
+const unsigned char const orange_hasee_walk0_right[] = {
+         6,  0xfd,  0x2A,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x2B,   1|OAM_FLIP_H,
+         6,     5,  0x3A,   1|OAM_FLIP_H,
+      0xfe,     5,  0x3B,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const purple_hasee_walk1_left[] = {
+      0xfe, 0xfd,   0x0C,   1,
+      6,    0xfd,   0x0D,   1,
+      0xfe,    5,   0x1C,   1,
+      6,       5,   0x1D,   1,
+    128
+};
+
+const unsigned char const purple_hasee_walk1_right[] = {
+         6,  0xfd,  0x0C,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x0D,   1|OAM_FLIP_H,
+         6,     5,  0x1C,   1|OAM_FLIP_H,
+      0xfe,     5,  0x1D,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const orange_hasee_walk1_left[] = {
+      0xfe, 0xfd,   0x2C,   1,
+      6,    0xfd,   0x2D,   1,
+      0xfe,    5,   0x3C,   1,
+      6,       5,   0x3D,   1,
+    128
+};
+
+const unsigned char const orange_hasee_walk1_right[] = {
+         6,  0xfd,  0x2C,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x2D,   1|OAM_FLIP_H,
+         6,     5,  0x3C,   1|OAM_FLIP_H,
+      0xfe,     5,  0x3D,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const purple_hasee_squat_left[] = {
+      0xfe, 0xfd,   0x0E,   1,
+      6,    0xfd,   0x0F,   1,
+      0xfe,    5,   0x1E,   1,
+      6,       5,   0x1F,   1,
+    128
+};
+
+const unsigned char const purple_hasee_squat_right[] = {
+         6,  0xfd,  0x0E,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x0F,   1|OAM_FLIP_H,
+         6,     5,  0x1E,   1|OAM_FLIP_H,
+      0xfe,     5,  0x1F,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const orange_hasee_squat_left[] = {
+      0xfe, 0xfd,   0x2E,   1,
+      6,    0xfd,   0x2F,   1,
+      0xfe,    5,   0x3E,   1,
+      6,       5,   0x3F,   1,
+    128
+};
+
+const unsigned char const orange_hasee_squat_right[] = {
+         6,  0xfd,  0x2E,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x2F,   1|OAM_FLIP_H,
+         6,     5,  0x3E,   1|OAM_FLIP_H,
+      0xfe,     5,  0x3F,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const yellow_doughnutfruit[] = {
+    0, 0, 0x00, 0,
+    8, 0, 0x01, 0,
+    0, 8, 0x10, 0,
+    8, 8, 0x11, 0,
+    128
+};
+
+const unsigned char const blue_green_doughnutfruit[] = {
+    0, 0, 0x00, 2,
+    8, 0, 0x01, 2,
+    0, 8, 0x10, 2,
+    8, 8, 0x11, 2,
+    128
+};
+
+const unsigned char const grundoughnutfruit[] = {
+    0, 0, 0x50, 2,
+    8, 0, 0x51, 2,
+    0, 8, 0x10, 2,
+    8, 8, 0x11, 2,
+    128
+};
+
+const unsigned char const silver_gold_icy_doughnutfruit[] = {
+    0, 0, 0x00, 3,
+    8, 0, 0x01, 3,
+    0, 8, 0x10, 3,
+    8, 8, 0x11, 3,
+    128
+};
+
+const unsigned char const checkered_doughnutfruit[] = {
+    0, 0, 0x42, 3,
+    8, 0, 0x43, 3,
+    0, 8, 0x52, 3,
+    8, 8, 0x53, 3,
+    128
+};
+
+const unsigned char const sponge_doughnutfruit[] = {
+    0, 0, 0x44, 3,
+    8, 0, 0x45, 3,
+    0, 8, 0x54, 3,
+    8, 8, 0x55, 3,
+    128
+};
+
+const unsigned char const fiery_doughnutfruit[] = {
+    0, 0, 0x46, 3,
+    8, 0, 0x47, 3,
+    0, 8, 0x56, 3,
+    8, 8, 0x57, 3,
+    128
+};
+
+const unsigned char const rainbow_doughnutfruit[] = {
+    0, 0, 0x26, 3,
+    8, 0, 0x27, 3,
+    0, 8, 0x36, 3,
+    8, 8, 0x37, 3,
+    128
+};
+
+const unsigned char const fish_doughnutfruit[] = {
+    0, 0, 0x40, 3,
+    8, 0, 0x41, 3,
+    0, 8, 0x10, 3,
+    8, 8, 0x11, 3,
+    128
+};
+
+const unsigned char const purple_a_fruit[] = {
+    0, 0, 0x02, 1,
+    8, 0, 0x03, 1,
+    0, 8, 0x12, 1,
+    8, 8, 0x13, 1,
+};
+
+const unsigned char const purple_e_fruit[] = {
+    0, 0, 0x04, 1,
+    8, 0, 0x05, 1,
+    0, 8, 0x14, 1,
+    8, 8, 0x15, 1,
+};
+
+const unsigned char const purple_h_fruit[] = {
+    0, 0, 0x06, 1,
+    8, 0, 0x07, 1,
+    0, 8, 0x16, 1,
+    8, 8, 0x17, 1,
+};
+
+const unsigned char const purple_s_fruit[] = {
+    0, 0, 0x20, 1,
+    8, 0, 0x21, 1,
+    0, 8, 0x30, 1,
+    8, 8, 0x31, 1,
+};
+
+const unsigned char const orange_a_fruit[] = {
+    0, 0, 0x60, 1,
+    8, 0, 0x61, 1,
+    0, 8, 0x70, 1,
+    8, 8, 0x71, 1,
+};
+
+const unsigned char const orange_e_fruit[] = {
+    0, 0, 0x62, 1,
+    8, 0, 0x63, 1,
+    0, 8, 0x72, 1,
+    8, 8, 0x73, 1,
+};
+
+const unsigned char const orange_h_fruit[] = {
+    0, 0, 0x64, 1,
+    8, 0, 0x65, 1,
+    0, 8, 0x74, 1,
+    8, 8, 0x75, 1,
+};
+
+const unsigned char const orange_s_fruit[] = {
+    0, 0, 0x66, 1,
+    8, 0, 0x67, 1,
+    0, 8, 0x76, 1,
+    8, 8, 0x77, 1,
+};
+
+
+#pragma rodata-name(pop);

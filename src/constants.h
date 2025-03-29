@@ -33,11 +33,6 @@
 
 #define TITLE_SCREEN_LENGTH 120 // ~2 seconds on NTSC machines.
 
-// ===
-// Constants for songs or music.
-#define SONGS 0 // No songs yet. I might look into FamiStudio...
-
-
 #define VALRIGARD_WIDTH 11
 #define VALRIGARD_HEIGHT 13
 

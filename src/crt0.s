@@ -341,3 +341,4 @@ sounds_data:
 .segment "CHARS"
     .incbin "escape.chr"
     .incbin "titlescreen.chr"
+    .incbin "hasee.chr"
