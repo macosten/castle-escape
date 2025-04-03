@@ -41,7 +41,7 @@ extern const unsigned char * temppointer;
 
 
 unsigned char const hasee_palette_sp[] = {
-    0x21, 0x0f, 0x5a, 0x29, // sky, black, yellow, green - regular doughnutfruit, stars
+    0x21, 0x0f, 0x38, 0x29, // sky, black, yellow, green - regular doughnutfruit, stars
     0x21, 0x0f, 0x23, 0x26, // sky, black, purple, orange - Hasees and letters
     0x21, 0x0f, 0x00, 0x00, // Reserved for common special doughnutfruit (blue or green)
     0x21, 0x0f, 0x00, 0x00, // Reserved for rare special doughnutfruit (others)
@@ -51,7 +51,7 @@ unsigned char const hasee_palette_bg[] = {
     0x21, 0x07, 0x17, 0x27, // Wood + Trees
     0x21, 0x07, 0x19, 0x29, // Grass + Bushes
     0x21, 0x0f, 0x23, 0x26, // sky, black, purple, orange - Hasees and letters,
-    0x21, 0x38, 0x00, 0x30, // Misc - Yellow (Sun) + Black + White (text)
+    0x21, 0x19, 0x0f, 0x30, // Text-on-sky and seesaw-on-background
 };
 
 void calculate_next_treat(void);
