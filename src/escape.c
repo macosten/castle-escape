@@ -222,12 +222,14 @@ void menu_game_type_select(void);
 void menu_about_screen(void);
 void menu_game_complete_screen(void);
 void menu_settings(void);
+void menu_more_games_menu(void);
 
 void load_level_selector(void);
 void load_game_type_select(void);
 void load_about_screen(void);
 void load_game_complete_screen(void);
 void load_settings_menu(void);
+void load_more_games_menu(void);
 
 // Functions in other files.
 extern void dialog_box_handler(void);
@@ -274,7 +276,7 @@ const void (* const menu_logic_functions[])(void) = {
     menu_about_screen,
     menu_game_complete_screen,
     menu_settings,
-    menu_about_screen,
+    menu_more_games_menu,
 };
 
 // If a menu needs something extra/special to be done before showing it, it'll do so in one of these functions.
@@ -284,7 +286,7 @@ const void (* const menu_load_functions[])(void) = {
     load_about_screen,
     load_game_complete_screen,
     load_settings_menu,
-    load_about_screen,
+    load_more_games_menu,
 };
 
 const unsigned char * const menu_compressed_data[] = {
@@ -293,6 +295,7 @@ const unsigned char * const menu_compressed_data[] = {
     about_screen,
     game_complete_screen,
     settings_screen,
+    more_games_screen,
 };
 
 const unsigned char const eligible_level_music[] = { LEVEL_SONG_SNEAKY, LEVEL_SONG_PIZZICATO };
@@ -723,7 +726,7 @@ const unsigned char const game_type_select_menu_links[] = {
     MENU_GAME_SELECT,
     MENU_LEVEL_SELECT,
     MENU_SETTINGS,
-    MENU_ABOUT_SCREEN,
+    MENU_MORE_GAMES,
     MENU_ABOUT_SCREEN,
 };
 
@@ -816,10 +819,10 @@ void menu_game_complete_screen(void) {
 
 // Menu -- Settings
 
-const unsigned char const settings_menu_selector_x[] = {
+const unsigned char const settings_menu_selector_x[] = { // in pixels
      5 * 8 + 4,
      5 * 8 + 4,
-}; // in pixels
+};
 const unsigned char const settings_menu_toggle_text_x = 25; // in tiles
 
 const unsigned char const settings_menu_selector_y[] = { // in pixels, not tiles
@@ -883,7 +886,33 @@ void menu_settings(void) {
     if (pad1_new & PAD_B) { // Back to main menu
         menu = MENU_GAME_SELECT;
         switch_menu();
-        return;
+    }
+}
+
+// Menu -- More Games
+
+#define MORE_GAMES_OPTIONS 1
+
+const unsigned char const more_games_menu_selector_x[] = { // in pixels
+    8 * 8 + 4,
+};
+
+const unsigned char const more_games_menu_selector_y[] = { // in pixels
+    9 * 8 - 1,
+};
+
+void load_more_games_menu(void) {
+    menu_selection_count = MORE_GAMES_OPTIONS;
+    temppointer = more_games_menu_selector_x;
+    temppointer1 = more_games_menu_selector_y;
+}
+
+void menu_more_games_menu(void) {
+    simple_menu_shared_behavior();
+
+    if (pad1_new & PAD_B) { // Back to main menu
+        menu = MENU_GAME_SELECT;
+        switch_menu();
     }
 }
 

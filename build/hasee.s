@@ -58,6 +58,7 @@
 	.export		_orange_e_fruit
 	.export		_orange_h_fruit
 	.export		_orange_s_fruit
+	.export		_compressed_hasee_test_screen
 	.importzp	_temp0
 	.importzp	_temp1
 	.importzp	_temp6
@@ -725,12 +726,305 @@ _orange_s_fruit:
 	.byte	$08
 	.byte	$77
 	.byte	$01
+_compressed_hasee_test_screen:
+	.byte	$4C
+	.byte	$5A
+	.byte	$47
+	.byte	$00
+	.byte	$00
+	.byte	$04
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$14
+	.byte	$19
+	.byte	$45
+	.byte	$58
+	.byte	$38
+	.byte	$01
+	.byte	$01
+	.byte	$02
+	.byte	$03
+	.byte	$04
+	.byte	$B1
+	.byte	$B1
+	.byte	$B1
+	.byte	$B2
+	.byte	$00
+	.byte	$04
+	.byte	$17
+	.byte	$B0
+	.byte	$B1
+	.byte	$04
+	.byte	$01
+	.byte	$02
+	.byte	$1C
+	.byte	$18
+	.byte	$04
+	.byte	$04
+	.byte	$30
+	.byte	$30
+	.byte	$30
+	.byte	$04
+	.byte	$C9
+	.byte	$02
+	.byte	$10
+	.byte	$18
+	.byte	$06
+	.byte	$07
+	.byte	$08
+	.byte	$04
+	.byte	$C2
+	.byte	$16
+	.byte	$17
+	.byte	$18
+	.byte	$02
+	.byte	$1D
+	.byte	$58
+	.byte	$02
+	.byte	$1C
+	.byte	$18
+	.byte	$04
+	.byte	$01
+	.byte	$AC
+	.byte	$AD
+	.byte	$80
+	.byte	$81
+	.byte	$AE
+	.byte	$AF
+	.byte	$82
+	.byte	$83
+	.byte	$8A
+	.byte	$8B
+	.byte	$02
+	.byte	$14
+	.byte	$18
+	.byte	$BC
+	.byte	$BD
+	.byte	$90
+	.byte	$91
+	.byte	$BE
+	.byte	$BF
+	.byte	$92
+	.byte	$93
+	.byte	$9A
+	.byte	$9B
+	.byte	$02
+	.byte	$0C
+	.byte	$18
+	.byte	$A0
+	.byte	$04
+	.byte	$02
+	.byte	$A1
+	.byte	$A2
+	.byte	$A3
+	.byte	$02
+	.byte	$08
+	.byte	$50
+	.byte	$A4
+	.byte	$A5
+	.byte	$A6
+	.byte	$A7
+	.byte	$04
+	.byte	$02
+	.byte	$02
+	.byte	$1E
+	.byte	$98
+	.byte	$02
+	.byte	$1F
+	.byte	$18
+	.byte	$02
+	.byte	$1E
+	.byte	$18
+	.byte	$04
+	.byte	$02
+	.byte	$C3
+	.byte	$C4
+	.byte	$C5
+	.byte	$04
+	.byte	$41
+	.byte	$02
+	.byte	$0A
+	.byte	$18
+	.byte	$02
+	.byte	$05
+	.byte	$07
+	.byte	$C3
+	.byte	$04
+	.byte	$A4
+	.byte	$B1
+	.byte	$B1
+	.byte	$B3
+	.byte	$03
+	.byte	$0D
+	.byte	$C5
+	.byte	$03
+	.byte	$60
+	.byte	$02
+	.byte	$05
+	.byte	$18
+	.byte	$02
+	.byte	$05
+	.byte	$07
+	.byte	$B1
+	.byte	$B1
+	.byte	$C4
+	.byte	$04
+	.byte	$01
+	.byte	$03
+	.byte	$D7
+	.byte	$03
+	.byte	$04
+	.byte	$04
+	.byte	$62
+	.byte	$02
+	.byte	$07
+	.byte	$18
+	.byte	$B3
+	.byte	$C4
+	.byte	$B5
+	.byte	$03
+	.byte	$8E
+	.byte	$03
+	.byte	$02
+	.byte	$B4
+	.byte	$04
+	.byte	$E4
+	.byte	$03
+	.byte	$84
+	.byte	$02
+	.byte	$06
+	.byte	$18
+	.byte	$03
+	.byte	$6B
+	.byte	$03
+	.byte	$D9
+	.byte	$03
+	.byte	$F5
+	.byte	$02
+	.byte	$06
+	.byte	$22
+	.byte	$02
+	.byte	$05
+	.byte	$18
+	.byte	$03
+	.byte	$CD
+	.byte	$03
+	.byte	$59
+	.byte	$03
+	.byte	$C2
+	.byte	$B3
+	.byte	$B4
+	.byte	$04
+	.byte	$02
+	.byte	$03
+	.byte	$01
+	.byte	$03
+	.byte	$D8
+	.byte	$02
+	.byte	$06
+	.byte	$2C
+	.byte	$B3
+	.byte	$B4
+	.byte	$03
+	.byte	$9B
+	.byte	$03
+	.byte	$92
+	.byte	$04
+	.byte	$04
+	.byte	$B0
+	.byte	$B1
+	.byte	$E2
+	.byte	$04
+	.byte	$1C
+	.byte	$D0
+	.byte	$D1
+	.byte	$D2
+	.byte	$D2
+	.byte	$D3
+	.byte	$D4
+	.byte	$D5
+	.byte	$D5
+	.byte	$D6
+	.byte	$D7
+	.byte	$02
+	.byte	$18
+	.byte	$1C
+	.byte	$E3
+	.byte	$E4
+	.byte	$E5
+	.byte	$E5
+	.byte	$E6
+	.byte	$E7
+	.byte	$D0
+	.byte	$D0
+	.byte	$B6
+	.byte	$B7
+	.byte	$D0
+	.byte	$03
+	.byte	$27
+	.byte	$D3
+	.byte	$03
+	.byte	$27
+	.byte	$D6
+	.byte	$02
+	.byte	$13
+	.byte	$27
+	.byte	$C6
+	.byte	$C7
+	.byte	$03
+	.byte	$A6
+	.byte	$03
+	.byte	$27
+	.byte	$E6
+	.byte	$03
+	.byte	$27
+	.byte	$02
+	.byte	$16
+	.byte	$18
+	.byte	$04
+	.byte	$1C
+	.byte	$04
+	.byte	$05
+	.byte	$00
+	.byte	$00
+	.byte	$C0
+	.byte	$F0
+	.byte	$C0
+	.byte	$02
+	.byte	$64
+	.byte	$68
+	.byte	$A0
+	.byte	$A0
+	.byte	$20
+	.byte	$02
+	.byte	$31
+	.byte	$BB
+	.byte	$50
+	.byte	$50
+	.byte	$50
+	.byte	$54
+	.byte	$55
+	.byte	$50
+	.byte	$10
+	.byte	$00
+	.byte	$55
+	.byte	$04
+	.byte	$03
+	.byte	$11
+	.byte	$FF
+	.byte	$04
+	.byte	$05
+	.byte	$0F
+	.byte	$04
+	.byte	$05
 .segment	"RODATA"
 .segment	"BANK0"
 _hasee_palette_sp:
 	.byte	$21
 	.byte	$0F
-	.byte	$5A
+	.byte	$38
 	.byte	$29
 	.byte	$21
 	.byte	$0F
@@ -758,8 +1052,8 @@ _hasee_palette_bg:
 	.byte	$23
 	.byte	$26
 	.byte	$21
-	.byte	$38
-	.byte	$00
+	.byte	$19
+	.byte	$0F
 	.byte	$30
 L0021:
 	.byte	$48,$75,$68,$3F,$21,$3F,$20,$57,$68,$61,$74,$27,$73,$20,$74,$68
@@ -823,13 +1117,13 @@ L0019:
 ;
 	lda     _temp0
 	cmp     #$E7
-	bcc     L02EB
+	bcc     L040F
 ;
 ; if (rand8() > 252) { // Need to figure out if this is possible with PRNG
 ;
 	jsr     _rand8
 	cmp     #$FD
-	bcc     L02EA
+	bcc     L040E
 ;
 ; temp6 = TREAT_MACCY; // Meant to be ~1/10000ish chance
 ;
@@ -837,24 +1131,24 @@ L0019:
 ;
 ; } else {
 ;
-	jmp     L02E9
+	jmp     L040D
 ;
 ; temp6 = TREAT_GROSS_DUNG + temp0 & 0b1;
 ;
-L02EA:	lda     _temp0
+L040E:	lda     _temp0
 	clc
 	adc     #$11
 	and     #$01
 ;
 ; } else if (temp0 > 192) { // ~15%ish of the time...
 ;
-	jmp     L02E9
-L02EB:	lda     _temp0
+	jmp     L040D
+L040F:	lda     _temp0
 	cmp     #$C1
 ;
 ; } else { // The rest (~75%) of the time...
 ;
-	bcc     L02F5
+	bcc     L0419
 ;
 ; }
 ;
@@ -862,20 +1156,20 @@ L02EB:	lda     _temp0
 ;
 ; temp1 = rand8();
 ;
-L02F5:	jsr     _rand8
+L0419:	jsr     _rand8
 	sta     _temp1
 ;
 ; if (temp0 < 20) { // ~1/10th of the time 
 ;
 	lda     _temp0
 	cmp     #$14
-	bcs     L02F3
+	bcs     L0417
 ;
 ; if (temp1 == 1) {
 ;
 	lda     _temp1
 	cmp     #$01
-	bne     L02EC
+	bne     L0410
 ;
 ; temp6 = TREAT_FISH;
 ;
@@ -883,10 +1177,10 @@ L02F5:	jsr     _rand8
 ;
 ; } else if (temp1 < 5) {
 ;
-	jmp     L02E9
-L02EC:	lda     _temp1
+	jmp     L040D
+L0410:	lda     _temp1
 	cmp     #$05
-	bcs     L02ED
+	bcs     L0411
 ;
 ; temp6 = TREAT_RAINBOW;
 ;
@@ -894,10 +1188,10 @@ L02EC:	lda     _temp1
 ;
 ; } else if (temp1 < 21) {
 ;
-	jmp     L02E9
-L02ED:	lda     _temp1
+	jmp     L040D
+L0411:	lda     _temp1
 	cmp     #$15
-	bcs     L02EE
+	bcs     L0412
 ;
 ; temp6 = TREAT_ICY;
 ;
@@ -905,10 +1199,10 @@ L02ED:	lda     _temp1
 ;
 ; } else if (temp1 < 45) {
 ;
-	jmp     L02E9
-L02EE:	lda     _temp1
+	jmp     L040D
+L0412:	lda     _temp1
 	cmp     #$2D
-	bcs     L02EF
+	bcs     L0413
 ;
 ; temp6 = TREAT_FIERY;
 ;
@@ -916,10 +1210,10 @@ L02EE:	lda     _temp1
 ;
 ; } else if (temp1 < 77) {
 ;
-	jmp     L02E9
-L02EF:	lda     _temp1
+	jmp     L040D
+L0413:	lda     _temp1
 	cmp     #$4D
-	bcs     L02F0
+	bcs     L0414
 ;
 ; temp6 = TREAT_SPONGE;
 ;
@@ -927,10 +1221,10 @@ L02EF:	lda     _temp1
 ;
 ; } else if (temp1 < 113) {
 ;
-	jmp     L02E9
-L02F0:	lda     _temp1
+	jmp     L040D
+L0414:	lda     _temp1
 	cmp     #$71
-	bcs     L02F1
+	bcs     L0415
 ;
 ; temp6 = TREAT_CHECKERED;
 ;
@@ -938,10 +1232,10 @@ L02F0:	lda     _temp1
 ;
 ; } else if (temp1 < 157) {
 ;
-	jmp     L02E9
-L02F1:	lda     _temp1
+	jmp     L040D
+L0415:	lda     _temp1
 	cmp     #$9D
-	bcs     L02F2
+	bcs     L0416
 ;
 ; temp6 = TREAT_GOLDEN;
 ;
@@ -949,10 +1243,10 @@ L02F1:	lda     _temp1
 ;
 ; } else if (temp1 < 213) {
 ;
-	jmp     L02E9
-L02F2:	lda     _temp1
+	jmp     L040D
+L0416:	lda     _temp1
 	cmp     #$D5
-	bcs     L02E5
+	bcs     L0409
 ;
 ; temp6 = TREAT_SILVER;
 ;
@@ -960,13 +1254,13 @@ L02F2:	lda     _temp1
 ;
 ; } else {
 ;
-	jmp     L02E9
+	jmp     L040D
 ;
 ; if (temp1 < 6) {
 ;
-L02F3:	lda     _temp1
+L0417:	lda     _temp1
 	cmp     #$06
-	bcs     L02F4
+	bcs     L0418
 ;
 ; temp6 = TREAT_GREEN;
 ;
@@ -974,19 +1268,19 @@ L02F3:	lda     _temp1
 ;
 ; } else if (temp1 < 15) {
 ;
-	jmp     L02E9
-L02F4:	lda     _temp1
+	jmp     L040D
+L0418:	lda     _temp1
 	cmp     #$0F
-	bcs     L02E5
+	bcs     L0409
 ;
 ; temp6 = TREAT_BLUE;
 ;
 	lda     #$01
-L02E9:	sta     _temp6
+L040D:	sta     _temp6
 ;
 ; }
 ;
-L02E5:	rts
+L0409:	rts
 
 .endproc
 
