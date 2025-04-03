@@ -214,7 +214,8 @@ void death_effect_timer_ai(void);
 void fire_at_target(void);
 
 // Menu functions.
-void switch_menu();
+void switch_menu(void);
+void simple_menu_shared_behavior(void);
 
 void menu_level_select(void);
 void menu_game_type_select(void);
@@ -223,6 +224,7 @@ void menu_game_complete_screen(void);
 void menu_settings(void);
 
 void load_level_selector(void);
+void load_game_type_select(void);
 void load_about_screen(void);
 void load_game_complete_screen(void);
 void load_settings_menu(void);
@@ -272,15 +274,17 @@ const void (* const menu_logic_functions[])(void) = {
     menu_about_screen,
     menu_game_complete_screen,
     menu_settings,
+    menu_about_screen,
 };
 
 // If a menu needs something extra/special to be done before showing it, it'll do so in one of these functions.
 const void (* const menu_load_functions[])(void) = {
-    empty_function, // If no special action needs to be taken
+    load_game_type_select,
     load_level_selector,
     load_about_screen,
     load_game_complete_screen,
     load_settings_menu,
+    load_about_screen,
 };
 
 const unsigned char * const menu_compressed_data[] = {
@@ -568,6 +572,39 @@ void switch_menu(void) {
 
 #define MENU_SELECTOR_SPRITE 0x10
 
+/** 
+* Ensure menu_selection_count is set as expected (in the menu's load function) before calling this function.
+* Also ensure temppointer is set to the cursor X position lookup table and temppointer1 is set to the Y position lookup table.
+*/
+void simple_menu_shared_behavior(void) {
+    // Listen for desired inputs.
+    pad1 = pad_poll(0); // read the first controller
+    pad1_new = get_pad_new(0);
+
+    if (pad1_new & PAD_DOWN) {
+        ++menu_selection;
+        if (menu_selection == menu_selection_count) {  // Wrap around
+            menu_selection = 0;
+        }
+    }
+
+    if (pad1_new & PAD_UP) {
+        if (menu_selection != 0) {
+            --menu_selection;
+        } else {
+            menu_selection = menu_selection_count - 1;
+        }
+    }
+
+    if (pad1_new & (PAD_UP | PAD_DOWN | PAD_A)) {
+        // Code shared between what we'd do with any supported button press.
+        sfx_play(SFX_MENU_BEEP, 0);
+    }
+
+    // Show the cursor.
+    oam_spr(temppointer[menu_selection], temppointer1[menu_selection], 0x10, 0);
+}
+
 // Menu -- Level Select.
 
 void prepare_score_string(void) {
@@ -687,42 +724,35 @@ const unsigned char const game_type_select_menu_links[] = {
     MENU_LEVEL_SELECT,
     MENU_SETTINGS,
     MENU_ABOUT_SCREEN,
+    MENU_ABOUT_SCREEN,
 };
 
 const unsigned char const game_type_select_menu_selector_x[] = {
-    10 * 8 + 4,
+    6 * 8 + 4,
     8 * 8 + 4,
     10 * 8 + 4,
+    9 * 8 + 4,
     10 * 8 + 4,
 };
 
 const unsigned char const game_type_select_menu_selector_y[] = {
+    11 * 8 - 1,
     13 * 8 - 1,
     15 * 8 - 1,
     17 * 8 - 1,
     19 * 8 - 1,
 };
 
-#define GAME_TYPE_MENU_OPTIONS 4
+#define GAME_TYPE_MENU_OPTIONS 5
+
+void load_game_type_select(void) {
+    menu_selection_count = GAME_TYPE_MENU_OPTIONS;
+    temppointer = game_type_select_menu_selector_x;
+    temppointer1 = game_type_select_menu_selector_y;
+}
+
 void menu_game_type_select(void) {
-    // Listen for desired inputs.
-    pad1 = pad_poll(0); // read the first controller
-    pad1_new = get_pad_new(0);
-
-    if (pad1_new & PAD_DOWN) {
-        ++menu_selection;
-        if (menu_selection == GAME_TYPE_MENU_OPTIONS) {  // Wrap around
-            menu_selection = 0;
-        }
-    }
-
-    if (pad1_new & PAD_UP) {
-        if (menu_selection != 0) {
-            --menu_selection;
-        } else {
-            menu_selection = GAME_TYPE_MENU_OPTIONS - 1;
-        }
-    }
+    simple_menu_shared_behavior();
 
     if (pad1_new & PAD_A) {
         switch (menu_selection) {
@@ -740,15 +770,6 @@ void menu_game_type_select(void) {
                 return;
         }
     }
-
-    if (pad1_new & (PAD_UP | PAD_DOWN | PAD_A)) {
-        // Code shared between what we'd do with any supported button press.
-        sfx_play(SFX_MENU_BEEP, 0);
-    }
-
-    // Show the cursor.
-    oam_spr(game_type_select_menu_selector_x[menu_selection], game_type_select_menu_selector_y[menu_selection], 0x10, 0);
-
 }
 
 // Menu -- About.
@@ -795,7 +816,10 @@ void menu_game_complete_screen(void) {
 
 // Menu -- Settings
 
-const unsigned char const settings_menu_selector_x = 5 * 8 + 4; // in pixels
+const unsigned char const settings_menu_selector_x[] = {
+     5 * 8 + 4,
+     5 * 8 + 4,
+}; // in pixels
 const unsigned char const settings_menu_toggle_text_x = 25; // in tiles
 
 const unsigned char const settings_menu_selector_y[] = { // in pixels, not tiles
@@ -823,32 +847,14 @@ void load_settings_menu(void) {
         temppointer = temp2 ? string_on : string_off;
         put_str(temp5, temppointer);
     }
+
+    menu_selection_count = SETTINGS_OPTIONS;
+    temppointer = settings_menu_selector_x;
+    temppointer1 = settings_menu_selector_y;
 }
 
-
 void menu_settings(void) {
-    pad1 = pad_poll(0);
-    pad1_new = get_pad_new(0);
-
-    if (pad1_new & (PAD_UP | PAD_DOWN | PAD_A | PAD_B)) {
-        // Code shared between what we'd do with any supported button press.
-        sfx_play(SFX_MENU_BEEP, 0);
-    }
-
-    if (pad1_new & PAD_DOWN) {
-        ++menu_selection;
-        if (menu_selection == SETTINGS_OPTIONS) {  // Wrap around
-            menu_selection = 0;
-        }
-    }
-
-    if (pad1_new & PAD_UP) {
-        if (menu_selection != 0) {
-            --menu_selection;
-        } else {
-            menu_selection = SETTINGS_OPTIONS - 1;
-        }
-    }
+    simple_menu_shared_behavior();
 
     if (pad1_new & PAD_A) {
         switch (menu_selection) {
@@ -869,6 +875,7 @@ void menu_settings(void) {
                 temp5 = NTADR_A(settings_menu_toggle_text_x, settings_menu_text_y[menu_selection]);
                 temppointer = temp0 ? string_on : string_off;
                 multi_vram_buffer_horz(temppointer, 3, temp5);
+                temppointer = settings_menu_selector_x;
                 break;
         }
     }
@@ -878,9 +885,6 @@ void menu_settings(void) {
         switch_menu();
         return;
     }
-
-    // Show the cursor.
-    oam_spr(settings_menu_selector_x, settings_menu_selector_y[menu_selection], 0x10, 0);
 }
 
 void load_level_welcome_screen(void) {
