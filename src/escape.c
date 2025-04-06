@@ -142,6 +142,9 @@ const unsigned char * const cmaps[] = {cmap, cmap + 240, cmap+240*2, cmap+240*3,
 
 #pragma code-name ("CODE")
 
+void game_castle_escape(void);
+extern void game_hasee_bounce(void);
+
 // Drawing functions.
 void draw_sprites(void);
 
@@ -347,7 +350,6 @@ void main (void) {
         while (game_mode == MODE_MENU) { 
             ppu_wait_nmi();
             // set_music_speed, etc
-
             // Clear the VRAM buffer if it gets used for anything...
             clear_vram_buffer();
             oam_clear(); // ...and the OAM, in case we use a sprite.
@@ -356,141 +358,9 @@ void main (void) {
             AsmCallFunctionAtPtrOffsetByIndexVar(menu_logic_functions, menu);
         }
 
-        // The game is active and we're drawing frames.
+        // A game is active and we're drawing frames.
         while (game_mode == MODE_GAME) {
-
-            // Reset anything that's supposed to be reset at the start of a frame.
-            conveyor_delta = 0;
-            RESET_PLAYER_FLAGS_1_START_FRAME();
-            RESET_PLAYER_FLAGS_2_START_FRAME();
-
-            pad1 = pad_poll(0); // read the first controller
-            pad1_new = get_pad_new(0); 
-            // pad1 contains buttons that are currently pressed.
-            // pad1_new contains newly-pressed buttons - they won't be designated here in the next frame.
-            // It's useful for times we don't want button holds to retrigger something (say, pausing and unpausing).
-
-            ppu_wait_nmi(); // wait till beginning of the frame
-            // the sprites are pushed from a buffer to the OAM during nmi
-
-            // If we need to, we can se the chr bank every frame...
-            //set_chr_bank_0(0);
-
-            // Handle pausing/unpausing.
-            if (pad1_new & PAD_START && !STATUS_DEAD) {
-                TOGGLE_GAME_PAUSED();
-                sfx_play(SFX_MENU_BEEP, 0);
-            }
-            
-            clear_vram_buffer();
-
-            // Move the player.
-            if (!GAME_PAUSED) { movement(); }
-            
-            // Check to see what's on-screen
-            check_spr_objects();
-            
-            // Do the following only if we're not dead:
-            if (!STATUS_DEAD) { 
-                // Check the status of the sword swing.
-                swing_sword();
-                // Check sprite collisions
-                sprite_collisions();
-            }
-
-            // Move enemies
-            if (!GAME_PAUSED) { enemy_movement(); }
-
-            set_scroll_y(scroll_y);
-            
-            if (SCORE_CHANGED_THIS_FRAME) { convert_to_decimal(score); }
-            
-            draw_sprites();
-            
-            // Draw tiles on the edge of the screen.
-            if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
-                //draw_screen_D();
-                add_scroll_y(pseudo_scroll_y, 0x20, scroll_y);
-                pseudo_scroll_y += 0xef; 
-                // This 0xef (239, which is the height of the screen minus one) might possibly want to be either a 0xf0 (240) or a 
-                // 0x100 (1 full nametable compensating for the fact that the last 16 values are masked off by add_scroll_y)
-            }  else {
-                //draw_screen_U();
-                pseudo_scroll_y = sub_scroll_y(0x20, scroll_y);
-            }
-
-            temp1 = high_byte(pseudo_scroll_y);
-            AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
-            set_data_pointer(temppointer); // Should this value be clamped to the number of cmaps?
-
-            draw_screen_sub();
-            // Done drawing tiles on the edge of the screen.
-
-            handle_tile_clear_queue();
-
-            // TODO: Make this a flag instead of a separate game mode.
-            if (game_mode == MODE_LEVEL_COMPLETE) {
-                // True if this was a bonus level:
-                advanced_conditional = level_index >= (NUMBER_OF_LEVELS - NUMBER_OF_BONUS_LEVELS);
-
-                // Check for a new high score.
-                AsmSet2ByteFromPtrAtIndexVar(temp5, level_high_scores, level_index);
-                temp6 = score - previous_score;
-                if (temp5 < temp6) {
-                    if (advanced_conditional && level_index_backup != 0xff) {
-                        level_high_scores[level_index_backup] = temp6 + previous_score;
-                    } else {
-                        level_high_scores[level_index] = temp6;
-                    }
-                    update_checksum();
-                }
-
-                // Figure out what to do next based on the selected game mode and if we're supposed to go to a bonus level.
-                if (SHOULD_GO_TO_BONUS_LEVEL) {
-                    level_index_backup = level_index;
-                    level_index = NUMBER_OF_LEVELS - 1;
-                    level_index -= level_index_backup & 0x1; // Bitmask; change this if we add more bonus levels
-                    previous_score = score;
-                    begin_level();
-                } else {
-                    if (advanced_conditional && level_index_backup != 0xff) {
-                        level_index = level_index_backup;
-                        level_index_backup = 0xff;
-                    }
-                    if (game_level_advance_behavior == LEVEL_UP_BEHAVIOR_EXIT || level_index == NUMBER_OF_LEVELS - 1) {
-                        menu = MENU_COMPLETE_SCREEN;
-                        switch_menu();
-                    } else { // == LEVEL_UP_BEHAVIOR_CONTINUE and there are levels left
-                        // Next level
-                        level_index += 1;
-                        previous_score = score; // Bank the score
-                        begin_level();
-                    }
-                }
-
-            } 
-            else if (STATUS_DEAD && high_byte(valrigard.y) == high_byte(old_y)) {
-                // Whenever we stop moving down (this should still work if we drop off the bottom of the screen):
-                // Frame 1 of this, play whatever death music we end up getting.
-                if (player_death_timer == 0) { music_play(DEATH_SONG); }
-                if (get_frame_count() & 1) { ++player_death_timer; }
-                // After that music ends after however many frames:
-                if (player_death_timer == 150) {
-                    score = previous_score; // Revert score to pre-death value
-                    begin_level(); // Restart this level.    
-                }
-            }
-
-            // Debug: clear death status.
-            if (pad1 & PAD_DOWN && STATUS_DEAD && SETTINGS_IS_DOWN_TO_REVIVE_ENABLED) {
-                SET_STATUS_ALIVE();
-                player_death_timer = 0;
-                music_play(game_music_track);
-            }
-
-            // debug:
-            //gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
-
+            game_castle_escape();
         }
 
         while (game_mode == MODE_GAME_SHOWING_TEXT) {
@@ -515,6 +385,140 @@ void main (void) {
         
     }
     
+}
+
+void game_castle_escape(void) {
+    // Reset anything that's supposed to be reset at the start of a frame.
+    conveyor_delta = 0;
+    RESET_PLAYER_FLAGS_1_START_FRAME();
+    RESET_PLAYER_FLAGS_2_START_FRAME();
+
+    pad1 = pad_poll(0); // read the first controller
+    pad1_new = get_pad_new(0); 
+    // pad1 contains buttons that are currently pressed.
+    // pad1_new contains newly-pressed buttons - they won't be designated here in the next frame.
+    // It's useful for times we don't want button holds to retrigger something (say, pausing and unpausing).
+
+    ppu_wait_nmi(); // wait till beginning of the frame
+    // the sprites are pushed from a buffer to the OAM during nmi
+
+    // If we need to, we can se the chr bank every frame...
+    //set_chr_bank_0(0);
+
+    // Handle pausing/unpausing.
+    if (pad1_new & PAD_START && !STATUS_DEAD) {
+        TOGGLE_GAME_PAUSED();
+        sfx_play(SFX_MENU_BEEP, 0);
+    }
+    
+    clear_vram_buffer();
+
+    // Move the player.
+    if (!GAME_PAUSED) { movement(); }
+    
+    // Check to see what's on-screen
+    check_spr_objects();
+    
+    // Do the following only if we're not dead:
+    if (!STATUS_DEAD) { 
+        // Check the status of the sword swing.
+        swing_sword();
+        // Check sprite collisions
+        sprite_collisions();
+    }
+
+    // Move enemies
+    if (!GAME_PAUSED) { enemy_movement(); }
+
+    set_scroll_y(scroll_y);
+    
+    if (SCORE_CHANGED_THIS_FRAME) { convert_to_decimal(score); }
+    
+    draw_sprites();
+    
+    // Draw tiles on the edge of the screen.
+    if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
+        //draw_screen_D();
+        add_scroll_y(pseudo_scroll_y, 0x20, scroll_y);
+        pseudo_scroll_y += 0xef; 
+        // This 0xef (239, which is the height of the screen minus one) might possibly want to be either a 0xf0 (240) or a 
+        // 0x100 (1 full nametable compensating for the fact that the last 16 values are masked off by add_scroll_y)
+    }  else {
+        //draw_screen_U();
+        pseudo_scroll_y = sub_scroll_y(0x20, scroll_y);
+    }
+
+    temp1 = high_byte(pseudo_scroll_y);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
+    set_data_pointer(temppointer); // Should this value be clamped to the number of cmaps?
+
+    draw_screen_sub();
+    // Done drawing tiles on the edge of the screen.
+
+    handle_tile_clear_queue();
+
+    // TODO: Make this a flag instead of a separate game mode.
+    if (game_mode == MODE_LEVEL_COMPLETE) {
+        // True if this was a bonus level:
+        advanced_conditional = level_index >= (NUMBER_OF_LEVELS - NUMBER_OF_BONUS_LEVELS);
+
+        // Check for a new high score.
+        AsmSet2ByteFromPtrAtIndexVar(temp5, level_high_scores, level_index);
+        temp6 = score - previous_score;
+        if (temp5 < temp6) {
+            if (advanced_conditional && level_index_backup != 0xff) {
+                level_high_scores[level_index_backup] = temp6 + previous_score;
+            } else {
+                level_high_scores[level_index] = temp6;
+            }
+            update_checksum();
+        }
+
+        // Figure out what to do next based on the selected game mode and if we're supposed to go to a bonus level.
+        if (SHOULD_GO_TO_BONUS_LEVEL) {
+            level_index_backup = level_index;
+            level_index = NUMBER_OF_LEVELS - 1;
+            level_index -= level_index_backup & 0x1; // Bitmask; change this if we add more bonus levels
+            previous_score = score;
+            begin_level();
+        } else {
+            if (advanced_conditional && level_index_backup != 0xff) {
+                level_index = level_index_backup;
+                level_index_backup = 0xff;
+            }
+            if (game_level_advance_behavior == LEVEL_UP_BEHAVIOR_EXIT || level_index == NUMBER_OF_LEVELS - 1) {
+                menu = MENU_COMPLETE_SCREEN;
+                switch_menu();
+            } else { // == LEVEL_UP_BEHAVIOR_CONTINUE and there are levels left
+                // Next level
+                level_index += 1;
+                previous_score = score; // Bank the score
+                begin_level();
+            }
+        }
+
+    } 
+    else if (STATUS_DEAD && high_byte(valrigard.y) == high_byte(old_y)) {
+        // Whenever we stop moving down (this should still work if we drop off the bottom of the screen):
+        // Frame 1 of this, play whatever death music we end up getting.
+        if (player_death_timer == 0) { music_play(DEATH_SONG); }
+        if (get_frame_count() & 1) { ++player_death_timer; }
+        // After that music ends after however many frames:
+        if (player_death_timer == 150) {
+            score = previous_score; // Revert score to pre-death value
+            begin_level(); // Restart this level.    
+        }
+    }
+
+    // Debug: clear death status.
+    if (pad1 & PAD_DOWN && STATUS_DEAD && SETTINGS_IS_DOWN_TO_REVIVE_ENABLED) {
+        SET_STATUS_ALIVE();
+        player_death_timer = 0;
+        music_play(game_music_track);
+    }
+
+    // debug:
+    //gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 }
 
 // In the literal sense, clear the screen. 

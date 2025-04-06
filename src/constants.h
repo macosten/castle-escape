@@ -21,6 +21,9 @@
 #define MODE_LEVEL_COMPLETE 4 
 #define MODE_GAME_SHOWING_TEXT 5
 
+#define GAME_CASTLE_ESCAPE 0
+#define GAME_HASEE_BOUNCE 1
+
 // Should the game continue to the next level, or exit the game when we finish this?
 #define LEVEL_UP_BEHAVIOR_EXIT 0
 #define LEVEL_UP_BEHAVIOR_CONTINUE 1 

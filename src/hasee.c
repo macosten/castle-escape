@@ -80,9 +80,14 @@ unsigned char const hasee_palette_bg[] = {
     0x21, 0x19, 0x0f, 0x30, // Text-on-sky and seesaw-on-background
 };
 
+void game_hasee_bounce(void);
 void calculate_next_treat(void);
 // void spawn_next_treat(void);
 void hasee_sprite_collisions(void);
+
+void game_hasee_bounce(void) {
+    return;
+}
 
 // Calculate the next pickup item. It will be placed into temp6.
 void calculate_next_treat(void) {

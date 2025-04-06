@@ -144,6 +144,8 @@ unsigned char lowest_enemy_index;
 
 unsigned char level_index_backup; // For when we need to remember the previous level due to being in a bonus level
 
+unsigned char active_game; // Keep track of which game is active so we can do the right thing in the top-level main function
+
 // ~?? zp bytes left? (see ZP_LAST in labels.txt)
 
 #pragma bss-name(pop)

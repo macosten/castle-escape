@@ -80,6 +80,7 @@
 	.import		_enemies_flags
 	.export		_hasee_palette_sp
 	.export		_hasee_palette_bg
+	.export		_game_hasee_bounce
 	.export		_calculate_next_treat
 	.export		_hasee_sprite_collisions
 
@@ -1225,6 +1226,23 @@ L001F:
 	.byte	$47,$72,$75,$6E,$00
 
 ; ---------------------------------------------------------------
+; void __near__ game_hasee_bounce (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_game_hasee_bounce: near
+
+.segment	"CODE"
+
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
 ; void __near__ calculate_next_treat (void)
 ; ---------------------------------------------------------------
 
@@ -1249,13 +1267,13 @@ L001F:
 ;
 	lda     _temp0
 	cmp     #$E7
-	bcc     L04E9
+	bcc     L04EA
 ;
 ; if (rand8() > 252) { // Need to figure out if this is possible with PRNG
 ;
 	jsr     _rand8
 	cmp     #$FD
-	bcc     L04E8
+	bcc     L04E9
 ;
 ; temp6 = TREAT_MACCY; // Meant to be ~1/10000ish chance
 ;
@@ -1263,24 +1281,24 @@ L001F:
 ;
 ; } else {
 ;
-	jmp     L04E7
+	jmp     L04E8
 ;
 ; temp6 = TREAT_GROSS_DUNG + temp0 & 0b1;
 ;
-L04E8:	lda     _temp0
+L04E9:	lda     _temp0
 	clc
 	adc     #$0D
 	and     #$01
 ;
 ; } else if (temp0 > 192) { // ~15%ish of the time...
 ;
-	jmp     L04E7
-L04E9:	lda     _temp0
+	jmp     L04E8
+L04EA:	lda     _temp0
 	cmp     #$C1
 ;
 ; } else { // The rest (~75%) of the time...
 ;
-	bcc     L04F3
+	bcc     L04F4
 ;
 ; }
 ;
@@ -1288,20 +1306,20 @@ L04E9:	lda     _temp0
 ;
 ; temp1 = rand8();
 ;
-L04F3:	jsr     _rand8
+L04F4:	jsr     _rand8
 	sta     _temp1
 ;
 ; if (temp0 < 20) { // ~1/10th of the time 
 ;
 	lda     _temp0
 	cmp     #$14
-	bcs     L04F1
+	bcs     L04F2
 ;
 ; if (temp1 == 1) {
 ;
 	lda     _temp1
 	cmp     #$01
-	bne     L04EA
+	bne     L04EB
 ;
 ; temp6 = TREAT_FISH;
 ;
@@ -1309,10 +1327,10 @@ L04F3:	jsr     _rand8
 ;
 ; } else if (temp1 < 5) {
 ;
-	jmp     L04E7
-L04EA:	lda     _temp1
+	jmp     L04E8
+L04EB:	lda     _temp1
 	cmp     #$05
-	bcs     L04EB
+	bcs     L04EC
 ;
 ; temp6 = TREAT_RAINBOW;
 ;
@@ -1320,10 +1338,10 @@ L04EA:	lda     _temp1
 ;
 ; } else if (temp1 < 21) {
 ;
-	jmp     L04E7
-L04EB:	lda     _temp1
+	jmp     L04E8
+L04EC:	lda     _temp1
 	cmp     #$15
-	bcs     L04EC
+	bcs     L04ED
 ;
 ; temp6 = TREAT_ICY;
 ;
@@ -1331,10 +1349,10 @@ L04EB:	lda     _temp1
 ;
 ; } else if (temp1 < 45) {
 ;
-	jmp     L04E7
-L04EC:	lda     _temp1
+	jmp     L04E8
+L04ED:	lda     _temp1
 	cmp     #$2D
-	bcs     L04ED
+	bcs     L04EE
 ;
 ; temp6 = TREAT_FIERY;
 ;
@@ -1342,10 +1360,10 @@ L04EC:	lda     _temp1
 ;
 ; } else if (temp1 < 77) {
 ;
-	jmp     L04E7
-L04ED:	lda     _temp1
+	jmp     L04E8
+L04EE:	lda     _temp1
 	cmp     #$4D
-	bcs     L04EE
+	bcs     L04EF
 ;
 ; temp6 = TREAT_SPONGE;
 ;
@@ -1353,10 +1371,10 @@ L04ED:	lda     _temp1
 ;
 ; } else if (temp1 < 113) {
 ;
-	jmp     L04E7
-L04EE:	lda     _temp1
+	jmp     L04E8
+L04EF:	lda     _temp1
 	cmp     #$71
-	bcs     L04EF
+	bcs     L04F0
 ;
 ; temp6 = TREAT_CHECKERED;
 ;
@@ -1364,10 +1382,10 @@ L04EE:	lda     _temp1
 ;
 ; } else if (temp1 < 157) {
 ;
-	jmp     L04E7
-L04EF:	lda     _temp1
+	jmp     L04E8
+L04F0:	lda     _temp1
 	cmp     #$9D
-	bcs     L04F0
+	bcs     L04F1
 ;
 ; temp6 = TREAT_GOLDEN;
 ;
@@ -1375,10 +1393,10 @@ L04EF:	lda     _temp1
 ;
 ; } else if (temp1 < 213) {
 ;
-	jmp     L04E7
-L04F0:	lda     _temp1
+	jmp     L04E8
+L04F1:	lda     _temp1
 	cmp     #$D5
-	bcs     L048D
+	bcs     L048E
 ;
 ; temp6 = TREAT_SILVER;
 ;
@@ -1386,13 +1404,13 @@ L04F0:	lda     _temp1
 ;
 ; } else {
 ;
-	jmp     L04E7
+	jmp     L04E8
 ;
 ; if (temp1 < 6) {
 ;
-L04F1:	lda     _temp1
+L04F2:	lda     _temp1
 	cmp     #$06
-	bcs     L04F2
+	bcs     L04F3
 ;
 ; temp6 = TREAT_GREEN;
 ;
@@ -1400,19 +1418,19 @@ L04F1:	lda     _temp1
 ;
 ; } else if (temp1 < 15) {
 ;
-	jmp     L04E7
-L04F2:	lda     _temp1
+	jmp     L04E8
+L04F3:	lda     _temp1
 	cmp     #$0F
-	bcs     L048D
+	bcs     L048E
 ;
 ; temp6 = TREAT_BLUE;
 ;
 	lda     #$01
-L04E7:	sta     _temp6
+L04E8:	sta     _temp6
 ;
 ; }
 ;
-L048D:	rts
+L048E:	rts
 
 .endproc
 
@@ -1451,12 +1469,12 @@ L048D:	rts
 ;
 	jsr     _get_frame_count
 	and     #$01
-L04F9:	sta     _x
+L04FA:	sta     _x
 ;
 ; for (x; x < ONSCREEN_TREATS_MAXIMUM; x += 2) { // TODO: See if we can optimize this looping somehow
 ;
 	cmp     #$0D
-	bcc     L04FF
+	bcc     L0500
 ;
 ; }
 ;
@@ -1464,14 +1482,14 @@ L04F9:	sta     _x
 ;
 ; temp1 = enemies_flags[x];
 ;
-L04FF:	ldy     _x
+L0500:	ldy     _x
 	lda     _enemies_flags,y
 	sta     _temp1
 ;
 ; if(temp1 & TREAT_IS_ACTIVE) {
 ;
 	and     #$02
-	jeq     L04F7
+	jeq     L04F8
 ;
 ; hitbox2.width = TREAT_WIDTH;
 ;
@@ -1510,13 +1528,13 @@ L04FF:	ldy     _x
 ; if (temp0) {
 ;
 	lda     _temp0
-	beq     L04F7
+	beq     L04F8
 ;
 ; if(previously_collected_treats_this_jump < 7) {
 ;
 	lda     _eject_L
 	cmp     #$07
-	bcs     L04CC
+	bcs     L04CD
 ;
 ; ++previously_collected_treats_this_jump;
 ;
@@ -1524,14 +1542,14 @@ L04FF:	ldy     _x
 ;
 ; temp0 = enemies_type[x];
 ;
-L04CC:	ldy     _x
+L04CD:	ldy     _x
 	lda     _enemies_type,y
 	sta     _temp0
 ;
 ; if (temp0 >= TREAT_PURPLE_H) {
 ;
 	cmp     #$0F
-	bcc     L04F6
+	bcc     L04F7
 ;
 ; score += hasee_letter_points[previously_collected_treats_this_jump];
 ;
@@ -1540,10 +1558,10 @@ L04CC:	ldy     _x
 ;
 ; } else if (temp0 <= TREAT_MACCY) {
 ;
-	jmp     L04FE
-L04F6:	lda     _temp0
+	jmp     L04FF
+L04F7:	lda     _temp0
 	cmp     #$0D
-	bcs     L04F7
+	bcs     L04F8
 ;
 ; temp0 <<= 3;
 ;
@@ -1562,7 +1580,7 @@ L04F6:	lda     _temp0
 ;
 	ldy     _temp0
 	lda     _hasee_treat_points,y
-L04FE:	clc
+L04FF:	clc
 	adc     _score
 	sta     _score
 	lda     #$00
@@ -1571,7 +1589,7 @@ L04FE:	clc
 ;
 ; x += 2;
 ;
-L04F7:	lda     #$02
+L04F8:	lda     #$02
 	clc
 	adc     _x
 	sta     _x
@@ -1581,7 +1599,7 @@ L04F7:	lda     #$02
 	lda     #$02
 	clc
 	adc     _x
-	jmp     L04F9
+	jmp     L04FA
 
 .endproc
 
