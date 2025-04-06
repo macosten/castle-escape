@@ -125,8 +125,11 @@ unsigned char cmap[240 * CMAP_COUNT];
 unsigned int checksum; // A checksum can detect if the saved data is valid.
 unsigned int level_high_scores[256];
 unsigned int gauntlet_high_score;
+unsigned int hasee_high_score;
 
 unsigned char settings_memory[1];
+
+
 
 // We want to recalculate our checksum whenever we change any of these values, though.
 

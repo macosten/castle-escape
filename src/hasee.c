@@ -2,37 +2,63 @@
 #include "lib/neslib.h"
 
 #include "asm/macros.h"
+#include "enemy_macros.h"
+#include "other_macros.h"
+#include "structs.h"
 
 #include "hasee_constants.h"
 #include "hasee_data.h"
 
 // === Extern'd zero page symbols, defined in zeropage.h.
-extern unsigned char temp0;
-#pragma zpsym("temp0")
+ZEROPAGE_EXTERN(unsigned char, temp0);
+ZEROPAGE_EXTERN(unsigned char, temp1);
+ZEROPAGE_EXTERN(unsigned char, temp2);
+ZEROPAGE_EXTERN(unsigned char, temp6);
+ZEROPAGE_EXTERN(unsigned char, pad1);
+ZEROPAGE_EXTERN(unsigned char, pad1_new);
+ZEROPAGE_EXTERN(unsigned char, pad2);
+ZEROPAGE_EXTERN(unsigned char, pad2_new);
+ZEROPAGE_EXTERN(int, address);
+ZEROPAGE_EXTERN(unsigned char, index);
+ZEROPAGE_EXTERN(unsigned char, x);
+ZEROPAGE_EXTERN(unsigned char, y);
+ZEROPAGE_EXTERN(Player, player2);
+ZEROPAGE_EXTERN(Hitbox, hitbox);
+ZEROPAGE_EXTERN(Hitbox, hitbox2);
+ZEROPAGE_EXTERN(const unsigned char *, temppointer);
+ZEROPAGE_EXTERN(unsigned int, score);
 
-extern unsigned char temp1;
-#pragma zpsym("temp1")
+// Aliased values... I can use the same addresses with different names this way, with only a medium jank factor
+ZEROPAGE_EXTERN(unsigned char, eject_L); // Just don't use this original name...
+#define previously_collected_treats_this_jump eject_L
 
-extern unsigned char temp2;
-#pragma zpsym("temp2")
+ZEROPAGE_EXTERN(Player, valrigard);
+#define player1 valrigard
 
-extern unsigned char temp6;
-#pragma zpsym("temp6")
+ZEROPAGE_EXTERN(unsigned char, player_frame_timer);
+#define player1_frame_timer player_frame_timer
 
-extern unsigned char pad1;
-#pragma zpsym("pad1")
+ZEROPAGE_EXTERN(unsigned char, player_sword_timer);
+#define player2_frame_timer player_sword_timer
 
-extern unsigned char pad1_new;
-#pragma zpsym("pad1_new")
+ZEROPAGE_EXTERN(unsigned char, player_death_timer);
+#define player1_stun_timer player_death_timer
 
-extern int address;
-#pragma zpsym("address")
+ZEROPAGE_EXTERN(unsigned char, player_walking_timer);
+#define player2_stun_timer player_walking_timer
 
-extern unsigned char index;
-#pragma zpsym("index")
+// extern unsigned char eject_R;
+// #pragma zpsym("eject_R")
+// #define ...
 
-extern const unsigned char * temppointer;
-#pragma zpsym("temppointer")
+// Importing only the enemies_whatever arrays we need to store Doughnutfruit data...
+extern unsigned char enemies_x[MAX_ENEMIES]; // Object X coords
+extern unsigned char enemies_y[MAX_ENEMIES]; // Object Y coords
+extern unsigned char enemies_extra[MAX_ENEMIES]; // Doughnutfruit subpixel X
+extern unsigned char enemies_type[MAX_ENEMIES];
+extern unsigned char enemies_extra2[MAX_ENEMIES]; // doughnutfruit speed
+extern unsigned char enemies_flags[MAX_ENEMIES]; // doughnutfruit speed
+
 
 // Since EfMC is in the non-swapping PRG segment, we can access all of its rodata
 // Hasee Bounce ROdata bank will be Bank 1
@@ -56,6 +82,7 @@ unsigned char const hasee_palette_bg[] = {
 
 void calculate_next_treat(void);
 // void spawn_next_treat(void);
+void hasee_sprite_collisions(void);
 
 // Calculate the next pickup item. It will be placed into temp6.
 void calculate_next_treat(void) {
@@ -115,3 +142,50 @@ void calculate_next_treat(void) {
         }
     }
 }
+
+void hasee_sprite_collisions(void) {
+    // hitbox == the jumping player's hitbox.
+    hitbox.x = high_byte(player1.x);
+    hitbox.y = high_byte(player1.y);
+
+    // Sprite collisions should be more straightforward for this game than EfMC...
+    hitbox.width = HASEE_WIDTH;
+    hitbox.height = HASEE_HEIGHT;
+
+    // hitbox2 == a treat's hitbox.
+
+    // To save on CPU time, we'll only check half of the collisions on each frame.
+    // depending on the parity of get_frame_count(), we'll check only indexes of the same parity for a collision.
+    x = get_frame_count() & 1;
+    for (x; x < ONSCREEN_TREATS_MAXIMUM; x += 2) { // TODO: See if we can optimize this looping somehow
+        temp1 = enemies_flags[x];
+        if(temp1 & TREAT_IS_ACTIVE) {
+            hitbox2.width = TREAT_WIDTH;
+            hitbox2.height = TREAT_HEIGHT;
+            hitbox2.x = enemies_x[x];
+            hitbox2.y = enemies_y[x];
+            check_collision(temp0, hitbox, hitbox2);
+            if (temp0) {
+                if(previously_collected_treats_this_jump < 7) {
+                    ++previously_collected_treats_this_jump;
+                }
+                temp0 = enemies_type[x];
+                if (temp0 >= TREAT_PURPLE_H) {
+                    // Letter
+                    // Ensure it is the correct color or don't do anything
+                    score += hasee_letter_points[previously_collected_treats_this_jump];
+                } else if (temp0 <= TREAT_MACCY) {
+                    // Regular Point Pickup
+                    temp0 <<= 3;
+                    temp0 |= previously_collected_treats_this_jump;
+                    score += hasee_treat_points[temp0];
+                } else {
+                    // Gross
+                    // set stunned timer
+                }
+            }
+        }
+        x += 2;
+    }
+}
+

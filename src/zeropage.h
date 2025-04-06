@@ -16,6 +16,8 @@
 // MARK: Zero Page Globals
 unsigned char pad1; // Stores the state of the game controller.
 unsigned char pad1_new; // Stores the state of the game controller.
+unsigned char pad2;
+unsigned char pad2_new;
 unsigned char collision; // Used in collision routines.
 unsigned char collision_L;
 unsigned char collision_R;
@@ -89,7 +91,7 @@ unsigned char energy;
 
 // Max score of 65535. That feels like it should be enough, right?
 unsigned int score;
-unsigned char enemy_score;
+unsigned char enemy_score; // Unused??
 
 // 255 frames / 60 fps (NTSC) = 4.25 seconds
 // Should we also take PAL machines into account and try to change frame counts in these cases?
@@ -101,10 +103,10 @@ unsigned char nt_max; // upper bound (not included) in the range of nametables w
 unsigned char nt_current; // The nametable Valrigard is currently in. This should help us determine what other nametable to load when scrolling...?
 
 Player valrigard; // A width of 12 makes Valrigard's hitbox a bit more forgiving. It also happens to match up with his nose.
+Player player2; // For games where more than one player or player-controller character may appear. 
 Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C stack is not preferable to using a global, generally speaking)
-// I renamed nesdoug's "Generic" to "Hitbox" to remind me of what purpose it serves.
-
 Hitbox hitbox2; // This hitbox is used for enemies.
+// I renamed nesdoug's "Generic" to "Hitbox" to remind me of what purpose it serves.
 
 unsigned char shuffle_offset;
 unsigned char shuffle_maximum;

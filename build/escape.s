@@ -274,6 +274,8 @@
 	.export		_level_enemy_data
 	.export		_pad1
 	.export		_pad1_new
+	.export		_pad2
+	.export		_pad2_new
 	.export		_collision
 	.export		_collision_L
 	.export		_collision_R
@@ -326,6 +328,7 @@
 	.export		_nt_max
 	.export		_nt_current
 	.export		_valrigard
+	.export		_player2
 	.export		_hitbox
 	.export		_hitbox2
 	.export		_shuffle_offset
@@ -391,6 +394,7 @@
 	.export		_checksum
 	.export		_level_high_scores
 	.export		_gauntlet_high_score
+	.export		_hasee_high_score
 	.export		_settings_memory
 	.export		_cmaps
 	.export		_draw_sprites
@@ -18768,7 +18772,7 @@ L4058:
 L4052:
 	.byte	$3F,$20,$42,$6C,$6F,$63,$6B,$20,$54,$65,$73,$74,$00
 L4862:
-	.byte	$41,$70,$72,$20,$20,$33,$20,$32,$30,$32,$35,$00
+	.byte	$41,$70,$72,$20,$20,$35,$20,$32,$30,$32,$35,$00
 L4050:
 	.byte	$45,$6E,$65,$6D,$79,$20,$54,$65,$73,$74,$00
 L404C:
@@ -18786,7 +18790,7 @@ L4032:
 L4026:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$32,$00
 L486D:
-	.byte	$30,$32,$3A,$33,$39,$3A,$31,$34,$00
+	.byte	$32,$30,$3A,$31,$39,$3A,$33,$30,$00
 L402E:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$36,$00
 L4024:
@@ -18832,6 +18836,10 @@ _bankBuffer:
 _pad1:
 	.res	1,$00
 _pad1_new:
+	.res	1,$00
+_pad2:
+	.res	1,$00
+_pad2_new:
 	.res	1,$00
 _collision:
 	.res	1,$00
@@ -18937,6 +18945,8 @@ _nt_current:
 	.res	1,$00
 _valrigard:
 	.res	8,$00
+_player2:
+	.res	8,$00
 _hitbox:
 	.res	4,$00
 _hitbox2:
@@ -19018,6 +19028,8 @@ _checksum:
 _level_high_scores:
 	.res	512,$00
 _gauntlet_high_score:
+	.res	2,$00
+_hasee_high_score:
 	.res	2,$00
 _settings_memory:
 	.res	1,$00

@@ -10,6 +10,9 @@
 	.importzp	sp, sreg, regsave, regbank
 	.importzp	tmp1, tmp2, tmp3, tmp4, ptr1, ptr2, ptr3, ptr4
 	.macpack	longbranch
+	.import		_get_frame_count
+	.import		_check_collision_fast
+	.importzp	_TEMP
 	.import		_rand8
 	.export		_hasee_yay_phrases
 	.export		_hasee_treat_names
@@ -25,6 +28,7 @@
 	.export		_hasee_subpal_icy
 	.export		_hasee_subpal_rainbow
 	.export		_hasee_subpal_fish
+	.export		_hasee_treat_effect_lut
 	.export		_purple_hasee_idle_left
 	.export		_purple_hasee_idle_right
 	.export		_orange_hasee_idle_left
@@ -59,12 +63,25 @@
 	.export		_orange_h_fruit
 	.export		_orange_s_fruit
 	.export		_compressed_hasee_test_screen
+	.export		_hasee_treat_points
+	.export		_hasee_letter_points
 	.importzp	_temp0
 	.importzp	_temp1
 	.importzp	_temp6
+	.importzp	_x
+	.importzp	_hitbox
+	.importzp	_hitbox2
+	.importzp	_score
+	.importzp	_eject_L
+	.importzp	_valrigard
+	.import		_enemies_x
+	.import		_enemies_y
+	.import		_enemies_type
+	.import		_enemies_flags
 	.export		_hasee_palette_sp
 	.export		_hasee_palette_bg
 	.export		_calculate_next_treat
+	.export		_hasee_sprite_collisions
 
 .segment	"RODATA"
 
@@ -140,6 +157,7 @@ _hasee_subpal_fish:
 	.byte	$0F
 	.byte	$2C
 	.byte	$3C
+_hasee_treat_effect_lut:
 _purple_hasee_idle_left:
 	.byte	$FE
 	.byte	$FD
@@ -1019,6 +1037,120 @@ _compressed_hasee_test_screen:
 	.byte	$0F
 	.byte	$04
 	.byte	$05
+_hasee_treat_points:
+	.byte	$01
+	.byte	$02
+	.byte	$03
+	.byte	$04
+	.byte	$05
+	.byte	$06
+	.byte	$07
+	.byte	$08
+	.byte	$03
+	.byte	$06
+	.byte	$09
+	.byte	$0C
+	.byte	$0F
+	.byte	$12
+	.byte	$15
+	.byte	$18
+	.byte	$04
+	.byte	$08
+	.byte	$0C
+	.byte	$10
+	.byte	$14
+	.byte	$18
+	.byte	$1C
+	.byte	$20
+	.byte	$05
+	.byte	$0A
+	.byte	$0F
+	.byte	$14
+	.byte	$19
+	.byte	$1E
+	.byte	$23
+	.byte	$28
+	.byte	$0A
+	.byte	$14
+	.byte	$1E
+	.byte	$28
+	.byte	$32
+	.byte	$3C
+	.byte	$46
+	.byte	$50
+	.byte	$0C
+	.byte	$18
+	.byte	$24
+	.byte	$30
+	.byte	$3C
+	.byte	$48
+	.byte	$54
+	.byte	$60
+	.byte	$0F
+	.byte	$1E
+	.byte	$2D
+	.byte	$3C
+	.byte	$4B
+	.byte	$5A
+	.byte	$69
+	.byte	$78
+	.byte	$12
+	.byte	$24
+	.byte	$36
+	.byte	$48
+	.byte	$5A
+	.byte	$6C
+	.byte	$7E
+	.byte	$90
+	.byte	$14
+	.byte	$28
+	.byte	$3C
+	.byte	$50
+	.byte	$64
+	.byte	$78
+	.byte	$8C
+	.byte	$A0
+	.byte	$28
+	.byte	$50
+	.byte	$78
+	.byte	$A0
+	.byte	$C8
+	.byte	$F0
+	.byte	$FF
+	.byte	$FF
+	.byte	$32
+	.byte	$64
+	.byte	$96
+	.byte	$C8
+	.byte	$FA
+	.byte	$FF
+	.byte	$FF
+	.byte	$FF
+	.byte	$07
+	.byte	$0E
+	.byte	$15
+	.byte	$1C
+	.byte	$23
+	.byte	$2A
+	.byte	$31
+	.byte	$38
+	.byte	$40
+	.byte	$80
+	.byte	$C0
+	.byte	$FF
+	.byte	$FF
+	.byte	$FF
+	.byte	$FF
+	.byte	$FF
+_hasee_letter_points:
+	.byte	$02
+	.byte	$04
+	.byte	$06
+	.byte	$08
+	.byte	$0A
+	.byte	$0C
+	.byte	$0E
+	.byte	$10
 .segment	"RODATA"
 .segment	"BANK0"
 _hasee_palette_sp:
@@ -1069,28 +1201,28 @@ L0013:
 	.byte	$43,$68,$65,$63,$6B,$65,$72,$65,$64,$20,$00
 L001B:
 	.byte	$52,$61,$69,$6E,$62,$6F,$77,$20,$00
-L0003:
-	.byte	$59,$61,$79,$21,$21,$21,$20,$00
+L0015:
+	.byte	$53,$70,$6F,$6E,$67,$65,$20,$00
+L0009:
+	.byte	$59,$65,$6C,$6C,$6F,$77,$20,$00
 L0011:
 	.byte	$47,$6F,$6C,$64,$65,$6E,$20,$00
 L000F:
 	.byte	$53,$69,$6C,$76,$65,$72,$20,$00
-L0009:
-	.byte	$59,$65,$6C,$6C,$6F,$77,$20,$00
-L0015:
-	.byte	$53,$70,$6F,$6E,$67,$65,$20,$00
-L000D:
-	.byte	$47,$72,$65,$65,$6E,$20,$00
+L0003:
+	.byte	$59,$61,$79,$21,$21,$21,$20,$00
 L0017:
 	.byte	$46,$69,$65,$72,$79,$20,$00
+L000D:
+	.byte	$47,$72,$65,$65,$6E,$20,$00
 L001D:
 	.byte	$46,$69,$73,$68,$20,$00
 L000B:
 	.byte	$42,$6C,$75,$65,$20,$00
-L001F:
-	.byte	$47,$72,$75,$6E,$00
 L0019:
 	.byte	$49,$63,$79,$20,$00
+L001F:
+	.byte	$47,$72,$75,$6E,$00
 
 ; ---------------------------------------------------------------
 ; void __near__ calculate_next_treat (void)
@@ -1117,38 +1249,38 @@ L0019:
 ;
 	lda     _temp0
 	cmp     #$E7
-	bcc     L040F
+	bcc     L04E9
 ;
 ; if (rand8() > 252) { // Need to figure out if this is possible with PRNG
 ;
 	jsr     _rand8
 	cmp     #$FD
-	bcc     L040E
+	bcc     L04E8
 ;
 ; temp6 = TREAT_MACCY; // Meant to be ~1/10000ish chance
 ;
-	lda     #$10
+	lda     #$0C
 ;
 ; } else {
 ;
-	jmp     L040D
+	jmp     L04E7
 ;
 ; temp6 = TREAT_GROSS_DUNG + temp0 & 0b1;
 ;
-L040E:	lda     _temp0
+L04E8:	lda     _temp0
 	clc
-	adc     #$11
+	adc     #$0D
 	and     #$01
 ;
 ; } else if (temp0 > 192) { // ~15%ish of the time...
 ;
-	jmp     L040D
-L040F:	lda     _temp0
+	jmp     L04E7
+L04E9:	lda     _temp0
 	cmp     #$C1
 ;
 ; } else { // The rest (~75%) of the time...
 ;
-	bcc     L0419
+	bcc     L04F3
 ;
 ; }
 ;
@@ -1156,20 +1288,20 @@ L040F:	lda     _temp0
 ;
 ; temp1 = rand8();
 ;
-L0419:	jsr     _rand8
+L04F3:	jsr     _rand8
 	sta     _temp1
 ;
 ; if (temp0 < 20) { // ~1/10th of the time 
 ;
 	lda     _temp0
 	cmp     #$14
-	bcs     L0417
+	bcs     L04F1
 ;
 ; if (temp1 == 1) {
 ;
 	lda     _temp1
 	cmp     #$01
-	bne     L0410
+	bne     L04EA
 ;
 ; temp6 = TREAT_FISH;
 ;
@@ -1177,10 +1309,10 @@ L0419:	jsr     _rand8
 ;
 ; } else if (temp1 < 5) {
 ;
-	jmp     L040D
-L0410:	lda     _temp1
+	jmp     L04E7
+L04EA:	lda     _temp1
 	cmp     #$05
-	bcs     L0411
+	bcs     L04EB
 ;
 ; temp6 = TREAT_RAINBOW;
 ;
@@ -1188,10 +1320,10 @@ L0410:	lda     _temp1
 ;
 ; } else if (temp1 < 21) {
 ;
-	jmp     L040D
-L0411:	lda     _temp1
+	jmp     L04E7
+L04EB:	lda     _temp1
 	cmp     #$15
-	bcs     L0412
+	bcs     L04EC
 ;
 ; temp6 = TREAT_ICY;
 ;
@@ -1199,10 +1331,10 @@ L0411:	lda     _temp1
 ;
 ; } else if (temp1 < 45) {
 ;
-	jmp     L040D
-L0412:	lda     _temp1
+	jmp     L04E7
+L04EC:	lda     _temp1
 	cmp     #$2D
-	bcs     L0413
+	bcs     L04ED
 ;
 ; temp6 = TREAT_FIERY;
 ;
@@ -1210,10 +1342,10 @@ L0412:	lda     _temp1
 ;
 ; } else if (temp1 < 77) {
 ;
-	jmp     L040D
-L0413:	lda     _temp1
+	jmp     L04E7
+L04ED:	lda     _temp1
 	cmp     #$4D
-	bcs     L0414
+	bcs     L04EE
 ;
 ; temp6 = TREAT_SPONGE;
 ;
@@ -1221,10 +1353,10 @@ L0413:	lda     _temp1
 ;
 ; } else if (temp1 < 113) {
 ;
-	jmp     L040D
-L0414:	lda     _temp1
+	jmp     L04E7
+L04EE:	lda     _temp1
 	cmp     #$71
-	bcs     L0415
+	bcs     L04EF
 ;
 ; temp6 = TREAT_CHECKERED;
 ;
@@ -1232,10 +1364,10 @@ L0414:	lda     _temp1
 ;
 ; } else if (temp1 < 157) {
 ;
-	jmp     L040D
-L0415:	lda     _temp1
+	jmp     L04E7
+L04EF:	lda     _temp1
 	cmp     #$9D
-	bcs     L0416
+	bcs     L04F0
 ;
 ; temp6 = TREAT_GOLDEN;
 ;
@@ -1243,10 +1375,10 @@ L0415:	lda     _temp1
 ;
 ; } else if (temp1 < 213) {
 ;
-	jmp     L040D
-L0416:	lda     _temp1
+	jmp     L04E7
+L04F0:	lda     _temp1
 	cmp     #$D5
-	bcs     L0409
+	bcs     L048D
 ;
 ; temp6 = TREAT_SILVER;
 ;
@@ -1254,13 +1386,13 @@ L0416:	lda     _temp1
 ;
 ; } else {
 ;
-	jmp     L040D
+	jmp     L04E7
 ;
 ; if (temp1 < 6) {
 ;
-L0417:	lda     _temp1
+L04F1:	lda     _temp1
 	cmp     #$06
-	bcs     L0418
+	bcs     L04F2
 ;
 ; temp6 = TREAT_GREEN;
 ;
@@ -1268,19 +1400,188 @@ L0417:	lda     _temp1
 ;
 ; } else if (temp1 < 15) {
 ;
-	jmp     L040D
-L0418:	lda     _temp1
+	jmp     L04E7
+L04F2:	lda     _temp1
 	cmp     #$0F
-	bcs     L0409
+	bcs     L048D
 ;
 ; temp6 = TREAT_BLUE;
 ;
 	lda     #$01
-L040D:	sta     _temp6
+L04E7:	sta     _temp6
 ;
 ; }
 ;
-L0409:	rts
+L048D:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ hasee_sprite_collisions (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_hasee_sprite_collisions: near
+
+.segment	"CODE"
+
+;
+; hitbox.x = high_byte(player1.x);
+;
+	lda     _valrigard+1
+	sta     _hitbox
+;
+; hitbox.y = high_byte(player1.y);
+;
+	lda     _valrigard+3
+	sta     _hitbox+1
+;
+; hitbox.width = HASEE_WIDTH;
+;
+	lda     #$0B
+	sta     _hitbox+2
+;
+; hitbox.height = HASEE_HEIGHT;
+;
+	lda     #$0D
+	sta     _hitbox+3
+;
+; x = get_frame_count() & 1;
+;
+	jsr     _get_frame_count
+	and     #$01
+L04F9:	sta     _x
+;
+; for (x; x < ONSCREEN_TREATS_MAXIMUM; x += 2) { // TODO: See if we can optimize this looping somehow
+;
+	cmp     #$0D
+	bcc     L04FF
+;
+; }
+;
+	rts
+;
+; temp1 = enemies_flags[x];
+;
+L04FF:	ldy     _x
+	lda     _enemies_flags,y
+	sta     _temp1
+;
+; if(temp1 & TREAT_IS_ACTIVE) {
+;
+	and     #$02
+	jeq     L04F7
+;
+; hitbox2.width = TREAT_WIDTH;
+;
+	lda     #$10
+	sta     _hitbox2+2
+;
+; hitbox2.height = TREAT_HEIGHT;
+;
+	sta     _hitbox2+3
+;
+; hitbox2.x = enemies_x[x];
+;
+	ldy     _x
+	lda     _enemies_x,y
+	sta     _hitbox2
+;
+; hitbox2.y = enemies_y[x];
+;
+	ldy     _x
+	lda     _enemies_y,y
+	sta     _hitbox2+1
+;
+; check_collision(temp0, hitbox, hitbox2);
+;
+	lda     #<(_hitbox)
+	sta     _TEMP
+	lda     #>(_hitbox)
+	sta     _TEMP+1
+	lda     #<(_hitbox2)
+	sta     _TEMP+2
+	lda     #>(_hitbox2)
+	sta     _TEMP+3
+	jsr     _check_collision_fast
+	sta     _temp0
+;
+; if (temp0) {
+;
+	lda     _temp0
+	beq     L04F7
+;
+; if(previously_collected_treats_this_jump < 7) {
+;
+	lda     _eject_L
+	cmp     #$07
+	bcs     L04CC
+;
+; ++previously_collected_treats_this_jump;
+;
+	inc     _eject_L
+;
+; temp0 = enemies_type[x];
+;
+L04CC:	ldy     _x
+	lda     _enemies_type,y
+	sta     _temp0
+;
+; if (temp0 >= TREAT_PURPLE_H) {
+;
+	cmp     #$0F
+	bcc     L04F6
+;
+; score += hasee_letter_points[previously_collected_treats_this_jump];
+;
+	ldy     _eject_L
+	lda     _hasee_letter_points,y
+;
+; } else if (temp0 <= TREAT_MACCY) {
+;
+	jmp     L04FE
+L04F6:	lda     _temp0
+	cmp     #$0D
+	bcs     L04F7
+;
+; temp0 <<= 3;
+;
+	asl     a
+	asl     a
+	asl     a
+	sta     _temp0
+;
+; temp0 |= previously_collected_treats_this_jump;
+;
+	lda     _eject_L
+	ora     _temp0
+	sta     _temp0
+;
+; score += hasee_treat_points[temp0];
+;
+	ldy     _temp0
+	lda     _hasee_treat_points,y
+L04FE:	clc
+	adc     _score
+	sta     _score
+	lda     #$00
+	adc     _score+1
+	sta     _score+1
+;
+; x += 2;
+;
+L04F7:	lda     #$02
+	clc
+	adc     _x
+	sta     _x
+;
+; for (x; x < ONSCREEN_TREATS_MAXIMUM; x += 2) { // TODO: See if we can optimize this looping somehow
+;
+	lda     #$02
+	clc
+	adc     _x
+	jmp     L04F9
 
 .endproc
 

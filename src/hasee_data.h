@@ -40,6 +40,10 @@ const unsigned char const hasee_subpal_icy[] = { 0x21, 0x0C, 0x3c, 0x2c };
 const unsigned char const hasee_subpal_rainbow[] = { 0x21, 0x01, 0x38, 0x06 };
 const unsigned char const hasee_subpal_fish[] = { 0x21, 0x0f, 0x2c, 0x3c };
 
+const unsigned char const hasee_treat_effect_lut[] = {
+
+};
+
 // Metasprites.
 const unsigned char const purple_hasee_idle_left[] = {
       0xfe, 0xfd,   0x08,   1,
@@ -317,6 +321,40 @@ const unsigned char const compressed_hasee_test_screen[] = {
 	4,28,4,5,0,0,192,240,192,2,100,104,160,160,32,2,
 	49,187,80,80,80,84,85,80,16,0,85,4,3,17,255,4,
 	5,15,4,5,
+};
+
+const unsigned char const hasee_treat_points[] = {
+    // See hasee_constants.h for expected base indices of each item
+    // Max of 8x multiplier; can't do more than 255 at once in unsigned char
+     1,  2,  3,  4,  5,  6,  7,  8, // Yellow
+     3,  6,  9, 12, 15, 18, 21, 24, // Blue
+     4,  8, 12, 16, 20, 24, 28, 32, // Green
+     5, 10, 15, 20, 25, 30, 35, 40, // Silver
+    10, 20, 30, 40, 50, 60, 70, 80, // Golden
+    12, 24, 36, 48, 60, 72, 84, 96, // Checkered
+    15, 30, 45, 60, 75, 90,105,120, // Sponge
+    18, 36, 54, 72, 90,108,126,144, // Fiery
+    20, 40, 60, 80,100,120,140,160, // Icy
+    40, 80,120,160,200,240,255,255, // Rainbow
+    50,100,150,200,250,255,255,255, // Fish
+     7, 14, 21, 28, 35, 42, 49, 56, // Grundoughnutfruit
+    64,128,192,255,255,255,255,255, // Maccy
+
+    // The below cases will be handled separately since they are redundant...
+    // 0, // Gross - Dung
+    // 0, // Gross - Slime
+    // 2, // Purple H
+    // 2, // Purple A
+    // 2, // Purple S
+    // 2, // Purple E
+    // 2, // Orange H
+    // 2, // Orange A
+    // 2, // Orange S
+    // 2, // Orange E
+};
+
+const unsigned char hasee_letter_points[] = {
+    2, 4, 6, 8, 10, 12, 14, 16
 };
 
 #pragma rodata-name(pop);
