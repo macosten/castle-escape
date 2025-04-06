@@ -300,8 +300,9 @@ const unsigned char * const menu_compressed_data[] = {
     level_select_screen,
     about_screen,
     game_complete_screen,
-    settings_screen,
+    settings_screen, // For some reason, growing this to exactly 6 entries causes glitchy scrolling in FCEUX...
     more_games_screen,
+    0, // Having 7 here (or really, I think, adding 2 ROM bytes around here) fixes it. Maybe it has something to do with crossing a page boundary messing with some some timing somewhere?? Might be worth investigating if it causes bigger problems later...
 };
 
 const unsigned char const eligible_level_music[] = { LEVEL_SONG_SNEAKY, LEVEL_SONG_PIZZICATO };
