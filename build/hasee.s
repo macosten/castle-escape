@@ -458,7 +458,7 @@ _yellow_doughnutfruit:
 	.byte	$00
 	.byte	$00
 	.byte	$08
-	.byte	$10
+	.byte	$4E
 	.byte	$00
 	.byte	$08
 	.byte	$08
@@ -476,7 +476,7 @@ _blue_green_doughnutfruit:
 	.byte	$02
 	.byte	$00
 	.byte	$08
-	.byte	$10
+	.byte	$4E
 	.byte	$02
 	.byte	$08
 	.byte	$08
@@ -494,7 +494,7 @@ _grundoughnutfruit:
 	.byte	$02
 	.byte	$00
 	.byte	$08
-	.byte	$10
+	.byte	$4E
 	.byte	$02
 	.byte	$08
 	.byte	$08
@@ -512,7 +512,7 @@ _silver_gold_icy_doughnutfruit:
 	.byte	$03
 	.byte	$00
 	.byte	$08
-	.byte	$10
+	.byte	$4E
 	.byte	$03
 	.byte	$08
 	.byte	$08
@@ -602,7 +602,7 @@ _fish_doughnutfruit:
 	.byte	$03
 	.byte	$00
 	.byte	$08
-	.byte	$10
+	.byte	$4E
 	.byte	$03
 	.byte	$08
 	.byte	$08
@@ -1185,8 +1185,8 @@ _hasee_palette_bg:
 	.byte	$23
 	.byte	$26
 	.byte	$21
-	.byte	$19
 	.byte	$0F
+	.byte	$19
 	.byte	$30
 L0021:
 	.byte	$48,$75,$68,$3F,$21,$3F,$20,$57,$68,$61,$74,$27,$73,$20,$74,$68

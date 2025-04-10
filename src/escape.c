@@ -229,6 +229,7 @@ void menu_about_screen(void);
 void menu_game_complete_screen(void);
 void menu_settings(void);
 void menu_more_games_menu(void);
+void menu_hasee_bounce_menu(void);
 
 void load_level_selector(void);
 void load_game_type_select(void);
@@ -236,6 +237,7 @@ void load_about_screen(void);
 void load_game_complete_screen(void);
 void load_settings_menu(void);
 void load_more_games_menu(void);
+void load_hasee_bounce_menu(void);
 
 // Functions in other files.
 extern void dialog_box_handler(void);
@@ -283,6 +285,7 @@ const void (* const menu_logic_functions[])(void) = {
     menu_game_complete_screen,
     menu_settings,
     menu_more_games_menu,
+    menu_hasee_bounce_menu,
 };
 
 // If a menu needs something extra/special to be done before showing it, it'll do so in one of these functions.
@@ -293,6 +296,7 @@ const void (* const menu_load_functions[])(void) = {
     load_game_complete_screen,
     load_settings_menu,
     load_more_games_menu,
+    load_hasee_bounce_menu,
 };
 
 const unsigned char * const menu_compressed_data[] = {
@@ -302,7 +306,7 @@ const unsigned char * const menu_compressed_data[] = {
     game_complete_screen,
     settings_screen, // For some reason, growing this to exactly 6 entries causes glitchy scrolling in FCEUX...
     more_games_screen,
-    0, // Having 7 here (or really, I think, adding 2 ROM bytes around here) fixes it. Maybe it has something to do with crossing a page boundary messing with some some timing somewhere?? Might be worth investigating if it causes bigger problems later...
+    hasee_menu_screen, // Having 7 here (or really, I think, adding 2 ROM bytes around here) fixes it. Maybe it has something to do with crossing a page boundary messing with some some timing somewhere?? Might be worth investigating if it causes bigger problems later...
 };
 
 const unsigned char const eligible_level_music[] = { LEVEL_SONG_SNEAKY, LEVEL_SONG_PIZZICATO };
@@ -564,6 +568,9 @@ void switch_menu(void) {
     game_mode = MODE_MENU; // Ensure the correct game mode is active.
     menu_selection = 0; // Just to make sure we don't accidentally point to an invalid menu item somehow.
 
+    // Zero out possible attribute table bytes in the cmap buffer.
+    memfill(cmap + (32 * 30), 0, (32 * 2));
+
     // Decode the menu visuals from libLZG'd data in the Menu Data Bank to WRAM.
 
     set_prg_bank(MENU_DATA_BANK);
@@ -572,7 +579,7 @@ void switch_menu(void) {
     LZG_decode(temppointer, cmap);
 
     // Write the buffer to VRAM.
-    vram_write(cmap, (32*30));
+    vram_write(cmap, (32*32));
 
     // Do a menu-specific thing.
     AsmCallFunctionAtPtrOffsetByIndexVar(menu_load_functions, menu);
@@ -901,6 +908,10 @@ void menu_settings(void) {
 
 #define MORE_GAMES_OPTIONS 1
 
+const unsigned char const more_games_menu_links[] = { 
+    MENU_HASEE_BOUNCE,
+};
+
 const unsigned char const more_games_menu_selector_x[] = { // in pixels
     8 * 8 + 4,
 };
@@ -918,11 +929,66 @@ void load_more_games_menu(void) {
 void menu_more_games_menu(void) {
     simple_menu_shared_behavior();
 
+    if (pad1_new & PAD_A) {
+        menu = more_games_menu_links[menu_selection];
+        pal_fade_to(4, 0);
+        switch_menu();
+        return;
+    }
+
     if (pad1_new & PAD_B) { // Back to main menu
         menu = MENU_GAME_SELECT;
         switch_menu();
     }
 }
+
+// Menu -- Hasee Bounce
+
+#define HASEE_BOUNCE_OPTIONS 2
+
+const unsigned char const hasee_bounce_menu_selector_x[] = {
+    12 * 8 + 4,
+    12 * 8 + 4,
+};
+
+const unsigned char const hasee_bounce_menu_selector_y[] = {
+    12 * 8 - 1,
+    14 * 8 - 1,
+};
+
+extern unsigned char const hasee_palette_sp[];
+extern unsigned char const hasee_palette_bg[];
+
+void load_hasee_bounce_menu(void) {
+    menu_selection_count = HASEE_BOUNCE_OPTIONS;
+    temppointer = hasee_bounce_menu_selector_x;
+    temppointer1 = hasee_bounce_menu_selector_y;
+    // Change to Hasee Bounce graphics
+    set_prg_bank(0);
+    set_chr_bank_0(4);
+    set_chr_bank_1(5);
+    pal_bg(hasee_palette_bg);
+    pal_spr(hasee_palette_sp);
+    pal_bright(4);
+}
+
+void menu_hasee_bounce_menu(void) {
+    simple_menu_shared_behavior();
+
+    if (pad1_new & PAD_B) { // Back to main menu
+        menu = MENU_MORE_GAMES;
+        // Change back to EfMC graphics
+        pal_fade_to(4, 0);
+        set_chr_bank_0(0);
+        set_chr_bank_1(1);
+        pal_bg(palette_bg);
+        pal_spr(palette_sp);
+        pal_bright(4);
+        switch_menu();
+    }    
+}
+
+// End of menus -- Castle Escape gameplay below here
 
 void load_level_welcome_screen(void) {
     ppu_off();

@@ -176,7 +176,7 @@ const unsigned char const orange_hasee_squat_right[] = {
 const unsigned char const yellow_doughnutfruit[] = {
     0, 0, 0x00, 0,
     8, 0, 0x01, 0,
-    0, 8, 0x10, 0,
+    0, 8, 0x4E, 0,
     8, 8, 0x11, 0,
     128
 };
@@ -184,7 +184,7 @@ const unsigned char const yellow_doughnutfruit[] = {
 const unsigned char const blue_green_doughnutfruit[] = {
     0, 0, 0x00, 2,
     8, 0, 0x01, 2,
-    0, 8, 0x10, 2,
+    0, 8, 0x4E, 2,
     8, 8, 0x11, 2,
     128
 };
@@ -192,7 +192,7 @@ const unsigned char const blue_green_doughnutfruit[] = {
 const unsigned char const grundoughnutfruit[] = {
     0, 0, 0x50, 2,
     8, 0, 0x51, 2,
-    0, 8, 0x10, 2,
+    0, 8, 0x4E, 2,
     8, 8, 0x11, 2,
     128
 };
@@ -200,7 +200,7 @@ const unsigned char const grundoughnutfruit[] = {
 const unsigned char const silver_gold_icy_doughnutfruit[] = {
     0, 0, 0x00, 3,
     8, 0, 0x01, 3,
-    0, 8, 0x10, 3,
+    0, 8, 0x4E, 3,
     8, 8, 0x11, 3,
     128
 };
@@ -240,7 +240,7 @@ const unsigned char const rainbow_doughnutfruit[] = {
 const unsigned char const fish_doughnutfruit[] = {
     0, 0, 0x40, 3,
     8, 0, 0x41, 3,
-    0, 8, 0x10, 3,
+    0, 8, 0x4E, 3,
     8, 8, 0x11, 3,
     128
 };
@@ -301,6 +301,9 @@ const unsigned char const orange_s_fruit[] = {
     8, 8, 0x77, 1,
 };
 
+/* Todo - remove this from ROM, will probably be better to manually draw tiles
+* that differ from the menu screen... maybe.
+*/
 const unsigned char const compressed_hasee_test_screen[] = {
 	76,90,71,0,0,4,0,0,0,1,20,25,69,88,56,1,
 	1,2,3,4,177,177,177,178,0,4,23,176,177,4,1,2,

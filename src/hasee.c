@@ -77,7 +77,7 @@ unsigned char const hasee_palette_bg[] = {
     0x21, 0x07, 0x17, 0x27, // Wood + Trees
     0x21, 0x07, 0x19, 0x29, // Grass + Bushes
     0x21, 0x0f, 0x23, 0x26, // sky, black, purple, orange - Hasees and letters,
-    0x21, 0x19, 0x0f, 0x30, // Text-on-sky and seesaw-on-background
+    0x21, 0x0f, 0x19, 0x30, // Text-on-sky and seesaw-on-background
 };
 
 void game_hasee_bounce(void);
