@@ -1,3 +1,6 @@
+#ifndef OTHER_MACROS_H
+#define OTHER_MACROS_H
+
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
@@ -15,3 +18,12 @@
 #define SRAM_ARRAY_EXTERN(defa, defb, defArr) extern defa defb[defArr];
 
 #define METATILE_IS_SOLID(mtid) (metatile_property_lookup_table[mtid] & METATILE_SOLID)
+
+// Prints a string to the specified place. (Assumes the characters are correctly placed for ASCII.)
+#define put_str(adr, str) { \
+    address = adr;\
+    temppointer = str;\
+    put_str_sub();\
+}
+
+#endif

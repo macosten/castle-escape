@@ -47,6 +47,9 @@ ZEROPAGE_EXTERN(unsigned char, player_death_timer);
 ZEROPAGE_EXTERN(unsigned char, player_walking_timer);
 #define player2_stun_timer player_walking_timer
 
+ZEROPAGE_EXTERN(unsigned int, pseudo_scroll_y);
+#define game_timer pseudo_scroll_y
+
 // extern unsigned char eject_R;
 // #pragma zpsym("eject_R")
 // #define ...
@@ -59,6 +62,7 @@ extern unsigned char enemies_type[MAX_ENEMIES];
 extern unsigned char enemies_extra2[MAX_ENEMIES]; // doughnutfruit speed
 extern unsigned char enemies_flags[MAX_ENEMIES]; // doughnutfruit speed
 
+extern unsigned char cmap[];
 
 // Since EfMC is in the non-swapping PRG segment, we can access all of its rodata
 // Hasee Bounce ROdata bank will be Bank 1
@@ -80,13 +84,65 @@ unsigned char const hasee_palette_bg[] = {
     0x21, 0x0f, 0x19, 0x30, // Text-on-sky and seesaw-on-background
 };
 
+extern void clear_screen(void);
+extern void put_str_sub(void);
+extern void set_prg_bank(unsigned char bank);
+
+// Make sure prg bank is 5 before calling:
+extern void LZG_decode(const unsigned char *src, unsigned char *dest);
+
 void game_hasee_bounce(void);
+void begin_hasee_bounce(void);
 void calculate_next_treat(void);
 // void spawn_next_treat(void);
 void hasee_sprite_collisions(void);
+void hasee_player_movement(void);
+void hasee_draw_sprites(void);
+void hasee_treat_movement(void);
+
+extern const char const about_screen[];
+
+void begin_hasee_bounce(void) {
+    // Change the menu screen so that it becomes the game screen...
+    pal_fade_to(4, 0);
+    ppu_off();
+    clear_screen();
+
+    // Devensive programming: clear these buffers.
+    clear_vram_buffer();
+    oam_clear();
+
+    game_timer = 6300; // Frames per game (105 seconds * 60 fps)
+    
+    set_prg_bank(5);
+    temppointer = hasee_game_screen;
+    LZG_decode(temppointer, cmap);
+    vram_write(cmap, 32*32);
+
+    ppu_on_all();
+    pal_bright(4);
+}
 
 void game_hasee_bounce(void) {
-    return;
+    pad1 = pad_poll(0); // read the first controller
+    pad1_new = get_pad_new(0);
+    pad2 = pad_poll(1); // Will only be used in 2 Player games
+    pad2_new = get_pad_new(1);
+
+    ppu_wait_nmi(); // wait till beginning of the frame
+
+    clear_vram_buffer();
+
+    // hasee_player_movement();
+    // hasee_check_spr_objects(); // ?
+
+    // draw score
+
+    // hasee_draw_sprites();
+    // hasee_treat_movement();
+    // hasee_draw_sprites();
+
+    gray_line();
 }
 
 // Calculate the next pickup item. It will be placed into temp6.

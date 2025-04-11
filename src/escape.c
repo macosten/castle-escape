@@ -19,6 +19,7 @@
 
 #include "player_macros.h"
 #include "enemy_macros.h"
+#include "other_macros.h"
 #include "settings_macros.h"
 
 #include "tilemaps/compressed_welcome_screen.h"
@@ -254,6 +255,8 @@ extern void draw_boss_flying(void);
 extern void draw_boss_idle(void);
 extern void draw_boss_dying(void);
 
+extern void begin_hasee_bounce(void);
+
 extern unsigned char const * titlescreen;
 
 // MARK: Lookup Tables
@@ -311,10 +314,17 @@ const unsigned char * const menu_compressed_data[] = {
 
 const unsigned char const eligible_level_music[] = { LEVEL_SONG_SNEAKY, LEVEL_SONG_PIZZICATO };
 
+const void (* const game_functions[])(void) = {
+    game_castle_escape,
+    game_hasee_bounce
+};
+
 void main (void) {
 
     ppu_off(); // screen off
     
+    active_game = GAME_CASTLE_ESCAPE;
+
     // use the second set of tiles for sprites
     // both bg and sprites are set to 0 by default
     // Set the swappable bank like this:
@@ -365,7 +375,8 @@ void main (void) {
 
         // A game is active and we're drawing frames.
         while (game_mode == MODE_GAME) {
-            game_castle_escape();
+            // game_castle_escape();
+            AsmCallFunctionAtPtrOffsetByIndexVar(game_functions, active_game);
         }
 
         while (game_mode == MODE_GAME_SHOWING_TEXT) {
@@ -425,7 +436,7 @@ void game_castle_escape(void) {
     check_spr_objects();
     
     // Do the following only if we're not dead:
-    if (!STATUS_DEAD) { 
+    if (!STATUS_DEAD && !GAME_PAUSED) { 
         // Check the status of the sword swing.
         swing_sword();
         // Check sprite collisions
@@ -538,12 +549,6 @@ void clear_screen(void) {
     vram_fill(0,1024);
 }
 
-// Prints a string to the specified place. (Assumes the characters are correctly placed for ASCII.)
-#define put_str(adr, str) { \
-    address = adr;\
-    temppointer = str;\
-    put_str_sub();\
-}
 // Subroutine for put_str. This sort of "macro that calls a function" 
 // lets us pretend to use function parameters without actually using the (slow) stack.
 void put_str_sub(void) {
@@ -947,8 +952,8 @@ void menu_more_games_menu(void) {
 #define HASEE_BOUNCE_OPTIONS 2
 
 const unsigned char const hasee_bounce_menu_selector_x[] = {
-    12 * 8 + 4,
-    12 * 8 + 4,
+    11 * 8 + 4,
+    11 * 8 + 4,
 };
 
 const unsigned char const hasee_bounce_menu_selector_y[] = {
@@ -963,6 +968,7 @@ void load_hasee_bounce_menu(void) {
     menu_selection_count = HASEE_BOUNCE_OPTIONS;
     temppointer = hasee_bounce_menu_selector_x;
     temppointer1 = hasee_bounce_menu_selector_y;
+    active_game = GAME_HASEE_BOUNCE;
     // Change to Hasee Bounce graphics
     set_prg_bank(0);
     set_chr_bank_0(4);
@@ -973,10 +979,17 @@ void load_hasee_bounce_menu(void) {
 }
 
 void menu_hasee_bounce_menu(void) {
+    // PRG bank must be 0
     simple_menu_shared_behavior();
+
+    if (pad1_new & PAD_A) {
+        begin_hasee_bounce();
+        return;
+    }
 
     if (pad1_new & PAD_B) { // Back to main menu
         menu = MENU_MORE_GAMES;
+        active_game = GAME_CASTLE_ESCAPE;
         // Change back to EfMC graphics
         pal_fade_to(4, 0);
         set_chr_bank_0(0);
@@ -985,7 +998,7 @@ void menu_hasee_bounce_menu(void) {
         pal_spr(palette_sp);
         pal_bright(4);
         switch_menu();
-    }    
+    }
 }
 
 // End of menus -- Castle Escape gameplay below here
