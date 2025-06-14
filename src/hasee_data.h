@@ -352,6 +352,16 @@ const unsigned char const hasee_metatiles[]={
     0xAE,0xAF,0xBE,0xBF, 2, // Blank S
 };
 
+const unsigned char const hasee_paused_text[] = {
+    0,  0, 0xF9, 1,
+    8,  0, 0xFA, 1,
+   16,  0, 0xFB, 1,
+   24,  0, 0xFC, 1,
+   32,  0, 0xFD, 1,
+   40,  0, 0xFE, 1,
+  128
+};
+
 #pragma rodata-name(pop);
 
 #pragma rodata-name(push, "BANK5")

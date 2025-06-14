@@ -573,7 +573,7 @@ void switch_menu(void) {
     game_mode = MODE_MENU; // Ensure the correct game mode is active.
     menu_selection = 0; // Just to make sure we don't accidentally point to an invalid menu item somehow.
 
-    // Zero out possible attribute table bytes in the cmap buffer.
+    // Zero out possible attribute table bytes in the cmap buffer (not all menu data block write to it).
     memfill(cmap + (32 * 30), 0, (32 * 2));
 
     // Decode the menu visuals from libLZG'd data in the Menu Data Bank to WRAM.
@@ -2532,6 +2532,8 @@ const void (* const ai_pointers[])(void) = {
 void enemy_movement(void) {
     // This one's a bit of an uncharted realm. 
     // I'm thinking we'll want to optimize this one somehow...
+    set_prg_bank(2);
+
     for (x = lowest_enemy_index; x < enemy_limit; ++x) {
         // Unrolled loop (8):
         // Will this cause an issue if x > MAX_ENEMIES? Do we want to check this at some point?
@@ -2577,8 +2579,9 @@ void enemy_movement(void) {
             AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
         }
     }
-
 }
+
+#pragma code-name(push, "BANK2")
 
 // I reordered these to be listed in the order in which they were implemented.
 
@@ -3338,3 +3341,5 @@ void death_effect_timer_ai(void) {
         enemies_flags[x] = 0;
     }
 }
+
+#pragma code-name(pop)

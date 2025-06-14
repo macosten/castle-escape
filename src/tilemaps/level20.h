@@ -23,6 +23,10 @@ const unsigned char const level20[] = {
 	4,3,7,2,8,
 };
 
+#pragma rodata-name(pop)
+
+#pragma rodata-name(push, "BANK2")
+
 const char * const boss_dialog_strings[] = {
 	"So we meet again, Valrigard.",
 	"I should have known...",
@@ -52,4 +56,5 @@ const DialogBoxData defeat_dialog = {
 };
 
 #pragma rodata-name(pop)
+
 
