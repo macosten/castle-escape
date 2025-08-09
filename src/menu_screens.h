@@ -1,9 +1,5 @@
 // LibLZG'd:
-
-#define MENU_DATA_BANK 5
 #pragma rodata-name(push, "BANK5")
-
-#define MENU_GAME_SELECT 0
 
 const unsigned char const game_select_screen[] = { // main_menu_screen
 	76,90,71,0,0,3,192,0,0,0,184,243,1,57,167,1,
@@ -21,8 +17,6 @@ const unsigned char const game_select_screen[] = { // main_menu_screen
 	4,59,229,246,247,4,59,247,
 };
 
-#define MENU_LEVEL_SELECT 1
-
 const unsigned char const level_select_screen[] = {
 	76,90,71,0,0,3,192,0,0,0,112,36,150,26,85,1,
 	0,1,2,3,32,32,3,31,3,31,3,29,3,21,83,101,
@@ -33,8 +27,6 @@ const unsigned char const level_select_screen[] = {
 	65,2,22,1,36,149,3,20,66,58,32,66,97,99,107,1,
 	21,22,3,30,3,21,130,229,3,59,229,246,247,3,59,247,
 };
-
-#define MENU_ABOUT_SCREEN 2
 
 const unsigned char const about_screen[] = {
 	76,90,71,0,0,3,192,0,0,0,245,123,40,69,153,1,
@@ -56,8 +48,6 @@ const unsigned char const about_screen[] = {
 	246,247,4,59,247,
 };
 
-#define MENU_COMPLETE_SCREEN 3
-
 const unsigned char const game_complete_screen[] = {
 	76,90,71,0,0,3,192,0,0,0,115,240,176,36,217,1,
 	0,1,2,3,32,32,3,31,3,31,3,4,67,111,110,103,
@@ -69,8 +59,6 @@ const unsigned char const game_complete_screen[] = {
 	206,1,27,24,188,221,222,2,152,130,229,3,59,229,246,247,
 	3,59,247,
 };
-
-#define MENU_SETTINGS 4
 
 const unsigned char const settings_screen[] = {
 	76,90,71,0,0,3,192,0,0,0,199,96,85,51,95,1,
@@ -103,8 +91,6 @@ const unsigned char const more_games_screen[] = {
 	4,228,2,22,56,252,253,2,13,120,130,229,4,59,229,246,
 	247,4,59,247,
 };
-
-#define MENU_HASEE_BOUNCE 6
 
 // Should include attribute table data?
 const unsigned char const hasee_menu_screen[] = {

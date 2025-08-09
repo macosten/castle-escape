@@ -33,6 +33,7 @@
 
 #include "titlescreen.h" // Title screen and associated data+functions
 #include "menu_screens.h" // compressed menu data
+#include "menu_screens_constants.h" // menu screen constant definitions
 
 #include "checksum.h"
 
@@ -952,8 +953,8 @@ void menu_more_games_menu(void) {
 #define HASEE_BOUNCE_OPTIONS 2
 
 const unsigned char const hasee_bounce_menu_selector_x[] = {
-    11 * 8 + 4,
-    11 * 8 + 4,
+    10 * 8 + 4,
+    10 * 8 + 4,
 };
 
 const unsigned char const hasee_bounce_menu_selector_y[] = {
@@ -976,6 +977,7 @@ void load_hasee_bounce_menu(void) {
     pal_bg(hasee_palette_bg);
     pal_spr(hasee_palette_sp);
     pal_bright(4);
+    set_scroll_x(8); // Center the off-centered play area...
 }
 
 void menu_hasee_bounce_menu(void) {
@@ -997,6 +999,7 @@ void menu_hasee_bounce_menu(void) {
         pal_bg(palette_bg);
         pal_spr(palette_sp);
         pal_bright(4);
+        set_scroll_x(0);
         switch_menu();
     }
 }

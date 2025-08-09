@@ -11,6 +11,7 @@
 #include "constants.h"
 #include "hasee_constants.h"
 #include "hasee_data.h"
+#include "menu_screens_constants.h"
 
 // === Extern'd zero page symbols, defined in zeropage.h.
 ZEROPAGE_EXTERN(unsigned char, temp0);
@@ -38,7 +39,7 @@ ZEROPAGE_EXTERN(unsigned int, old_y);
 ZEROPAGE_EXTERN(unsigned char, game_mode);
 ZEROPAGE_EXTERN(unsigned char, player_flags);
 ZEROPAGE_EXTERN(unsigned char, player_flags2);
-
+ZEROPAGE_EXTERN(unsigned char, menu);
 
 // Aliased values... I can use the same addresses with different names this way, with only a medium jank factor
 ZEROPAGE_EXTERN(unsigned char, eject_L); // Just don't use this original name...
@@ -62,6 +63,9 @@ ZEROPAGE_EXTERN(unsigned char, player_walking_timer);
 ZEROPAGE_EXTERN(unsigned int, pseudo_scroll_y);
 #define game_timer pseudo_scroll_y
 
+ZEROPAGE_EXTERN(signed int, scroll_y); // Letting me treat an unsigned int as a signed int, very kind
+#define old_velocity_y scroll_y
+
 // extern unsigned char eject_R;
 // #pragma zpsym("eject_R")
 // #define ...
@@ -78,8 +82,6 @@ extern unsigned char enemies_flags[MAX_ENEMIES]; // doughnutfruit speed
 extern unsigned char enemies_count;
 
 extern unsigned char cmap[];
-
-Player *active_player_ptr;
 
 // Since EfMC is in the non-swapping PRG segment, we can access all of its rodata
 // Hasee Bounce ROdata bank will be Bank 1
@@ -100,15 +102,11 @@ unsigned char const hasee_palette_bg[] = {
     0x21, 0x0f, 0x19, 0x30, // Text-on-sky and seesaw-on-background
 };
 
-Player *player_lut[] = {
-    &valrigard,
-    &player2
-};
-
 extern void clear_screen(void);
 extern void put_str_sub(void);
 extern void set_prg_bank(unsigned char bank);
 extern void calculate_shuffle_array(void);
+extern void switch_menu(void);
 
 // Make sure prg bank is 5 before calling:
 extern void LZG_decode(const unsigned char *src, unsigned char *dest);
@@ -123,6 +121,8 @@ void hasee_multiplayer_movement(void);
 void hasee_draw_sprites(void);
 void hasee_treat_movement(void);
 void hasee_update_score(void);
+void orange_hasee_lr_movement(void);
+void purple_hasee_lr_movement(void);
 
 extern const char const about_screen[];
 
@@ -144,15 +144,13 @@ void begin_hasee_bounce(void) {
     player2.velocity_x = 0;
     player2.velocity_y = 0;
 
-    player1.x = 8*8;
-    player1.y = 6*8;
-    player2.x = 24*8;
-    player2.y = 26*8;
+    player2.x = 0x4000;
+    player2.y = ON_BRANCH_STARTING_Y_VALUE;
+    player1.x = 0xC000;
+    player1.y = ON_GROUND_STARTING_Y_VALUE;
 
-    active_player_ptr = &player1;
-
-    player_flags = 0;
-    player_flags2 = 0; 
+    player_flags = ORANGE_HASEE_ACTIVE | ACTIVE_PLAYER_BRANCH_STATUS;
+    player_flags2 = 0;
     score = 0;
 
     set_prg_bank(5);
@@ -168,10 +166,12 @@ void begin_hasee_bounce(void) {
 }
 
 void game_hasee_bounce(void) {
+    HASEE_RESET_PLAYER_FLAGS_START_FRAME();
+
     pad1 = pad_poll(0); // read the first controller
     pad1_new = get_pad_new(0);
-    // pad2 = pad_poll(1); // Will only be used in 2 Player games
-    // pad2_new = get_pad_new(1); // Or maybe we just call a second function that lets the grounded hasee move in 2p
+    pad2 = pad_poll(1); // Will only be used in 2 Player games
+    pad2_new = get_pad_new(1); // Or maybe we just call a second function that lets the grounded hasee move only in 2p
 
     ppu_wait_nmi(); // wait till beginning of the frame
 
@@ -186,14 +186,21 @@ void game_hasee_bounce(void) {
     // hasee_treat_movement();
     // hasee_draw_sprites();
 
-    if (SCORE_CHANGED_THIS_FRAME) { hasee_update_score(); }
+    if (HASEE_SCORE_CHANGED_THIS_FRAME) { hasee_update_score(); }
     
     --game_timer;
     if (game_timer == 0) {
         // Trigger stop to game next frame
     }
 
-    gray_line();
+    // Temporary debug stuffs:
+    if (pad1 & PAD_B) {
+        pal_fade_to(4, 0);
+        menu = MENU_HASEE_BOUNCE;
+        switch_menu();
+        pal_bright(4);
+    }
+    // gray_line();
 }
 
 void hasee_draw_sprites(void) {
@@ -203,23 +210,33 @@ void hasee_draw_sprites(void) {
     // Draw hasees
     
     // Add animation switching block here for P1 hasee (see draw_player)
-    temppointer = purple_hasee_idle_left;
+    temppointer = purple_hasee_idle_right;
 
     oam_meta_spr(high_byte(player1.x), high_byte(player1.y), temppointer);
 
     // Add animation switching block here for P2 hasee
-    temppointer = orange_hasee_idle_right;
+    temppointer = orange_hasee_idle_left;
 
     oam_meta_spr(high_byte(player2.x), high_byte(player2.y), temppointer);
 
     // if (GAME_PAUSED) { oam_meta_spr(108, 116, hasee_paused_text); }
 
     // Draw goodies
-    for (y = 0; y < shuffle_leg_size; ++y) {
-        
-    }
+    // for (y = 0; y < shuffle_leg_size; ++y) {
 
-    set_prg_bank(1);
+    // }
+
+    // Debug HUD, drawn last because it's the least important.
+    if (ACTIVE_PLAYER_ON_BRANCH) {
+        oam_spr(208, 50, 0x48, 1);
+    }
+    if (ACTIVE_PLAYER_JUMPING_OFF_BRANCH) {
+        oam_spr(208, 60, 0x49, 2);
+    }
+    if (ACTIVE_PLAYER_JUMPING_TO_BRANCH) {
+        oam_spr(208, 70, 0x58, 3);
+    }
+    // set_prg_bank(1); HASEE_METASPRITE_BANK is bank 1 at the moment...
 }
 
 void hasee_update_score(void) {
@@ -256,32 +273,162 @@ void hasee_update_score(void) {
 }
 
 void hasee_singleplayer_movement(void) {
-    if (ACTIVE_PLAYER) {
-        if (high_byte(player2.x) < 0x20) { // tree trunk on left
-            player1.x = 0x2000;
-        } else if (high_byte(player2.x) > 0x50) { // tip of tree branch on left
-            player1.x = 0x5000;
-        }
+    temp0 = pad1; // Orange Hasee's Pad (Both the same in single-player)
+    temp1 = pad1; // Purple Hasee's Pad
+    if (ACTIVE_PLAYER) { // Orange Hasee/Player 2 active
+        temp2 = pad1; // Temp2 = "Active player's pad"
+        temp3 = pad1_new; // Temp3 = "Active player's pad_new"
+        orange_hasee_lr_movement();
         old_x = player2.x;
+        old_velocity_y = player2.velocity_y;
+        old_y = player2.y;
+    } else { // Purple Hasee/Player 1 active
+        temp2 = pad1;
+        temp3 = pad1_new;
+        purple_hasee_lr_movement();
+        old_x = player1.x;
+        old_velocity_y = player1.velocity_y;
+        old_y = player1.y;
+    }
+    temp4 = 0; // We will set this if the high_byte playerX.y should be set, and velocity should be zeroed out. 
+    if (ACTIVE_PLAYER_ON_BRANCH) {
+        if(temp2 & PAD_A) { // Possible that this is immediately triggered at the start of the game because it's seeing the 
+            // Start jumping
+            ACTIVE_PLAYER_MOVE_OFF_BRANCH();
+            ACTIVE_PLAYER_SET_JUMPING_OFF_BRANCH();
+            
+            if (ACTIVE_PLAYER) {
+                player2.velocity_y = -HASEE_MAX_SPEED;
+                old_velocity_y = player2.velocity_y;
+            } else {
+                player1.velocity_y = -HASEE_MAX_SPEED;
+                old_velocity_y = player1.velocity_y;
+            }
+        }
+    } else if (ACTIVE_PLAYER_JUMPING_OFF_BRANCH) {
+        if (high_byte(old_y) >= ON_GROUND_STARTING_Y_VALUE_HIGH_BYTE) { // Hit the ground
+            FLIP_ACTIVE_PLAYER();
+            ACTIVE_PLAYER_UNSET_JUMPING_OFF_BRANCH();
+            ACTIVE_PLAYER_SET_JUMPING_TO_BRANCH();
+            temp4 = ON_GROUND_STARTING_Y_VALUE_HIGH_BYTE;
+        } else {
+            old_velocity_y += HASEE_GRAVITY;
+            if (old_velocity_y > HASEE_MAX_SPEED) {
+                old_velocity_y = HASEE_MAX_SPEED;
+            }
+        }
+    } else if (ACTIVE_PLAYER_JUMPING_TO_BRANCH) {
+        if (
+            high_byte(old_y) >= ON_BRANCH_STARTNIG_Y_VALUE_HIGH_BYTE &&
+            ACTIVE_PLAYER_SHOULD_STOP_AT_BRANCH
+        ) {
+            ACTIVE_PLAYER_MOVE_ON_BRANCH();
+            ACTIVE_PLAYER_UNSET_JUMPING_TO_BRANCH();
+            ACTIVE_PLAYER_IGNORE_BRANCH();
+            temp4 = ON_BRANCH_STARTNIG_Y_VALUE_HIGH_BYTE;
+        } else if (high_byte(old_y) <= ON_BRANCH_STARTNIG_Y_VALUE_HIGH_BYTE) {
+            old_velocity_y += 0x100;
+            ACTIVE_PLAYER_STOP_AT_BRANCH();
+        } else {
+            old_velocity_y = -HASEE_MAX_SPEED;
+        }
+    }
+    // else { //??? Not sure how this could happen
+    //     oam_spr(100, 100, 0x94, 2);
+    // }
+
+    if (ACTIVE_PLAYER) {
+        if (temp4) {
+            high_byte(player2.y) = temp4;
+            low_byte(player2.y) = 0;
+            old_velocity_y = 0;
+        } 
+        player2.velocity_y = old_velocity_y;
+        player2.y += old_velocity_y;
         old_y = player2.y;
     } else {
-        if (high_byte(player1.x) < 0xb0) { // tip of branch on left
-            player1.x = 0xb000;
-        } else if (high_byte(player1.x) > 0xe0) { // tree trunk on right
-            player1.x = 0xe000;
+        if (temp4) {
+            high_byte(player1.y) = temp4;
+            low_byte(player1.y) = 0;
+            old_velocity_y = 0;
         }
-        old_x = player1.x;
+        player1.velocity_y = old_velocity_y;
+        player1.y += old_velocity_y;
         old_y = player1.y;
+    }
+
+    // Process treat collisions here
+    hitbox.x = high_byte(old_x);
+    hitbox.y = high_byte(old_y);
+    hitbox.width = HASEE_WIDTH;
+    hitbox.height = HASEE_HEIGHT;
+}
+
+void hasee_multiplayer_movement(void) {
+    temp0 = pad2; // Let both players move left/right at all times when multiplayer
+    temp1 = pad1;
+    if (ACTIVE_PLAYER) {
+        temp2 = temp0;
+        temp3 = pad2_new;
+    } else {
+        temp2 = temp1;
+        temp3 = pad1_new;
+    }
+
+    orange_hasee_lr_movement();
+    purple_hasee_lr_movement();
+
+    if (ACTIVE_PLAYER) {
+        old_x = player2.x;
+        old_velocity_y = player2.velocity_y;
+    } else {
+        old_x = player1.x;
+        old_velocity_y = player1.velocity_y;
     }
 
     hitbox.x = high_byte(old_x);
     hitbox.y = high_byte(old_y);
     hitbox.width = HASEE_WIDTH;
     hitbox.height = HASEE_HEIGHT;
+}
 
-    // Eventually we will likely want to emulate the seesaw being diagonal, but for now:
-    if (high_byte(old_y) >= 0xd0) { // level of the top of the see-saw nearest the base
-        FLIP_ACTIVE_PLAYER();
+void orange_hasee_lr_movement(void) {
+    // Remember temp0 contains the status of the pad we want to read in this frame
+    if (temp0 & PAD_LEFT) {
+        ORANGE_SET_DIRECTION_LEFT();
+        player2.velocity_x = -SPEED;
+    } else if (temp0 & PAD_RIGHT) {
+        ORANGE_SET_DIRECTION_RIGHT();
+        player2.velocity_x = SPEED;
+    } else {
+        player2.velocity_x = 0;
+    }
+    player2.x += player2.velocity_x;
+
+    if (high_byte(player2.x) < 0x18) { // tree trunk on left
+        player2.x = 0x1800;
+    } else if (high_byte(player2.x) > 0x48) { // tip of tree branch on left
+        player2.x = 0x4800;
+    }
+}
+
+void purple_hasee_lr_movement(void) {
+    // Remember temp1 contains the status of the pad we want to read in this frame
+    if (temp1 & PAD_LEFT) {
+        PURPLE_SET_DIRECTION_LEFT();
+        player1.velocity_x = -SPEED;
+    } else if (temp1 & PAD_RIGHT) {
+        PURPLE_SET_DIRECTION_RIGHT();
+        player1.velocity_x = SPEED;
+    } else {
+        player1.velocity_x = 0;
+    }
+    player1.x += player1.velocity_x;
+
+    if (high_byte(player1.x) < 0xA8) { // tip of branch on left
+        player1.x = 0xA800;
+    } else if (high_byte(player1.x) > 0xD8) { // tree trunk on right
+        player1.x = 0xD800;
     }
 }
 

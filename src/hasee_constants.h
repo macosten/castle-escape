@@ -43,15 +43,67 @@
 #define TREAT_ADDS_TIME 0b00000100
 #define TREAT_IS_ACTIVE 0b00000010
 
-#define ORANGE_HASEE_ACTIVE         0b00000001 // True if it's Orange (Woogi)'s turn to jump off the branch
-#define ACTIVE_PLAYER_BRANCH_STATUS 0b00000010
+#define ORANGE_HASEE_ACTIVE                 0b00000001 // True if it's Orange (Woogi)'s turn to jump off the branch
+#define ACTIVE_PLAYER_BRANCH_STATUS         0b00000010 // True if pressing A should allow the active Hasee to jump down from the branch
+#define ORANGE_FACING_RIGHT                 0b00000100
+#define PURPLE_FACING_RIGHT                 0b00001000
+#define ACTIVE_PLAYER_JUMPING_STATUS        0b00010000
+#define ACTIVE_PLAYER_STOP_AT_BRANCH_MASK   0b00100000 // True if the active player should stop when they next touch the branch
+#define ORANGE_MASK_HASEE_IS_WALKING        0b01000000
+#define PURPLE_MASK_HASEE_IS_WALKING        0b10000000
 
+// Flags that persist from frame to frame...
 #define ACTIVE_PLAYER (player_flags & ORANGE_HASEE_ACTIVE)
 #define ACTIVE_PLAYER_ON_BRANCH (player_flags & ACTIVE_PLAYER_BRANCH_STATUS)
 
 #define FLIP_ACTIVE_PLAYER() player_flags ^= ORANGE_HASEE_ACTIVE
 
+#define ORANGE_SET_DIRECTION_LEFT() (player_flags &= ~ORANGE_FACING_RIGHT)
+#define ORANGE_SET_DIRECTION_RIGHT() (player_flags |= ORANGE_FACING_RIGHT)
+#define PURPLE_SET_DIRECTION_LEFT() (player_flags &= ~PURPLE_FACING_RIGHT)
+#define PURPLE_SET_DIRECTION_RIGHT() (player_flags |= PURPLE_FACING_RIGHT)
+
+#define ACTIVE_PLAYER_MOVE_OFF_BRANCH() (player_flags &= ~ACTIVE_PLAYER_BRANCH_STATUS)
+#define ACTIVE_PLAYER_MOVE_ON_BRANCH() (player_flags |= ACTIVE_PLAYER_BRANCH_STATUS)
+
+#define ACTIVE_PLAYER_IGNORE_BRANCH() (player_flags &= ~ACTIVE_PLAYER_STOP_AT_BRANCH_MASK)
+#define ACTIVE_PLAYER_STOP_AT_BRANCH() (player_flags |= ACTIVE_PLAYER_STOP_AT_BRANCH_MASK)
+#define ACTIVE_PLAYER_SHOULD_STOP_AT_BRANCH (player_flags & ACTIVE_PLAYER_STOP_AT_BRANCH_MASK)
+
+#define ORANGE_HASEE_IS_WALKING                 (player_flags & ORANGE_MASK_HASEE_IS_WALKING)
+#define ORANGE_HASEE_SET_WALKING()              (player_flags |= ORANGE_MASK_HASEE_IS_WALKING)
+#define ORANGE_HASEE_SET_STANDING()             (player_flags &= ~ORANGE_MASK_HASEE_IS_WALKING)
+#define PURPLE_HASEE_IS_WALKING                 (player_flags & PURPLE_MASK_HASEE_IS_WALKING)
+#define PURPLE_HASEE_SET_WALKING()              (player_flags |= PURPLE_MASK_HASEE_IS_WALKING)
+#define PURPLE_HASEE_SET_STANDING()             (player_flags &= ~PURPLE_MASK_HASEE_IS_WALKING)
+
+// Flags that need to be cleared at the start of each frame...
+#define HASEE_DID_SCORE_CHANGE_THIS_FRAME_MASK  0b00000001
+// Flags that don't
+#define HASEE_JUMPING_OFF_BRANCH_MASK           0b00000010
+#define HASEE_JUMPING_TO_BRANCH_MASK            0b00000100
+
+#define HASEE_SCORE_CHANGED_THIS_FRAME          (player_flags2 & HASEE_DID_SCORE_CHANGE_THIS_FRAME_MASK)
+#define HASEE_SET_SCORE_CHANGED_THIS_FRAME()    (player_flags2 |= HASEE_DID_SCORE_CHANGE_THIS_FRAME_MASK)
+
+#define ACTIVE_PLAYER_JUMPING_TO_BRANCH           (player_flags2 & HASEE_JUMPING_TO_BRANCH_MASK)
+#define ACTIVE_PLAYER_JUMPING_OFF_BRANCH          (player_flags2 & HASEE_JUMPING_OFF_BRANCH_MASK)
+#define ACTIVE_PLAYER_SET_JUMPING_TO_BRANCH()     (player_flags2 |= HASEE_JUMPING_TO_BRANCH_MASK)
+#define ACTIVE_PLAYER_SET_JUMPING_OFF_BRANCH()    (player_flags2 |= HASEE_JUMPING_OFF_BRANCH_MASK)
+#define ACTIVE_PLAYER_UNSET_JUMPING_TO_BRANCH()   (player_flags2 &= ~HASEE_JUMPING_TO_BRANCH_MASK)
+#define ACTIVE_PLAYER_UNSET_JUMPING_OFF_BRANCH()  (player_flags2 &= ~HASEE_JUMPING_OFF_BRANCH_MASK)
+
+#define HASEE_RESET_PLAYER_FLAGS_START_FRAME() (player_flags2 &= ~(HASEE_DID_SCORE_CHANGE_THIS_FRAME_MASK))
 
 #define ONSCREEN_TREATS_MAXIMUM 13 // 16 2x2 metasprites, minus the 2 Hasees, minus 2 2x1 dizzy indicators
+
+#define ON_BRANCH_STARTING_Y_VALUE 0x3300
+#define ON_BRANCH_STARTNIG_Y_VALUE_HIGH_BYTE 0x33
+
+#define ON_GROUND_STARTING_Y_VALUE 0xD000
+#define ON_GROUND_STARTING_Y_VALUE_HIGH_BYTE 0xD0
+
+#define HASEE_GRAVITY 0x0100
+#define HASEE_MAX_SPEED 0x500
 
 #endif

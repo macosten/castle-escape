@@ -15,7 +15,6 @@
 	.import		_get_frame_count
 	.import		_check_collision_fast
 	.import		_pal_fade_to
-	.import		_gray_line
 	.import		_pal_bright
 	.import		_ppu_wait_nmi
 	.import		_ppu_off
@@ -23,6 +22,7 @@
 	.import		_oam_clear
 	.importzp	_TEMP
 	.import		_oam_meta_spr_fast_sub
+	.import		_oam_spr_fast_sub
 	.import		_pad_poll
 	.import		_rand8
 	.import		_vram_adr
@@ -85,11 +85,14 @@
 	.export		_hasee_game_screen
 	.importzp	_temp0
 	.importzp	_temp1
+	.importzp	_temp2
+	.importzp	_temp3
 	.importzp	_temp4
 	.importzp	_pad1
 	.importzp	_pad1_new
+	.importzp	_pad2
+	.importzp	_pad2_new
 	.importzp	_x
-	.importzp	_y
 	.importzp	_player2
 	.importzp	_hitbox
 	.importzp	_hitbox2
@@ -100,37 +103,34 @@
 	.importzp	_game_mode
 	.importzp	_player_flags
 	.importzp	_player_flags2
+	.importzp	_menu
 	.importzp	_eject_L
 	.importzp	_valrigard
 	.importzp	_pseudo_scroll_y
-	.import		_shuffle_leg_size
+	.importzp	_scroll_y
 	.import		_enemies_x
 	.import		_enemies_y
 	.import		_enemies_type
 	.import		_enemies_flags
 	.import		_enemies_count
 	.import		_cmap
-	.export		_active_player_ptr
 	.export		_hasee_palette_sp
 	.export		_hasee_palette_bg
-	.export		_player_lut
 	.import		_clear_screen
 	.import		_set_prg_bank
 	.import		_calculate_shuffle_array
+	.import		_switch_menu
 	.import		_LZG_decode
 	.export		_game_hasee_bounce
 	.export		_begin_hasee_bounce
 	.export		_calculate_next_treat
 	.export		_hasee_sprite_collisions
 	.export		_hasee_singleplayer_movement
+	.export		_hasee_multiplayer_movement
 	.export		_hasee_draw_sprites
 	.export		_hasee_update_score
-
-.segment	"DATA"
-
-_player_lut:
-	.addr	_valrigard
-	.addr	_player2
+	.export		_orange_hasee_lr_movement
+	.export		_purple_hasee_lr_movement
 
 .segment	"RODATA"
 
@@ -1377,11 +1377,6 @@ L0019:
 L001F:
 	.byte	$47,$72,$75,$6E,$00
 
-.segment	"BSS"
-
-_active_player_ptr:
-	.res	2,$00
-
 ; ---------------------------------------------------------------
 ; void __near__ game_hasee_bounce (void)
 ; ---------------------------------------------------------------
@@ -1392,6 +1387,12 @@ _active_player_ptr:
 
 .segment	"CODE"
 
+;
+; HASEE_RESET_PLAYER_FLAGS_START_FRAME();
+;
+	lda     _player_flags2
+	and     #$FE
+	sta     _player_flags2
 ;
 ; pad1 = pad_poll(0); // read the first controller
 ;
@@ -1404,6 +1405,18 @@ _active_player_ptr:
 	lda     #$00
 	jsr     _get_pad_new
 	sta     _pad1_new
+;
+; pad2 = pad_poll(1); // Will only be used in 2 Player games
+;
+	lda     #$01
+	jsr     _pad_poll
+	sta     _pad2
+;
+; pad2_new = get_pad_new(1); // Or maybe we just call a second function that lets the grounded hasee move only in 2p
+;
+	lda     #$01
+	jsr     _get_pad_new
+	sta     _pad2_new
 ;
 ; ppu_wait_nmi(); // wait till beginning of the frame
 ;
@@ -1421,34 +1434,61 @@ _active_player_ptr:
 ;
 	jsr     _hasee_draw_sprites
 ;
-; if (SCORE_CHANGED_THIS_FRAME) { hasee_update_score(); }
+; if (HASEE_SCORE_CHANGED_THIS_FRAME) { hasee_update_score(); }
 ;
-	lda     _player_flags
-	and     #$08
-	beq     L04F8
+	lda     _player_flags2
+	and     #$01
+	beq     L0500
 	jsr     _hasee_update_score
 ;
 ; --game_timer;
 ;
-L04F8:	lda     _pseudo_scroll_y
+L0500:	lda     _pseudo_scroll_y
 	sec
 	sbc     #$01
 	sta     _pseudo_scroll_y
-	bcs     L04FD
+	bcs     L0505
 	dec     _pseudo_scroll_y+1
 ;
 ; if (game_timer == 0) {
 ;
-L04FD:	lda     _pseudo_scroll_y
+L0505:	lda     _pseudo_scroll_y
 	ldx     _pseudo_scroll_y+1
 	cpx     #$00
-	bne     L0500
+	bne     L0508
 	cmp     #$00
-L0500:	jsr     booleq
+L0508:	jsr     booleq
 ;
-; gray_line();
+; if (pad1 & PAD_B) {
 ;
-	jmp     _gray_line
+	lda     _pad1
+	and     #$40
+	beq     L0509
+;
+; pal_fade_to(4, 0);
+;
+	lda     #$04
+	jsr     pusha
+	txa
+	jsr     _pal_fade_to
+;
+; menu = MENU_HASEE_BOUNCE;
+;
+	lda     #$06
+	sta     _menu
+;
+; switch_menu();
+;
+	jsr     _switch_menu
+;
+; pal_bright(4);
+;
+	lda     #$04
+	jmp     _pal_bright
+;
+; }
+;
+L0509:	rts
 
 .endproc
 
@@ -1500,8 +1540,7 @@ L0500:	jsr     booleq
 ;
 ; player1.velocity_x = 0;
 ;
-	ldx     #$00
-	txa
+	lda     #$00
 	sta     _valrigard+4
 	sta     _valrigard+4+1
 ;
@@ -1520,44 +1559,38 @@ L0500:	jsr     booleq
 	sta     _player2+6
 	sta     _player2+6+1
 ;
-; player1.x = 8*8;
+; player2.x = 0x4000;
 ;
-	lda     #$40
-	sta     _valrigard
-	stx     _valrigard+1
-;
-; player1.y = 6*8;
-;
-	lda     #$30
-	sta     _valrigard+2
-	stx     _valrigard+2+1
-;
-; player2.x = 24*8;
-;
-	lda     #$C0
+	ldx     #$40
 	sta     _player2
 	stx     _player2+1
 ;
-; player2.y = 26*8;
+; player2.y = ON_BRANCH_STARTING_Y_VALUE;
 ;
-	lda     #$D0
+	ldx     #$33
 	sta     _player2+2
 	stx     _player2+2+1
 ;
-; active_player_ptr = &player1;
+; player1.x = 0xC000;
 ;
-	lda     #>(_valrigard)
-	sta     _active_player_ptr+1
-	lda     #<(_valrigard)
-	sta     _active_player_ptr
+	ldx     #$C0
+	sta     _valrigard
+	stx     _valrigard+1
 ;
-; player_flags = 0;
+; player1.y = ON_GROUND_STARTING_Y_VALUE;
 ;
-	txa
+	ldx     #$D0
+	sta     _valrigard+2
+	stx     _valrigard+2+1
+;
+; player_flags = ORANGE_HASEE_ACTIVE | ACTIVE_PLAYER_BRANCH_STATUS;
+;
+	lda     #$03
 	sta     _player_flags
 ;
-; player_flags2 = 0; 
+; player_flags2 = 0;
 ;
+	lda     #$00
 	sta     _player_flags2
 ;
 ; score = 0;
@@ -1638,13 +1671,13 @@ L0500:	jsr     booleq
 ;
 	lda     _temp0
 	cmp     #$E7
-	bcc     L064F
+	bcc     L0757
 ;
 ; if (rand8() > 252) { // Need to figure out if this is possible with PRNG
 ;
 	jsr     _rand8
 	cmp     #$FD
-	bcc     L064E
+	bcc     L0756
 ;
 ; temp4 = TREAT_MACCY; // Meant to be ~1/10000ish chance
 ;
@@ -1652,24 +1685,24 @@ L0500:	jsr     booleq
 ;
 ; } else {
 ;
-	jmp     L064D
+	jmp     L0755
 ;
 ; temp4 = TREAT_GROSS_DUNG + temp0 & 0b1;
 ;
-L064E:	lda     _temp0
+L0756:	lda     _temp0
 	clc
 	adc     #$0D
 	and     #$01
 ;
 ; } else if (temp0 > 192) { // ~15%ish of the time...
 ;
-	jmp     L064D
-L064F:	lda     _temp0
+	jmp     L0755
+L0757:	lda     _temp0
 	cmp     #$C1
 ;
 ; } else { // The rest (~75%) of the time...
 ;
-	bcc     L0659
+	bcc     L0761
 ;
 ; }
 ;
@@ -1677,20 +1710,20 @@ L064F:	lda     _temp0
 ;
 ; temp1 = rand8();
 ;
-L0659:	jsr     _rand8
+L0761:	jsr     _rand8
 	sta     _temp1
 ;
 ; if (temp0 < 20) { // ~1/10th of the time 
 ;
 	lda     _temp0
 	cmp     #$14
-	bcs     L0657
+	bcs     L075F
 ;
 ; if (temp1 == 1) {
 ;
 	lda     _temp1
 	cmp     #$01
-	bne     L0650
+	bne     L0758
 ;
 ; temp4 = TREAT_FISH;
 ;
@@ -1698,10 +1731,10 @@ L0659:	jsr     _rand8
 ;
 ; } else if (temp1 < 5) {
 ;
-	jmp     L064D
-L0650:	lda     _temp1
+	jmp     L0755
+L0758:	lda     _temp1
 	cmp     #$05
-	bcs     L0651
+	bcs     L0759
 ;
 ; temp4 = TREAT_RAINBOW;
 ;
@@ -1709,10 +1742,10 @@ L0650:	lda     _temp1
 ;
 ; } else if (temp1 < 21) {
 ;
-	jmp     L064D
-L0651:	lda     _temp1
+	jmp     L0755
+L0759:	lda     _temp1
 	cmp     #$15
-	bcs     L0652
+	bcs     L075A
 ;
 ; temp4 = TREAT_ICY;
 ;
@@ -1720,10 +1753,10 @@ L0651:	lda     _temp1
 ;
 ; } else if (temp1 < 45) {
 ;
-	jmp     L064D
-L0652:	lda     _temp1
+	jmp     L0755
+L075A:	lda     _temp1
 	cmp     #$2D
-	bcs     L0653
+	bcs     L075B
 ;
 ; temp4 = TREAT_FIERY;
 ;
@@ -1731,10 +1764,10 @@ L0652:	lda     _temp1
 ;
 ; } else if (temp1 < 77) {
 ;
-	jmp     L064D
-L0653:	lda     _temp1
+	jmp     L0755
+L075B:	lda     _temp1
 	cmp     #$4D
-	bcs     L0654
+	bcs     L075C
 ;
 ; temp4 = TREAT_SPONGE;
 ;
@@ -1742,10 +1775,10 @@ L0653:	lda     _temp1
 ;
 ; } else if (temp1 < 113) {
 ;
-	jmp     L064D
-L0654:	lda     _temp1
+	jmp     L0755
+L075C:	lda     _temp1
 	cmp     #$71
-	bcs     L0655
+	bcs     L075D
 ;
 ; temp4 = TREAT_CHECKERED;
 ;
@@ -1753,10 +1786,10 @@ L0654:	lda     _temp1
 ;
 ; } else if (temp1 < 157) {
 ;
-	jmp     L064D
-L0655:	lda     _temp1
+	jmp     L0755
+L075D:	lda     _temp1
 	cmp     #$9D
-	bcs     L0656
+	bcs     L075E
 ;
 ; temp4 = TREAT_GOLDEN;
 ;
@@ -1764,10 +1797,10 @@ L0655:	lda     _temp1
 ;
 ; } else if (temp1 < 213) {
 ;
-	jmp     L064D
-L0656:	lda     _temp1
+	jmp     L0755
+L075E:	lda     _temp1
 	cmp     #$D5
-	bcs     L05F2
+	bcs     L06FA
 ;
 ; temp4 = TREAT_SILVER;
 ;
@@ -1775,13 +1808,13 @@ L0656:	lda     _temp1
 ;
 ; } else {
 ;
-	jmp     L064D
+	jmp     L0755
 ;
 ; if (temp1 < 6) {
 ;
-L0657:	lda     _temp1
+L075F:	lda     _temp1
 	cmp     #$06
-	bcs     L0658
+	bcs     L0760
 ;
 ; temp4 = TREAT_GREEN;
 ;
@@ -1789,19 +1822,19 @@ L0657:	lda     _temp1
 ;
 ; } else if (temp1 < 15) {
 ;
-	jmp     L064D
-L0658:	lda     _temp1
+	jmp     L0755
+L0760:	lda     _temp1
 	cmp     #$0F
-	bcs     L05F2
+	bcs     L06FA
 ;
 ; temp4 = TREAT_BLUE;
 ;
 	lda     #$01
-L064D:	sta     _temp4
+L0755:	sta     _temp4
 ;
 ; }
 ;
-L05F2:	rts
+L06FA:	rts
 
 .endproc
 
@@ -1840,12 +1873,12 @@ L05F2:	rts
 ;
 	jsr     _get_frame_count
 	and     #$01
-L065F:	sta     _x
+L0767:	sta     _x
 ;
 ; for (x; x < ONSCREEN_TREATS_MAXIMUM; x += 2) { // TODO: See if we can optimize this looping somehow
 ;
 	cmp     #$0D
-	bcc     L0665
+	bcc     L076D
 ;
 ; }
 ;
@@ -1853,14 +1886,14 @@ L065F:	sta     _x
 ;
 ; temp1 = enemies_flags[x];
 ;
-L0665:	ldy     _x
+L076D:	ldy     _x
 	lda     _enemies_flags,y
 	sta     _temp1
 ;
 ; if(temp1 & TREAT_IS_ACTIVE) {
 ;
 	and     #$02
-	jeq     L065D
+	jeq     L0765
 ;
 ; hitbox2.width = TREAT_WIDTH;
 ;
@@ -1899,13 +1932,13 @@ L0665:	ldy     _x
 ; if (temp0) {
 ;
 	lda     _temp0
-	beq     L065D
+	beq     L0765
 ;
 ; if(previously_collected_treats_this_jump < 7) {
 ;
 	lda     _eject_L
 	cmp     #$07
-	bcs     L0631
+	bcs     L0739
 ;
 ; ++previously_collected_treats_this_jump;
 ;
@@ -1913,14 +1946,14 @@ L0665:	ldy     _x
 ;
 ; temp0 = enemies_type[x];
 ;
-L0631:	ldy     _x
+L0739:	ldy     _x
 	lda     _enemies_type,y
 	sta     _temp0
 ;
 ; if (temp0 >= TREAT_PURPLE_H) {
 ;
 	cmp     #$0F
-	bcc     L065C
+	bcc     L0764
 ;
 ; score += hasee_letter_points[previously_collected_treats_this_jump];
 ;
@@ -1929,10 +1962,10 @@ L0631:	ldy     _x
 ;
 ; } else if (temp0 <= TREAT_MACCY) {
 ;
-	jmp     L0664
-L065C:	lda     _temp0
+	jmp     L076C
+L0764:	lda     _temp0
 	cmp     #$0D
-	bcs     L065D
+	bcs     L0765
 ;
 ; temp0 <<= 3;
 ;
@@ -1951,7 +1984,7 @@ L065C:	lda     _temp0
 ;
 	ldy     _temp0
 	lda     _hasee_treat_points,y
-L0664:	clc
+L076C:	clc
 	adc     _score
 	sta     _score
 	lda     #$00
@@ -1960,7 +1993,7 @@ L0664:	clc
 ;
 ; x += 2;
 ;
-L065D:	lda     #$02
+L0765:	lda     #$02
 	clc
 	adc     _x
 	sta     _x
@@ -1970,7 +2003,7 @@ L065D:	lda     #$02
 	lda     #$02
 	clc
 	adc     _x
-	jmp     L065F
+	jmp     L0767
 
 .endproc
 
@@ -1985,42 +2018,49 @@ L065D:	lda     #$02
 .segment	"CODE"
 
 ;
-; if (ACTIVE_PLAYER) {
+; temp0 = pad1; // Orange Hasee's Pad (Both the same in single-player)
+;
+	lda     _pad1
+	sta     _temp0
+;
+; temp1 = pad1; // Purple Hasee's Pad
+;
+	lda     _pad1
+	sta     _temp1
+;
+; if (ACTIVE_PLAYER) { // Orange Hasee/Player 2 active
 ;
 	lda     _player_flags
 	and     #$01
-	beq     L066A
+	beq     L0771
 ;
-; if (high_byte(player2.x) < 0x20) { // tree trunk on left
+; temp2 = pad1; // Temp2 = "Active player's pad"
 ;
-	lda     _player2+1
-	cmp     #$20
-	bcs     L0669
+	lda     _pad1
+	sta     _temp2
 ;
-; player1.x = 0x2000;
+; temp3 = pad1_new; // Temp3 = "Active player's pad_new"
 ;
-	ldx     #$20
+	lda     _pad1_new
+	sta     _temp3
 ;
-; } else if (high_byte(player2.x) > 0x50) { // tip of tree branch on left
+; orange_hasee_lr_movement();
 ;
-	jmp     L066E
-L0669:	lda     _player2+1
-	cmp     #$51
-	bcc     L0586
-;
-; player1.x = 0x5000;
-;
-	ldx     #$50
-L066E:	lda     #$00
-	sta     _valrigard
-	stx     _valrigard+1
+	jsr     _orange_hasee_lr_movement
 ;
 ; old_x = player2.x;
 ;
-L0586:	lda     _player2+1
+	lda     _player2+1
 	sta     _old_x+1
 	lda     _player2
 	sta     _old_x
+;
+; old_velocity_y = player2.velocity_y;
+;
+	lda     _player2+6+1
+	sta     _scroll_y+1
+	lda     _player2+6
+	sta     _scroll_y
 ;
 ; old_y = player2.y;
 ;
@@ -2028,47 +2068,330 @@ L0586:	lda     _player2+1
 	sta     _old_y+1
 	lda     _player2+2
 ;
-; } else {
+; } else { // Purple Hasee/Player 1 active
 ;
-	jmp     L0667
+	jmp     L076E
 ;
-; if (high_byte(player1.x) < 0xb0) { // tip of branch on left
+; temp2 = pad1;
 ;
-L066A:	lda     _valrigard+1
-	cmp     #$B0
-	bcs     L066B
+L0771:	lda     _pad1
+	sta     _temp2
 ;
-; player1.x = 0xb000;
+; temp3 = pad1_new;
 ;
-	ldx     #$B0
+	lda     _pad1_new
+	sta     _temp3
 ;
-; } else if (high_byte(player1.x) > 0xe0) { // tree trunk on right
+; purple_hasee_lr_movement();
 ;
-	jmp     L066F
-L066B:	lda     _valrigard+1
-	cmp     #$E1
-	bcc     L0596
-;
-; player1.x = 0xe000;
-;
-	ldx     #$E0
-L066F:	lda     #$00
-	sta     _valrigard
-	stx     _valrigard+1
+	jsr     _purple_hasee_lr_movement
 ;
 ; old_x = player1.x;
 ;
-L0596:	lda     _valrigard+1
+	lda     _valrigard+1
 	sta     _old_x+1
 	lda     _valrigard
 	sta     _old_x
+;
+; old_velocity_y = player1.velocity_y;
+;
+	lda     _valrigard+6+1
+	sta     _scroll_y+1
+	lda     _valrigard+6
+	sta     _scroll_y
 ;
 ; old_y = player1.y;
 ;
 	lda     _valrigard+2+1
 	sta     _old_y+1
 	lda     _valrigard+2
-L0667:	sta     _old_y
+L076E:	sta     _old_y
+;
+; temp4 = 0; // We will set this if the high_byte playerX.y should be set, and velocity should be zeroed out. 
+;
+	lda     #$00
+	sta     _temp4
+;
+; if (ACTIVE_PLAYER_ON_BRANCH) {
+;
+	lda     _player_flags
+	and     #$02
+	beq     L0772
+;
+; if(temp2 & PAD_A) { // Possible that this is immediately triggered at the start of the game because it's seeing the 
+;
+	lda     _temp2
+	and     #$80
+	jeq     L0779
+;
+; ACTIVE_PLAYER_MOVE_OFF_BRANCH();
+;
+	lda     _player_flags
+	and     #$FD
+	sta     _player_flags
+;
+; ACTIVE_PLAYER_SET_JUMPING_OFF_BRANCH();
+;
+	lda     _player_flags2
+	ora     #$02
+	sta     _player_flags2
+;
+; if (ACTIVE_PLAYER) {
+;
+	lda     _player_flags
+	and     #$01
+	beq     L05D9
+;
+; player2.velocity_y = -HASEE_MAX_SPEED;
+;
+	ldx     #$FB
+	lda     #$00
+	sta     _player2+6
+	stx     _player2+6+1
+;
+; } else {
+;
+	jmp     L077A
+;
+; player1.velocity_y = -HASEE_MAX_SPEED;
+;
+L05D9:	ldx     #$FB
+	sta     _valrigard+6
+	stx     _valrigard+6+1
+;
+; } else if (ACTIVE_PLAYER_JUMPING_OFF_BRANCH) {
+;
+	jmp     L077A
+L0772:	lda     _player_flags2
+	and     #$02
+	beq     L0774
+;
+; if (high_byte(old_y) >= ON_GROUND_STARTING_Y_VALUE_HIGH_BYTE) { // Hit the ground
+;
+	lda     _old_y+1
+	cmp     #$D0
+	lda     #$00
+	bcc     L077B
+;
+; FLIP_ACTIVE_PLAYER();
+;
+	lda     _player_flags
+	eor     #$01
+	sta     _player_flags
+;
+; ACTIVE_PLAYER_UNSET_JUMPING_OFF_BRANCH();
+;
+	lda     _player_flags2
+	and     #$FD
+	sta     _player_flags2
+;
+; ACTIVE_PLAYER_SET_JUMPING_TO_BRANCH();
+;
+	ora     #$04
+	sta     _player_flags2
+;
+; temp4 = ON_GROUND_STARTING_Y_VALUE_HIGH_BYTE;
+;
+	lda     #$D0
+	sta     _temp4
+;
+; } else {
+;
+	jmp     L0779
+;
+; old_velocity_y += HASEE_GRAVITY;
+;
+L077B:	adc     _scroll_y
+	sta     _scroll_y
+	lda     #$01
+	adc     _scroll_y+1
+	sta     _scroll_y+1
+;
+; if (old_velocity_y > HASEE_MAX_SPEED) {
+;
+	lda     _scroll_y
+	cmp     #$01
+	lda     _scroll_y+1
+	sbc     #$05
+	bvs     L05FB
+	eor     #$80
+L05FB:	bpl     L0779
+;
+; old_velocity_y = HASEE_MAX_SPEED;
+;
+	ldx     #$05
+;
+; } else if (ACTIVE_PLAYER_JUMPING_TO_BRANCH) {
+;
+	jmp     L077C
+L0774:	lda     _player_flags2
+	and     #$04
+	beq     L0779
+;
+; high_byte(old_y) >= ON_BRANCH_STARTNIG_Y_VALUE_HIGH_BYTE &&
+;
+	lda     _old_y+1
+	cmp     #$33
+	bcc     L0778
+;
+; ACTIVE_PLAYER_SHOULD_STOP_AT_BRANCH
+;
+	lda     _player_flags
+	and     #$20
+;
+; ) {
+;
+	beq     L0778
+;
+; ACTIVE_PLAYER_MOVE_ON_BRANCH();
+;
+	lda     _player_flags
+	ora     #$02
+	sta     _player_flags
+;
+; ACTIVE_PLAYER_UNSET_JUMPING_TO_BRANCH();
+;
+	lda     _player_flags2
+	and     #$FB
+	sta     _player_flags2
+;
+; ACTIVE_PLAYER_IGNORE_BRANCH();
+;
+	lda     _player_flags
+	and     #$DF
+	sta     _player_flags
+;
+; temp4 = ON_BRANCH_STARTNIG_Y_VALUE_HIGH_BYTE;
+;
+	lda     #$33
+	sta     _temp4
+;
+; } else if (high_byte(old_y) <= ON_BRANCH_STARTNIG_Y_VALUE_HIGH_BYTE) {
+;
+	jmp     L0779
+L0778:	lda     _old_y+1
+	cmp     #$34
+	bcs     L0614
+;
+; old_velocity_y += 0x100;
+;
+	lda     #$00
+	clc
+	adc     _scroll_y
+	sta     _scroll_y
+	lda     #$01
+	adc     _scroll_y+1
+	sta     _scroll_y+1
+;
+; ACTIVE_PLAYER_STOP_AT_BRANCH();
+;
+	lda     _player_flags
+	ora     #$20
+	sta     _player_flags
+;
+; } else {
+;
+	jmp     L0779
+;
+; old_velocity_y = -HASEE_MAX_SPEED;
+;
+L0614:	ldx     #$FB
+L077C:	lda     #$00
+L077A:	sta     _scroll_y
+	stx     _scroll_y+1
+;
+; if (ACTIVE_PLAYER) {
+;
+L0779:	lda     _player_flags
+	and     #$01
+	beq     L061F
+;
+; if (temp4) {
+;
+	lda     _temp4
+	beq     L0622
+;
+; high_byte(player2.y) = temp4;
+;
+	sta     _player2+3
+;
+; low_byte(player2.y) = 0;
+;
+	lda     #$00
+	sta     _player2+2
+;
+; old_velocity_y = 0;
+;
+	sta     _scroll_y
+	sta     _scroll_y+1
+;
+; player2.velocity_y = old_velocity_y;
+;
+L0622:	lda     _scroll_y+1
+	sta     _player2+6+1
+	lda     _scroll_y
+	sta     _player2+6
+;
+; player2.y += old_velocity_y;
+;
+	lda     _scroll_y
+	clc
+	adc     _player2+2
+	sta     _player2+2
+	lda     _scroll_y+1
+	adc     _player2+2+1
+	sta     _player2+2+1
+;
+; old_y = player2.y;
+;
+	sta     _old_y+1
+	lda     _player2+2
+;
+; } else {
+;
+	jmp     L0770
+;
+; if (temp4) {
+;
+L061F:	lda     _temp4
+	beq     L0633
+;
+; high_byte(player1.y) = temp4;
+;
+	sta     _valrigard+3
+;
+; low_byte(player1.y) = 0;
+;
+	lda     #$00
+	sta     _valrigard+2
+;
+; old_velocity_y = 0;
+;
+	sta     _scroll_y
+	sta     _scroll_y+1
+;
+; player1.velocity_y = old_velocity_y;
+;
+L0633:	lda     _scroll_y+1
+	sta     _valrigard+6+1
+	lda     _scroll_y
+	sta     _valrigard+6
+;
+; player1.y += old_velocity_y;
+;
+	lda     _scroll_y
+	clc
+	adc     _valrigard+2
+	sta     _valrigard+2
+	lda     _scroll_y+1
+	adc     _valrigard+2+1
+	sta     _valrigard+2+1
+;
+; old_y = player1.y;
+;
+	sta     _old_y+1
+	lda     _valrigard+2
+L0770:	sta     _old_y
 ;
 ; hitbox.x = high_byte(old_x);
 ;
@@ -2090,21 +2413,130 @@ L0667:	sta     _old_y
 	lda     #$0D
 	sta     _hitbox+3
 ;
-; if (high_byte(old_y) >= 0xd0) { // level of the top of the see-saw nearest the base
+; }
 ;
-	lda     _old_y+1
-	cmp     #$D0
-	bcc     L05A9
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ hasee_multiplayer_movement (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_hasee_multiplayer_movement: near
+
+.segment	"CODE"
+
 ;
-; FLIP_ACTIVE_PLAYER();
+; temp0 = pad2; // Let both players move left/right at all times when multiplayer
+;
+	lda     _pad2
+	sta     _temp0
+;
+; temp1 = pad1;
+;
+	lda     _pad1
+	sta     _temp1
+;
+; if (ACTIVE_PLAYER) {
 ;
 	lda     _player_flags
-	eor     #$01
-	sta     _player_flags
+	and     #$01
+	beq     L077F
+;
+; temp2 = temp0;
+;
+	lda     _temp0
+	sta     _temp2
+;
+; temp3 = pad2_new;
+;
+	lda     _pad2_new
+;
+; } else {
+;
+	jmp     L077D
+;
+; temp2 = temp1;
+;
+L077F:	lda     _temp1
+	sta     _temp2
+;
+; temp3 = pad1_new;
+;
+	lda     _pad1_new
+L077D:	sta     _temp3
+;
+; orange_hasee_lr_movement();
+;
+	jsr     _orange_hasee_lr_movement
+;
+; purple_hasee_lr_movement();
+;
+	jsr     _purple_hasee_lr_movement
+;
+; if (ACTIVE_PLAYER) {
+;
+	lda     _player_flags
+	and     #$01
+	beq     L0660
+;
+; old_x = player2.x;
+;
+	lda     _player2+1
+	sta     _old_x+1
+	lda     _player2
+	sta     _old_x
+;
+; old_velocity_y = player2.velocity_y;
+;
+	lda     _player2+6+1
+	sta     _scroll_y+1
+	lda     _player2+6
+;
+; } else {
+;
+	jmp     L077E
+;
+; old_x = player1.x;
+;
+L0660:	lda     _valrigard+1
+	sta     _old_x+1
+	lda     _valrigard
+	sta     _old_x
+;
+; old_velocity_y = player1.velocity_y;
+;
+	lda     _valrigard+6+1
+	sta     _scroll_y+1
+	lda     _valrigard+6
+L077E:	sta     _scroll_y
+;
+; hitbox.x = high_byte(old_x);
+;
+	lda     _old_x+1
+	sta     _hitbox
+;
+; hitbox.y = high_byte(old_y);
+;
+	lda     _old_y+1
+	sta     _hitbox+1
+;
+; hitbox.width = HASEE_WIDTH;
+;
+	lda     #$0B
+	sta     _hitbox+2
+;
+; hitbox.height = HASEE_HEIGHT;
+;
+	lda     #$0D
+	sta     _hitbox+3
 ;
 ; }
 ;
-L05A9:	rts
+	rts
 
 .endproc
 
@@ -2128,11 +2560,11 @@ L05A9:	rts
 ;
 	jsr     _oam_clear
 ;
-; temppointer = purple_hasee_idle_left;
+; temppointer = purple_hasee_idle_right;
 ;
-	lda     #>(_purple_hasee_idle_left)
+	lda     #>(_purple_hasee_idle_right)
 	sta     _temppointer+1
-	lda     #<(_purple_hasee_idle_left)
+	lda     #<(_purple_hasee_idle_right)
 	sta     _temppointer
 ;
 ; oam_meta_spr(high_byte(player1.x), high_byte(player1.y), temppointer);
@@ -2145,11 +2577,11 @@ L05A9:	rts
 	ldx     _temppointer+1
 	jsr     _oam_meta_spr_fast_sub
 ;
-; temppointer = orange_hasee_idle_right;
+; temppointer = orange_hasee_idle_left;
 ;
-	lda     #>(_orange_hasee_idle_right)
+	lda     #>(_orange_hasee_idle_left)
 	sta     _temppointer+1
-	lda     #<(_orange_hasee_idle_right)
+	lda     #<(_orange_hasee_idle_left)
 	sta     _temppointer
 ;
 ; oam_meta_spr(high_byte(player2.x), high_byte(player2.y), temppointer);
@@ -2162,23 +2594,60 @@ L05A9:	rts
 	ldx     _temppointer+1
 	jsr     _oam_meta_spr_fast_sub
 ;
-; for (y = 0; y < shuffle_leg_size; ++y) {
+; if (ACTIVE_PLAYER_ON_BRANCH) {
 ;
-	lda     #$00
-	sta     _y
-	tax
-L0670:	lda     _y
-	cmp     _shuffle_leg_size
-	txa
-	sbc     #$00
-	bcs     L0523
-	inc     _y
-	jmp     L0670
+	lda     _player_flags
+	and     #$02
+	beq     L0780
 ;
-; set_prg_bank(1);
+; oam_spr(208, 50, 0x48, 1);
 ;
-L0523:	lda     #$01
-	jmp     _set_prg_bank
+	lda     #$D0
+	sta     _TEMP
+	lda     #$32
+	sta     _TEMP+1
+	lda     #$48
+	sta     _TEMP+2
+	lda     #$01
+	jsr     _oam_spr_fast_sub
+;
+; if (ACTIVE_PLAYER_JUMPING_OFF_BRANCH) {
+;
+L0780:	lda     _player_flags2
+	and     #$02
+	beq     L0781
+;
+; oam_spr(208, 60, 0x49, 2);
+;
+	lda     #$D0
+	sta     _TEMP
+	lda     #$3C
+	sta     _TEMP+1
+	lda     #$49
+	sta     _TEMP+2
+	lda     #$02
+	jsr     _oam_spr_fast_sub
+;
+; if (ACTIVE_PLAYER_JUMPING_TO_BRANCH) {
+;
+L0781:	lda     _player_flags2
+	and     #$04
+	beq     L054F
+;
+; oam_spr(208, 70, 0x58, 3);
+;
+	lda     #$D0
+	sta     _TEMP
+	lda     #$46
+	sta     _TEMP+1
+	lda     #$58
+	sta     _TEMP+2
+	lda     #$03
+	jmp     _oam_spr_fast_sub
+;
+; }
+;
+L054F:	rts
 
 .endproc
 
@@ -2259,9 +2728,9 @@ L0523:	lda     #$01
 ;
 	lda     #$00
 	sta     _x
-L0671:	lda     _x
+L0782:	lda     _x
 	cmp     #$04
-	bcs     L0558
+	bcs     L0589
 ;
 ; temp0 = score_string[x];
 ;
@@ -2272,7 +2741,7 @@ L0671:	lda     _x
 ; if (temp0 != 0) { break; }
 ;
 	lda     _temp0
-	bne     L0558
+	bne     L0589
 ;
 ; score_string[x] = ' ';
 ;
@@ -2283,11 +2752,11 @@ L0671:	lda     _x
 ; for (x = 0; x < 4; ++x) { // Only the first 4 digits; if the last digit is 0 then no point in blanking it
 ;
 	inc     _x
-	jmp     L0671
+	jmp     L0782
 ;
 ; vram_adr(NTADR_A(10, 2));
 ;
-L0558:	ldx     #$20
+L0589:	ldx     #$20
 	lda     #$4A
 	jsr     _vram_adr
 ;
@@ -2295,9 +2764,9 @@ L0558:	ldx     #$20
 ;
 	lda     #$00
 	sta     _x
-L0672:	lda     _x
+L0783:	lda     _x
 	cmp     #$05
-	bcs     L0571
+	bcs     L05A2
 ;
 ; vram_put(score_string[x]);
 ;
@@ -2308,11 +2777,193 @@ L0672:	lda     _x
 ; for (x = 0; x < 5; ++x) {
 ;
 	inc     _x
-	jmp     L0672
+	jmp     L0783
 ;
 ; }
 ;
-L0571:	rts
+L05A2:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ orange_hasee_lr_movement (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_orange_hasee_lr_movement: near
+
+.segment	"CODE"
+
+;
+; if (temp0 & PAD_LEFT) {
+;
+	lda     _temp0
+	and     #$02
+	beq     L0786
+;
+; ORANGE_SET_DIRECTION_LEFT();
+;
+	lda     _player_flags
+	and     #$FB
+	sta     _player_flags
+;
+; player2.velocity_x = -SPEED;
+;
+	ldx     #$FE
+	lda     #$B0
+;
+; } else if (temp0 & PAD_RIGHT) {
+;
+	jmp     L0788
+L0786:	lda     _temp0
+	ldx     #$00
+	and     #$01
+	beq     L0788
+;
+; ORANGE_SET_DIRECTION_RIGHT();
+;
+	lda     _player_flags
+	ora     #$04
+	sta     _player_flags
+;
+; player2.velocity_x = SPEED;
+;
+	inx
+	lda     #$50
+;
+; player2.velocity_x = 0;
+;
+L0788:	sta     _player2+4
+	stx     _player2+4+1
+;
+; player2.x += player2.velocity_x;
+;
+	lda     _player2+4
+	clc
+	adc     _player2
+	sta     _player2
+	lda     _player2+4+1
+	adc     _player2+1
+	sta     _player2+1
+;
+; if (high_byte(player2.x) < 0x18) { // tree trunk on left
+;
+	cmp     #$18
+	bcs     L0789
+;
+; player2.x = 0x1800;
+;
+	ldx     #$18
+;
+; } else if (high_byte(player2.x) > 0x48) { // tip of tree branch on left
+;
+	jmp     L078B
+L0789:	lda     _player2+1
+	cmp     #$49
+	bcc     L0691
+;
+; player2.x = 0x4800;
+;
+	ldx     #$48
+L078B:	lda     #$00
+	sta     _player2
+	stx     _player2+1
+;
+; }
+;
+L0691:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ purple_hasee_lr_movement (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_purple_hasee_lr_movement: near
+
+.segment	"CODE"
+
+;
+; if (temp1 & PAD_LEFT) {
+;
+	lda     _temp1
+	and     #$02
+	beq     L078E
+;
+; PURPLE_SET_DIRECTION_LEFT();
+;
+	lda     _player_flags
+	and     #$F7
+	sta     _player_flags
+;
+; player1.velocity_x = -SPEED;
+;
+	ldx     #$FE
+	lda     #$B0
+;
+; } else if (temp1 & PAD_RIGHT) {
+;
+	jmp     L0790
+L078E:	lda     _temp1
+	ldx     #$00
+	and     #$01
+	beq     L0790
+;
+; PURPLE_SET_DIRECTION_RIGHT();
+;
+	lda     _player_flags
+	ora     #$08
+	sta     _player_flags
+;
+; player1.velocity_x = SPEED;
+;
+	inx
+	lda     #$50
+;
+; player1.velocity_x = 0;
+;
+L0790:	sta     _valrigard+4
+	stx     _valrigard+4+1
+;
+; player1.x += player1.velocity_x;
+;
+	lda     _valrigard+4
+	clc
+	adc     _valrigard
+	sta     _valrigard
+	lda     _valrigard+4+1
+	adc     _valrigard+1
+	sta     _valrigard+1
+;
+; if (high_byte(player1.x) < 0xA8) { // tip of branch on left
+;
+	cmp     #$A8
+	bcs     L0791
+;
+; player1.x = 0xA800;
+;
+	ldx     #$A8
+;
+; } else if (high_byte(player1.x) > 0xD8) { // tree trunk on right
+;
+	jmp     L0793
+L0791:	lda     _valrigard+1
+	cmp     #$D9
+	bcc     L06B1
+;
+; player1.x = 0xD800;
+;
+	ldx     #$D8
+L0793:	lda     #$00
+	sta     _valrigard
+	stx     _valrigard+1
+;
+; }
+;
+L06B1:	rts
 
 .endproc
 
