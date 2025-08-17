@@ -148,6 +148,8 @@ void game_castle_escape(void);
 extern void game_hasee_bounce(void);
 
 // Drawing functions.
+
+// Must call `set_prg_bank(METASPRITE_BANK)` before calling this.
 void draw_sprites(void);
 
 void draw_player(void);
@@ -203,6 +205,7 @@ void collision_with_unkillable_unslashable(void);
 void collision_with_splyke(void);
 extern void collision_with_boss(void);
 
+// Must call `set_prg_bank(2)` before calling this.
 void enemy_movement(void);
 
 void korbat_ai(void);
@@ -391,7 +394,7 @@ void main (void) {
             clear_vram_buffer();
 
             // No movement of any kind.
-
+            set_prg_bank(METASPRITE_BANK);
             draw_sprites();
 
             // And no screen-drawing (other than what the dialog box code does).
@@ -445,12 +448,17 @@ void game_castle_escape(void) {
     }
 
     // Move enemies
-    if (!GAME_PAUSED) { enemy_movement(); }
+    if (!GAME_PAUSED) {
+        set_prg_bank(2);
+        enemy_movement();
+    }
 
     set_scroll_y(scroll_y);
     
     if (SCORE_CHANGED_THIS_FRAME) { convert_to_decimal(score); }
     
+    // Ensure the metasprite bank is banked.
+    set_prg_bank(METASPRITE_BANK);
     draw_sprites();
     
     // Draw tiles on the edge of the screen.
@@ -535,7 +543,7 @@ void game_castle_escape(void) {
     }
 
     // debug:
-    //gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
+    // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 }
 
 // In the literal sense, clear the screen. 
@@ -1332,6 +1340,8 @@ void calculate_shuffle_array(void) {
 
 // Metasprite Bank: Bank 5
 #pragma rodata-name(push, "BANK5")
+#pragma code-name(push, "BANK5")
+// Let's put all the drawing functions+other data in Bank 5 with the metasprites
 // A lookup table for enemy draw functions.
 const void (* const draw_func_pointers[])(void) = {
     empty_function,   // 0 - ENEMY_NONE;
@@ -1350,12 +1360,9 @@ const void (* const draw_func_pointers[])(void) = {
     draw_splyke_death_effect, // 13 - ENEMY_SPLYKE_DEATH_EFFECT;
     draw_floating_numbers_effect, // 14 - ENEMY_FLOATING_NUMBERS_EFFECT;
 };
-#pragma rodata-name(pop)
 
+// set_prg_bank(METASPRITE_BANK) must be called before calling this function.
 void draw_sprites(void) {
-    // Ensure the metasprite bank is banked.
-    set_prg_bank(METASPRITE_BANK);
-
     // clear all sprites from sprite buffer
     oam_clear();
 
@@ -1462,9 +1469,6 @@ void draw_sprites(void) {
 
 }
 
-// Let's put all the drawing functions+other data in Bank 5 with the metasprites
-#pragma rodata-name(push, "BANK5")
-#pragma code-name(push, "BANK5")
 void draw_player(void) {
 
     // I'm less worried about flattening (into one lookup table)/optimizing Valrigard's sprites
@@ -2531,12 +2535,12 @@ const void (* const ai_pointers[])(void) = {
     death_effect_timer_ai, // 14 - ENEMY_FLOATING_NUMBERS_EFFECT;
 };
 
+#pragma code-name(push, "BANK2")
+
 // Enemy AI.
 void enemy_movement(void) {
     // This one's a bit of an uncharted realm. 
     // I'm thinking we'll want to optimize this one somehow...
-    set_prg_bank(2);
-
     for (x = lowest_enemy_index; x < enemy_limit; ++x) {
         // Unrolled loop (8):
         // Will this cause an issue if x > MAX_ENEMIES? Do we want to check this at some point?
@@ -2583,8 +2587,6 @@ void enemy_movement(void) {
         }
     }
 }
-
-#pragma code-name(push, "BANK2")
 
 // I reordered these to be listed in the order in which they were implemented.
 

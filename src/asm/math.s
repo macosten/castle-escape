@@ -1,5 +1,5 @@
 .export _sin_lookup,_cos_lookup,_brads_table,_abs_subtract
-.export _divide_by_3,_divide_by_5,_divide_by_26
+.export _divide_by_3,_divide_by_26
 
 ; Subtract b from a. Negate the result if b > a.
 ; unsigned char __fastcall__ abs_subtract(unsigned char a, unsigned char b)
@@ -55,23 +55,6 @@ _divide_by_3:
 	lsr
 	adc  TEMP
 	ror
-	lsr
-	rts
-
-; unsigned char __fastcall__ divide_by_5(unsigned char in)
-_divide_by_5:
-	sta  TEMP
-	lsr
-	adc  #13
-	adc  TEMP
-	ror
-	lsr
-	lsr
-	adc  TEMP
-	ror
-	adc  TEMP
-	ror
-	lsr
 	lsr
 	rts
 
