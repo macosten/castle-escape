@@ -32,17 +32,15 @@ const char * const bleh_gross_quote = "Bleh!!! Gross!!!";
 const unsigned char const hasee_subpal_blue[] = { 0x21, 0x0f, 0x0c, 0x19 };
 const unsigned char const hasee_subpal_green_grundo[] = { 0x21, 0x0f, 0x29, 0x19 };
 const unsigned char const hasee_subpal_silver[] = { 0x21, 0x0f, 0x10, 0x00 };
-const unsigned char const hasee_subpal_golden[] = { 0x21, 0x0f, 0x29, 0x19 };
+const unsigned char const hasee_subpal_golden[] = { 0x21, 0x37, 0x27, 0x17 };
 const unsigned char const hasee_subpal_checkered[] = { 0x21, 0x0f, 0x20, 0x2D };
 const unsigned char const hasee_subpal_sponge[] = { 0x21, 0x27, 0x38, 0x37 };
 const unsigned char const hasee_subpal_fiery[] = { 0x21, 0x06, 0x16, 0x27 };
 const unsigned char const hasee_subpal_icy[] = { 0x21, 0x0C, 0x3c, 0x2c };
 const unsigned char const hasee_subpal_rainbow[] = { 0x21, 0x01, 0x38, 0x06 };
 const unsigned char const hasee_subpal_fish[] = { 0x21, 0x0f, 0x2c, 0x3c };
-
-const unsigned char const hasee_treat_effect_lut[] = {
-
-};
+const unsigned char const hasee_subpal_maccy[] = { 0x21, 0x0f, 0x27, 0x30 };
+// const unsigned char const hasee_subpal_gross[] = { 0x21, 0x0f, 0x17, 0x29 };
 
 // Metasprites.
 const unsigned char const purple_hasee_idle_left[] = {
@@ -176,7 +174,7 @@ const unsigned char const orange_hasee_squat_right[] = {
 const unsigned char const yellow_doughnutfruit[] = {
     0, 0, 0x00, 0,
     8, 0, 0x01, 0,
-    0, 8, 0x4E, 0,
+    0, 8, 0x11, 0|OAM_FLIP_H,
     8, 8, 0x11, 0,
     128
 };
@@ -184,7 +182,7 @@ const unsigned char const yellow_doughnutfruit[] = {
 const unsigned char const blue_green_doughnutfruit[] = {
     0, 0, 0x00, 2,
     8, 0, 0x01, 2,
-    0, 8, 0x4E, 2,
+    0, 8, 0x11, 2|OAM_FLIP_H,
     8, 8, 0x11, 2,
     128
 };
@@ -192,7 +190,7 @@ const unsigned char const blue_green_doughnutfruit[] = {
 const unsigned char const grundoughnutfruit[] = {
     0, 0, 0x50, 2,
     8, 0, 0x51, 2,
-    0, 8, 0x4E, 2,
+    0, 8, 0x11, 2|OAM_FLIP_H,
     8, 8, 0x11, 2,
     128
 };
@@ -200,7 +198,7 @@ const unsigned char const grundoughnutfruit[] = {
 const unsigned char const silver_gold_icy_doughnutfruit[] = {
     0, 0, 0x00, 3,
     8, 0, 0x01, 3,
-    0, 8, 0x4E, 3,
+    0, 8, 0x11, 3|OAM_FLIP_H,
     8, 8, 0x11, 3,
     128
 };
@@ -240,7 +238,7 @@ const unsigned char const rainbow_doughnutfruit[] = {
 const unsigned char const fish_doughnutfruit[] = {
     0, 0, 0x40, 3,
     8, 0, 0x41, 3,
-    0, 8, 0x4E, 3,
+    0, 8, 0x11, 3|OAM_FLIP_H,
     8, 8, 0x11, 3,
     128
 };
@@ -250,6 +248,7 @@ const unsigned char const purple_a_fruit[] = {
     8, 0, 0x03, 1,
     0, 8, 0x12, 1,
     8, 8, 0x13, 1,
+    128
 };
 
 const unsigned char const purple_e_fruit[] = {
@@ -257,6 +256,7 @@ const unsigned char const purple_e_fruit[] = {
     8, 0, 0x05, 1,
     0, 8, 0x14, 1,
     8, 8, 0x15, 1,
+    128
 };
 
 const unsigned char const purple_h_fruit[] = {
@@ -264,6 +264,7 @@ const unsigned char const purple_h_fruit[] = {
     8, 0, 0x07, 1,
     0, 8, 0x16, 1,
     8, 8, 0x17, 1,
+    128
 };
 
 const unsigned char const purple_s_fruit[] = {
@@ -271,6 +272,7 @@ const unsigned char const purple_s_fruit[] = {
     8, 0, 0x21, 1,
     0, 8, 0x30, 1,
     8, 8, 0x31, 1,
+    128
 };
 
 const unsigned char const orange_a_fruit[] = {
@@ -278,6 +280,7 @@ const unsigned char const orange_a_fruit[] = {
     8, 0, 0x61, 1,
     0, 8, 0x70, 1,
     8, 8, 0x71, 1,
+    128
 };
 
 const unsigned char const orange_e_fruit[] = {
@@ -285,6 +288,7 @@ const unsigned char const orange_e_fruit[] = {
     8, 0, 0x63, 1,
     0, 8, 0x72, 1,
     8, 8, 0x73, 1,
+    128
 };
 
 const unsigned char const orange_h_fruit[] = {
@@ -292,6 +296,7 @@ const unsigned char const orange_h_fruit[] = {
     8, 0, 0x65, 1,
     0, 8, 0x74, 1,
     8, 8, 0x75, 1,
+    128
 };
 
 const unsigned char const orange_s_fruit[] = {
@@ -299,7 +304,112 @@ const unsigned char const orange_s_fruit[] = {
     8, 0, 0x67, 1,
     0, 8, 0x76, 1,
     8, 8, 0x77, 1,
+    128
 };
+
+const unsigned char const maccy_pickup[] = {
+    0, 0, 0x48, 3,
+    8, 0, 0x49, 3,
+    0, 8, 0x58, 3,
+    8, 8, 0x59, 3,
+    128
+};
+
+const unsigned char const gross_dung[] = {
+    0, 0, 0x24, 2,
+    8, 0, 0x25, 2,
+    0, 8, 0x34, 2,
+    8, 8, 0x35, 2,
+    128
+};
+
+const unsigned char const gross_slime[] = {
+    0, 0, 0x22, 2,
+    8, 0, 0x23, 2,
+    0, 8, 0x32, 2,
+    8, 8, 0x33, 2,
+    128
+};
+
+const unsigned char * const hasee_treat_metasprite_lut[] = {
+    yellow_doughnutfruit,
+    blue_green_doughnutfruit,
+    blue_green_doughnutfruit,
+    silver_gold_icy_doughnutfruit,
+    silver_gold_icy_doughnutfruit,
+    checkered_doughnutfruit,
+    sponge_doughnutfruit,
+    fiery_doughnutfruit,
+    silver_gold_icy_doughnutfruit,
+    rainbow_doughnutfruit,
+    fish_doughnutfruit,
+    grundoughnutfruit,
+    maccy_pickup,
+    gross_dung,
+    gross_slime,
+    purple_h_fruit,
+    purple_a_fruit,
+    purple_s_fruit,
+    purple_e_fruit,
+    orange_h_fruit,
+    orange_a_fruit,
+    orange_s_fruit,
+    orange_e_fruit
+};
+
+const unsigned char * const hasee_treat_subpal_lut[] = {
+    NULL,
+    hasee_subpal_blue,
+    hasee_subpal_green_grundo,
+    hasee_subpal_silver,
+    hasee_subpal_golden,
+    hasee_subpal_checkered,
+    hasee_subpal_sponge,
+    hasee_subpal_fiery,
+    hasee_subpal_icy,
+    hasee_subpal_rainbow,
+    hasee_subpal_fish,
+    hasee_subpal_green_grundo,
+    hasee_subpal_maccy,
+    NULL, // hasee_subpal_gross,
+    NULL, // hasee_subpal_gross,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+
+const unsigned char const hasee_palette_index_lut[] = {
+    0,
+    2,
+    2,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    2,
+    3,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+};
+
+// We have limited palettes so if a treat wants 2 or 3, we need to know which it need a "lock" on 
 
 const unsigned char const hasee_treat_points[] = {
     // See hasee_constants.h for expected base indices of each item
@@ -337,19 +447,19 @@ const unsigned char hasee_letter_points[] = {
 
 // These are mostly here because it's more convenient to update screen gfx this way
 const unsigned char const hasee_metatiles[]={
-       0,   0,   0,   0, 0, // Blank
-    0x80,0x81,0x90,0x91, 2, // Purple A
-    0x82,0x83,0x92,0x93, 2, // Purple E
-    0x84,0x85,0x94,0x95, 2, // Purple H
-    0x86,0x87,0x96,0x97, 2, // Purple S
-    0x88,0x89,0x98,0x99, 2, // Orange A
-    0x8A,0x8B,0x9A,0x9B, 2, // Orange E
-    0x8C,0x8D,0x9C,0x9D, 2, // Orange H
-    0x8E,0x8F,0x9E,0x9F, 2, // Orange S
-    0xA8,0xA9,0xB8,0xB9, 2, // Blank A
-    0xAA,0xAB,0xBA,0xBB, 2, // Blank E
     0xAC,0xAD,0xBC,0xBD, 2, // Blank H
+    0xA8,0xA9,0xB8,0xB9, 2, // Blank A
     0xAE,0xAF,0xBE,0xBF, 2, // Blank S
+    0xAA,0xAB,0xBA,0xBB, 2, // Blank E
+    0x84,0x85,0x94,0x95, 2, // Purple H
+    0x80,0x81,0x90,0x91, 2, // Purple A
+    0x86,0x87,0x96,0x97, 2, // Purple S
+    0x82,0x83,0x92,0x93, 2, // Purple E
+    0x8C,0x8D,0x9C,0x9D, 2, // Orange H
+    0x88,0x89,0x98,0x99, 2, // Orange A
+    0x8E,0x8F,0x9E,0x9F, 2, // Orange S
+    0x8A,0x8B,0x9A,0x9B, 2, // Orange E
+    0x00,0x00,0x00,0x00, 0, // Blank
 };
 
 const unsigned char const hasee_paused_text[] = {
@@ -360,6 +470,22 @@ const unsigned char const hasee_paused_text[] = {
    32,  0, 0xFD, 1,
    40,  0, 0xFE, 1,
   128
+};
+
+const unsigned int const hasee_letter_hud_ntaddr_lut[] = {
+    NTADR_A(6, 3),
+    NTADR_A(7, 3),
+    NTADR_A(8, 3),
+    NTADR_A(9, 3),
+    NTADR_A(10, 3),
+};
+
+const unsigned char const hasee_leftright_movement_moving_lookup_table[] = {
+    0xff, 0x01,
+    0xfe, 0x02,
+    0xfd, 0x03,
+    0xfc, 0x04,
+    0xfb, 0x05,
 };
 
 #pragma rodata-name(pop);

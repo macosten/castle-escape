@@ -20,7 +20,6 @@ ZEROPAGE_EXTERN(unsigned char, temp2);
 ZEROPAGE_EXTERN(unsigned char, temp3);
 ZEROPAGE_EXTERN(unsigned char, temp4);
 ZEROPAGE_EXTERN(unsigned int, temp5);
-ZEROPAGE_EXTERN(unsigned int, temp6);
 ZEROPAGE_EXTERN(unsigned char, pad1);
 ZEROPAGE_EXTERN(unsigned char, pad1_new);
 ZEROPAGE_EXTERN(unsigned char, pad2);
@@ -40,6 +39,12 @@ ZEROPAGE_EXTERN(unsigned char, game_mode);
 ZEROPAGE_EXTERN(unsigned char, player_flags);
 ZEROPAGE_EXTERN(unsigned char, player_flags2);
 ZEROPAGE_EXTERN(unsigned char, menu);
+ZEROPAGE_EXTERN(unsigned char, tile_clear_back);
+ZEROPAGE_EXTERN(unsigned char, shuffle_offset);
+ZEROPAGE_EXTERN(unsigned char, temp_x);
+ZEROPAGE_EXTERN(unsigned char, temp_y);
+ZEROPAGE_ARRAY_EXTERN(unsigned int, tile_clear_queue, 4);
+ZEROPAGE_ARRAY_EXTERN(unsigned char, tile_clear_to_type_queue, 4);
 
 // Aliased values... I can use the same addresses with different names this way, with only a medium jank factor
 ZEROPAGE_EXTERN(unsigned char, eject_L); // Just don't use this original name...
@@ -66,22 +71,39 @@ ZEROPAGE_EXTERN(unsigned int, pseudo_scroll_y);
 ZEROPAGE_EXTERN(signed int, scroll_y); // Letting me treat an unsigned int as a signed int, very kind
 #define old_velocity_y scroll_y
 
+ZEROPAGE_EXTERN(unsigned char, level_index);
+#define level level_index
+
+ZEROPAGE_EXTERN(unsigned int, temp6);
+#define level_timer temp6
+
+ZEROPAGE_EXTERN(unsigned char, did_headbonk);
+#define treat_timer did_headbonk
+
+// ZEROPAGE_EXTERN(unsigned char, enemy_is_using_bg_collision);
+
 // extern unsigned char eject_R;
 // #pragma zpsym("eject_R")
 // #define ...
 
+extern unsigned char shuffle_array[];
 extern unsigned char shuffle_leg_size;
 
 // Importing only the enemies_whatever arrays we need to store Doughnutfruit data...
 extern unsigned char enemies_x[MAX_ENEMIES]; // Object X coords
 extern unsigned char enemies_y[MAX_ENEMIES]; // Object Y coords
-extern unsigned char enemies_extra[MAX_ENEMIES]; // Doughnutfruit subpixel X
+extern unsigned char enemies_extra[MAX_ENEMIES]; // Doughnutfruit subpixel X?
 extern unsigned char enemies_type[MAX_ENEMIES];
-extern unsigned char enemies_extra2[MAX_ENEMIES]; // doughnutfruit speed
-extern unsigned char enemies_flags[MAX_ENEMIES]; // doughnutfruit speed
+extern unsigned char enemies_extra2[MAX_ENEMIES]; // doughnutfruit speed?
+extern unsigned char enemies_flags[MAX_ENEMIES]; // doughnutfruit speed?
+extern unsigned char enemies_timer[MAX_ENEMIES]; // Timer?
 extern unsigned char enemies_count;
 
 extern unsigned char cmap[];
+extern unsigned char boss_memory[8];
+#define letter_status boss_memory
+
+// extern const unsigned char const leftright_movement_moving_lookup_table[2];
 
 // Since EfMC is in the non-swapping PRG segment, we can access all of its rodata
 // Hasee Bounce ROdata bank will be Bank 1
@@ -107,9 +129,12 @@ extern void put_str_sub(void);
 extern void set_prg_bank(unsigned char bank);
 extern void calculate_shuffle_array(void);
 extern void switch_menu(void);
+extern void handle_tile_clear_queue(void);
 
 // Make sure prg bank is 5 before calling:
 extern void LZG_decode(const unsigned char *src, unsigned char *dest);
+extern unsigned char __fastcall__ divide_by_3(unsigned char input);
+extern unsigned char __fastcall__ divide_by_26(unsigned char input);
 
 void game_hasee_bounce(void);
 void begin_hasee_bounce(void);
@@ -152,11 +177,19 @@ void begin_hasee_bounce(void) {
     player_flags = ORANGE_HASEE_ACTIVE | ACTIVE_PLAYER_BRANCH_STATUS;
     player_flags2 = 0;
     score = 0;
+    level = 0;
+    set_mt_pointer(hasee_metatiles);
 
     set_prg_bank(5);
     temppointer = hasee_game_screen;
     LZG_decode(temppointer, cmap);
     vram_write(cmap, 32*32);
+
+    letter_status[LETTER_H_INDEX] = LETTER_UNCOLLECTED;
+    letter_status[LETTER_A_INDEX] = LETTER_UNCOLLECTED;
+    letter_status[LETTER_S_INDEX] = LETTER_UNCOLLECTED;
+    letter_status[LETTER_E_INDEX] = LETTER_UNCOLLECTED;
+    letter_status[LETTER_E2_INDEX] = LETTER_UNCOLLECTED;
 
     enemies_count = MAX_TREATS_ONSCREEN;
     calculate_shuffle_array();
@@ -179,19 +212,51 @@ void game_hasee_bounce(void) {
 
     hasee_singleplayer_movement();
     // hasee_check_spr_objects(); // ?
+    hasee_treat_movement();
 
-    // draw score
-
+    // draw score and other things
     hasee_draw_sprites();
-    // hasee_treat_movement();
-    // hasee_draw_sprites();
+    handle_tile_clear_queue();
 
     if (HASEE_SCORE_CHANGED_THIS_FRAME) { hasee_update_score(); }
     
+    // Decrement game timers
+    --level_timer;
+    if (level_timer == 0) {
+        level_timer = LEVEL_FRAME_LENGTH;
+        ++level;
+    }
+
     --game_timer;
     if (game_timer == 0) {
         // Trigger stop to game next frame
     }
+
+    --treat_timer;
+    if (treat_timer == 0) {
+        treat_timer = 32 + (rand8() & 0b11111);
+        calculate_next_treat();
+        // Also insert treat
+        for (x = 0; x < MAX_TREATS_ONSCREEN; ++x) {
+            if (!IS_ENEMY_ACTIVE(x)) {
+                // insert here
+                temp0 = rand8();
+                enemies_type[x] = temp4;
+                // Debug
+                level_index = temp4;
+                //
+                enemies_flags[x] = temp0 & 0b1; // set initial direction based on RNG
+                ACTIVATE_ENEMY(x);
+                enemies_y[x] = divide_by_3(temp0) + 80;
+                enemies_x[x] = ENEMY_DIRECTION(x) ? 0x00 : 0xf0;
+                enemies_timer[x] = 0;
+                break;
+            }
+        } // This is nice because it will just fail gracefully if the screen is full of treats...
+    }
+
+    if (player1_stun_timer) { --player1_stun_timer; }
+    if (player2_stun_timer) { --player2_stun_timer; }
 
     // Temporary debug stuffs:
     if (pad1 & PAD_B) {
@@ -200,7 +265,7 @@ void game_hasee_bounce(void) {
         switch_menu();
         pal_bright(4);
     }
-    // gray_line();
+    gray_line();
 }
 
 void hasee_draw_sprites(void) {
@@ -208,7 +273,7 @@ void hasee_draw_sprites(void) {
     oam_clear();
 
     // Draw hasees
-    
+
     // Add animation switching block here for P1 hasee (see draw_player)
     temppointer = purple_hasee_idle_right;
 
@@ -222,20 +287,32 @@ void hasee_draw_sprites(void) {
     // if (GAME_PAUSED) { oam_meta_spr(108, 116, hasee_paused_text); }
 
     // Draw goodies
-    // for (y = 0; y < shuffle_leg_size; ++y) {
-
-    // }
+    for (y = 0; y < shuffle_leg_size; ++y) {
+        temp1 = y + shuffle_offset;
+        AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
+        if (IS_ENEMY_ACTIVE(x)) {
+            temp_x = enemies_x[x];
+            temp_y = enemies_y[x];
+            temp0 = enemies_type[x];
+            if (temp0 > TREAT_ORANGE_E) {
+                temppointer = purple_hasee_idle_left;
+            } else {
+                AsmSet2ByteFromPtrAtIndexVar(temppointer, hasee_treat_metasprite_lut, temp0);
+            }
+            oam_meta_spr(temp_x, temp_y, temppointer);
+        }
+    }
 
     // Debug HUD, drawn last because it's the least important.
-    if (ACTIVE_PLAYER_ON_BRANCH) {
-        oam_spr(208, 50, 0x48, 1);
-    }
-    if (ACTIVE_PLAYER_JUMPING_OFF_BRANCH) {
-        oam_spr(208, 60, 0x49, 2);
-    }
-    if (ACTIVE_PLAYER_JUMPING_TO_BRANCH) {
-        oam_spr(208, 70, 0x58, 3);
-    }
+    // if (ACTIVE_PLAYER_ON_BRANCH) {
+    //     oam_spr(208, 50, 0x48, 1);
+    // }
+    // if (ACTIVE_PLAYER_JUMPING_OFF_BRANCH) {
+    //     oam_spr(208, 60, 0x49, 2);
+    // }
+    // if (ACTIVE_PLAYER_JUMPING_TO_BRANCH) {
+    //     oam_spr(208, 70, 0x58, 3);
+    // }
     // set_prg_bank(1); HASEE_METASPRITE_BANK is bank 1 at the moment...
 }
 
@@ -446,8 +523,18 @@ void calculate_next_treat(void) {
         }
     } else if (temp0 > 192) { // ~15%ish of the time...
         // Letter!
-        // We will need to figure out what letters have already been collected.
-        // (Todo.)
+        // Pick an uncollected letter
+        temp0 = rand8();
+        // Divide by 52 to map from 0...255 -> 0...4
+        // Equivalent to dividing by 26 and then 2, or dividing by 26 and then >> 1:
+        temp1 = divide_by_26(temp0);
+        temp1 >> 1; 
+        while (letter_status[temp1] != LETTER_UNCOLLECTED) {
+            ++temp1;
+            if (temp1 > LETTER_E2_INDEX) { temp1 = LETTER_H_INDEX; }
+        } // temp1 is now equal to the desired LETTER_WHATEVER_INDEX
+        // Since LETTER_E and LETTER_E2 will use the same sprite:
+        temp4 = TREAT_PURPLE_H + (MIN(temp1, LETTER_E_INDEX) | temp0 & 0b0100);
     } else { // The rest (~75%) of the time...
         // Doughnutfruit! Let's see if we're lucky enough for a special one.
         temp1 = rand8();
@@ -455,36 +542,49 @@ void calculate_next_treat(void) {
             if (temp1 == 1) {
                 // Meant to be around a ~1/2500 chance:
                 temp4 = TREAT_FISH;
+                HASEE_LOCK_PALETTE_3();
             } else if (temp1 < 5) {
                 // ~4 times as common as Fish:
                 temp4 = TREAT_RAINBOW;
+                HASEE_LOCK_PALETTE_3();
             } else if (temp1 < 21) {
                 // ~4 times as common as Rainbow:
                 temp4 = TREAT_ICY;
+                HASEE_LOCK_PALETTE_3();
             } else if (temp1 < 45) {
                 // ~6 times as common as Rainbow:
                 temp4 = TREAT_FIERY;
+                HASEE_LOCK_PALETTE_3();
             } else if (temp1 < 77) {
                 // ~8 times as common as Rainbow:
                 temp4 = TREAT_SPONGE;
+                HASEE_LOCK_PALETTE_3();
             } else if (temp1 < 113) {
                 // ~9 times as common as Rainbow:
                 temp4 = TREAT_CHECKERED;
+                HASEE_LOCK_PALETTE_3();
             } else if (temp1 < 157) {
                 // ~11 times as common as Rainbow:
                 temp4 = TREAT_GOLDEN;
+                HASEE_LOCK_PALETTE_3();
             } else if (temp1 < 213) {
                 // ~14 times as common as Rainbow:
                 temp4 = TREAT_SILVER;
-            } 
-            // Other rare ones could go here in this remaining space of 213-255
+                HASEE_LOCK_PALETTE_3();
+            } else {
+                // Fill remaining space of 213-255
+                temp4 = TREAT_GRUNDOUGHNUTFRUIT;
+                HASEE_LOCK_PALETTE_2();
+            }
         } else {
             if (temp1 < 6) {
                 // Meant to be a ~2% chance individually:
                 temp4 = TREAT_GREEN;
+                HASEE_LOCK_PALETTE_2();
             } else if (temp1 < 15) {
                 // Meant to be a ~3% chance individually (~1.5x as common as green):
                 temp4 = TREAT_BLUE;
+                HASEE_LOCK_PALETTE_2();
             }
             // Otherwise, yellow it stays.
         }
@@ -530,11 +630,63 @@ void hasee_sprite_collisions(void) {
                 } else {
                     // Gross
                     // set stunned timer
+                    if (ACTIVE_PLAYER) {
+                        player2_stun_timer = 240; // 4 second stun
+                    } else {
+                        player1_stun_timer = 240;
+                    }
                 }
             }
         }
         x += 2;
     }
 }
+
+/**
+ * temp0 = LETTER_[whatever]_INDEX value for the letter to be set
+ * temp1 = color of letter collected (LETTER_COLLECTED_[whatever])
+ */
+void handle_letter_collection(void) {
+    // Check if all letters collected
+    // if (...) {}
+
+    // Fill in single letter
+
+    // Enqueue tile update
+    AsmSet2ByteAtPtrWithOffset(tile_clear_queue, tile_clear_back, address);
+    tile_clear_to_type_queue[tile_clear_back] = temp0;
+}
+
+void hasee_treat_movement(void) {
+    for (x = 0; x < ONSCREEN_TREATS_MAXIMUM; ++x) {
+        if (IS_ENEMY_ACTIVE(x)) {
+            // temp3 = ENEMY_DIRECTION(x);
+            // temp1 = hasee_leftright_movement_moving_lookup_table[temp3];
+            // temp0 = enemies_x[x] + temp1;
+            // enemies_x[x] = temp0;
+            __asm__("ldy %v", x);
+            __asm__("lda %v,y", enemies_flags);
+            __asm__("and #%b", 0b00000001);
+            __asm__("tay");
+            __asm__("lda %v,y", hasee_leftright_movement_moving_lookup_table);
+            __asm__("ldy %v", x);
+            __asm__("clc");
+            __asm__("adc %v,y", enemies_x);
+            __asm__("sta %v,y", enemies_x);
+
+            // Deactivate when going offscreen
+            temp0 = enemies_timer[x] + 1;
+            enemies_timer[x] = temp0;
+            temp1 = enemies_x[x];
+            if (temp0 > 20 && temp1 >= 0xF8) { // enemies_x will underflow eventually even when going left, so:
+                DEACTIVATE_ENEMY(x);
+            }
+        }
+    }
+}
+
+// hasee_clear_letters
+// Technically there will only ever be 4 filled in at a time so we will not run afoul of this
+// Need to be clever about only clearing the 4 that are filled in
 
 #pragma rodata-name(pop)
