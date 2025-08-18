@@ -381,7 +381,7 @@ void hasee_singleplayer_movement(void) {
             // Start jumping
             ACTIVE_PLAYER_MOVE_OFF_BRANCH();
             ACTIVE_PLAYER_SET_JUMPING_OFF_BRANCH();
-            
+            sfx_play(SFX_JUMP, 0);
             if (ACTIVE_PLAYER) {
                 player2.velocity_y = -HASEE_MAX_SPEED;
                 old_velocity_y = player2.velocity_y;
@@ -396,6 +396,7 @@ void hasee_singleplayer_movement(void) {
             ACTIVE_PLAYER_UNSET_JUMPING_OFF_BRANCH();
             ACTIVE_PLAYER_SET_JUMPING_TO_BRANCH();
             temp4 = ON_GROUND_STARTING_Y_VALUE_HIGH_BYTE;
+            sfx_play(SFX_SMACK, 0);
         } else {
             old_velocity_y += HASEE_GRAVITY;
             if (old_velocity_y > HASEE_MAX_SPEED) {
@@ -626,14 +627,17 @@ void hasee_sprite_collisions(void) {
                     // Letter
                     // Ensure it is the correct color or don't do anything
                     score += hasee_letter_points[previously_collected_treats_this_jump];
+                    sfx_play(SFX_STAR_COLLECT, 0);
                 } else if (temp0 <= TREAT_MACCY) {
                     // Regular Point Pickup
                     temp0 <<= 3;
                     temp0 |= previously_collected_treats_this_jump;
                     score += hasee_treat_points[temp0];
+                    sfx_play(SFX_STAR_COLLECT, 0);
                 } else {
                     // Gross
                     // set stunned timer
+                    sfx_play(SFX_ENEMY_KILL, 0);
                     if (ACTIVE_PLAYER) {
                         player2_stun_timer = 240; // 4 second stun
                     } else {

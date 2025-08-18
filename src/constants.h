@@ -64,6 +64,7 @@
 #define SFX_BUMP 5
 #define SFX_ACID_DROP 6
 #define SFX_SMACK 7
+#define SFX_JUMP 8
 
 // ===
 // Constants for songs/their names.
