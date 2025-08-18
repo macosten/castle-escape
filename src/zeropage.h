@@ -148,6 +148,8 @@ unsigned char active_game; // Keep track of which game is active so we can do th
 
 // ~?? zp bytes left? (see ZP_LAST in labels.txt)
 
+unsigned char debug_values[4]; // Just exist to be watched in memory
+
 #pragma bss-name(pop)
 
 #endif

@@ -45,7 +45,7 @@ ZEROPAGE_EXTERN(unsigned char, temp_x);
 ZEROPAGE_EXTERN(unsigned char, temp_y);
 ZEROPAGE_ARRAY_EXTERN(unsigned int, tile_clear_queue, 4);
 ZEROPAGE_ARRAY_EXTERN(unsigned char, tile_clear_to_type_queue, 4);
-
+ZEROPAGE_ARRAY_EXTERN(unsigned char, debug_values, 4);
 // Aliased values... I can use the same addresses with different names this way, with only a medium jank factor
 ZEROPAGE_EXTERN(unsigned char, eject_L); // Just don't use this original name...
 #define previously_collected_treats_this_jump eject_L
@@ -194,6 +194,11 @@ void begin_hasee_bounce(void) {
     enemies_count = MAX_TREATS_ONSCREEN;
     calculate_shuffle_array();
 
+    hitbox.width = HASEE_WIDTH;
+    hitbox.height = HASEE_HEIGHT;
+    hitbox2.width = TREAT_WIDTH;
+    hitbox2.height = TREAT_HEIGHT;
+
     ppu_on_all();
     pal_bright(4);
 }
@@ -210,17 +215,20 @@ void game_hasee_bounce(void) {
 
     clear_vram_buffer();
 
+    // If not paused:
     hasee_singleplayer_movement();
     // hasee_check_spr_objects(); // ?
     hasee_treat_movement();
 
+    // Even if paused:
     // draw score and other things
+    hasee_sprite_collisions();
     hasee_draw_sprites();
     handle_tile_clear_queue();
 
     if (HASEE_SCORE_CHANGED_THIS_FRAME) { hasee_update_score(); }
     
-    // Decrement game timers
+    // Decrement game timers (if not paused)
     --level_timer;
     if (level_timer == 0) {
         level_timer = LEVEL_FRAME_LENGTH;
@@ -437,8 +445,6 @@ void hasee_singleplayer_movement(void) {
     // Process treat collisions here
     hitbox.x = high_byte(old_x);
     hitbox.y = high_byte(old_y);
-    hitbox.width = HASEE_WIDTH;
-    hitbox.height = HASEE_HEIGHT;
 }
 
 void hasee_multiplayer_movement(void) {
@@ -465,8 +471,6 @@ void hasee_multiplayer_movement(void) {
 
     hitbox.x = high_byte(old_x);
     hitbox.y = high_byte(old_y);
-    hitbox.width = HASEE_WIDTH;
-    hitbox.height = HASEE_HEIGHT;
 }
 
 void orange_hasee_lr_movement(void) {
@@ -513,22 +517,31 @@ void purple_hasee_lr_movement(void) {
 void calculate_next_treat(void) {
     temp0 = rand8();
     temp4 = TREAT_YELLOW; // Default option
+    debug_values[0] = temp0;
     if (temp0 > 230) { // ~10% (really a little less) of the time...
+        debug_values[1] = temp0;
         if (rand8() > 252) { // Need to figure out if this is possible with PRNG
             temp4 = TREAT_MACCY; // Meant to be ~1/10000ish chance
         } else {
             // Gross item
             // Slime is the item ID directly after Dung, so:
-            temp4 = TREAT_GROSS_DUNG + temp0 & 0b1;
+            temp4 = TREAT_GROSS_DUNG; // or TREAT_GROSS_SLIME
         }
     } else if (temp0 > 192) { // ~15%ish of the time...
         // Letter!
         // Pick an uncollected letter
         temp0 = rand8();
-        // Divide by 52 to map from 0...255 -> 0...4
-        // Equivalent to dividing by 26 and then 2, or dividing by 26 and then >> 1:
-        temp1 = divide_by_26(temp0);
-        temp1 >> 1; 
+        if (temp0 <= 51) { // Wanted to do this more intelligently but it seemed to not work :(
+            temp1 = LETTER_H_INDEX;
+        } else if (temp0 <= 102) {
+            temp1 = LETTER_A_INDEX;
+        } else if (temp0 <= 153) {
+            temp1 = LETTER_S_INDEX;
+        } else if (temp0 <= 204) {
+            temp1 = LETTER_E_INDEX;
+        } else {
+            temp1 = LETTER_E2_INDEX;
+        }
         while (letter_status[temp1] != LETTER_UNCOLLECTED) {
             ++temp1;
             if (temp1 > LETTER_E2_INDEX) { temp1 = LETTER_H_INDEX; }
@@ -592,28 +605,19 @@ void calculate_next_treat(void) {
 }
 
 void hasee_sprite_collisions(void) {
-    // hitbox == the jumping player's hitbox.
-    hitbox.x = high_byte(player1.x);
-    hitbox.y = high_byte(player1.y);
-
-    // Sprite collisions should be more straightforward for this game than EfMC...
-    hitbox.width = HASEE_WIDTH;
-    hitbox.height = HASEE_HEIGHT;
-
+    // hitbox == the jumping player's hitbox. Should have been set by hasee_movement() somewhere.
     // hitbox2 == a treat's hitbox.
 
     // To save on CPU time, we'll only check half of the collisions on each frame.
     // depending on the parity of get_frame_count(), we'll check only indexes of the same parity for a collision.
-    x = get_frame_count() & 1;
-    for (x; x < ONSCREEN_TREATS_MAXIMUM; x += 2) { // TODO: See if we can optimize this looping somehow
-        temp1 = enemies_flags[x];
-        if(temp1 & TREAT_IS_ACTIVE) {
-            hitbox2.width = TREAT_WIDTH;
-            hitbox2.height = TREAT_HEIGHT;
+    //  x = get_frame_count() & 1;
+    for (x = 0; x < ONSCREEN_TREATS_MAXIMUM; ++x) { // TODO: See if we can optimize this looping somehow
+        if(IS_ENEMY_ACTIVE(x)) {
             hitbox2.x = enemies_x[x];
             hitbox2.y = enemies_y[x];
             check_collision(temp0, hitbox, hitbox2);
             if (temp0) {
+                DEACTIVATE_ENEMY(x);
                 if(previously_collected_treats_this_jump < 7) {
                     ++previously_collected_treats_this_jump;
                 }
@@ -638,7 +642,6 @@ void hasee_sprite_collisions(void) {
                 }
             }
         }
-        x += 2;
     }
 }
 
