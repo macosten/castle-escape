@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "lib/nesdoug.h"
 #include "lib/neslib.h"
 
@@ -110,7 +112,7 @@ extern unsigned char boss_memory[8];
 
 #pragma rodata-name(push, "BANK0")
 
-unsigned char const hasee_palette_sp[] = {
+unsigned char hasee_palette_sp[] = {
     0x21, 0x0f, 0x38, 0x29, // sky, black, yellow, green - regular doughnutfruit, stars
     0x21, 0x0f, 0x23, 0x26, // sky, black, purple, orange - Hasees and letters
     0x21, 0x0f, 0x00, 0x00, // Reserved for common special doughnutfruit (blue or green)
@@ -199,6 +201,9 @@ void begin_hasee_bounce(void) {
     hitbox2.width = TREAT_WIDTH;
     hitbox2.height = TREAT_HEIGHT;
 
+    seed_rng();
+    srand(rand8());
+
     ppu_on_all();
     pal_bright(4);
 }
@@ -217,7 +222,6 @@ void game_hasee_bounce(void) {
 
     // If not paused:
     hasee_singleplayer_movement();
-    // hasee_check_spr_objects(); // ?
     hasee_treat_movement();
 
     // Even if paused:
@@ -244,6 +248,7 @@ void game_hasee_bounce(void) {
     if (treat_timer == 0) {
         treat_timer = 32 + (rand8() & 0b11111);
         calculate_next_treat();
+        pal_spr(hasee_palette_sp);
         // Also insert treat
         for (x = 0; x < MAX_TREATS_ONSCREEN; ++x) {
             if (!IS_ENEMY_ACTIVE(x)) {
@@ -514,21 +519,110 @@ void purple_hasee_lr_movement(void) {
     }
 }
 
+#define PALETTE_3_RNG_THRESHOLD (unsigned int)(21 * MACCY_PROBABILITY + 52 * RAINBOW_PROBABILITY)
+#define PALETTE_2_RNG_THRESHOLD (unsigned int)(PALETTE_3_RNG_THRESHOLD + 38 * RAINBOW_PROBABILITY + GREEN_PROBABILITY + BLUE_PROBABILITY)
 // Calculate the next pickup item. It will be placed into temp4.
 void calculate_next_treat(void) {
-    temp0 = rand8();
     temp4 = TREAT_YELLOW; // Default option
-    debug_values[0] = temp0;
-    if (temp0 > 230) { // ~10% (really a little less) of the time...
-        debug_values[1] = temp0;
-        if (rand8() > 252) { // Need to figure out if this is possible with PRNG
-            temp4 = TREAT_MACCY; // Meant to be ~1/10000ish chance
+
+    temp5 = rand(); // 0...RAND_MAX (0x7FFF)
+    if (temp5 < PALETTE_3_RNG_THRESHOLD && HASEE_IS_PALETTE_3_LOCKED) {
+        return; // Only one palette 3 at a time...
+    } else if (temp5 < PALETTE_2_RNG_THRESHOLD && HASEE_IS_PALETTE_2_LOCKED) {
+        return; // ...and only one palette 2 at a time.
+    }
+    
+    if (temp5 < MACCY_PROBABILITY) {
+        // Originally a 1/10000ish chance but leaving this up to a constant makes for easy tweaks...
+        temp4 = TREAT_MACCY;
+        HASEE_LOCK_PALETTE_3();
+        hasee_palette_sp[13] = hasee_subpal_maccy[1];
+        hasee_palette_sp[14] = hasee_subpal_maccy[2];
+        hasee_palette_sp[15] = hasee_subpal_maccy[3];
+    } else if (temp5 < 5 * MACCY_PROBABILITY) {
+        // Originally a ~1/2500 chance, just make it 4x as common as Maccy:
+        temp4 = TREAT_FISH;
+        HASEE_LOCK_PALETTE_3();
+        hasee_palette_sp[13] = hasee_subpal_fish[1];
+        hasee_palette_sp[14] = hasee_subpal_fish[2];
+        hasee_palette_sp[15] = hasee_subpal_fish[3];  
+    } else if (temp5 < 21 * MACCY_PROBABILITY) {
+        // ~4 times as common as Fish
+        temp4 = TREAT_RAINBOW;
+        HASEE_LOCK_PALETTE_3();
+        hasee_palette_sp[13] = hasee_subpal_rainbow[1];
+        hasee_palette_sp[14] = hasee_subpal_rainbow[2];
+        hasee_palette_sp[15] = hasee_subpal_rainbow[3];
+    } else if (temp5 < 21 * MACCY_PROBABILITY + 4 * RAINBOW_PROBABILITY) {
+        // ~4 times as common as Rainbow:
+        temp4 = TREAT_ICY;
+        HASEE_LOCK_PALETTE_3();
+        hasee_palette_sp[13] = hasee_subpal_icy[1];
+        hasee_palette_sp[14] = hasee_subpal_icy[2];
+        hasee_palette_sp[15] = hasee_subpal_icy[3];
+    } else if (temp5 < 21 * MACCY_PROBABILITY + 10 * RAINBOW_PROBABILITY) {
+        // ~6 times as common as Rainbow:
+        temp4 = TREAT_FIERY;
+        HASEE_LOCK_PALETTE_3();
+        hasee_palette_sp[13] = hasee_subpal_fiery[1];
+        hasee_palette_sp[14] = hasee_subpal_fiery[2];
+        hasee_palette_sp[15] = hasee_subpal_fiery[3];
+    } else if (temp5 < 21 * MACCY_PROBABILITY + 18 * RAINBOW_PROBABILITY) {
+        // ~8 times as common as Rainbow:
+        temp4 = TREAT_SPONGE;
+        HASEE_LOCK_PALETTE_3();
+        hasee_palette_sp[13] = hasee_subpal_sponge[1];
+        hasee_palette_sp[14] = hasee_subpal_sponge[2];
+        hasee_palette_sp[15] = hasee_subpal_sponge[3];
+    } else if (temp5 < 21 * MACCY_PROBABILITY + 27 * RAINBOW_PROBABILITY) {
+        // ~9 times as common as Rainbow:
+        temp4 = TREAT_CHECKERED;
+        HASEE_LOCK_PALETTE_3();
+        hasee_palette_sp[13] = hasee_subpal_checkered[1];
+        hasee_palette_sp[14] = hasee_subpal_checkered[2];
+        hasee_palette_sp[15] = hasee_subpal_checkered[3];
+    } else if (temp5 < 21 * MACCY_PROBABILITY + 38 * RAINBOW_PROBABILITY) {
+        // ~11 times as common as Rainbow:
+        temp4 = TREAT_GOLDEN;
+        HASEE_LOCK_PALETTE_3();
+        hasee_palette_sp[13] = hasee_subpal_golden[1];
+        hasee_palette_sp[14] = hasee_subpal_golden[2];
+        hasee_palette_sp[15] = hasee_subpal_golden[3];
+    } else if (temp5 < PALETTE_3_RNG_THRESHOLD) {
+        // ~14 times as common as Rainbow:
+        temp4 = TREAT_SILVER;
+        HASEE_LOCK_PALETTE_3();
+        hasee_palette_sp[13] = hasee_subpal_silver[1];
+        hasee_palette_sp[14] = hasee_subpal_silver[2];
+        hasee_palette_sp[15] = hasee_subpal_silver[3];
+    } else if (temp5 < PALETTE_3_RNG_THRESHOLD + 38 * RAINBOW_PROBABILITY) {
+        temp4 = TREAT_GRUNDOUGHNUTFRUIT;
+        HASEE_LOCK_PALETTE_2();
+        hasee_palette_sp[9] = hasee_subpal_green_grundo[1];
+        hasee_palette_sp[10] = hasee_subpal_green_grundo[2];
+        hasee_palette_sp[11] = hasee_subpal_green_grundo[3];
+    } else if (temp5 < PALETTE_3_RNG_THRESHOLD + 38 * RAINBOW_PROBABILITY + GREEN_PROBABILITY) {
+        // Originally a ~2% chance individually:
+        temp4 = TREAT_GREEN;
+        HASEE_LOCK_PALETTE_2();
+        hasee_palette_sp[9] = hasee_subpal_green_grundo[1];
+        hasee_palette_sp[10] = hasee_subpal_green_grundo[2];
+        hasee_palette_sp[11] = hasee_subpal_green_grundo[3];
+    } else if (temp5 < PALETTE_2_RNG_THRESHOLD) {
+        // ~1.5x as common as green:
+        temp4 = TREAT_BLUE;
+        HASEE_LOCK_PALETTE_2();
+        hasee_palette_sp[9] = hasee_subpal_blue[1];
+        hasee_palette_sp[10] = hasee_subpal_blue[2];
+        hasee_palette_sp[11] = hasee_subpal_blue[3];
+    } else if (temp5 < PALETTE_2_RNG_THRESHOLD + 6553) { // ~10% of the time...
+        // Gross item
+        if (rand8() & 1) {
+            temp4 = TREAT_GROSS_DUNG;
         } else {
-            // Gross item
-            // Slime is the item ID directly after Dung, so:
-            temp4 = TREAT_GROSS_DUNG; // or TREAT_GROSS_SLIME
+            temp4 = TREAT_GROSS_SLIME;
         }
-    } else if (temp0 > 192) { // ~15%ish of the time...
+    } else if (temp5 < PALETTE_2_RNG_THRESHOLD + 6553 + 9830) { // ~15%ish of the time...
         // Letter!
         // Pick an uncollected letter
         temp0 = rand8();
@@ -549,65 +643,17 @@ void calculate_next_treat(void) {
         } // temp1 is now equal to the desired LETTER_WHATEVER_INDEX
         // Since LETTER_E and LETTER_E2 will use the same sprite:
         temp4 = TREAT_PURPLE_H + (MIN(temp1, LETTER_E_INDEX) | temp0 & 0b0100);
-    } else { // The rest (~75%) of the time...
-        // Doughnutfruit! Let's see if we're lucky enough for a special one.
-        temp1 = rand8();
-        if (temp0 < 20) { // ~1/10th of the time 
-            if (temp1 == 1) {
-                // Meant to be around a ~1/2500 chance:
-                temp4 = TREAT_FISH;
-                HASEE_LOCK_PALETTE_3();
-            } else if (temp1 < 5) {
-                // ~4 times as common as Fish:
-                temp4 = TREAT_RAINBOW;
-                HASEE_LOCK_PALETTE_3();
-            } else if (temp1 < 21) {
-                // ~4 times as common as Rainbow:
-                temp4 = TREAT_ICY;
-                HASEE_LOCK_PALETTE_3();
-            } else if (temp1 < 45) {
-                // ~6 times as common as Rainbow:
-                temp4 = TREAT_FIERY;
-                HASEE_LOCK_PALETTE_3();
-            } else if (temp1 < 77) {
-                // ~8 times as common as Rainbow:
-                temp4 = TREAT_SPONGE;
-                HASEE_LOCK_PALETTE_3();
-            } else if (temp1 < 113) {
-                // ~9 times as common as Rainbow:
-                temp4 = TREAT_CHECKERED;
-                HASEE_LOCK_PALETTE_3();
-            } else if (temp1 < 157) {
-                // ~11 times as common as Rainbow:
-                temp4 = TREAT_GOLDEN;
-                HASEE_LOCK_PALETTE_3();
-            } else if (temp1 < 213) {
-                // ~14 times as common as Rainbow:
-                temp4 = TREAT_SILVER;
-                HASEE_LOCK_PALETTE_3();
-            } else {
-                // Fill remaining space of 213-255
-                temp4 = TREAT_GRUNDOUGHNUTFRUIT;
-                HASEE_LOCK_PALETTE_2();
-            }
-        } else {
-            if (temp1 < 6) {
-                // Meant to be a ~2% chance individually:
-                temp4 = TREAT_GREEN;
-                HASEE_LOCK_PALETTE_2();
-            } else if (temp1 < 15) {
-                // Meant to be a ~3% chance individually (~1.5x as common as green):
-                temp4 = TREAT_BLUE;
-                HASEE_LOCK_PALETTE_2();
-            }
-            // Otherwise, yellow it stays.
-        }
     }
+    // Otherwise, yellow it stays.
 }
 
 void hasee_sprite_collisions(void) {
     // hitbox == the jumping player's hitbox. Should have been set by hasee_movement() somewhere.
     // hitbox2 == a treat's hitbox.
+
+    // if (ACTIVE_PLAYER && player2_stun_timer > 0 || !ACTIVE_PLAYER && player1_stun_timer > 0) {
+    //     return; // Do not process for a stunned player
+    // }
 
     // To save on CPU time, we'll only check half of the collisions on each frame.
     // depending on the parity of get_frame_count(), we'll check only indexes of the same parity for a collision.
@@ -629,6 +675,13 @@ void hasee_sprite_collisions(void) {
                     score += hasee_letter_points[previously_collected_treats_this_jump];
                     sfx_play(SFX_STAR_COLLECT, 0);
                 } else if (temp0 <= TREAT_MACCY) {
+                    // Unlock palette if applicable
+                    if (temp0 >= TREAT_SILVER && temp0 != TREAT_GRUNDOUGHNUTFRUIT) {
+                        HASEE_UNLOCK_PALETTE_3();
+                    } else if (temp0 >= TREAT_BLUE) {
+                        HASEE_UNLOCK_PALETTE_2();
+                    }
+
                     // Regular Point Pickup
                     temp0 <<= 3;
                     temp0 |= previously_collected_treats_this_jump;
@@ -687,6 +740,14 @@ void hasee_treat_movement(void) {
             temp1 = enemies_x[x];
             if (temp0 > 20 && temp1 >= 0xF8) { // enemies_x will underflow eventually even when going left, so:
                 DEACTIVATE_ENEMY(x);
+                temp0 = enemies_type[x];
+                if (temp0 <= TREAT_MACCY) {                
+                    if (temp0 >= TREAT_SILVER && temp0 != TREAT_GRUNDOUGHNUTFRUIT) {
+                        HASEE_UNLOCK_PALETTE_3();
+                    } else if (temp0 >= TREAT_BLUE) {
+                        HASEE_UNLOCK_PALETTE_2();
+                    }
+                }
             }
         }
     }

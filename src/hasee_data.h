@@ -316,18 +316,18 @@ const unsigned char const maccy_pickup[] = {
 };
 
 const unsigned char const gross_dung[] = {
-    0, 0, 0x24, 2,
-    8, 0, 0x25, 2,
-    0, 8, 0x34, 2,
-    8, 8, 0x35, 2,
+    0, 0, 0x24, 1,
+    8, 0, 0x25, 1,
+    0, 8, 0x34, 1,
+    8, 8, 0x35, 1,
     128
 };
 
 const unsigned char const gross_slime[] = {
-    0, 0, 0x22, 2,
-    8, 0, 0x23, 2,
-    0, 8, 0x32, 2,
-    8, 8, 0x33, 2,
+    0, 0, 0x22, 1,
+    8, 0, 0x23, 1,
+    0, 8, 0x32, 1,
+    8, 8, 0x33, 1,
     128
 };
 
@@ -355,58 +355,6 @@ const unsigned char * const hasee_treat_metasprite_lut[] = {
     orange_a_fruit,
     orange_s_fruit,
     orange_e_fruit
-};
-
-const unsigned char * const hasee_treat_subpal_lut[] = {
-    NULL,
-    hasee_subpal_blue,
-    hasee_subpal_green_grundo,
-    hasee_subpal_silver,
-    hasee_subpal_golden,
-    hasee_subpal_checkered,
-    hasee_subpal_sponge,
-    hasee_subpal_fiery,
-    hasee_subpal_icy,
-    hasee_subpal_rainbow,
-    hasee_subpal_fish,
-    hasee_subpal_green_grundo,
-    hasee_subpal_maccy,
-    NULL, // hasee_subpal_gross,
-    NULL, // hasee_subpal_gross,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
-};
-
-const unsigned char const hasee_palette_index_lut[] = {
-    0,
-    2,
-    2,
-    3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    2,
-    3,
-    0,
-    0,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1
 };
 
 // We have limited palettes so if a treat wants 2 or 3, we need to know which it need a "lock" on 
