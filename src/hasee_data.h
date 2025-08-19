@@ -33,7 +33,7 @@ const unsigned char const hasee_subpal_blue[] = { 0x21, 0x0f, 0x0c, 0x19 };
 const unsigned char const hasee_subpal_green_grundo[] = { 0x21, 0x0f, 0x29, 0x19 };
 const unsigned char const hasee_subpal_silver[] = { 0x21, 0x0f, 0x10, 0x00 };
 const unsigned char const hasee_subpal_golden[] = { 0x21, 0x37, 0x27, 0x17 };
-const unsigned char const hasee_subpal_checkered[] = { 0x21, 0x0f, 0x20, 0x2D };
+const unsigned char const hasee_subpal_checkered[] = { 0x21, 0x0f, 0x30, 0x1f };
 const unsigned char const hasee_subpal_sponge[] = { 0x21, 0x27, 0x38, 0x37 };
 const unsigned char const hasee_subpal_fiery[] = { 0x21, 0x06, 0x16, 0x27 };
 const unsigned char const hasee_subpal_icy[] = { 0x21, 0x0C, 0x3c, 0x2c };
@@ -324,10 +324,10 @@ const unsigned char const gross_dung[] = {
 };
 
 const unsigned char const gross_slime[] = {
-    0, 0, 0x22, 1,
-    8, 0, 0x23, 1,
-    0, 8, 0x32, 1,
-    8, 8, 0x33, 1,
+    0, 0, 0x22, 0,
+    8, 0, 0x23, 0,
+    0, 8, 0x32, 0,
+    8, 8, 0x33, 0,
     128
 };
 

@@ -67,8 +67,11 @@ ZEROPAGE_EXTERN(unsigned char, player_death_timer);
 ZEROPAGE_EXTERN(unsigned char, player_walking_timer);
 #define player2_stun_timer player_walking_timer
 
-ZEROPAGE_EXTERN(unsigned int, pseudo_scroll_y);
-#define game_timer pseudo_scroll_y
+ZEROPAGE_EXTERN(unsigned char, enemy_limit);
+#define game_seconds_timer enemy_limit
+
+ZEROPAGE_EXTERN(unsigned char, lowest_enemy_index);
+#define game_frame_timer lowest_enemy_index
 
 ZEROPAGE_EXTERN(signed int, scroll_y); // Letting me treat an unsigned int as a signed int, very kind
 #define old_velocity_y scroll_y
@@ -141,13 +144,14 @@ extern unsigned char __fastcall__ divide_by_26(unsigned char input);
 void game_hasee_bounce(void);
 void begin_hasee_bounce(void);
 void calculate_next_treat(void);
-// void spawn_next_treat(void);
 void hasee_sprite_collisions(void);
 void hasee_singleplayer_movement(void);
 void hasee_multiplayer_movement(void);
 void hasee_draw_sprites(void);
 void hasee_treat_movement(void);
 void hasee_update_score(void);
+void hasee_update_time(void);
+void hasee_stringify_score_string(void);
 void orange_hasee_lr_movement(void);
 void purple_hasee_lr_movement(void);
 
@@ -163,7 +167,9 @@ void begin_hasee_bounce(void) {
     clear_vram_buffer();
     oam_clear();
 
-    game_timer = 6300; // Frames per game (105 seconds * 60 fps)
+    game_seconds_timer = 105; 
+    game_frame_timer = 60;
+
     game_mode = MODE_GAME;
 
     player1.velocity_x = 0;
@@ -204,6 +210,9 @@ void begin_hasee_bounce(void) {
     seed_rng();
     srand(rand8());
 
+    hasee_update_score();
+    hasee_update_time();
+
     ppu_on_all();
     pal_bright(4);
 }
@@ -239,9 +248,14 @@ void game_hasee_bounce(void) {
         ++level;
     }
 
-    --game_timer;
-    if (game_timer == 0) {
-        // Trigger stop to game next frame
+    --game_frame_timer;
+    if (game_frame_timer == 0) {
+        game_frame_timer = 60;
+        --game_seconds_timer;
+        hasee_update_time();
+        if (game_seconds_timer == 0) {
+            // Trigger game end
+        }
     }
 
     --treat_timer;
@@ -329,37 +343,57 @@ void hasee_draw_sprites(void) {
     // set_prg_bank(1); HASEE_METASPRITE_BANK is bank 1 at the moment...
 }
 
-void hasee_update_score(void) {
-    convert_to_decimal(score);
+void hasee_stringify_score_string(void) {
     // Reverse the score string (indices 0...4) while turning them into characters
-    __asm__("lda %v+%b", score_string, 0);
-    __asm__("ldy %v+%b", score_string, 4);
-    __asm__("adc %b", '0');
-    __asm__("sta %v+%b", score_string, 4);
-    __asm__("tya");
-    __asm__("adc %b", '0');
-    __asm__("sta %v+%b", score_string, 0);
+    // __asm__("lda %v+%b", score_string, 0);
+    // __asm__("ldy %v+%b", score_string, 4);
+    // __asm__("clc");
+    // __asm__("adc %b", '0');
+    // __asm__("sta %v+%b", score_string, 4);
+    // __asm__("tya");
+    // __asm__("clc");
+    // __asm__("adc %b", '0');
+    // __asm__("sta %v+%b", score_string, 0);
 
-    __asm__("lda %v+%b", score_string, 1);
-    __asm__("ldy %v+%b", score_string, 3);
-    __asm__("adc %b", '0');
-    __asm__("sta %v+%b", score_string, 3);
-    __asm__("tya");
-    __asm__("adc %b", '0');
-    __asm__("sta %v+%b", score_string, 1);
+    // __asm__("lda %v+%b", score_string, 1);
+    // __asm__("ldy %v+%b", score_string, 3);
+    // __asm__("clc");
+    // __asm__("adc %b", '0');
+    // __asm__("sta %v+%b", score_string, 3);
+    // __asm__("tya");
+    // __asm__("clc");
+    // __asm__("adc %b", '0');
+    // __asm__("sta %v+%b", score_string, 1);
+
+    temp0 = score_string[0] + '0';
+    score_string[0] = score_string[4] + '0';
+    score_string[4] = temp0;
+
+    temp0 = score_string[1] + '0';
+    score_string[1] = score_string[3] + '0';
+    score_string[3] = temp0;
+
+    score_string[2] += '0';
 
     for (x = 0; x < 4; ++x) { // Only the first 4 digits; if the last digit is 0 then no point in blanking it
-       // __asm__("ldy %v", x);
+        // __asm__("ldy %v", x);
         //__asm__("lda %v,y", score_string);
         temp0 = score_string[x];
-        if (temp0 != 0) { break; }
+        if (temp0 != '0') { break; }
         score_string[x] = ' ';
     }
+}
 
-    vram_adr(NTADR_A(10, 2));
-    for (x = 0; x < 5; ++x) {
-        vram_put(score_string[x]);
-    }
+void hasee_update_score(void) {
+    convert_to_decimal(score);
+    hasee_stringify_score_string();
+    multi_vram_buffer_horz(score_string, 5, NTADR_A(10, 2));
+}
+
+void hasee_update_time(void) {
+    convert_to_decimal(game_seconds_timer);
+    hasee_stringify_score_string();
+    multi_vram_buffer_horz(score_string, 5, NTADR_A(17, 2));
 }
 
 void hasee_singleplayer_movement(void) {
@@ -417,6 +451,7 @@ void hasee_singleplayer_movement(void) {
             ACTIVE_PLAYER_UNSET_JUMPING_TO_BRANCH();
             ACTIVE_PLAYER_IGNORE_BRANCH();
             temp4 = ON_BRANCH_STARTNIG_Y_VALUE_HIGH_BYTE;
+            previously_collected_treats_this_jump = 0;
         } else if (high_byte(old_y) <= ON_BRANCH_STARTNIG_Y_VALUE_HIGH_BYTE) {
             old_velocity_y += 0x100;
             ACTIVE_PLAYER_STOP_AT_BRANCH();
@@ -665,14 +700,14 @@ void hasee_sprite_collisions(void) {
             check_collision(temp0, hitbox, hitbox2);
             if (temp0) {
                 DEACTIVATE_ENEMY(x);
-                if(previously_collected_treats_this_jump < 7) {
-                    ++previously_collected_treats_this_jump;
-                }
                 temp0 = enemies_type[x];
                 if (temp0 >= TREAT_PURPLE_H) {
                     // Letter
                     // Ensure it is the correct color or don't do anything
                     score += hasee_letter_points[previously_collected_treats_this_jump];
+                    HASEE_SET_SCORE_CHANGED_THIS_FRAME();
+                    ++previously_collected_treats_this_jump;
+                    previously_collected_treats_this_jump = MIN(previously_collected_treats_this_jump, 7);
                     sfx_play(SFX_STAR_COLLECT, 0);
                 } else if (temp0 <= TREAT_MACCY) {
                     // Unlock palette if applicable
@@ -686,6 +721,9 @@ void hasee_sprite_collisions(void) {
                     temp0 <<= 3;
                     temp0 |= previously_collected_treats_this_jump;
                     score += hasee_treat_points[temp0];
+                    HASEE_SET_SCORE_CHANGED_THIS_FRAME();
+                    ++previously_collected_treats_this_jump;
+                    previously_collected_treats_this_jump = MIN(previously_collected_treats_this_jump, 7);
                     sfx_play(SFX_STAR_COLLECT, 0);
                 } else {
                     // Gross
