@@ -41,12 +41,9 @@ ZEROPAGE_EXTERN(unsigned char, game_mode);
 ZEROPAGE_EXTERN(unsigned char, player_flags);
 ZEROPAGE_EXTERN(unsigned char, player_flags2);
 ZEROPAGE_EXTERN(unsigned char, menu);
-ZEROPAGE_EXTERN(unsigned char, tile_clear_back);
 ZEROPAGE_EXTERN(unsigned char, shuffle_offset);
 ZEROPAGE_EXTERN(unsigned char, temp_x);
 ZEROPAGE_EXTERN(unsigned char, temp_y);
-ZEROPAGE_ARRAY_EXTERN(unsigned int, tile_clear_queue, 4);
-ZEROPAGE_ARRAY_EXTERN(unsigned char, tile_clear_to_type_queue, 4);
 ZEROPAGE_ARRAY_EXTERN(unsigned char, debug_values, 4);
 // Aliased values... I can use the same addresses with different names this way, with only a medium jank factor
 ZEROPAGE_EXTERN(unsigned char, eject_L); // Just don't use this original name...
@@ -113,7 +110,7 @@ extern unsigned char boss_memory[8];
 // Since EfMC is in the non-swapping PRG segment, we can access all of its rodata
 // Hasee Bounce ROdata bank will be Bank 1
 
-#pragma rodata-name(push, "BANK0")
+#pragma rodata-name(push, "BANK1")
 
 unsigned char hasee_palette_sp[] = {
     0x21, 0x0f, 0x38, 0x29, // sky, black, yellow, green - regular doughnutfruit, stars
@@ -134,7 +131,6 @@ extern void put_str_sub(void);
 extern void set_prg_bank(unsigned char bank);
 extern void calculate_shuffle_array(void);
 extern void switch_menu(void);
-extern void handle_tile_clear_queue(void);
 
 // Make sure prg bank is 5 before calling:
 extern void LZG_decode(const unsigned char *src, unsigned char *dest);
@@ -194,6 +190,8 @@ void begin_hasee_bounce(void) {
     LZG_decode(temppointer, cmap);
     vram_write(cmap, 32*32);
 
+    set_prg_bank(HASEE_MOVEMENT_CODE_BANK);
+
     letter_status[LETTER_H_INDEX] = LETTER_UNCOLLECTED;
     letter_status[LETTER_A_INDEX] = LETTER_UNCOLLECTED;
     letter_status[LETTER_S_INDEX] = LETTER_UNCOLLECTED;
@@ -221,6 +219,8 @@ void begin_hasee_bounce(void) {
     pal_bright(4);
 }
 
+#pragma code-name(push, "BANK1")
+
 void game_hasee_bounce(void) {
     HASEE_RESET_PLAYER_FLAGS_START_FRAME();
 
@@ -243,7 +243,6 @@ void game_hasee_bounce(void) {
     // draw score and other things
     hasee_sprite_collisions();
     hasee_draw_sprites();
-    handle_tile_clear_queue();
 
     if (HASEE_SCORE_CHANGED_THIS_FRAME) { hasee_update_score(); }
     
@@ -383,8 +382,6 @@ void hasee_update_time(void) {
     hasee_stringify_score_string();
     multi_vram_buffer_horz(score_string, 5, NTADR_A(17, 2));
 }
-
-#pragma code-name(push, "BANK1")
 
 void hasee_singleplayer_movement(void) {
     temp0 = pad1; // Orange Hasee's Pad (Both the same in single-player)
@@ -544,8 +541,6 @@ void purple_hasee_lr_movement(void) {
     }
 }
 
-#pragma code-name(pop)
-
 #define PALETTE_3_RNG_THRESHOLD (unsigned int)(21 * MACCY_PROBABILITY + 52 * RAINBOW_PROBABILITY)
 #define PALETTE_2_RNG_THRESHOLD (unsigned int)(PALETTE_3_RNG_THRESHOLD + 38 * RAINBOW_PROBABILITY + GREEN_PROBABILITY + BLUE_PROBABILITY)
 // Calculate the next pickup item. It will be placed into temp4.
@@ -673,8 +668,6 @@ void calculate_next_treat(void) {
     }
     // Otherwise, yellow it stays.
 }
-
-#pragma code-name(push, "BANK1")
 
 void hasee_sprite_collisions(void) {
     // hitbox == the jumping player's hitbox. Should have been set by hasee_movement() somewhere.

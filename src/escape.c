@@ -979,7 +979,7 @@ void load_hasee_bounce_menu(void) {
     temppointer1 = hasee_bounce_menu_selector_y;
     active_game = GAME_HASEE_BOUNCE;
     // Change to Hasee Bounce graphics
-    set_prg_bank(0);
+    set_prg_bank(1);
     set_chr_bank_0(4);
     set_chr_bank_1(5);
     pal_bg(hasee_palette_bg);
