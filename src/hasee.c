@@ -154,6 +154,7 @@ void hasee_update_time(void);
 void hasee_stringify_score_string(void);
 void orange_hasee_lr_movement(void);
 void purple_hasee_lr_movement(void);
+void handle_letter_collection(void);
 
 extern const char const about_screen[];
 
@@ -198,8 +199,11 @@ void begin_hasee_bounce(void) {
     letter_status[LETTER_S_INDEX] = LETTER_UNCOLLECTED;
     letter_status[LETTER_E_INDEX] = LETTER_UNCOLLECTED;
     letter_status[LETTER_E2_INDEX] = LETTER_UNCOLLECTED;
-
-    enemies_count = MAX_TREATS_ONSCREEN;
+    
+    enemies_count = MAX_TREATS_ONSCREEN; // Used by extern'd functions
+    for (x = 0; x < MAX_TREATS_ONSCREEN; ++x) {
+        enemies_flags[x] = 0; // Clear (deactivate) all enemies
+    }
     calculate_shuffle_array();
 
     hitbox.width = HASEE_WIDTH;
@@ -230,7 +234,9 @@ void game_hasee_bounce(void) {
     clear_vram_buffer();
 
     // If not paused:
+    set_prg_bank(HASEE_MOVEMENT_CODE_BANK);
     hasee_singleplayer_movement();
+
     hasee_treat_movement();
 
     // Even if paused:
@@ -331,53 +337,35 @@ void hasee_draw_sprites(void) {
     }
 
     // Debug HUD, drawn last because it's the least important.
-    // if (ACTIVE_PLAYER_ON_BRANCH) {
-    //     oam_spr(208, 50, 0x48, 1);
+    // if (letter_status[LETTER_H_INDEX]) {
+    //     oam_spr(208, 50, 0x06, 0);
     // }
-    // if (ACTIVE_PLAYER_JUMPING_OFF_BRANCH) {
-    //     oam_spr(208, 60, 0x49, 2);
+    // if (letter_status[LETTER_A_INDEX]) {
+    //     oam_spr(208, 60, 0x02, 1);
     // }
-    // if (ACTIVE_PLAYER_JUMPING_TO_BRANCH) {
-    //     oam_spr(208, 70, 0x58, 3);
+    // if (letter_status[LETTER_S_INDEX]) {
+    //     oam_spr(208, 70, 0x20, 2);
+    // }
+    // if (letter_status[LETTER_E_INDEX]) {
+    //     oam_spr(208, 80, 0x04, 1);
+    // }
+    // if (letter_status[LETTER_E2_INDEX]) {
+    //     oam_spr(208, 90, 0x62, 0);
     // }
     // set_prg_bank(1); HASEE_METASPRITE_BANK is bank 1 at the moment...
 }
 
 void hasee_stringify_score_string(void) {
     // Reverse the score string (indices 0...4) while turning them into characters
-    // __asm__("lda %v+%b", score_string, 0);
-    // __asm__("ldy %v+%b", score_string, 4);
-    // __asm__("clc");
-    // __asm__("adc %b", '0');
-    // __asm__("sta %v+%b", score_string, 4);
-    // __asm__("tya");
-    // __asm__("clc");
-    // __asm__("adc %b", '0');
-    // __asm__("sta %v+%b", score_string, 0);
-
-    // __asm__("lda %v+%b", score_string, 1);
-    // __asm__("ldy %v+%b", score_string, 3);
-    // __asm__("clc");
-    // __asm__("adc %b", '0');
-    // __asm__("sta %v+%b", score_string, 3);
-    // __asm__("tya");
-    // __asm__("clc");
-    // __asm__("adc %b", '0');
-    // __asm__("sta %v+%b", score_string, 1);
-
     temp0 = score_string[0] + '0';
     score_string[0] = score_string[4] + '0';
     score_string[4] = temp0;
-
     temp0 = score_string[1] + '0';
     score_string[1] = score_string[3] + '0';
     score_string[3] = temp0;
-
     score_string[2] += '0';
 
     for (x = 0; x < 4; ++x) { // Only the first 4 digits; if the last digit is 0 then no point in blanking it
-        // __asm__("ldy %v", x);
-        //__asm__("lda %v,y", score_string);
         temp0 = score_string[x];
         if (temp0 != '0') { break; }
         score_string[x] = ' ';
@@ -395,6 +383,8 @@ void hasee_update_time(void) {
     hasee_stringify_score_string();
     multi_vram_buffer_horz(score_string, 5, NTADR_A(17, 2));
 }
+
+#pragma code-name(push, "BANK1")
 
 void hasee_singleplayer_movement(void) {
     temp0 = pad1; // Orange Hasee's Pad (Both the same in single-player)
@@ -554,6 +544,8 @@ void purple_hasee_lr_movement(void) {
     }
 }
 
+#pragma code-name(pop)
+
 #define PALETTE_3_RNG_THRESHOLD (unsigned int)(21 * MACCY_PROBABILITY + 52 * RAINBOW_PROBABILITY)
 #define PALETTE_2_RNG_THRESHOLD (unsigned int)(PALETTE_3_RNG_THRESHOLD + 38 * RAINBOW_PROBABILITY + GREEN_PROBABILITY + BLUE_PROBABILITY)
 // Calculate the next pickup item. It will be placed into temp4.
@@ -677,10 +669,12 @@ void calculate_next_treat(void) {
             if (temp1 > LETTER_E2_INDEX) { temp1 = LETTER_H_INDEX; }
         } // temp1 is now equal to the desired LETTER_WHATEVER_INDEX
         // Since LETTER_E and LETTER_E2 will use the same sprite:
-        temp4 = TREAT_PURPLE_H + (MIN(temp1, LETTER_E_INDEX) | temp0 & 0b0100);
+        temp4 = TREAT_PURPLE_H + (MIN(temp1, LETTER_E_INDEX) | temp0 & LETTER_ORANGENESS_MASK);
     }
     // Otherwise, yellow it stays.
 }
+
+#pragma code-name(push, "BANK1")
 
 void hasee_sprite_collisions(void) {
     // hitbox == the jumping player's hitbox. Should have been set by hasee_movement() somewhere.
@@ -705,9 +699,15 @@ void hasee_sprite_collisions(void) {
                     // Letter
                     // Ensure it is the correct color or don't do anything
                     score += hasee_letter_points[previously_collected_treats_this_jump];
+                    if (game_seconds_timer <= 253) {
+                        game_seconds_timer += 2;
+                    } else {
+                        game_seconds_timer = 255;
+                    }
                     HASEE_SET_SCORE_CHANGED_THIS_FRAME();
                     ++previously_collected_treats_this_jump;
                     previously_collected_treats_this_jump = MIN(previously_collected_treats_this_jump, 7);
+                    handle_letter_collection();
                     sfx_play(SFX_STAR_COLLECT, 0);
                 } else if (temp0 <= TREAT_MACCY) {
                     // Unlock palette if applicable
@@ -740,19 +740,54 @@ void hasee_sprite_collisions(void) {
     }
 }
 
-/**
- * temp0 = LETTER_[whatever]_INDEX value for the letter to be set
- * temp1 = color of letter collected (LETTER_COLLECTED_[whatever])
- */
 void handle_letter_collection(void) {
-    // Check if all letters collected
-    // if (...) {}
+    // Set appropriate letter status if the letter is not set
+    temp0 -= TREAT_PURPLE_H;
+    temp1 = temp0 & LETTER_TYPE_MASK; // LETTER_(H/A/S/E)_INDEX
+    temp2 = letter_status[temp1]; // Status of this letter
 
-    // Fill in single letter
+    if (temp1 == LETTER_E_INDEX && temp2 != LETTER_UNCOLLECTED && letter_status[LETTER_E2_INDEX] == LETTER_UNCOLLECTED) {
+        temp1 = LETTER_E2_INDEX;
+    }
+    y = temp1;
 
-    // Enqueue tile update
-    AsmSet2ByteAtPtrWithOffset(tile_clear_queue, tile_clear_back, address);
-    tile_clear_to_type_queue[tile_clear_back] = temp0;
+    // Fill in letter
+    letter_status[temp1] = LETTER_IS_ORANGE(temp0) ? LETTER_COLLECTED_ORANGE : LETTER_COLLECTED_PURPLE;
+
+    // Count letters for completion
+    temp1 = 0; // This will be equal to 3 (LETTER_COLLECTED_PURPLE | LETTER_COLLECTED ORANGE) if the letter colors are not all the same
+    temp2 = 1; // This will be 1 if all letters have been collected
+    for (x = 0; x < 5; ++x) {
+        temp1 |= letter_status[x];
+        if (letter_status[x] == LETTER_UNCOLLECTED) { temp2 = 0; }
+    }
+
+    if (temp2) {
+        if (temp1 != 3) {
+            temp4 = HASEE_SUPER_TIME_BONUS;
+            temp3 = game_seconds_timer + HASEE_SUPER_TIME_BONUS;
+        } else {
+            temp4 = HASEE_TIME_BONUS;
+            temp3 = game_seconds_timer + HASEE_TIME_BONUS;
+        }
+        if (game_seconds_timer > temp3) {
+            // Protect against time overflow if you're somehow amazing at this
+            game_seconds_timer = 255;
+        } else {
+            game_seconds_timer += temp4;
+        }
+        for (x = 0; x < 5; ++x) {
+            letter_status[x] = LETTER_UNCOLLECTED;
+        }
+        // Handle tile clear
+        // temp5 = hasee_letter_hud_ntaddr_lut[0]
+        multi_vram_buffer_horz(hasee_blank_letters_lut, 10, hasee_letter_hud_ntaddr_lut[0]);
+        multi_vram_buffer_horz(hasee_blank_letters_lut + 10, 10, hasee_letter_hud_ntaddr_lut[5]);
+    } else {
+        // Fill in single letter
+        address = hasee_letter_hud_ntaddr_lut[y];
+        buffer_1_mt(address, temp0);
+    }
 }
 
 void hasee_treat_movement(void) {
@@ -790,6 +825,8 @@ void hasee_treat_movement(void) {
         }
     }
 }
+
+#pragma code-name(pop)
 
 // hasee_clear_letters
 // Technically there will only ever be 4 filled in at a time so we will not run afoul of this
