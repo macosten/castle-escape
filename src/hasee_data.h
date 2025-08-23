@@ -10,6 +10,14 @@ const char * const hasee_yay_phrases[] = {
     "OMG PLS!!! ",
 };
 
+const unsigned char const hasee_yay_phrase_lens[] = {
+    8-1,
+    11-1,
+    12-1,
+};
+
+#define HASEE_LONGEST_YAY_PHRASE_LENGTH hasee_yay_phrase_lens[2]
+
 const char * const hasee_treat_names[] = {
     "Yellow ",
     "Blue ",
@@ -24,6 +32,25 @@ const char * const hasee_treat_names[] = {
     "Fish ",
     "Grun",
 };
+
+const unsigned char const hasee_treat_name_lens[] = {
+    8-1,
+    6-1,
+    7-1,
+    8-1,
+    8-1,
+    11-1,
+    8-1,
+    7-1,
+    5-1,
+    9-1,
+    6-1,
+    5-1,
+};
+
+#define HASEE_LONGEST_TREAT_NAME_LENGTH hasee_treat_name_lens[5]
+
+const char * doughnutfruit_string = "Doughnutfruit!";
 
 const char * const maccy_confusion_quote = "Huh?!? What's that?!?!";
 const char * const bleh_gross_quote = "Bleh!!! Gross!!!";

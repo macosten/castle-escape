@@ -677,9 +677,16 @@ void hasee_sprite_collisions(void) {
     //     return; // Do not process for a stunned player
     // }
 
-    // To save on CPU time, we'll only check half of the collisions on each frame.
-    // depending on the parity of get_frame_count(), we'll check only indexes of the same parity for a collision.
-    //  x = get_frame_count() & 1;
+    if (ACTIVE_PLAYER && player2_stun_timer > 0) {
+        oam_spr(208, 50, 0x06, 0);
+        return;
+    }
+
+    if (!ACTIVE_PLAYER && player1_stun_timer > 0) {
+        oam_spr(208, 60, 0x02, 1);
+        return;
+    }
+
     for (x = 0; x < ONSCREEN_TREATS_MAXIMUM; ++x) { // TODO: See if we can optimize this looping somehow
         if(IS_ENEMY_ACTIVE(x)) {
             hitbox2.x = enemies_x[x];
@@ -691,6 +698,13 @@ void hasee_sprite_collisions(void) {
                 if (temp0 >= TREAT_PURPLE_H) {
                     // Letter
                     // Ensure it is the correct color or don't do anything
+                    if (ACTIVE_PLAYER && temp0 < TREAT_ORANGE_H) {
+                        ACTIVATE_ENEMY(x); // Don't actually deactivate in this case...
+                        continue;
+                    } else if (!ACTIVE_PLAYER && temp0 > TREAT_PURPLE_E) {
+                        ACTIVATE_ENEMY(x);
+                        continue;
+                    }
                     score += hasee_letter_points[previously_collected_treats_this_jump];
                     if (game_seconds_timer <= 253) {
                         game_seconds_timer += 2;

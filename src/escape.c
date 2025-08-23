@@ -989,7 +989,7 @@ void load_hasee_bounce_menu(void) {
 }
 
 void menu_hasee_bounce_menu(void) {
-    // PRG bank must be 0
+    // PRG bank must be 1 (HASEE_MOVEMENT_CODE_BANK)
     simple_menu_shared_behavior();
 
     if (pad1_new & PAD_A) {
