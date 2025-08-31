@@ -571,9 +571,6 @@ void put_str_sub(void) {
 }
 
 void switch_menu(void) {
-    // Uncommon crash caused by something going wrong in Bank 6/Music. This makes it less likely but not impossible:
-    music_pause(1);
-
     // We always want to do these things before changing a menu:
     ppu_off();
     clear_screen();
@@ -603,9 +600,6 @@ void switch_menu(void) {
 
     // Turn the PPU back on.
     ppu_on_all();
-
-    // Turn the music back on.
-    music_pause(0);
 }
 
 #define MENU_SELECTOR_SPRITE 0x10
@@ -951,7 +945,6 @@ void menu_more_games_menu(void) {
 
     if (pad1_new & PAD_A) {
         menu = more_games_menu_links[menu_selection];
-        pal_fade_to(4, 0);
         switch_menu();
         return;
     }
@@ -1007,12 +1000,10 @@ void menu_hasee_bounce_menu(void) {
         menu = MENU_MORE_GAMES;
         active_game = GAME_CASTLE_ESCAPE;
         // Change back to EfMC graphics
-        pal_fade_to(4, 0);
         set_chr_bank_0(0);
         set_chr_bank_1(1);
         pal_bg(palette_bg);
         pal_spr(palette_sp);
-        pal_bright(4);
         set_scroll_x(0);
         switch_menu();
     }
