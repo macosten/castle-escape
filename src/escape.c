@@ -572,6 +572,7 @@ void put_str_sub(void) {
 
 void switch_menu(void) {
     // We always want to do these things before changing a menu:
+    ppu_wait_nmi();
     ppu_off();
     clear_screen();
 
@@ -945,6 +946,7 @@ void menu_more_games_menu(void) {
 
     if (pad1_new & PAD_A) {
         menu = more_games_menu_links[menu_selection];
+        pal_fade_to(4, 0);
         switch_menu();
         return;
     }
@@ -978,6 +980,7 @@ void load_hasee_bounce_menu(void) {
     temppointer1 = hasee_bounce_menu_selector_y;
     active_game = GAME_HASEE_BOUNCE;
     // Change to Hasee Bounce graphics
+    pal_fade_to(4, 0);
     set_prg_bank(1);
     set_chr_bank_0(4);
     set_chr_bank_1(5);
@@ -1000,12 +1003,14 @@ void menu_hasee_bounce_menu(void) {
         menu = MENU_MORE_GAMES;
         active_game = GAME_CASTLE_ESCAPE;
         // Change back to EfMC graphics
+        pal_fade_to(4, 0);
         set_chr_bank_0(0);
         set_chr_bank_1(1);
         pal_bg(palette_bg);
         pal_spr(palette_sp);
         set_scroll_x(0);
         switch_menu();
+        pal_bright(4);
     }
 }
 

@@ -166,7 +166,7 @@ extern const char const about_screen[];
 
 void begin_hasee_bounce(void) {
     // Change the menu screen so that it becomes the game screen...
-    // pal_fade_to(4, 0);
+    pal_fade_to(4, 0);
     ppu_off();
     clear_screen();
 
@@ -342,10 +342,11 @@ void game_hasee_bounce(void) {
 
     // Temporary debug stuffs:
     if (pad1 & PAD_B) {
-        //pal_fade_to(4, 0);
+        pal_fade_to(4, 0);
         menu = MENU_HASEE_BOUNCE;
         switch_menu();
-        //pal_bright(4);
+        pal_bright(4);
+        return;
     }
     gray_line();
 }

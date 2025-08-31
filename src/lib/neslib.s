@@ -60,18 +60,16 @@ nmi:
 
 	lda <PPU_MASK_VAR	;if rendering is disabled, do not access the VRAM at all
 	and #%00011000
-	bne @doUpdate
+	bne @renderingOn
 	jmp	@skipAll
 
+@renderingOn:
+
+	lda <VRAM_UPDATE ;is the frame complete?
+	bne @doUpdate
+	jmp @skipAll ;skipUpd
+
 @doUpdate:
-
-;for split screens with different CHR bank at top	
-	lda nmiChrTileBank
-	cmp #NO_CHR_BANK 
-	beq @no_chr_chg
-	jsr _set_chr_bank_0
-@no_chr_chg:
-
 
 	lda #>OAM_BUF		;update OAM
 	sta PPU_OAM_DMA
@@ -159,14 +157,25 @@ nmi:
 
 @skipNtsc:
 
+	inc reset_mmc1 ;reset the mmc1 shift register
+	
+	lda CHR_BANK0
+	mmc1_register_write MMC1_CHR0
+	
+	lda CHR_BANK1
+	mmc1_register_write MMC1_CHR1
+	
+	lda MIRROR
+	mmc1_register_write MMC1_CTRL
+
+
 ;switch the music into the prg bank first
-	lda BP_BANK ;save current prg bank
+	lda PRG_BANK ;save current prg bank
 	pha
 	lda #SOUND_BANK
 	jsr _set_prg_bank
 	jsr FamiToneUpdate
-	pla
-	sta BP_BANK ;restore prg bank
+	pla ; = PRG_BANK
 	jsr _set_prg_bank
 
 	pla
@@ -430,38 +439,6 @@ _oam_size:
 
 ;void __fastcall__ oam_spr(unsigned char x,unsigned char y,unsigned char chrnum,unsigned char attr);
 ;sprid removed
-
-;_oam_spr:
-;
-;	ldx SPRID
-;	;a = chrnum
-;	sta OAM_BUF+2,x
-;
-;	ldy #0		;3 popa calls replacement
-;	lda (sp),y
-;	iny
-;	sta OAM_BUF+1,x
-;	lda (sp),y
-;	iny
-;	sta OAM_BUF+0,x
-;	lda (sp),y
-;	sta OAM_BUF+3,x
-;
-;	lda <sp
-;	clc
-;	adc #3 ;4
-;	sta <sp
-;	bcc @1
-;	inc <sp+1
-;
-;@1:
-;
-;	txa
-;	clc
-;	adc #4
-;	sta SPRID
-;	rts
-
 
 _oam_spr_fast_sub:
 
@@ -906,15 +883,14 @@ _vram_write:
 
 _music_play:
 	tax
-	lda BP_BANK ;save current prg bank
+	lda PRG_BANK ;save current prg bank
 	pha
 	lda #SOUND_BANK
 	jsr _set_prg_bank
 	txa ;song number
 	jsr FamiToneMusicPlay
 	
-	pla
-	sta BP_BANK ;restore prg bank
+	pla ; = PRG_BANK
 	jmp _set_prg_bank
 	;rts
 
@@ -922,14 +898,13 @@ _music_play:
 ;void __fastcall__ music_stop(void);
 
 _music_stop:
-	lda BP_BANK ;save current prg bank
+	lda PRG_BANK ;save current prg bank
 	pha
 	lda #SOUND_BANK
 	jsr _set_prg_bank
 	jsr FamiToneMusicStop
 	
-	pla
-	sta BP_BANK ;restore prg bank
+	pla ; = PRG_BANK
 	jmp _set_prg_bank
 	;rts
 
@@ -940,15 +915,14 @@ _music_stop:
 
 _music_pause:
 	tax
-	lda BP_BANK ;save current prg bank
+	lda PRG_BANK ;save current prg bank
 	pha
 	lda #SOUND_BANK
 	jsr _set_prg_bank
 	txa ;song number
 	jsr FamiToneMusicPause
 	
-	pla
-	sta BP_BANK ;restore prg bank
+	pla ; = PRG_BANK
 	jmp _set_prg_bank
 	;rts
 
@@ -967,7 +941,7 @@ _sfx_play:
 	lda @sfxPriority,x
 	tax
 	
-	lda BP_BANK ;save current prg bank
+	lda PRG_BANK ;save current prg bank
 	pha
 	lda #SOUND_BANK
 	jsr _set_prg_bank
@@ -976,9 +950,8 @@ _sfx_play:
 	;x = channel offset
 	jsr FamiToneSfxPlay
 	
-	pla
-	sta BP_BANK ;restore prg bank
-	jmp _set_prg_bank
+	pla ; = PRG_BANK
+	jmp _set_prg_bank ; restore prg bank
 	;rts
 
 @sfxPriority:
@@ -996,16 +969,15 @@ _sfx_play:
 .if(FT_DPCM_ENABLE)
 _sample_play:
 	tax
-	lda BP_BANK ;save current prg bank
+	lda PRG_BANK ;save current prg bank
 	pha
 	lda #SOUND_BANK
 	jsr _set_prg_bank
 	txa ;sample number
 	jsr FamiToneSamplePlay
 	
-	pla
-	sta BP_BANK ;restore prg bank
-	jmp _set_prg_bank
+	pla ; = PRG_BANK
+	jmp _set_prg_bank ;restore prg bank
 	;rts
 
 .else
