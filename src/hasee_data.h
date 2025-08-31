@@ -5,34 +5,36 @@
 #pragma rodata-name(push, "BANK1")
 
 const char * const hasee_yay_phrases[] = {
-    "Yay!!! ",
-    "Yippee!!! ",
-    "OMG PLS!!! ",
+    " Yay!!!! ",
+    "Yippee!!!",
+    "OMG PLS!!",
+    "OMG!!!!!!",
 };
 
-const unsigned char const hasee_yay_phrase_lens[] = {
-    8-1,
-    11-1,
-    12-1,
-};
-
-#define HASEE_LONGEST_YAY_PHRASE_LENGTH hasee_yay_phrase_lens[2]
+#define HASEE_YAY_PHRASE_LENGTH 9
 
 const char * const hasee_treat_names[] = {
-    "Yellow ",
-    "Blue ",
-    "Green ",
-    "Silver ",
-    "Golden ",
-    "Checkered ",
-    "Sponge ",
-    "Fiery ",
-    "Icy ",
-    "Rainbow ",
-    "Fish ",
+    "Yellow",
+    "Blue",
+    "Green",
+    "Silver",
+    "Golden",
+    "Checkered", // Longest
+    "Sponge",
+    "Fiery",
+    "Icy",
+    "Rainbow",
+    "Fish",
     "Grun",
 };
 
+const char * const hasee_treat_postfix = "Doughnutfruit!";
+#define HASEE_TREAT_NAME_POSTFIX_LEN (15-1)
+#define HASEE_LONGEST_COMPLETE_PHRASE_LEN 24
+
+const char * const hasee_spaces_string = "     ";
+
+// Remember all of these should have spaces (i.e print out the \0) after them except "Grun"
 const unsigned char const hasee_treat_name_lens[] = {
     8-1,
     6-1,
@@ -48,12 +50,18 @@ const unsigned char const hasee_treat_name_lens[] = {
     5-1,
 };
 
-#define HASEE_LONGEST_TREAT_NAME_LENGTH hasee_treat_name_lens[5]
+#define HASEE_LONGEST_TREAT_NAME_LEN (11-1)
 
 const char * doughnutfruit_string = "Doughnutfruit!";
 
 const char * const maccy_confusion_quote = "Huh?!? What's that?!?!";
 const char * const bleh_gross_quote = "Bleh!!! Gross!!!";
+
+const char * const hasee_letter_bonus_quote = "+2";
+const char * const hasee_time_bonus_quote = "+20";
+const char * const hasee_super_time_bonus_quote = "+40";
+const char * const hasee_time_bonus_quote_postfix = "Seconds!!!";
+
 
 // Specific palettes for special Doughnutfruits
 const unsigned char const hasee_subpal_blue[] = { 0x21, 0x0f, 0x0c, 0x19 };
@@ -197,6 +205,194 @@ const unsigned char const orange_hasee_squat_right[] = {
       0xfe,     5,  0x3F,   1|OAM_FLIP_H,
     128
 };
+
+const unsigned char const purple_hasee_idle_left_sick[] = {
+      0xfe, 0xfd,   0x68,   1,
+      6,    0xfd,   0x69,   1,
+      0xfe,    5,   0x78,   1,
+      6,       5,   0x79,   1,
+    128
+};
+
+const unsigned char const purple_hasee_idle_right_sick[] = {
+         6,  0xfd,  0x68,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x69,   1|OAM_FLIP_H,
+         6,     5,  0x78,   1|OAM_FLIP_H,
+      0xfe,     5,  0x79,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const orange_hasee_idle_left_sick[] = {
+      0xfe, 0xfd,   0x88,   1,
+      6,    0xfd,   0x89,   1,
+      0xfe,    5,   0x98,   1,
+      6,       5,   0x99,   1,
+    128
+};
+
+const unsigned char const orange_hasee_idle_right_sick[] = {
+         6,  0xfd,  0x88,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x89,   1|OAM_FLIP_H,
+         6,     5,  0x98,   1|OAM_FLIP_H,
+      0xfe,     5,  0x99,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const purple_hasee_walk0_left_sick[] = {
+      0xfe, 0xfd,   0x6A,   1,
+      6,    0xfd,   0x6B,   1,
+      0xfe,    5,   0x7A,   1,
+      6,       5,   0x7B,   1,
+    128
+};
+
+const unsigned char const purple_hasee_walk0_right_sick[] = {
+         6,  0xfd,  0x6A,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x6B,   1|OAM_FLIP_H,
+         6,     5,  0x7A,   1|OAM_FLIP_H,
+      0xfe,     5,  0x7B,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const orange_hasee_walk0_left_sick[] = {
+      0xfe, 0xfd,   0x8A,   1,
+      6,    0xfd,   0x8B,   1,
+      0xfe,    5,   0x9A,   1,
+      6,       5,   0x9B,   1,
+    128
+};
+
+const unsigned char const orange_hasee_walk0_right_sick[] = {
+         6,  0xfd,  0x8A,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x8B,   1|OAM_FLIP_H,
+         6,     5,  0x9A,   1|OAM_FLIP_H,
+      0xfe,     5,  0x9B,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const purple_hasee_walk1_left_sick[] = {
+      0xfe, 0xfd,   0x6C,   1,
+      6,    0xfd,   0x6D,   1,
+      0xfe,    5,   0x7C,   1,
+      6,       5,   0x7D,   1,
+    128
+};
+
+const unsigned char const purple_hasee_walk1_right_sick[] = {
+         6,  0xfd,  0x6C,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x6D,   1|OAM_FLIP_H,
+         6,     5,  0x7C,   1|OAM_FLIP_H,
+      0xfe,     5,  0x7D,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const orange_hasee_walk1_left_sick[] = {
+      0xfe, 0xfd,   0x8C,   1,
+      6,    0xfd,   0x8D,   1,
+      0xfe,    5,   0x9C,   1,
+      6,       5,   0x9D,   1,
+    128
+};
+
+const unsigned char const orange_hasee_walk1_right_sick[] = {
+         6,  0xfd,  0x8C,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x8D,   1|OAM_FLIP_H,
+         6,     5,  0x9C,   1|OAM_FLIP_H,
+      0xfe,     5,  0x9D,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const purple_hasee_squat_left_sick[] = {
+      0xfe, 0xfd,   0x6E,   1,
+      6,    0xfd,   0x6F,   1,
+      0xfe,    5,   0x7E,   1,
+      6,       5,   0x7F,   1,
+    128
+};
+
+const unsigned char const purple_hasee_squat_right_sick[] = {
+         6,  0xfd,  0x6E,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x6F,   1|OAM_FLIP_H,
+         6,     5,  0x7E,   1|OAM_FLIP_H,
+      0xfe,     5,  0x7F,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const orange_hasee_squat_left_sick[] = {
+      0xfe, 0xfd,   0x8E,   1,
+      6,    0xfd,   0x8F,   1,
+      0xfe,    5,   0x9E,   1,
+      6,       5,   0x9F,   1,
+    128
+};
+
+const unsigned char const orange_hasee_squat_right_sick[] = {
+         6,  0xfd,  0x8E,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x8F,   1|OAM_FLIP_H,
+         6,     5,  0x9E,   1|OAM_FLIP_H,
+      0xfe,     5,  0x9F,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char * const purple_hasee_idle_animation[] = {
+    purple_hasee_idle_left, purple_hasee_idle_right,
+};
+
+const unsigned char * const purple_hasee_idle_sick_animation[] = {
+    purple_hasee_idle_left_sick, purple_hasee_idle_right_sick,
+};
+
+const unsigned char * const orange_hasee_idle_animation[] = {
+    orange_hasee_idle_left, orange_hasee_idle_right,
+};
+
+const unsigned char * const orange_hasee_idle_sick_animation[] = {
+    orange_hasee_idle_left_sick, orange_hasee_idle_right_sick,
+};
+
+const unsigned char * const purple_hasee_walk_animation[] = {
+    purple_hasee_idle_left, purple_hasee_idle_right,
+    purple_hasee_walk1_left, purple_hasee_walk1_right,
+    purple_hasee_idle_left, purple_hasee_idle_right,
+    purple_hasee_walk0_left, purple_hasee_walk0_right,
+};
+
+const unsigned char * const purple_hasee_walk_sick_animation[] = {
+    purple_hasee_idle_left_sick, purple_hasee_idle_right_sick,
+    purple_hasee_walk1_left_sick, purple_hasee_walk1_right_sick,
+    purple_hasee_idle_left_sick, purple_hasee_idle_right_sick,
+    purple_hasee_walk0_left_sick, purple_hasee_walk0_right_sick,
+};
+
+const unsigned char * const orange_hasee_walk_animation[] = {
+    orange_hasee_idle_left, orange_hasee_idle_right,
+    orange_hasee_walk1_left, orange_hasee_walk1_right,
+    orange_hasee_idle_left, orange_hasee_idle_right,
+    orange_hasee_walk0_left, orange_hasee_walk0_right,
+};
+
+const unsigned char * const orange_hasee_walk_sick_animation[] = {
+    orange_hasee_idle_left_sick, orange_hasee_idle_right_sick,
+    orange_hasee_walk1_left_sick, orange_hasee_walk1_right_sick,
+    orange_hasee_idle_left_sick, orange_hasee_idle_right_sick,
+    orange_hasee_walk0_left_sick, orange_hasee_walk0_right_sick,
+};
+
+const unsigned char * const purple_hasee_squat_animation[] = {
+    purple_hasee_squat_left, purple_hasee_squat_right,
+};
+
+const unsigned char * const purple_hasee_squat_sick_animation[] = {
+    purple_hasee_squat_left_sick, purple_hasee_squat_right_sick,
+};
+
+const unsigned char * const orange_hasee_squat_animation[] = {
+    orange_hasee_squat_left, orange_hasee_squat_right,
+};
+
+const unsigned char * const orange_hasee_squat_sick_animation[] = {
+    orange_hasee_squat_left_sick, orange_hasee_squat_right_sick,
+}; 
 
 const unsigned char const yellow_doughnutfruit[] = {
     0, 0, 0x00, 0,

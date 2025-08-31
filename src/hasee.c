@@ -144,6 +144,9 @@ void hasee_sprite_collisions(void);
 void hasee_singleplayer_movement(void);
 void hasee_multiplayer_movement(void);
 void hasee_draw_sprites(void);
+void hasee_draw_hasees(void);
+void hasee_draw_goodies(void);
+void hasee_buffer_yay_message(void);
 void hasee_treat_movement(void);
 void hasee_update_score(void);
 void hasee_update_time(void);
@@ -183,6 +186,14 @@ void begin_hasee_bounce(void) {
     player_flags2 = 0;
     score = 0;
     level = 0;
+    level_timer = LEVEL_FRAME_LENGTH;
+    player1_frame_timer = 0;
+    player2_frame_timer = 0;
+    player1_stun_timer = 0;
+    player2_stun_timer = 0;
+
+    PURPLE_SET_DIRECTION_LEFT();
+    ORANGE_SET_DIRECTION_RIGHT();
     set_mt_pointer(hasee_metatiles);
 
     set_prg_bank(5);
@@ -267,6 +278,9 @@ void game_hasee_bounce(void) {
     if (treat_timer == 0) {
         treat_timer = 32 + (rand8() & 0b11111);
         calculate_next_treat();
+        if (temp4 >= TREAT_BLUE && temp4 <= TREAT_GRUNDOUGHNUTFRUIT) {
+            hasee_buffer_yay_message();
+        }
         pal_spr(hasee_palette_sp);
         // Also insert treat
         for (x = 0; x < MAX_TREATS_ONSCREEN; ++x) {
@@ -274,14 +288,20 @@ void game_hasee_bounce(void) {
                 // insert here
                 temp0 = rand8();
                 enemies_type[x] = temp4;
-                // Debug
-                level_index = temp4;
-                //
                 enemies_flags[x] = temp0 & 0b1; // set initial direction based on RNG
                 ACTIVATE_ENEMY(x);
                 enemies_y[x] = divide_by_3(temp0) + 80;
-                enemies_x[x] = ENEMY_DIRECTION(x) ? 0x00 : 0xf0;
+                if(ENEMY_DIRECTION(x)) {
+                    enemies_x[x] = 0x00;
+                    enemies_extra[x] = 0x00;
+                    enemies_extra2[x] = level;
+                } else {
+                    enemies_x[x] = 0xf0;
+                    enemies_extra[x] = 0x00;
+                    enemies_extra2[x] = level;
+                }
                 enemies_timer[x] = 0;
+
                 break;
             }
         } // This is nice because it will just fail gracefully if the screen is full of treats...
@@ -304,21 +324,76 @@ void hasee_draw_sprites(void) {
     set_prg_bank(HASEE_METASPRITE_BANK);
     oam_clear();
 
-    // Draw hasees
-
-    // Add animation switching block here for P1 hasee (see draw_player)
-    temppointer = purple_hasee_idle_right;
-
-    oam_meta_spr(high_byte(player1.x), high_byte(player1.y), temppointer);
-
-    // Add animation switching block here for P2 hasee
-    temppointer = orange_hasee_idle_left;
-
-    oam_meta_spr(high_byte(player2.x), high_byte(player2.y), temppointer);
+    // Alternate drawing order in case many objects are in the same horizontal area
+    if (get_frame_count() & 1) {
+        hasee_draw_hasees();
+        hasee_draw_goodies();
+    } else {
+        hasee_draw_goodies();
+        hasee_draw_hasees();
+    }
 
     // if (GAME_PAUSED) { oam_meta_spr(108, 116, hasee_paused_text); }
 
-    // Draw goodies
+    // set_prg_bank(1); HASEE_METASPRITE_BANK is bank 1 at the moment...
+}
+
+void hasee_draw_hasees(void) {
+    // If hasee_is_squatting should override the walking case
+    temp0 = PURPLE_FACING_RIGHT >> 1;
+    if (player1_frame_timer & 0x0F) { // Squatting case
+        --player1_frame_timer;
+        if (player1_stun_timer) {
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, purple_hasee_squat_sick_animation, temp0);
+        } else {
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, purple_hasee_squat_animation, temp0);
+        }
+    } else if (PURPLE_HASEE_IS_WALKING) {
+        player1_frame_timer += 0x10; // Use high nibble for walk animation timer
+        temp0 |= player1_frame_timer >> 5 & 0b11111110;
+        if (player1_stun_timer) {
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, purple_hasee_walk_sick_animation, temp0);
+        } else {
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, purple_hasee_walk_animation, temp0);
+        }
+    } else {
+        if (player1_stun_timer) {
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, purple_hasee_idle_sick_animation, temp0);
+        } else {
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, purple_hasee_idle_animation, temp0);
+        }
+    }
+
+    oam_meta_spr(high_byte(player1.x), high_byte(player1.y), temppointer);
+
+    temp0 = ORANGE_FACING_RIGHT;
+    if (player2_frame_timer & 0x0F) { // Squatting case
+        --player2_frame_timer;
+        if (player2_stun_timer) {
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, orange_hasee_squat_sick_animation, temp0);
+        } else {
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, orange_hasee_squat_animation, temp0);
+        }
+    } else if (ORANGE_HASEE_IS_WALKING) {
+        player2_frame_timer += 0x10; // Use high nibble for walk animation timer
+        temp0 |= player2_frame_timer >> 5 & 0b11111110;
+        if (player2_stun_timer) {
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, orange_hasee_walk_sick_animation, temp0);
+        } else {
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, orange_hasee_walk_animation, temp0);
+        }
+    } else {
+        if (player2_stun_timer) {
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, orange_hasee_idle_sick_animation, temp0);
+        } else {
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, orange_hasee_idle_animation, temp0);
+        }
+    }
+
+    oam_meta_spr(high_byte(player2.x), high_byte(player2.y), temppointer);
+}
+
+void hasee_draw_goodies(void) {
     for (y = 0; y < shuffle_leg_size; ++y) {
         temp1 = y + shuffle_offset;
         AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
@@ -334,24 +409,6 @@ void hasee_draw_sprites(void) {
             oam_meta_spr(temp_x, temp_y, temppointer);
         }
     }
-
-    // Debug HUD, drawn last because it's the least important.
-    // if (letter_status[LETTER_H_INDEX]) {
-    //     oam_spr(208, 50, 0x06, 0);
-    // }
-    // if (letter_status[LETTER_A_INDEX]) {
-    //     oam_spr(208, 60, 0x02, 1);
-    // }
-    // if (letter_status[LETTER_S_INDEX]) {
-    //     oam_spr(208, 70, 0x20, 2);
-    // }
-    // if (letter_status[LETTER_E_INDEX]) {
-    //     oam_spr(208, 80, 0x04, 1);
-    // }
-    // if (letter_status[LETTER_E2_INDEX]) {
-    //     oam_spr(208, 90, 0x62, 0);
-    // }
-    // set_prg_bank(1); HASEE_METASPRITE_BANK is bank 1 at the moment...
 }
 
 void hasee_stringify_score_string(void) {
@@ -386,6 +443,9 @@ void hasee_update_time(void) {
 void hasee_singleplayer_movement(void) {
     temp0 = pad1; // Orange Hasee's Pad (Both the same in single-player)
     temp1 = pad1; // Purple Hasee's Pad
+    // If the game is over, the pads should all get overwritten by 0s
+    ORANGE_HASEE_SET_STANDING();
+    PURPLE_HASEE_SET_STANDING();
     if (ACTIVE_PLAYER) { // Orange Hasee/Player 2 active
         temp2 = pad1; // Temp2 = "Active player's pad"
         temp3 = pad1_new; // Temp3 = "Active player's pad_new"
@@ -409,9 +469,11 @@ void hasee_singleplayer_movement(void) {
             ACTIVE_PLAYER_SET_JUMPING_OFF_BRANCH();
             sfx_play(SFX_JUMP, 0);
             if (ACTIVE_PLAYER) {
+                player2_frame_timer &= 0x0F;
                 player2.velocity_y = -HASEE_MAX_SPEED;
                 old_velocity_y = player2.velocity_y;
             } else {
+                player1_frame_timer &= 0x0F;
                 player1.velocity_y = -HASEE_MAX_SPEED;
                 old_velocity_y = player1.velocity_y;
             }
@@ -486,7 +548,10 @@ void hasee_multiplayer_movement(void) {
         temp3 = pad1_new;
     }
 
+    ORANGE_HASEE_SET_STANDING();
     orange_hasee_lr_movement();
+
+    PURPLE_HASEE_SET_STANDING();
     purple_hasee_lr_movement();
 
     if (ACTIVE_PLAYER) {
@@ -505,9 +570,15 @@ void orange_hasee_lr_movement(void) {
     // Remember temp0 contains the status of the pad we want to read in this frame
     if (temp0 & PAD_LEFT) {
         ORANGE_SET_DIRECTION_LEFT();
+        if ((ACTIVE_PLAYER_ON_BRANCH && ACTIVE_PLAYER) || !ACTIVE_PLAYER) {
+            ORANGE_HASEE_SET_WALKING();
+        }
         player2.velocity_x = -SPEED;
     } else if (temp0 & PAD_RIGHT) {
         ORANGE_SET_DIRECTION_RIGHT();
+        if ((ACTIVE_PLAYER_ON_BRANCH && ACTIVE_PLAYER) || !ACTIVE_PLAYER) {
+            ORANGE_HASEE_SET_WALKING();
+        }
         player2.velocity_x = SPEED;
     } else {
         player2.velocity_x = 0;
@@ -525,9 +596,15 @@ void purple_hasee_lr_movement(void) {
     // Remember temp1 contains the status of the pad we want to read in this frame
     if (temp1 & PAD_LEFT) {
         PURPLE_SET_DIRECTION_LEFT();
+        if ((ACTIVE_PLAYER_ON_BRANCH && !ACTIVE_PLAYER) || ACTIVE_PLAYER) {
+            PURPLE_HASEE_SET_WALKING();
+        }
         player1.velocity_x = -SPEED;
     } else if (temp1 & PAD_RIGHT) {
         PURPLE_SET_DIRECTION_RIGHT();
+        if ((ACTIVE_PLAYER_ON_BRANCH && !ACTIVE_PLAYER) || ACTIVE_PLAYER) {
+            PURPLE_HASEE_SET_WALKING();
+        }
         player1.velocity_x = SPEED;
     } else {
         player1.velocity_x = 0;
@@ -667,6 +744,34 @@ void calculate_next_treat(void) {
         temp4 = TREAT_PURPLE_H + (MIN(temp1, LETTER_E_INDEX) | temp0 & LETTER_ORANGENESS_MASK);
     }
     // Otherwise, yellow it stays.
+}
+
+// Requires temp4 to be set to the treat we just spawned in...
+void hasee_buffer_yay_message(void) {
+    temp0 = rand8();
+    if (temp0 >= 250) {
+        // "OMG PLS!!! "
+        temp1 = 2;
+    } else {
+        temp1 = temp0 & 1;
+    }
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, hasee_yay_phrases, temp1);
+    multi_vram_buffer_horz(temppointer, HASEE_YAY_PHRASE_LENGTH, NTADR_A(12, 4));
+    temp2 = hasee_treat_name_lens[temp4];
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, hasee_treat_names, temp4);
+    multi_vram_buffer_horz(temppointer, temp2, NTADR_A(6,5));
+    temp2 += 6;
+    multi_vram_buffer_horz(hasee_treat_postfix, HASEE_TREAT_NAME_POSTFIX_LEN, NTADR_A(temp2,5));
+    temp2 += HASEE_TREAT_NAME_POSTFIX_LEN;
+    temp0 = 6 + HASEE_LONGEST_COMPLETE_PHRASE_LEN - temp2; // Spaces to insert
+    debug_values[0] = temp0;
+    if (temp0 > 0 && temp0 < 7) {
+        multi_vram_buffer_horz(hasee_spaces_string, temp0, NTADR_A(temp2,5));
+    }
+}
+
+void hasee_buffer_time_message(void) {
+
 }
 
 void hasee_sprite_collisions(void) {
@@ -834,9 +939,5 @@ void hasee_treat_movement(void) {
 }
 
 #pragma code-name(pop)
-
-// hasee_clear_letters
-// Technically there will only ever be 4 filled in at a time so we will not run afoul of this
-// Need to be clever about only clearing the 4 that are filled in
 
 #pragma rodata-name(pop)

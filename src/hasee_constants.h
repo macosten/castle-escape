@@ -44,10 +44,10 @@
 #define TREAT_ADDS_TIME 0b00000100
 #define TREAT_IS_ACTIVE 0b00000010
 
-#define ORANGE_HASEE_ACTIVE                 0b00000001 // True if it's Orange (Woogi)'s turn to jump off the branch
-#define ACTIVE_PLAYER_BRANCH_STATUS         0b00000010 // True if pressing A should allow the active Hasee to jump down from the branch
-#define ORANGE_FACING_RIGHT                 0b00000100
-#define PURPLE_FACING_RIGHT                 0b00001000
+#define ORANGE_FACING_RIGHT_MASK            0b00000001
+#define PURPLE_FACING_RIGHT_MASK            0b00000010
+#define ORANGE_HASEE_ACTIVE                 0b00000100 // True if it's Orange (Woogi)'s turn to jump off the branch
+#define ACTIVE_PLAYER_BRANCH_STATUS         0b00001000 // True if pressing A should allow the active Hasee to jump down from the branch
 #define ACTIVE_PLAYER_JUMPING_STATUS        0b00010000
 #define ACTIVE_PLAYER_STOP_AT_BRANCH_MASK   0b00100000 // True if the active player should stop when they next touch the branch
 #define ORANGE_MASK_HASEE_IS_WALKING        0b01000000
@@ -59,10 +59,12 @@
 
 #define FLIP_ACTIVE_PLAYER() player_flags ^= ORANGE_HASEE_ACTIVE
 
-#define ORANGE_SET_DIRECTION_LEFT() (player_flags &= ~ORANGE_FACING_RIGHT)
-#define ORANGE_SET_DIRECTION_RIGHT() (player_flags |= ORANGE_FACING_RIGHT)
-#define PURPLE_SET_DIRECTION_LEFT() (player_flags &= ~PURPLE_FACING_RIGHT)
-#define PURPLE_SET_DIRECTION_RIGHT() (player_flags |= PURPLE_FACING_RIGHT)
+#define ORANGE_SET_DIRECTION_RIGHT() (player_flags &= ~ORANGE_FACING_RIGHT_MASK)
+#define ORANGE_SET_DIRECTION_LEFT() (player_flags |= ORANGE_FACING_RIGHT_MASK)
+#define PURPLE_SET_DIRECTION_RIGHT() (player_flags &= ~PURPLE_FACING_RIGHT_MASK)
+#define PURPLE_SET_DIRECTION_LEFT() (player_flags |= PURPLE_FACING_RIGHT_MASK)
+#define ORANGE_FACING_RIGHT (player_flags & ORANGE_FACING_RIGHT_MASK)
+#define PURPLE_FACING_RIGHT (player_flags & PURPLE_FACING_RIGHT_MASK)
 
 #define ACTIVE_PLAYER_MOVE_OFF_BRANCH() (player_flags &= ~ACTIVE_PLAYER_BRANCH_STATUS)
 #define ACTIVE_PLAYER_MOVE_ON_BRANCH() (player_flags |= ACTIVE_PLAYER_BRANCH_STATUS)
