@@ -5,13 +5,12 @@
 #pragma rodata-name(push, "BANK1")
 
 const char * const hasee_yay_phrases[] = {
-    " Yay!!!! ",
-    "Yippee!!!",
-    "OMG PLS!!",
-    "OMG!!!!!!",
+    " Yay!!!!! ",
+    "Yippee!!!!",
+    "OMG PLS!!!",
 };
 
-#define HASEE_YAY_PHRASE_LENGTH 9
+#define HASEE_YAY_PHRASE_LENGTH 10
 
 const char * const hasee_treat_names[] = {
     "Yellow",
@@ -31,8 +30,6 @@ const char * const hasee_treat_names[] = {
 const char * const hasee_treat_postfix = "Doughnutfruit!";
 #define HASEE_TREAT_NAME_POSTFIX_LEN (15-1)
 #define HASEE_LONGEST_COMPLETE_PHRASE_LEN 24
-
-const char * const hasee_spaces_string = "     ";
 
 // Remember all of these should have spaces (i.e print out the \0) after them except "Grun"
 const unsigned char const hasee_treat_name_lens[] = {
@@ -57,11 +54,17 @@ const char * doughnutfruit_string = "Doughnutfruit!";
 const char * const maccy_confusion_quote = "Huh?!? What's that?!?!";
 const char * const bleh_gross_quote = "Bleh!!! Gross!!!";
 
-const char * const hasee_letter_bonus_quote = "+2";
-const char * const hasee_time_bonus_quote = "+20";
-const char * const hasee_super_time_bonus_quote = "+40";
-const char * const hasee_time_bonus_quote_postfix = "Seconds!!!";
+const char * const hasee_letter_bonus_quote = "    +2 Seconds!!!      ";
+const char * const hasee_omg_time_bonus_yay_quote = "Hasee OMG!";
+const char * const hasee_time_bonus_quote = "Hasee +20 Second Bonus!";
+const char * const hasee_super_time_bonus_quote = "Super +40 Second Bonus!"; // Length of this = Longest Phrase Length
+const char * const hasee_time_up_quote = "Time's up!";
 
+const char * const hasee_sad_ending_quote = "Still feeling hungry...";
+const char * const hasee_happy_ending_quote = "The Hasees are happy!!!";
+const char * const hasee_quit_instructions = "B: Back To Menu";
+
+#define HASEE_QUIT_INSTRUCTIONS_LEN 16
 
 // Specific palettes for special Doughnutfruits
 const unsigned char const hasee_subpal_blue[] = { 0x21, 0x0f, 0x0c, 0x19 };

@@ -147,6 +147,13 @@ void hasee_draw_sprites(void);
 void hasee_draw_hasees(void);
 void hasee_draw_goodies(void);
 void hasee_buffer_yay_message(void);
+void hasee_clear_yay_message(void);
+void hasee_clear_bottom_message(void);
+void hasee_buffer_treat_warning_message(void);
+void hasee_buffer_time_bonus_message(void);
+void hasee_buffer_letter_time_message(void);
+void hasee_buffer_time_up_message(void);
+void hasee_buffer_game_over_message(void);
 void hasee_treat_movement(void);
 void hasee_update_score(void);
 void hasee_update_time(void);
@@ -200,6 +207,8 @@ void begin_hasee_bounce(void) {
     temppointer = hasee_game_screen;
     LZG_decode(temppointer, cmap);
     vram_write(cmap, 32*32);
+
+    memfill(cmap, 0, 32); // For character buffering later on when we want spaces
 
     set_prg_bank(HASEE_MOVEMENT_CODE_BANK);
 
@@ -257,58 +266,79 @@ void game_hasee_bounce(void) {
 
     if (HASEE_SCORE_CHANGED_THIS_FRAME) { hasee_update_score(); }
     
-    // Decrement game timers (if not paused)
-    --level_timer;
-    if (level_timer == 0) {
-        level_timer = LEVEL_FRAME_LENGTH;
-        ++level;
-    }
-
-    --game_frame_timer;
-    if (game_frame_timer == 0) {
-        game_frame_timer = 60;
-        --game_seconds_timer;
-        hasee_update_time();
-        if (game_seconds_timer == 0) {
-            // Trigger game end
+    // Decrement game timers (if not paused and if game seconds timer > 0)
+    if (game_seconds_timer > 0) {
+        --level_timer;
+        if (level_timer == 0) {
+            level_timer = LEVEL_FRAME_LENGTH;
+            ++level;
         }
-    }
 
-    --treat_timer;
-    if (treat_timer == 0) {
-        treat_timer = 32 + (rand8() & 0b11111);
-        calculate_next_treat();
-        if (temp4 >= TREAT_BLUE && temp4 <= TREAT_GRUNDOUGHNUTFRUIT) {
-            hasee_buffer_yay_message();
-        }
-        pal_spr(hasee_palette_sp);
-        // Also insert treat
-        for (x = 0; x < MAX_TREATS_ONSCREEN; ++x) {
-            if (!IS_ENEMY_ACTIVE(x)) {
-                // insert here
-                temp0 = rand8();
-                enemies_type[x] = temp4;
-                enemies_flags[x] = temp0 & 0b1; // set initial direction based on RNG
-                ACTIVATE_ENEMY(x);
-                enemies_y[x] = divide_by_3(temp0) + 80;
-                if(ENEMY_DIRECTION(x)) {
-                    enemies_x[x] = 0x00;
-                    enemies_extra[x] = 0x00;
-                    enemies_extra2[x] = level;
-                } else {
-                    enemies_x[x] = 0xf0;
-                    enemies_extra[x] = 0x00;
-                    enemies_extra2[x] = level;
-                }
-                enemies_timer[x] = 0;
-
-                break;
+        --game_frame_timer;
+        if (game_frame_timer == 0) {
+            game_frame_timer = 60;
+            --game_seconds_timer;
+            hasee_update_time();
+            if (game_seconds_timer == 0) {
+                // Trigger game end
+                hasee_buffer_time_up_message();
+                hasee_clear_bottom_message();
+                HASEE_SET_BUFFERED_MESSAGE_THIS_FRAME();
+                game_frame_timer = 240;
+                player1_stun_timer = 0;
+                player2_stun_timer = 0;
+                treat_timer = 200; // Ensure that we don't spawn a treat this frame...
+                for (x = 0; x < MAX_TREATS_ONSCREEN; ++x) { DEACTIVATE_ENEMY(x); }
             }
-        } // This is nice because it will just fail gracefully if the screen is full of treats...
-    }
+        }
 
-    if (player1_stun_timer) { --player1_stun_timer; }
-    if (player2_stun_timer) { --player2_stun_timer; }
+        --treat_timer;
+        if (treat_timer == 0) {
+            treat_timer = 32 + (rand8() & 0b11111);
+            calculate_next_treat();
+            if (!HASEE_DID_BUFFER_MESSAGE_THIS_FRAME && temp4 >= TREAT_BLUE && temp4 <= TREAT_GRUNDOUGHNUTFRUIT) {
+                hasee_buffer_yay_message();
+                hasee_buffer_treat_warning_message();
+                HASEE_SET_BUFFERED_MESSAGE_THIS_FRAME();
+            }
+            pal_spr(hasee_palette_sp);
+            // Also insert treat
+            for (x = 0; x < MAX_TREATS_ONSCREEN; ++x) {
+                if (!IS_ENEMY_ACTIVE(x)) {
+                    // insert here
+                    temp0 = rand8();
+                    enemies_type[x] = temp4;
+                    enemies_flags[x] = temp0 & 0b1; // set initial direction based on RNG
+                    ACTIVATE_ENEMY(x);
+                    enemies_y[x] = divide_by_3(temp0) + 80;
+                    if(ENEMY_DIRECTION(x)) {
+                        enemies_x[x] = 0x00;
+                        enemies_extra[x] = 0x00;
+                        enemies_extra2[x] = level;
+                    } else {
+                        enemies_x[x] = 0xf0;
+                        enemies_extra[x] = 0x00;
+                        enemies_extra2[x] = level;
+                    }
+                    enemies_timer[x] = 0;
+
+                    break;
+                }
+            } // This is nice because it will just fail gracefully if the screen is full of treats...
+        }
+
+        if (player1_stun_timer) { --player1_stun_timer; }
+        if (player2_stun_timer) { --player2_stun_timer; }
+    } else {
+        // --game_frame_timer;
+        // if (game_frame_timer == 0 && high_byte(player2.velocity_y) == 0 && high_byte(player1.velocity_y) == 0) {
+        //     hasee_buffer_game_over_message();
+        // }
+        if (game_frame_timer) { --game_frame_timer; }
+        if (!HASEE_DID_BUFFER_MESSAGE_THIS_FRAME && game_frame_timer == 1) {
+            hasee_buffer_game_over_message();
+        }
+    }
 
     // Temporary debug stuffs:
     if (pad1 & PAD_B) {
@@ -446,20 +476,27 @@ void hasee_singleplayer_movement(void) {
     // If the game is over, the pads should all get overwritten by 0s
     ORANGE_HASEE_SET_STANDING();
     PURPLE_HASEE_SET_STANDING();
-    if (ACTIVE_PLAYER) { // Orange Hasee/Player 2 active
-        temp2 = pad1; // Temp2 = "Active player's pad"
-        temp3 = pad1_new; // Temp3 = "Active player's pad_new"
-        orange_hasee_lr_movement();
-        old_x = player2.x;
-        old_velocity_y = player2.velocity_y;
-        old_y = player2.y;
-    } else { // Purple Hasee/Player 1 active
-        temp2 = pad1;
-        temp3 = pad1_new;
-        purple_hasee_lr_movement();
-        old_x = player1.x;
-        old_velocity_y = player1.velocity_y;
-        old_y = player1.y;
+    if (game_seconds_timer > 0) {
+        if (ACTIVE_PLAYER) { // Orange Hasee/Player 2 active
+            temp2 = pad1; // Temp2 = "Active player's pad"
+            temp3 = pad1_new; // Temp3 = "Active player's pad_new"
+            orange_hasee_lr_movement();
+            old_x = player2.x;
+            old_velocity_y = player2.velocity_y;
+            old_y = player2.y;
+        } else { // Purple Hasee/Player 1 active
+            temp2 = pad1;
+            temp3 = pad1_new;
+            purple_hasee_lr_movement();
+            old_x = player1.x;
+            old_velocity_y = player1.velocity_y;
+            old_y = player1.y;
+        }
+    } else {
+        temp0 = 0;
+        temp1 = 0;
+        temp2 = 0;
+        temp3 = 0;
     }
     temp4 = 0; // We will set this if the high_byte playerX.y should be set, and velocity should be zeroed out. 
     if (ACTIVE_PLAYER_ON_BRANCH) {
@@ -757,6 +794,17 @@ void hasee_buffer_yay_message(void) {
     }
     AsmSet2ByteFromPtrAtIndexVar(temppointer, hasee_yay_phrases, temp1);
     multi_vram_buffer_horz(temppointer, HASEE_YAY_PHRASE_LENGTH, NTADR_A(12, 4));
+}
+
+void hasee_clear_yay_message(void) {
+    multi_vram_buffer_horz(cmap, HASEE_YAY_PHRASE_LENGTH, NTADR_A(12, 4));
+}
+
+void hasee_clear_bottom_message(void) {
+    multi_vram_buffer_horz(cmap, HASEE_LONGEST_COMPLETE_PHRASE_LEN, NTADR_A(6, 5));
+}
+
+void hasee_buffer_treat_warning_message(void) {
     temp2 = hasee_treat_name_lens[temp4];
     AsmSet2ByteFromPtrAtIndexVar(temppointer, hasee_treat_names, temp4);
     multi_vram_buffer_horz(temppointer, temp2, NTADR_A(6,5));
@@ -766,12 +814,28 @@ void hasee_buffer_yay_message(void) {
     temp0 = 6 + HASEE_LONGEST_COMPLETE_PHRASE_LEN - temp2; // Spaces to insert
     debug_values[0] = temp0;
     if (temp0 > 0 && temp0 < 7) {
-        multi_vram_buffer_horz(hasee_spaces_string, temp0, NTADR_A(temp2,5));
+        multi_vram_buffer_horz(cmap, temp0, NTADR_A(temp2,5));
     }
 }
 
-void hasee_buffer_time_message(void) {
+void hasee_buffer_time_bonus_message(void) {
+    multi_vram_buffer_horz(hasee_omg_time_bonus_yay_quote, HASEE_YAY_PHRASE_LENGTH, NTADR_A(12, 4));
+    temppointer = temp4 == HASEE_SUPER_TIME_BONUS ? hasee_super_time_bonus_quote : hasee_time_bonus_quote;
+    multi_vram_buffer_horz(temppointer, HASEE_LONGEST_COMPLETE_PHRASE_LEN, NTADR_A(6,5));
+}
 
+void hasee_buffer_letter_time_message(void) {
+    multi_vram_buffer_horz(hasee_letter_bonus_quote, HASEE_LONGEST_COMPLETE_PHRASE_LEN, NTADR_A(6,5));
+}
+
+void hasee_buffer_time_up_message(void) {
+    multi_vram_buffer_horz(hasee_time_up_quote, HASEE_YAY_PHRASE_LENGTH, NTADR_A(12,4));
+}
+
+void hasee_buffer_game_over_message(void) {
+    temppointer = score > 99 ? hasee_happy_ending_quote : hasee_sad_ending_quote;
+    multi_vram_buffer_horz(temppointer, HASEE_LONGEST_COMPLETE_PHRASE_LEN, NTADR_A(6,5));
+    multi_vram_buffer_horz(hasee_quit_instructions, HASEE_QUIT_INSTRUCTIONS_LEN, NTADR_A(9, 14));
 }
 
 void hasee_sprite_collisions(void) {
@@ -895,10 +959,19 @@ void handle_letter_collection(void) {
         // temp5 = hasee_letter_hud_ntaddr_lut[0]
         multi_vram_buffer_horz(hasee_blank_letters_lut, 10, hasee_letter_hud_ntaddr_lut[0]);
         multi_vram_buffer_horz(hasee_blank_letters_lut + 10, 10, hasee_letter_hud_ntaddr_lut[5]);
+        if (!HASEE_DID_BUFFER_MESSAGE_THIS_FRAME) {
+            hasee_buffer_time_bonus_message(); // Should be at ~64 (5 score, 5 time, 20 BG letters, 10 yay message, 24 bottom message) buffered VRAM bytes worst-case? (Less than the 74 maximum)
+            HASEE_SET_BUFFERED_MESSAGE_THIS_FRAME();
+        }
     } else {
         // Fill in single letter
         address = hasee_letter_hud_ntaddr_lut[y];
         buffer_1_mt(address, temp0);
+        if (!HASEE_DID_BUFFER_MESSAGE_THIS_FRAME) {
+            hasee_buffer_yay_message();
+            hasee_buffer_letter_time_message();
+            HASEE_SET_BUFFERED_MESSAGE_THIS_FRAME();
+        }
     }
 }
 

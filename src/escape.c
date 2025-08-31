@@ -571,6 +571,9 @@ void put_str_sub(void) {
 }
 
 void switch_menu(void) {
+    // Uncommon crash caused by something going wrong in Bank 6/Music. This makes it less likely but not impossible:
+    music_pause(1);
+
     // We always want to do these things before changing a menu:
     ppu_off();
     clear_screen();
@@ -600,6 +603,9 @@ void switch_menu(void) {
 
     // Turn the PPU back on.
     ppu_on_all();
+
+    // Turn the music back on.
+    music_pause(0);
 }
 
 #define MENU_SELECTOR_SPRITE 0x10
