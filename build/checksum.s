@@ -19,7 +19,8 @@
 	.import		_checksum
 	.import		_level_high_scores
 	.import		_gauntlet_high_score
-	.import		_hasee_high_score
+	.import		_hasee_1p_high_score
+	.import		_hasee_2p_high_score
 	.import		_settings_memory
 
 ; ---------------------------------------------------------------
@@ -40,13 +41,23 @@
 	lda     _gauntlet_high_score
 	sta     _temp5
 ;
-; temp5 += hasee_high_score;
+; temp5 += hasee_1p_high_score;
 ;
-	lda     _hasee_high_score
+	lda     _hasee_1p_high_score
 	clc
 	adc     _temp5
 	sta     _temp5
-	lda     _hasee_high_score+1
+	lda     _hasee_1p_high_score+1
+	adc     _temp5+1
+	sta     _temp5+1
+;
+; temp5 += hasee_2p_high_score;
+;
+	lda     _hasee_2p_high_score
+	clc
+	adc     _temp5
+	sta     _temp5
+	lda     _hasee_2p_high_score+1
 	adc     _temp5+1
 	sta     _temp5+1
 ;
@@ -58,12 +69,12 @@
 ; temp5 += level_high_scores[temp0];
 ;
 	tax
-L0040:	lda     _temp0
+L0044:	lda     _temp0
 	asl     a
-	bcc     L003F
+	bcc     L0043
 	inx
 	clc
-L003F:	adc     #<(_level_high_scores)
+L0043:	adc     #<(_level_high_scores)
 	sta     ptr1
 	txa
 	adc     #>(_level_high_scores)
@@ -84,17 +95,17 @@ L003F:	adc     #<(_level_high_scores)
 ;
 	lda     _temp0
 	cmp     #$FF
-	beq     L0041
+	beq     L0045
 ;
 ; for (temp0 = 0; ; ++temp0) {
 ;
 	ldx     #$00
 	inc     _temp0
-	jmp     L0040
+	jmp     L0044
 ;
 ; temp5 += settings_memory[0];
 ;
-L0041:	lda     _settings_memory
+L0045:	lda     _settings_memory
 	clc
 	adc     _temp5
 	sta     _temp5
@@ -156,12 +167,12 @@ L0041:	lda     _settings_memory
 	lda     _temp5
 	ldx     _temp5+1
 	cpx     _checksum+1
-	bne     L0042
+	bne     L0046
 	cmp     _checksum
 ;
 ; clear_saved_data();
 ;
-L0042:	jne     _clear_saved_data
+L0046:	jne     _clear_saved_data
 ;
 ; }
 ;
@@ -191,10 +202,15 @@ L0042:	jne     _clear_saved_data
 	sta     _gauntlet_high_score
 	sta     _gauntlet_high_score+1
 ;
-; hasee_high_score = 0;
+; hasee_1p_high_score = 0;
 ;
-	sta     _hasee_high_score
-	sta     _hasee_high_score+1
+	sta     _hasee_1p_high_score
+	sta     _hasee_1p_high_score+1
+;
+; hasee_2p_high_score = 0;
+;
+	sta     _hasee_2p_high_score
+	sta     _hasee_2p_high_score+1
 ;
 ; for (temp0 = 0; ; ++temp0) {
 ;
@@ -202,7 +218,7 @@ L0042:	jne     _clear_saved_data
 ;
 ; ((unsigned char *)level_high_scores)[temp0] = 0;
 ;
-L000E:	ldy     _temp0
+L0010:	ldy     _temp0
 	lda     #$00
 	sta     _level_high_scores,y
 ;
@@ -215,16 +231,16 @@ L000E:	ldy     _temp0
 ;
 	lda     _temp0
 	cmp     #$FF
-	beq     L0043
+	beq     L0047
 ;
 ; for (temp0 = 0; ; ++temp0) {
 ;
 	inc     _temp0
-	jmp     L000E
+	jmp     L0010
 ;
 ; settings_memory[0] = 0;
 ;
-L0043:	lda     #$00
+L0047:	lda     #$00
 	sta     _settings_memory
 ;
 ; }

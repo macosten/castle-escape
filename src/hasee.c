@@ -105,6 +105,9 @@ extern unsigned char cmap[];
 extern unsigned char boss_memory[8];
 #define letter_status boss_memory
 
+extern unsigned int hasee_1p_high_score;
+extern unsigned int hasee_2p_high_score;
+
 // extern const unsigned char const leftright_movement_moving_lookup_table[2];
 
 // Since EfMC is in the non-swapping PRG segment, we can access all of its rodata
@@ -134,6 +137,8 @@ extern void switch_menu(void);
 
 // Make sure prg bank is 5 before calling:
 extern void LZG_decode(const unsigned char *src, unsigned char *dest);
+extern void prepare_score_string(void);
+extern void update_checksum(void);
 extern unsigned char __fastcall__ divide_by_3(unsigned char input);
 extern unsigned char __fastcall__ divide_by_26(unsigned char input);
 
@@ -159,7 +164,6 @@ void hasee_buffer_gross_message(void);
 void hasee_treat_movement(void);
 void hasee_update_score(void);
 void hasee_update_time(void);
-void hasee_stringify_score_string(void);
 void orange_hasee_lr_movement(void);
 void purple_hasee_lr_movement(void);
 void handle_letter_collection(void);
@@ -341,6 +345,10 @@ void game_hasee_bounce(void) {
         if (game_frame_timer) { --game_frame_timer; }
         if (!HASEE_DID_BUFFER_MESSAGE_THIS_FRAME && game_frame_timer == 1) {
             hasee_buffer_game_over_message();
+            if (score > hasee_1p_high_score) {
+                hasee_1p_high_score = score;
+                update_checksum();
+            }
             if (score > 100) {
                 sample_play(SAMPLE_YAY);
             } else {
@@ -357,7 +365,7 @@ void game_hasee_bounce(void) {
         pal_bright(4);
         return;
     }
-    gray_line();
+    //gray_line();
 }
 
 void hasee_draw_sprites(void) {
@@ -455,32 +463,15 @@ void hasee_draw_goodies(void) {
     }
 }
 
-void hasee_stringify_score_string(void) {
-    // Reverse the score string (indices 0...4) while turning them into characters
-    temp0 = score_string[0] + '0';
-    score_string[0] = score_string[4] + '0';
-    score_string[4] = temp0;
-    temp0 = score_string[1] + '0';
-    score_string[1] = score_string[3] + '0';
-    score_string[3] = temp0;
-    score_string[2] += '0';
-
-    for (x = 0; x < 4; ++x) { // Only the first 4 digits; if the last digit is 0 then no point in blanking it
-        temp0 = score_string[x];
-        if (temp0 != '0') { break; }
-        score_string[x] = ' ';
-    }
-}
-
 void hasee_update_score(void) {
     convert_to_decimal(score);
-    hasee_stringify_score_string();
+    prepare_score_string();
     multi_vram_buffer_horz(score_string, 5, NTADR_A(10, 2));
 }
 
 void hasee_update_time(void) {
     convert_to_decimal(game_seconds_timer);
-    hasee_stringify_score_string();
+    prepare_score_string();
     multi_vram_buffer_horz(score_string, 5, NTADR_A(17, 2));
 }
 

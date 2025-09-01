@@ -127,7 +127,8 @@ unsigned char cmap[240 * CMAP_COUNT];
 unsigned int checksum; // A checksum can detect if the saved data is valid.
 unsigned int level_high_scores[256];
 unsigned int gauntlet_high_score;
-unsigned int hasee_high_score;
+unsigned int hasee_1p_high_score;
+unsigned int hasee_2p_high_score;
 
 unsigned char settings_memory[1];
 
@@ -985,6 +986,15 @@ void load_hasee_bounce_menu(void) {
     set_chr_bank_1(5);
     pal_bg(hasee_palette_bg);
     pal_spr(hasee_palette_sp);
+    // Load high scores
+    convert_to_decimal(hasee_1p_high_score);
+    prepare_score_string();
+    multi_vram_buffer_horz(score_string, 5, NTADR_A(16, 3));
+
+    convert_to_decimal(hasee_2p_high_score);
+    prepare_score_string();
+    multi_vram_buffer_horz(score_string, 5, NTADR_A(16, 4));
+    
     pal_bright(4);
     set_scroll_x(8); // Center the off-centered play area...
 }
