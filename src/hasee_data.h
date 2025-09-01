@@ -51,8 +51,8 @@ const unsigned char const hasee_treat_name_lens[] = {
 
 const char * doughnutfruit_string = "Doughnutfruit!";
 
-const char * const maccy_confusion_quote = "Huh?!? What's that?!?!";
-const char * const bleh_gross_quote = "Bleh!!! Gross!!!";
+const char * const maccy_confusion_quote = "Huh?!?! What's that?!?!";
+const char * const bleh_gross_quote = "Bleh!! Gross!!! Yuck!!!";
 
 const char * const hasee_letter_bonus_quote = "    +2 Seconds!!!      ";
 const char * const hasee_omg_time_bonus_yay_quote = "Hasee OMG!";

@@ -154,6 +154,8 @@ void hasee_buffer_time_bonus_message(void);
 void hasee_buffer_letter_time_message(void);
 void hasee_buffer_time_up_message(void);
 void hasee_buffer_game_over_message(void);
+void hasee_buffer_maccy_message(void);
+void hasee_buffer_gross_message(void);
 void hasee_treat_movement(void);
 void hasee_update_score(void);
 void hasee_update_time(void);
@@ -296,10 +298,16 @@ void game_hasee_bounce(void) {
         if (treat_timer == 0) {
             treat_timer = 32 + (rand8() & 0b11111);
             calculate_next_treat();
-            if (!HASEE_DID_BUFFER_MESSAGE_THIS_FRAME && temp4 >= TREAT_BLUE && temp4 <= TREAT_GRUNDOUGHNUTFRUIT) {
-                hasee_buffer_yay_message();
-                hasee_buffer_treat_warning_message();
-                HASEE_SET_BUFFERED_MESSAGE_THIS_FRAME();
+            if (!HASEE_DID_BUFFER_MESSAGE_THIS_FRAME) {
+                if (temp4 >= TREAT_BLUE && temp4 <= TREAT_GRUNDOUGHNUTFRUIT) {
+                    hasee_buffer_yay_message();
+                    hasee_buffer_treat_warning_message();
+                    HASEE_SET_BUFFERED_MESSAGE_THIS_FRAME();
+                } else if (temp4 == TREAT_MACCY) {
+                    hasee_clear_yay_message();
+                    hasee_buffer_maccy_message();
+                    HASEE_SET_BUFFERED_MESSAGE_THIS_FRAME();
+                }
             }
             pal_spr(hasee_palette_sp);
             // Also insert treat
@@ -833,6 +841,14 @@ void hasee_buffer_time_up_message(void) {
     multi_vram_buffer_horz(hasee_time_up_quote, HASEE_YAY_PHRASE_LENGTH, NTADR_A(12,4));
 }
 
+void hasee_buffer_maccy_message(void) {
+    multi_vram_buffer_horz(maccy_confusion_quote, HASEE_LONGEST_COMPLETE_PHRASE_LEN, NTADR_A(6, 5));
+}
+
+void hasee_buffer_gross_message(void) {
+    multi_vram_buffer_horz(bleh_gross_quote, HASEE_LONGEST_COMPLETE_PHRASE_LEN, NTADR_A(6, 5));
+}
+
 void hasee_buffer_game_over_message(void) {
     temppointer = score > 99 ? hasee_happy_ending_quote : hasee_sad_ending_quote;
     multi_vram_buffer_horz(temppointer, HASEE_LONGEST_COMPLETE_PHRASE_LEN, NTADR_A(6,5));
@@ -911,6 +927,13 @@ void hasee_sprite_collisions(void) {
                     } else {
                         player1_stun_timer = 240;
                     }
+
+                    if (!HASEE_DID_BUFFER_MESSAGE_THIS_FRAME) {
+                        hasee_clear_yay_message();
+                        hasee_buffer_gross_message();
+                        HASEE_SET_BUFFERED_MESSAGE_THIS_FRAME();
+                    }
+                    
                 }
             }
         }
