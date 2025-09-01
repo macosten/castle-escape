@@ -360,7 +360,6 @@ void main (void) {
     pal_spr(palette_sp);
 
     // ppu_on_all(); // turn on screen
-
     music_play(MENU_SONG);
     set_music_speed(5);
 

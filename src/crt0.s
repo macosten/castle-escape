@@ -5,13 +5,13 @@
 .define SOUND_BANK 6
 
 FT_BASE_ADR        = $0100        ;page in RAM, should be $xx00
-FT_DPCM_OFF        = $f800        ;$c000..$ffc0, 64-byte steps
-FT_SFX_STREAMS    = 4            ;number of sound effects played at once, 1..4
+FT_DPCM_OFF        = $fb80        ;$c000..$ffc0, 64-byte steps
+FT_SFX_STREAMS    = 2            ;number of sound effects played at once, 1..4
 
 FT_THREAD       = 1        ;undefine if you call sound effects in the same thread as sound update
 FT_PAL_SUPPORT    = 0        ;undefine to exclude PAL support
 FT_NTSC_SUPPORT    = 1        ;undefine to exclude NTSC support
-FT_DPCM_ENABLE  = 0        ;undefine to exclude all DMC code
+FT_DPCM_ENABLE  = 1        ;undefine to exclude all DMC code
 FT_SFX_ENABLE   = 1        ;undefine to exclude all sound effects code
 
 
@@ -327,10 +327,7 @@ sounds_data:
 
 
 .segment "SAMPLES"
-    ; .incbin "music/dmc/kirby_boss_plus_roar.dmc" 
-    ; Probably going to exclude some of the samples in here soon
-
-
+    .incbin "music/dmc/samples.dmc" 
 
 .segment "VECTORS"
 

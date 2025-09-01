@@ -286,7 +286,7 @@ void game_hasee_bounce(void) {
                 hasee_buffer_time_up_message();
                 hasee_clear_bottom_message();
                 HASEE_SET_BUFFERED_MESSAGE_THIS_FRAME();
-                game_frame_timer = 240;
+                game_frame_timer = 120;
                 player1_stun_timer = 0;
                 player2_stun_timer = 0;
                 treat_timer = 200; // Ensure that we don't spawn a treat this frame...
@@ -338,13 +338,14 @@ void game_hasee_bounce(void) {
         if (player1_stun_timer) { --player1_stun_timer; }
         if (player2_stun_timer) { --player2_stun_timer; }
     } else {
-        // --game_frame_timer;
-        // if (game_frame_timer == 0 && high_byte(player2.velocity_y) == 0 && high_byte(player1.velocity_y) == 0) {
-        //     hasee_buffer_game_over_message();
-        // }
         if (game_frame_timer) { --game_frame_timer; }
         if (!HASEE_DID_BUFFER_MESSAGE_THIS_FRAME && game_frame_timer == 1) {
             hasee_buffer_game_over_message();
+            if (score > 100) {
+                sample_play(SAMPLE_YAY);
+            } else {
+                HASEE_SET_SAD_ENDING();
+            }
         }
     }
 
@@ -380,7 +381,9 @@ void hasee_draw_sprites(void) {
 void hasee_draw_hasees(void) {
     // If hasee_is_squatting should override the walking case
     temp0 = PURPLE_FACING_RIGHT >> 1;
-    if (player1_frame_timer & 0x0F) { // Squatting case
+    if (HASEE_HAS_SAD_ENDING) {
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, purple_hasee_sad_animation, temp0);
+    } else if (player1_frame_timer & 0x0F) { // Squatting case
         --player1_frame_timer;
         if (player1_stun_timer) {
             AsmSet2ByteFromPtrAtIndexVar(temppointer, purple_hasee_squat_sick_animation, temp0);
@@ -406,7 +409,9 @@ void hasee_draw_hasees(void) {
     oam_meta_spr(high_byte(player1.x), high_byte(player1.y), temppointer);
 
     temp0 = ORANGE_FACING_RIGHT;
-    if (player2_frame_timer & 0x0F) { // Squatting case
+    if (HASEE_HAS_SAD_ENDING) {
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, orange_hasee_sad_animation, temp0);
+    } else if (player2_frame_timer & 0x0F) { // Squatting case
         --player2_frame_timer;
         if (player2_stun_timer) {
             AsmSet2ByteFromPtrAtIndexVar(temppointer, orange_hasee_squat_sick_animation, temp0);

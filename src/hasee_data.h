@@ -337,6 +337,38 @@ const unsigned char const orange_hasee_squat_right_sick[] = {
     128
 };
 
+const unsigned char const purple_hasee_sad_left[] = {
+      0xfe, 0xfd,   0x0E,   1,
+      6,    0xfd,   0x0F,   1,
+      0xfe,    5,   0x4A,   1,
+      6,       5,   0x4B,   1,
+    128
+};
+
+const unsigned char const purple_hasee_sad_right[] = {
+         6,  0xfd,  0x0E,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x0F,   1|OAM_FLIP_H,
+         6,     5,  0x4A,   1|OAM_FLIP_H,
+      0xfe,     5,  0x4B,   1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char const orange_hasee_sad_left[] = {
+      0xfe, 0xfd,   0x2E,   1,
+      6,    0xfd,   0x2F,   1,
+      0xfe,    5,   0x5A,   1,
+      6,       5,   0x5B,   1,
+    128
+};
+
+const unsigned char const orange_hasee_sad_right[] = {
+         6,  0xfd,  0x2E,   1|OAM_FLIP_H,
+      0xfe,  0xfd,  0x2F,   1|OAM_FLIP_H,
+         6,     5,  0x5A,   1|OAM_FLIP_H,
+      0xfe,     5,  0x5B,   1|OAM_FLIP_H,
+    128
+};
+
 const unsigned char * const purple_hasee_idle_animation[] = {
     purple_hasee_idle_left, purple_hasee_idle_right,
 };
@@ -395,7 +427,14 @@ const unsigned char * const orange_hasee_squat_animation[] = {
 
 const unsigned char * const orange_hasee_squat_sick_animation[] = {
     orange_hasee_squat_left_sick, orange_hasee_squat_right_sick,
-}; 
+};
+
+const unsigned char * const purple_hasee_sad_animation[] = {
+    purple_hasee_sad_left, purple_hasee_sad_right,
+};
+const unsigned char * const orange_hasee_sad_animation[] = {
+    orange_hasee_sad_left, orange_hasee_sad_right,
+};
 
 const unsigned char const yellow_doughnutfruit[] = {
     0, 0, 0x00, 0,

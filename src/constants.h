@@ -77,4 +77,8 @@
 
 #define LEVEL_TRACK_COUNT 2
 
+// ===
+// Constants for samples. See music.s for sample listing (and add 1 to the stated values).
+#define SAMPLE_YAY 1
+
 #endif
