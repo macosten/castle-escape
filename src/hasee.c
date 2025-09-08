@@ -22,6 +22,7 @@ ZEROPAGE_EXTERN(unsigned char, temp2);
 ZEROPAGE_EXTERN(unsigned char, temp3);
 ZEROPAGE_EXTERN(unsigned char, temp4);
 ZEROPAGE_EXTERN(unsigned int, temp5);
+ZEROPAGE_EXTERN(unsigned int, temp6);
 ZEROPAGE_EXTERN(unsigned char, pad1);
 ZEROPAGE_EXTERN(unsigned char, pad1_new);
 ZEROPAGE_EXTERN(unsigned char, pad2);
@@ -76,8 +77,8 @@ ZEROPAGE_EXTERN(signed int, scroll_y); // Letting me treat an unsigned int as a 
 ZEROPAGE_EXTERN(unsigned char, level_index);
 #define level level_index
 
-ZEROPAGE_EXTERN(unsigned int, temp6);
-#define level_timer temp6
+ZEROPAGE_EXTERN(unsigned int, pseudo_scroll_y);
+#define level_timer pseudo_scroll_y
 
 ZEROPAGE_EXTERN(unsigned char, did_headbonk);
 #define treat_timer did_headbonk
@@ -277,7 +278,7 @@ void game_hasee_bounce(void) {
         --level_timer;
         if (level_timer == 0) {
             level_timer = LEVEL_FRAME_LENGTH;
-            ++level;
+            if (level < 0xFF) { ++level; }
         }
 
         --game_frame_timer;
@@ -325,15 +326,12 @@ void game_hasee_bounce(void) {
                     enemies_y[x] = divide_by_3(temp0) + 80;
                     if(ENEMY_DIRECTION(x)) {
                         enemies_x[x] = 0x00;
-                        enemies_extra[x] = 0x00;
-                        enemies_extra2[x] = level;
                     } else {
                         enemies_x[x] = 0xf0;
-                        enemies_extra[x] = 0x00;
-                        enemies_extra2[x] = level;
                     }
+                    enemies_extra[x] = 0x00;
+                    enemies_extra2[x] = level;
                     enemies_timer[x] = 0;
-
                     break;
                 }
             } // This is nice because it will just fail gracefully if the screen is full of treats...
@@ -817,7 +815,6 @@ void hasee_buffer_treat_warning_message(void) {
     multi_vram_buffer_horz(hasee_treat_postfix, HASEE_TREAT_NAME_POSTFIX_LEN, NTADR_A(temp2,5));
     temp2 += HASEE_TREAT_NAME_POSTFIX_LEN;
     temp0 = 6 + HASEE_LONGEST_COMPLETE_PHRASE_LEN - temp2; // Spaces to insert
-    debug_values[0] = temp0;
     if (temp0 > 0 && temp0 < 7) {
         multi_vram_buffer_horz(cmap, temp0, NTADR_A(temp2,5));
     }
@@ -998,25 +995,36 @@ void handle_letter_collection(void) {
 void hasee_treat_movement(void) {
     for (x = 0; x < ONSCREEN_TREATS_MAXIMUM; ++x) {
         if (IS_ENEMY_ACTIVE(x)) {
-            // temp3 = ENEMY_DIRECTION(x);
-            // temp1 = hasee_leftright_movement_moving_lookup_table[temp3];
-            // temp0 = enemies_x[x] + temp1;
-            // enemies_x[x] = temp0;
-            __asm__("ldy %v", x);
-            __asm__("lda %v,y", enemies_flags);
-            __asm__("and #%b", 0b00000001);
-            __asm__("tay");
-            __asm__("lda %v,y", hasee_leftright_movement_moving_lookup_table);
-            __asm__("ldy %v", x);
-            __asm__("clc");
-            __asm__("adc %v,y", enemies_x);
-            __asm__("sta %v,y", enemies_x);
+            // How many pixels to move at once:
+            // enemies_extra2[x] is the level that this doughnutfruit spawned in at (0...255)
+            temp1 = enemies_extra2[x] & 0b111; // 0...7 indexes for hasee_leftright_subpixel_movement_lut
+            
+            debug_values[0] = temp1;
+
+            low_byte(temp6) = hasee_leftright_subpixel_movement_lut[temp1];
+            high_byte(temp6) = (enemies_extra2[x] >> 3) + 1; // 1...33 pixels per frame
+            
+            debug_values[1] = low_byte(temp6);
+            debug_values[2] = high_byte(temp6);
+
+            low_byte(temp5) = enemies_extra[x];
+            high_byte(temp5) = enemies_x[x];
+
+            if (ENEMY_DIRECTION(x)) {
+                temp5 += temp6;
+            } else {
+                temp5 -= temp6;
+            }
+
+            enemies_x[x] = high_byte(temp5);
+            enemies_extra[x] = low_byte(temp5);
 
             // Deactivate when going offscreen
             temp0 = enemies_timer[x] + 1;
             enemies_timer[x] = temp0;
-            temp1 = enemies_x[x];
-            if (temp0 > 20 && temp1 >= 0xF8) { // enemies_x will underflow eventually even when going left, so:
+            if (temp0 > 20 && high_byte(temp5) >= 0xF8) { // enemies_x will underflow eventually even when going left, so:
+                // In theory this means that at very high levels you may have doughnutfruits that don't despawn
+                // I think this is probably not worth worrying about
                 DEACTIVATE_ENEMY(x);
                 temp0 = enemies_type[x];
                 if (temp0 <= TREAT_MACCY) {                
