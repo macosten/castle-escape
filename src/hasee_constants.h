@@ -150,4 +150,6 @@
 #define HASEE_TIME_BONUS 20
 #define HASEE_SUPER_TIME_BONUS 40
 
+#define HASEE_IS_MULTIPLAYER_GAME (menu_selection != 0)
+
 #endif

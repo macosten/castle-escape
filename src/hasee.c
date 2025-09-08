@@ -45,6 +45,7 @@ ZEROPAGE_EXTERN(unsigned char, menu);
 ZEROPAGE_EXTERN(unsigned char, shuffle_offset);
 ZEROPAGE_EXTERN(unsigned char, temp_x);
 ZEROPAGE_EXTERN(unsigned char, temp_y);
+ZEROPAGE_EXTERN(unsigned char, menu_selection);
 ZEROPAGE_ARRAY_EXTERN(unsigned char, debug_values, 4);
 // Aliased values... I can use the same addresses with different names this way, with only a medium jank factor
 ZEROPAGE_EXTERN(unsigned char, eject_L); // Just don't use this original name...
@@ -149,6 +150,7 @@ void calculate_next_treat(void);
 void hasee_sprite_collisions(void);
 void hasee_singleplayer_movement(void);
 void hasee_multiplayer_movement(void);
+void hasee_allmodes_movement(void);
 void hasee_draw_sprites(void);
 void hasee_draw_hasees(void);
 void hasee_draw_goodies(void);
@@ -262,8 +264,13 @@ void game_hasee_bounce(void) {
 
     // If not paused:
     set_prg_bank(HASEE_MOVEMENT_CODE_BANK);
-    hasee_singleplayer_movement();
 
+    if (HASEE_IS_MULTIPLAYER_GAME) {
+        hasee_multiplayer_movement();
+    } else {
+        hasee_singleplayer_movement();
+    }
+    
     hasee_treat_movement();
 
     // Even if paused:
@@ -343,7 +350,10 @@ void game_hasee_bounce(void) {
         if (game_frame_timer) { --game_frame_timer; }
         if (!HASEE_DID_BUFFER_MESSAGE_THIS_FRAME && game_frame_timer == 1) {
             hasee_buffer_game_over_message();
-            if (score > hasee_1p_high_score) {
+            if (HASEE_IS_MULTIPLAYER_GAME && score > hasee_2p_high_score) {
+                hasee_2p_high_score = score;
+                update_checksum();
+            } else if (!HASEE_IS_MULTIPLAYER_GAME && score > hasee_1p_high_score) {
                 hasee_1p_high_score = score;
                 update_checksum();
             }
@@ -476,7 +486,6 @@ void hasee_update_time(void) {
 void hasee_singleplayer_movement(void) {
     temp0 = pad1; // Orange Hasee's Pad (Both the same in single-player)
     temp1 = pad1; // Purple Hasee's Pad
-    // If the game is over, the pads should all get overwritten by 0s
     ORANGE_HASEE_SET_STANDING();
     PURPLE_HASEE_SET_STANDING();
     if (game_seconds_timer > 0) {
@@ -496,11 +505,46 @@ void hasee_singleplayer_movement(void) {
             old_y = player1.y;
         }
     } else {
+        // If the game is over, the pads should all get overwritten by 0s so we don't move on button input
         temp0 = 0;
         temp1 = 0;
         temp2 = 0;
         temp3 = 0;
     }
+    hasee_allmodes_movement();
+}
+
+void hasee_multiplayer_movement(void) {
+    temp0 = pad2; // Let both players move left/right regardless of active player when multiplayer
+    temp1 = pad1;
+    ORANGE_HASEE_SET_STANDING();
+    PURPLE_HASEE_SET_STANDING();
+    if (game_seconds_timer > 0) {
+        orange_hasee_lr_movement();
+        purple_hasee_lr_movement();
+        if (ACTIVE_PLAYER) {
+            temp2 = temp0;
+            temp3 = pad2_new;
+            old_x = player2.x;
+            old_velocity_y = player2.velocity_y;
+            old_y = player2.y;
+        } else {
+            temp2 = temp1;
+            temp3 = pad1_new;
+            old_x = player1.x;
+            old_velocity_y = player1.velocity_y;
+            old_y = player1.y;
+        }
+    } else {
+        temp0 = 0;
+        temp1 = 0;
+        temp2 = 0;
+        temp3 = 0;
+    }
+    hasee_allmodes_movement();
+}
+
+void hasee_allmodes_movement(void) {
     temp4 = 0; // We will set this if the high_byte playerX.y should be set, and velocity should be zeroed out. 
     if (ACTIVE_PLAYER_ON_BRANCH) {
         if(temp2 & PAD_A) { // Possible that this is immediately triggered at the start of the game because it's seeing the 
@@ -573,35 +617,6 @@ void hasee_singleplayer_movement(void) {
     }
 
     // Process treat collisions here
-    hitbox.x = high_byte(old_x);
-    hitbox.y = high_byte(old_y);
-}
-
-void hasee_multiplayer_movement(void) {
-    temp0 = pad2; // Let both players move left/right at all times when multiplayer
-    temp1 = pad1;
-    if (ACTIVE_PLAYER) {
-        temp2 = temp0;
-        temp3 = pad2_new;
-    } else {
-        temp2 = temp1;
-        temp3 = pad1_new;
-    }
-
-    ORANGE_HASEE_SET_STANDING();
-    orange_hasee_lr_movement();
-
-    PURPLE_HASEE_SET_STANDING();
-    purple_hasee_lr_movement();
-
-    if (ACTIVE_PLAYER) {
-        old_x = player2.x;
-        old_velocity_y = player2.velocity_y;
-    } else {
-        old_x = player1.x;
-        old_velocity_y = player1.velocity_y;
-    }
-
     hitbox.x = high_byte(old_x);
     hitbox.y = high_byte(old_y);
 }
@@ -999,14 +1014,9 @@ void hasee_treat_movement(void) {
             // enemies_extra2[x] is the level that this doughnutfruit spawned in at (0...255)
             temp1 = enemies_extra2[x] & 0b111; // 0...7 indexes for hasee_leftright_subpixel_movement_lut
             
-            debug_values[0] = temp1;
-
             low_byte(temp6) = hasee_leftright_subpixel_movement_lut[temp1];
             high_byte(temp6) = (enemies_extra2[x] >> 3) + 1; // 1...33 pixels per frame
             
-            debug_values[1] = low_byte(temp6);
-            debug_values[2] = high_byte(temp6);
-
             low_byte(temp5) = enemies_extra[x];
             high_byte(temp5) = enemies_x[x];
 
