@@ -21,6 +21,9 @@
 #define MODE_LEVEL_COMPLETE 4 
 #define MODE_GAME_SHOWING_TEXT 5
 
+#define GAME_CASTLE_ESCAPE 0
+#define GAME_HASEE_BOUNCE 1
+
 // Should the game continue to the next level, or exit the game when we finish this?
 #define LEVEL_UP_BEHAVIOR_EXIT 0
 #define LEVEL_UP_BEHAVIOR_CONTINUE 1 
@@ -32,11 +35,6 @@
 // Or should this be the number of frames which we should be able to fly for?
 
 #define TITLE_SCREEN_LENGTH 120 // ~2 seconds on NTSC machines.
-
-// ===
-// Constants for songs or music.
-#define SONGS 0 // No songs yet. I might look into FamiStudio...
-
 
 #define VALRIGARD_WIDTH 11
 #define VALRIGARD_HEIGHT 13
@@ -66,6 +64,7 @@
 #define SFX_BUMP 5
 #define SFX_ACID_DROP 6
 #define SFX_SMACK 7
+#define SFX_JUMP 8
 
 // ===
 // Constants for songs/their names.
@@ -75,7 +74,14 @@
 #define BOSS_SONG 3
 #define DEATH_SONG 4
 #define LEVEL_BEGIN_SONG 5
+#define LEVEL_SONG_UNUSED 6
+#define ICE_CREAM_MACHINE_SONG 7
+#define HASEE_BOUNCE_SONG 8
 
 #define LEVEL_TRACK_COUNT 2
+
+// ===
+// Constants for samples. See music.s for sample listing (and add 1 to the stated values).
+#define SAMPLE_YAY 1
 
 #endif

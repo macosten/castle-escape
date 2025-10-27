@@ -305,9 +305,9 @@ L008C:	rts
 .segment	"CODE"
 
 ;
-; set_prg_bank(0);
+; set_prg_bank(2);
 ;
-	lda     #$00
+	lda     #$02
 	jsr     _set_prg_bank
 ;
 ; temp0 = dbox_current_string[dbox_char_index];
@@ -431,9 +431,9 @@ L00BD:	rts
 .segment	"CODE"
 
 ;
-; set_prg_bank(0);
+; set_prg_bank(2);
 ;
-	lda     #$00
+	lda     #$02
 	jsr     _set_prg_bank
 ;
 ; if (pad1_new) {

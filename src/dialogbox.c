@@ -156,7 +156,7 @@ void dbox_draw_box(void) {
 void dbox_draw_text(void) {
 	// Ensure the correct bank is selected.
 	// In the future, dboxdata should hold what bank it's in (?).
-	set_prg_bank(0);
+	set_prg_bank(2);
 
 	// Strings no more than 255 characters long.
 	temp0 = dbox_current_string[dbox_char_index];
@@ -197,7 +197,7 @@ void dbox_draw_text(void) {
 void dbox_await_input(void) {
 	// Ensure the correct bank is selected.
 	// In the future, dboxdata should hold what bank it's in (?).
-	set_prg_bank(0);
+	set_prg_bank(2);
 
 	if (pad1_new) {
 		// Advance the status of the dialog box.

@@ -16,6 +16,8 @@
 // MARK: Zero Page Globals
 unsigned char pad1; // Stores the state of the game controller.
 unsigned char pad1_new; // Stores the state of the game controller.
+unsigned char pad2;
+unsigned char pad2_new;
 unsigned char collision; // Used in collision routines.
 unsigned char collision_L;
 unsigned char collision_R;
@@ -89,7 +91,7 @@ unsigned char energy;
 
 // Max score of 65535. That feels like it should be enough, right?
 unsigned int score;
-unsigned char enemy_score;
+unsigned char enemy_score; // Unused??
 
 // 255 frames / 60 fps (NTSC) = 4.25 seconds
 // Should we also take PAL machines into account and try to change frame counts in these cases?
@@ -101,10 +103,10 @@ unsigned char nt_max; // upper bound (not included) in the range of nametables w
 unsigned char nt_current; // The nametable Valrigard is currently in. This should help us determine what other nametable to load when scrolling...?
 
 Player valrigard; // A width of 12 makes Valrigard's hitbox a bit more forgiving. It also happens to match up with his nose.
+Player player2; // For games where more than one player or player-controller character may appear. 
 Hitbox hitbox; // Functionally, a parameter for bg_collision (except using the C stack is not preferable to using a global, generally speaking)
-// I renamed nesdoug's "Generic" to "Hitbox" to remind me of what purpose it serves.
-
 Hitbox hitbox2; // This hitbox is used for enemies.
+// I renamed nesdoug's "Generic" to "Hitbox" to remind me of what purpose it serves.
 
 unsigned char shuffle_offset;
 unsigned char shuffle_maximum;
@@ -119,6 +121,7 @@ signed char conveyor_delta;
 
 unsigned char menu; // Used to keep track of which menu the game is displaying, or was previously displaying.
 unsigned char menu_selection; // Used to keep track of what item is selected in a menu.
+unsigned char menu_selection_count; // The number of options in the current menu. 
 
 unsigned int tile_clear_queue[4]; // Each element is one result of get_ppu_addr
 unsigned char tile_clear_to_type_queue[4]; // This is the tile ID to replace the cleared tile with.
@@ -141,7 +144,11 @@ unsigned char lowest_enemy_index;
 
 unsigned char level_index_backup; // For when we need to remember the previous level due to being in a bonus level
 
+unsigned char active_game; // Keep track of which game is active so we can do the right thing in the top-level main function
+
 // ~?? zp bytes left? (see ZP_LAST in labels.txt)
+
+unsigned char debug_values[4]; // Just exist to be watched in memory
 
 #pragma bss-name(pop)
 

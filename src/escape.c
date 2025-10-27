@@ -19,6 +19,7 @@
 
 #include "player_macros.h"
 #include "enemy_macros.h"
+#include "other_macros.h"
 #include "settings_macros.h"
 
 #include "tilemaps/compressed_welcome_screen.h"
@@ -32,6 +33,7 @@
 
 #include "titlescreen.h" // Title screen and associated data+functions
 #include "menu_screens.h" // compressed menu data
+#include "menu_screens_constants.h" // menu screen constant definitions
 
 #include "checksum.h"
 
@@ -125,8 +127,12 @@ unsigned char cmap[240 * CMAP_COUNT];
 unsigned int checksum; // A checksum can detect if the saved data is valid.
 unsigned int level_high_scores[256];
 unsigned int gauntlet_high_score;
+unsigned int hasee_1p_high_score;
+unsigned int hasee_2p_high_score;
 
 unsigned char settings_memory[1];
+
+
 
 // We want to recalculate our checksum whenever we change any of these values, though.
 
@@ -139,7 +145,12 @@ const unsigned char * const cmaps[] = {cmap, cmap + 240, cmap+240*2, cmap+240*3,
 
 #pragma code-name ("CODE")
 
+void game_castle_escape(void);
+extern void game_hasee_bounce(void);
+
 // Drawing functions.
+
+// Must call `set_prg_bank(METASPRITE_BANK)` before calling this.
 void draw_sprites(void);
 
 void draw_player(void);
@@ -195,6 +206,7 @@ void collision_with_unkillable_unslashable(void);
 void collision_with_splyke(void);
 extern void collision_with_boss(void);
 
+// Must call `set_prg_bank(2)` before calling this.
 void enemy_movement(void);
 
 void korbat_ai(void);
@@ -214,18 +226,24 @@ void death_effect_timer_ai(void);
 void fire_at_target(void);
 
 // Menu functions.
-void switch_menu();
+void switch_menu(void);
+void simple_menu_shared_behavior(void);
 
 void menu_level_select(void);
 void menu_game_type_select(void);
 void menu_about_screen(void);
 void menu_game_complete_screen(void);
 void menu_settings(void);
+void menu_more_games_menu(void);
+void menu_hasee_bounce_menu(void);
 
 void load_level_selector(void);
+void load_game_type_select(void);
 void load_about_screen(void);
 void load_game_complete_screen(void);
 void load_settings_menu(void);
+void load_more_games_menu(void);
+void load_hasee_bounce_menu(void);
 
 // Functions in other files.
 extern void dialog_box_handler(void);
@@ -241,6 +259,8 @@ extern void boss_ai_dying(void);
 extern void draw_boss_flying(void);
 extern void draw_boss_idle(void);
 extern void draw_boss_dying(void);
+
+extern void begin_hasee_bounce(void);
 
 extern unsigned char const * titlescreen;
 
@@ -272,15 +292,19 @@ const void (* const menu_logic_functions[])(void) = {
     menu_about_screen,
     menu_game_complete_screen,
     menu_settings,
+    menu_more_games_menu,
+    menu_hasee_bounce_menu,
 };
 
 // If a menu needs something extra/special to be done before showing it, it'll do so in one of these functions.
 const void (* const menu_load_functions[])(void) = {
-    empty_function, // If no special action needs to be taken
+    load_game_type_select,
     load_level_selector,
     load_about_screen,
     load_game_complete_screen,
     load_settings_menu,
+    load_more_games_menu,
+    load_hasee_bounce_menu,
 };
 
 const unsigned char * const menu_compressed_data[] = {
@@ -288,15 +312,24 @@ const unsigned char * const menu_compressed_data[] = {
     level_select_screen,
     about_screen,
     game_complete_screen,
-    settings_screen,
+    settings_screen, // For some reason, growing this to exactly 6 entries causes glitchy scrolling in FCEUX...
+    more_games_screen,
+    hasee_menu_screen, // Having 7 here (or really, I think, adding 2 ROM bytes around here) fixes it. Maybe it has something to do with crossing a page boundary messing with some some timing somewhere?? Might be worth investigating if it causes bigger problems later...
 };
 
 const unsigned char const eligible_level_music[] = { LEVEL_SONG_SNEAKY, LEVEL_SONG_PIZZICATO };
+
+const void (* const game_functions[])(void) = {
+    game_castle_escape,
+    game_hasee_bounce
+};
 
 void main (void) {
 
     ppu_off(); // screen off
     
+    active_game = GAME_CASTLE_ESCAPE;
+
     // use the second set of tiles for sprites
     // both bg and sprites are set to 0 by default
     // Set the swappable bank like this:
@@ -328,7 +361,6 @@ void main (void) {
     pal_spr(palette_sp);
 
     // ppu_on_all(); // turn on screen
-
     music_play(MENU_SONG);
     set_music_speed(5);
 
@@ -337,7 +369,6 @@ void main (void) {
         while (game_mode == MODE_MENU) { 
             ppu_wait_nmi();
             // set_music_speed, etc
-
             // Clear the VRAM buffer if it gets used for anything...
             clear_vram_buffer();
             oam_clear(); // ...and the OAM, in case we use a sprite.
@@ -346,141 +377,10 @@ void main (void) {
             AsmCallFunctionAtPtrOffsetByIndexVar(menu_logic_functions, menu);
         }
 
-        // The game is active and we're drawing frames.
+        // A game is active and we're drawing frames.
         while (game_mode == MODE_GAME) {
-
-            // Reset anything that's supposed to be reset at the start of a frame.
-            conveyor_delta = 0;
-            RESET_PLAYER_FLAGS_1_START_FRAME();
-            RESET_PLAYER_FLAGS_2_START_FRAME();
-
-            pad1 = pad_poll(0); // read the first controller
-            pad1_new = get_pad_new(0); 
-            // pad1 contains buttons that are currently pressed.
-            // pad1_new contains newly-pressed buttons - they won't be designated here in the next frame.
-            // It's useful for times we don't want button holds to retrigger something (say, pausing and unpausing).
-
-            ppu_wait_nmi(); // wait till beginning of the frame
-            // the sprites are pushed from a buffer to the OAM during nmi
-
-            // If we need to, we can se the chr bank every frame...
-            //set_chr_bank_0(0);
-
-            // Handle pausing/unpausing.
-            if (pad1_new & PAD_START && !STATUS_DEAD) {
-                TOGGLE_GAME_PAUSED();
-                sfx_play(SFX_MENU_BEEP, 0);
-            }
-            
-            clear_vram_buffer();
-
-            // Move the player.
-            if (!GAME_PAUSED) { movement(); }
-            
-            // Check to see what's on-screen
-            check_spr_objects();
-            
-            // Do the following only if we're not dead:
-            if (!STATUS_DEAD) { 
-                // Check the status of the sword swing.
-                swing_sword();
-                // Check sprite collisions
-                sprite_collisions();
-            }
-
-            // Move enemies
-            if (!GAME_PAUSED) { enemy_movement(); }
-
-            set_scroll_y(scroll_y);
-            
-            if (SCORE_CHANGED_THIS_FRAME) { convert_to_decimal(score); }
-            
-            draw_sprites();
-            
-            // Draw tiles on the edge of the screen.
-            if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
-                //draw_screen_D();
-                add_scroll_y(pseudo_scroll_y, 0x20, scroll_y);
-                pseudo_scroll_y += 0xef; 
-                // This 0xef (239, which is the height of the screen minus one) might possibly want to be either a 0xf0 (240) or a 
-                // 0x100 (1 full nametable compensating for the fact that the last 16 values are masked off by add_scroll_y)
-            }  else {
-                //draw_screen_U();
-                pseudo_scroll_y = sub_scroll_y(0x20, scroll_y);
-            }
-
-            temp1 = high_byte(pseudo_scroll_y);
-            AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
-            set_data_pointer(temppointer); // Should this value be clamped to the number of cmaps?
-
-            draw_screen_sub();
-            // Done drawing tiles on the edge of the screen.
-
-            handle_tile_clear_queue();
-
-            // TODO: Make this a flag instead of a separate game mode.
-            if (game_mode == MODE_LEVEL_COMPLETE) {
-                // True if this was a bonus level:
-                advanced_conditional = level_index >= (NUMBER_OF_LEVELS - NUMBER_OF_BONUS_LEVELS);
-
-                // Check for a new high score.
-                AsmSet2ByteFromPtrAtIndexVar(temp5, level_high_scores, level_index);
-                temp6 = score - previous_score;
-                if (temp5 < temp6) {
-                    if (advanced_conditional && level_index_backup != 0xff) {
-                        level_high_scores[level_index_backup] = temp6 + previous_score;
-                    } else {
-                        level_high_scores[level_index] = temp6;
-                    }
-                    update_checksum();
-                }
-
-                // Figure out what to do next based on the selected game mode and if we're supposed to go to a bonus level.
-                if (SHOULD_GO_TO_BONUS_LEVEL) {
-                    level_index_backup = level_index;
-                    level_index = NUMBER_OF_LEVELS - 1;
-                    level_index -= level_index_backup & 0x1; // Bitmask; change this if we add more bonus levels
-                    previous_score = score;
-                    begin_level();
-                } else {
-                    if (advanced_conditional && level_index_backup != 0xff) {
-                        level_index = level_index_backup;
-                        level_index_backup = 0xff;
-                    }
-                    if (game_level_advance_behavior == LEVEL_UP_BEHAVIOR_EXIT || level_index == NUMBER_OF_LEVELS - 1) {
-                        menu = MENU_COMPLETE_SCREEN;
-                        switch_menu();
-                    } else { // == LEVEL_UP_BEHAVIOR_CONTINUE and there are levels left
-                        // Next level
-                        level_index += 1;
-                        previous_score = score; // Bank the score
-                        begin_level();
-                    }
-                }
-
-            } 
-            else if (STATUS_DEAD && high_byte(valrigard.y) == high_byte(old_y)) {
-                // Whenever we stop moving down (this should still work if we drop off the bottom of the screen):
-                // Frame 1 of this, play whatever death music we end up getting.
-                if (player_death_timer == 0) { music_play(DEATH_SONG); }
-                if (get_frame_count() & 1) { ++player_death_timer; }
-                // After that music ends after however many frames:
-                if (player_death_timer == 150) {
-                    score = previous_score; // Revert score to pre-death value
-                    begin_level(); // Restart this level.    
-                }
-            }
-
-            // Debug: clear death status.
-            if (pad1 & PAD_DOWN && STATUS_DEAD && SETTINGS_IS_DOWN_TO_REVIVE_ENABLED) {
-                SET_STATUS_ALIVE();
-                player_death_timer = 0;
-                music_play(game_music_track);
-            }
-
-            // debug:
-            //gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
-
+            // game_castle_escape();
+            AsmCallFunctionAtPtrOffsetByIndexVar(game_functions, active_game);
         }
 
         while (game_mode == MODE_GAME_SHOWING_TEXT) {
@@ -494,7 +394,7 @@ void main (void) {
             clear_vram_buffer();
 
             // No movement of any kind.
-
+            set_prg_bank(METASPRITE_BANK);
             draw_sprites();
 
             // And no screen-drawing (other than what the dialog box code does).
@@ -505,6 +405,145 @@ void main (void) {
         
     }
     
+}
+
+void game_castle_escape(void) {
+    // Reset anything that's supposed to be reset at the start of a frame.
+    conveyor_delta = 0;
+    RESET_PLAYER_FLAGS_1_START_FRAME();
+    RESET_PLAYER_FLAGS_2_START_FRAME();
+
+    pad1 = pad_poll(0); // read the first controller
+    pad1_new = get_pad_new(0); 
+    // pad1 contains buttons that are currently pressed.
+    // pad1_new contains newly-pressed buttons - they won't be designated here in the next frame.
+    // It's useful for times we don't want button holds to retrigger something (say, pausing and unpausing).
+
+    ppu_wait_nmi(); // wait till beginning of the frame
+    // the sprites are pushed from a buffer to the OAM during nmi
+
+    // If we need to, we can se the chr bank every frame...
+    //set_chr_bank_0(0);
+
+    // Handle pausing/unpausing.
+    if (pad1_new & PAD_START && !STATUS_DEAD) {
+        TOGGLE_GAME_PAUSED();
+        sfx_play(SFX_MENU_BEEP, 0);
+    }
+    
+    clear_vram_buffer();
+
+    // Move the player.
+    if (!GAME_PAUSED) { movement(); }
+    
+    // Check to see what's on-screen
+    check_spr_objects();
+    
+    // Do the following only if we're not dead:
+    if (!STATUS_DEAD && !GAME_PAUSED) { 
+        // Check the status of the sword swing.
+        swing_sword();
+        // Check sprite collisions
+        sprite_collisions();
+    }
+
+    // Move enemies
+    if (!GAME_PAUSED) {
+        set_prg_bank(2);
+        enemy_movement();
+    }
+
+    set_scroll_y(scroll_y);
+    
+    if (SCORE_CHANGED_THIS_FRAME) { convert_to_decimal(score); }
+    
+    // Ensure the metasprite bank is banked.
+    set_prg_bank(METASPRITE_BANK);
+    draw_sprites();
+    
+    // Draw tiles on the edge of the screen.
+    if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
+        //draw_screen_D();
+        add_scroll_y(pseudo_scroll_y, 0x20, scroll_y);
+        pseudo_scroll_y += 0xef; 
+        // This 0xef (239, which is the height of the screen minus one) might possibly want to be either a 0xf0 (240) or a 
+        // 0x100 (1 full nametable compensating for the fact that the last 16 values are masked off by add_scroll_y)
+    }  else {
+        //draw_screen_U();
+        pseudo_scroll_y = sub_scroll_y(0x20, scroll_y);
+    }
+
+    temp1 = high_byte(pseudo_scroll_y);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
+    set_data_pointer(temppointer); // Should this value be clamped to the number of cmaps?
+
+    draw_screen_sub();
+    // Done drawing tiles on the edge of the screen.
+
+    handle_tile_clear_queue();
+
+    // TODO: Make this a flag instead of a separate game mode.
+    if (game_mode == MODE_LEVEL_COMPLETE) {
+        // True if this was a bonus level:
+        advanced_conditional = level_index >= (NUMBER_OF_LEVELS - NUMBER_OF_BONUS_LEVELS);
+
+        // Check for a new high score.
+        AsmSet2ByteFromPtrAtIndexVar(temp5, level_high_scores, level_index);
+        temp6 = score - previous_score;
+        if (temp5 < temp6) {
+            if (advanced_conditional && level_index_backup != 0xff) {
+                level_high_scores[level_index_backup] = temp6 + previous_score;
+            } else {
+                level_high_scores[level_index] = temp6;
+            }
+            update_checksum();
+        }
+
+        // Figure out what to do next based on the selected game mode and if we're supposed to go to a bonus level.
+        if (SHOULD_GO_TO_BONUS_LEVEL) {
+            level_index_backup = level_index;
+            level_index = NUMBER_OF_LEVELS - 1;
+            level_index -= level_index_backup & 0x1; // Bitmask; change this if we add more bonus levels
+            previous_score = score;
+            begin_level();
+        } else {
+            if (advanced_conditional && level_index_backup != 0xff) {
+                level_index = level_index_backup;
+                level_index_backup = 0xff;
+            }
+            if (game_level_advance_behavior == LEVEL_UP_BEHAVIOR_EXIT || level_index == NUMBER_OF_LEVELS - 1) {
+                menu = MENU_COMPLETE_SCREEN;
+                switch_menu();
+            } else { // == LEVEL_UP_BEHAVIOR_CONTINUE and there are levels left
+                // Next level
+                level_index += 1;
+                previous_score = score; // Bank the score
+                begin_level();
+            }
+        }
+
+    } 
+    else if (STATUS_DEAD && high_byte(valrigard.y) == high_byte(old_y)) {
+        // Whenever we stop moving down (this should still work if we drop off the bottom of the screen):
+        // Frame 1 of this, play whatever death music we end up getting.
+        if (player_death_timer == 0) { music_play(DEATH_SONG); }
+        if (get_frame_count() & 1) { ++player_death_timer; }
+        // After that music ends after however many frames:
+        if (player_death_timer == 150) {
+            score = previous_score; // Revert score to pre-death value
+            begin_level(); // Restart this level.    
+        }
+    }
+
+    // Debug: clear death status.
+    if (pad1 & PAD_DOWN && STATUS_DEAD && SETTINGS_IS_DOWN_TO_REVIVE_ENABLED) {
+        SET_STATUS_ALIVE();
+        player_death_timer = 0;
+        music_play(game_music_track);
+    }
+
+    // debug:
+    // gray_line(); // The further down this renders, the fewer clock cycles were free this frame.
 }
 
 // In the literal sense, clear the screen. 
@@ -519,12 +558,6 @@ void clear_screen(void) {
     vram_fill(0,1024);
 }
 
-// Prints a string to the specified place. (Assumes the characters are correctly placed for ASCII.)
-#define put_str(adr, str) { \
-    address = adr;\
-    temppointer = str;\
-    put_str_sub();\
-}
 // Subroutine for put_str. This sort of "macro that calls a function" 
 // lets us pretend to use function parameters without actually using the (slow) stack.
 void put_str_sub(void) {
@@ -539,6 +572,7 @@ void put_str_sub(void) {
 
 void switch_menu(void) {
     // We always want to do these things before changing a menu:
+    ppu_wait_nmi();
     ppu_off();
     clear_screen();
 
@@ -549,6 +583,9 @@ void switch_menu(void) {
     game_mode = MODE_MENU; // Ensure the correct game mode is active.
     menu_selection = 0; // Just to make sure we don't accidentally point to an invalid menu item somehow.
 
+    // Zero out possible attribute table bytes in the cmap buffer (not all menu data block write to it).
+    memfill(cmap + (32 * 30), 0, (32 * 2));
+
     // Decode the menu visuals from libLZG'd data in the Menu Data Bank to WRAM.
 
     set_prg_bank(MENU_DATA_BANK);
@@ -557,7 +594,7 @@ void switch_menu(void) {
     LZG_decode(temppointer, cmap);
 
     // Write the buffer to VRAM.
-    vram_write(cmap, (32*30));
+    vram_write(cmap, (32*32));
 
     // Do a menu-specific thing.
     AsmCallFunctionAtPtrOffsetByIndexVar(menu_load_functions, menu);
@@ -567,6 +604,39 @@ void switch_menu(void) {
 }
 
 #define MENU_SELECTOR_SPRITE 0x10
+
+/** 
+* Ensure menu_selection_count is set as expected (in the menu's load function) before calling this function.
+* Also ensure temppointer is set to the cursor X position lookup table and temppointer1 is set to the Y position lookup table.
+*/
+void simple_menu_shared_behavior(void) {
+    // Listen for desired inputs.
+    pad1 = pad_poll(0); // read the first controller
+    pad1_new = get_pad_new(0);
+
+    if (pad1_new & PAD_DOWN) {
+        ++menu_selection;
+        if (menu_selection == menu_selection_count) {  // Wrap around
+            menu_selection = 0;
+        }
+    }
+
+    if (pad1_new & PAD_UP) {
+        if (menu_selection != 0) {
+            --menu_selection;
+        } else {
+            menu_selection = menu_selection_count - 1;
+        }
+    }
+
+    if (pad1_new & (PAD_UP | PAD_DOWN | PAD_A)) {
+        // Code shared between what we'd do with any supported button press.
+        sfx_play(SFX_MENU_BEEP, 0);
+    }
+
+    // Show the cursor.
+    oam_spr(temppointer[menu_selection], temppointer1[menu_selection], 0x10, 0);
+}
 
 // Menu -- Level Select.
 
@@ -686,43 +756,36 @@ const unsigned char const game_type_select_menu_links[] = {
     MENU_GAME_SELECT,
     MENU_LEVEL_SELECT,
     MENU_SETTINGS,
+    MENU_MORE_GAMES,
     MENU_ABOUT_SCREEN,
 };
 
 const unsigned char const game_type_select_menu_selector_x[] = {
-    10 * 8 + 4,
+    6 * 8 + 4,
     8 * 8 + 4,
     10 * 8 + 4,
+    9 * 8 + 4,
     10 * 8 + 4,
 };
 
 const unsigned char const game_type_select_menu_selector_y[] = {
+    11 * 8 - 1,
     13 * 8 - 1,
     15 * 8 - 1,
     17 * 8 - 1,
     19 * 8 - 1,
 };
 
-#define GAME_TYPE_MENU_OPTIONS 4
+#define GAME_TYPE_MENU_OPTIONS 5
+
+void load_game_type_select(void) {
+    menu_selection_count = GAME_TYPE_MENU_OPTIONS;
+    temppointer = game_type_select_menu_selector_x;
+    temppointer1 = game_type_select_menu_selector_y;
+}
+
 void menu_game_type_select(void) {
-    // Listen for desired inputs.
-    pad1 = pad_poll(0); // read the first controller
-    pad1_new = get_pad_new(0);
-
-    if (pad1_new & PAD_DOWN) {
-        ++menu_selection;
-        if (menu_selection == GAME_TYPE_MENU_OPTIONS) {  // Wrap around
-            menu_selection = 0;
-        }
-    }
-
-    if (pad1_new & PAD_UP) {
-        if (menu_selection != 0) {
-            --menu_selection;
-        } else {
-            menu_selection = GAME_TYPE_MENU_OPTIONS - 1;
-        }
-    }
+    simple_menu_shared_behavior();
 
     if (pad1_new & PAD_A) {
         switch (menu_selection) {
@@ -740,15 +803,6 @@ void menu_game_type_select(void) {
                 return;
         }
     }
-
-    if (pad1_new & (PAD_UP | PAD_DOWN | PAD_A)) {
-        // Code shared between what we'd do with any supported button press.
-        sfx_play(SFX_MENU_BEEP, 0);
-    }
-
-    // Show the cursor.
-    oam_spr(game_type_select_menu_selector_x[menu_selection], game_type_select_menu_selector_y[menu_selection], 0x10, 0);
-
 }
 
 // Menu -- About.
@@ -795,7 +849,10 @@ void menu_game_complete_screen(void) {
 
 // Menu -- Settings
 
-const unsigned char const settings_menu_selector_x = 5 * 8 + 4; // in pixels
+const unsigned char const settings_menu_selector_x[] = { // in pixels
+     5 * 8 + 4,
+     5 * 8 + 4,
+};
 const unsigned char const settings_menu_toggle_text_x = 25; // in tiles
 
 const unsigned char const settings_menu_selector_y[] = { // in pixels, not tiles
@@ -823,32 +880,14 @@ void load_settings_menu(void) {
         temppointer = temp2 ? string_on : string_off;
         put_str(temp5, temppointer);
     }
+
+    menu_selection_count = SETTINGS_OPTIONS;
+    temppointer = settings_menu_selector_x;
+    temppointer1 = settings_menu_selector_y;
 }
 
-
 void menu_settings(void) {
-    pad1 = pad_poll(0);
-    pad1_new = get_pad_new(0);
-
-    if (pad1_new & (PAD_UP | PAD_DOWN | PAD_A | PAD_B)) {
-        // Code shared between what we'd do with any supported button press.
-        sfx_play(SFX_MENU_BEEP, 0);
-    }
-
-    if (pad1_new & PAD_DOWN) {
-        ++menu_selection;
-        if (menu_selection == SETTINGS_OPTIONS) {  // Wrap around
-            menu_selection = 0;
-        }
-    }
-
-    if (pad1_new & PAD_UP) {
-        if (menu_selection != 0) {
-            --menu_selection;
-        } else {
-            menu_selection = SETTINGS_OPTIONS - 1;
-        }
-    }
+    simple_menu_shared_behavior();
 
     if (pad1_new & PAD_A) {
         switch (menu_selection) {
@@ -869,6 +908,7 @@ void menu_settings(void) {
                 temp5 = NTADR_A(settings_menu_toggle_text_x, settings_menu_text_y[menu_selection]);
                 temppointer = temp0 ? string_on : string_off;
                 multi_vram_buffer_horz(temppointer, 3, temp5);
+                temppointer = settings_menu_selector_x;
                 break;
         }
     }
@@ -876,12 +916,114 @@ void menu_settings(void) {
     if (pad1_new & PAD_B) { // Back to main menu
         menu = MENU_GAME_SELECT;
         switch_menu();
+    }
+}
+
+// Menu -- More Games
+
+#define MORE_GAMES_OPTIONS 1
+
+const unsigned char const more_games_menu_links[] = { 
+    MENU_HASEE_BOUNCE,
+};
+
+const unsigned char const more_games_menu_selector_x[] = { // in pixels
+    8 * 8 + 4,
+};
+
+const unsigned char const more_games_menu_selector_y[] = { // in pixels
+    9 * 8 - 1,
+};
+
+void load_more_games_menu(void) {
+    menu_selection_count = MORE_GAMES_OPTIONS;
+    temppointer = more_games_menu_selector_x;
+    temppointer1 = more_games_menu_selector_y;
+}
+
+void menu_more_games_menu(void) {
+    simple_menu_shared_behavior();
+
+    if (pad1_new & PAD_A) {
+        menu = more_games_menu_links[menu_selection];
+        pal_fade_to(4, 0);
+        switch_menu();
         return;
     }
 
-    // Show the cursor.
-    oam_spr(settings_menu_selector_x, settings_menu_selector_y[menu_selection], 0x10, 0);
+    if (pad1_new & PAD_B) { // Back to main menu
+        menu = MENU_GAME_SELECT;
+        switch_menu();
+    }
 }
+
+// Menu -- Hasee Bounce
+
+#define HASEE_BOUNCE_OPTIONS 2
+
+const unsigned char const hasee_bounce_menu_selector_x[] = {
+    10 * 8 + 4,
+    10 * 8 + 4,
+};
+
+const unsigned char const hasee_bounce_menu_selector_y[] = {
+    12 * 8 - 1,
+    14 * 8 - 1,
+};
+
+extern unsigned char const hasee_palette_sp[];
+extern unsigned char const hasee_palette_bg[];
+
+void load_hasee_bounce_menu(void) {
+    menu_selection_count = HASEE_BOUNCE_OPTIONS;
+    temppointer = hasee_bounce_menu_selector_x;
+    temppointer1 = hasee_bounce_menu_selector_y;
+    active_game = GAME_HASEE_BOUNCE;
+    // Change to Hasee Bounce graphics
+    pal_fade_to(4, 0);
+    set_prg_bank(1);
+    set_chr_bank_0(4);
+    set_chr_bank_1(5);
+    pal_bg(hasee_palette_bg);
+    pal_spr(hasee_palette_sp);
+    // Load high scores
+    convert_to_decimal(hasee_1p_high_score);
+    prepare_score_string();
+    multi_vram_buffer_horz(score_string, 5, NTADR_A(16, 3));
+
+    convert_to_decimal(hasee_2p_high_score);
+    prepare_score_string();
+    multi_vram_buffer_horz(score_string, 5, NTADR_A(16, 4));
+    
+    pal_bright(4);
+    set_scroll_x(8); // Center the off-centered play area...
+}
+
+void menu_hasee_bounce_menu(void) {
+    // PRG bank must be 1 (HASEE_MOVEMENT_CODE_BANK)
+    simple_menu_shared_behavior();
+
+    if (pad1_new & PAD_A) {
+        begin_hasee_bounce();
+        return;
+    }
+
+    if (pad1_new & PAD_B) { // Back to main menu
+        menu = MENU_MORE_GAMES;
+        active_game = GAME_CASTLE_ESCAPE;
+        // Change back to EfMC graphics
+        pal_fade_to(4, 0);
+        set_chr_bank_0(0);
+        set_chr_bank_1(1);
+        pal_bg(palette_bg);
+        pal_spr(palette_sp);
+        set_scroll_x(0);
+        switch_menu();
+        pal_bright(4);
+    }
+}
+
+// End of menus -- Castle Escape gameplay below here
 
 void load_level_welcome_screen(void) {
     ppu_off();
@@ -1209,6 +1351,8 @@ void calculate_shuffle_array(void) {
 
 // Metasprite Bank: Bank 5
 #pragma rodata-name(push, "BANK5")
+#pragma code-name(push, "BANK5")
+// Let's put all the drawing functions+other data in Bank 5 with the metasprites
 // A lookup table for enemy draw functions.
 const void (* const draw_func_pointers[])(void) = {
     empty_function,   // 0 - ENEMY_NONE;
@@ -1227,12 +1371,9 @@ const void (* const draw_func_pointers[])(void) = {
     draw_splyke_death_effect, // 13 - ENEMY_SPLYKE_DEATH_EFFECT;
     draw_floating_numbers_effect, // 14 - ENEMY_FLOATING_NUMBERS_EFFECT;
 };
-#pragma rodata-name(pop)
 
+// set_prg_bank(METASPRITE_BANK) must be called before calling this function.
 void draw_sprites(void) {
-    // Ensure the metasprite bank is banked.
-    set_prg_bank(METASPRITE_BANK);
-
     // clear all sprites from sprite buffer
     oam_clear();
 
@@ -1339,9 +1480,6 @@ void draw_sprites(void) {
 
 }
 
-// Let's put all the drawing functions+other data in Bank 5 with the metasprites
-#pragma rodata-name(push, "BANK5")
-#pragma code-name(push, "BANK5")
 void draw_player(void) {
 
     // I'm less worried about flattening (into one lookup table)/optimizing Valrigard's sprites
@@ -2408,6 +2546,8 @@ const void (* const ai_pointers[])(void) = {
     death_effect_timer_ai, // 14 - ENEMY_FLOATING_NUMBERS_EFFECT;
 };
 
+#pragma code-name(push, "BANK2")
+
 // Enemy AI.
 void enemy_movement(void) {
     // This one's a bit of an uncharted realm. 
@@ -2457,7 +2597,6 @@ void enemy_movement(void) {
             AsmCallFunctionAtPtrOffsetByIndexVar(ai_pointers, temp1);
         }
     }
-
 }
 
 // I reordered these to be listed in the order in which they were implemented.
@@ -3218,3 +3357,5 @@ void death_effect_timer_ai(void) {
         enemies_flags[x] = 0;
     }
 }
+
+#pragma code-name(pop)

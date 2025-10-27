@@ -20,7 +20,7 @@
 
 #define IS_ENEMY_ACTIVE(index) (enemies_flags[index] & 0b10000000) // Test if high bit is set.
 
-#define GET_ENEMY_TYPE(index) (enemies_type[x])
+#define GET_ENEMY_TYPE(x) (enemies_type[x])
 
 #define ENEMY_SET_DIRECTION_LEFT(index) {\
    // enemies_flags[index] &= 0b11111110;\

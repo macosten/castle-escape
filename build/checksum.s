@@ -19,6 +19,8 @@
 	.import		_checksum
 	.import		_level_high_scores
 	.import		_gauntlet_high_score
+	.import		_hasee_1p_high_score
+	.import		_hasee_2p_high_score
 	.import		_settings_memory
 
 ; ---------------------------------------------------------------
@@ -39,6 +41,26 @@
 	lda     _gauntlet_high_score
 	sta     _temp5
 ;
+; temp5 += hasee_1p_high_score;
+;
+	lda     _hasee_1p_high_score
+	clc
+	adc     _temp5
+	sta     _temp5
+	lda     _hasee_1p_high_score+1
+	adc     _temp5+1
+	sta     _temp5+1
+;
+; temp5 += hasee_2p_high_score;
+;
+	lda     _hasee_2p_high_score
+	clc
+	adc     _temp5
+	sta     _temp5
+	lda     _hasee_2p_high_score+1
+	adc     _temp5+1
+	sta     _temp5+1
+;
 ; for (temp0 = 0; ; ++temp0) {
 ;
 	lda     #$00
@@ -47,12 +69,12 @@
 ; temp5 += level_high_scores[temp0];
 ;
 	tax
-L003C:	lda     _temp0
+L0044:	lda     _temp0
 	asl     a
-	bcc     L003B
+	bcc     L0043
 	inx
 	clc
-L003B:	adc     #<(_level_high_scores)
+L0043:	adc     #<(_level_high_scores)
 	sta     ptr1
 	txa
 	adc     #>(_level_high_scores)
@@ -73,17 +95,17 @@ L003B:	adc     #<(_level_high_scores)
 ;
 	lda     _temp0
 	cmp     #$FF
-	beq     L003D
+	beq     L0045
 ;
 ; for (temp0 = 0; ; ++temp0) {
 ;
 	ldx     #$00
 	inc     _temp0
-	jmp     L003C
+	jmp     L0044
 ;
 ; temp5 += settings_memory[0];
 ;
-L003D:	lda     _settings_memory
+L0045:	lda     _settings_memory
 	clc
 	adc     _temp5
 	sta     _temp5
@@ -145,12 +167,12 @@ L003D:	lda     _settings_memory
 	lda     _temp5
 	ldx     _temp5+1
 	cpx     _checksum+1
-	bne     L003E
+	bne     L0046
 	cmp     _checksum
 ;
 ; clear_saved_data();
 ;
-L003E:	jne     _clear_saved_data
+L0046:	jne     _clear_saved_data
 ;
 ; }
 ;
@@ -180,13 +202,23 @@ L003E:	jne     _clear_saved_data
 	sta     _gauntlet_high_score
 	sta     _gauntlet_high_score+1
 ;
+; hasee_1p_high_score = 0;
+;
+	sta     _hasee_1p_high_score
+	sta     _hasee_1p_high_score+1
+;
+; hasee_2p_high_score = 0;
+;
+	sta     _hasee_2p_high_score
+	sta     _hasee_2p_high_score+1
+;
 ; for (temp0 = 0; ; ++temp0) {
 ;
 	sta     _temp0
 ;
 ; ((unsigned char *)level_high_scores)[temp0] = 0;
 ;
-L000C:	ldy     _temp0
+L0010:	ldy     _temp0
 	lda     #$00
 	sta     _level_high_scores,y
 ;
@@ -199,16 +231,16 @@ L000C:	ldy     _temp0
 ;
 	lda     _temp0
 	cmp     #$FF
-	beq     L003F
+	beq     L0047
 ;
 ; for (temp0 = 0; ; ++temp0) {
 ;
 	inc     _temp0
-	jmp     L000C
+	jmp     L0010
 ;
 ; settings_memory[0] = 0;
 ;
-L003F:	lda     #$00
+L0047:	lda     #$00
 	sta     _settings_memory
 ;
 ; }
