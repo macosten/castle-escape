@@ -146,6 +146,7 @@ extern unsigned char __fastcall__ divide_by_26(unsigned char input);
 
 void game_hasee_bounce(void);
 void begin_hasee_bounce(void);
+void end_hasee_bounce(void);
 void calculate_next_treat(void);
 void hasee_sprite_collisions(void);
 void hasee_singleplayer_movement(void);
@@ -182,6 +183,8 @@ void begin_hasee_bounce(void) {
     // Devensive programming: clear these buffers.
     clear_vram_buffer();
     oam_clear();
+
+    music_play(ICE_CREAM_MACHINE_SONG);
 
     game_seconds_timer = 105; 
     game_frame_timer = 60;
@@ -347,7 +350,13 @@ void game_hasee_bounce(void) {
         if (player1_stun_timer) { --player1_stun_timer; }
         if (player2_stun_timer) { --player2_stun_timer; }
     } else {
-        if (game_frame_timer) { --game_frame_timer; }
+        if (game_frame_timer) {
+            --game_frame_timer;
+        } else if (pad1 | pad2) {
+            // Go back to menu:
+            end_hasee_bounce();
+            return;
+        }
         if (!HASEE_DID_BUFFER_MESSAGE_THIS_FRAME && game_frame_timer == 1) {
             hasee_buffer_game_over_message();
             if (HASEE_IS_MULTIPLAYER_GAME && score > hasee_2p_high_score) {
@@ -365,15 +374,19 @@ void game_hasee_bounce(void) {
         }
     }
 
-    // Temporary debug stuffs:
-    if (pad1 & PAD_B) {
-        pal_fade_to(4, 0);
-        menu = MENU_HASEE_BOUNCE;
-        switch_menu();
-        pal_bright(4);
+    if (pad1 & PAD_SELECT & PAD_B || pad2 & PAD_SELECT & PAD_B) {
+        end_hasee_bounce();
         return;
     }
     //gray_line();
+}
+
+void end_hasee_bounce(void) {
+    pal_fade_to(4, 0);
+    menu = MENU_HASEE_BOUNCE;
+    switch_menu();
+    music_play(MENU_SONG);
+    pal_bright(4);
 }
 
 void hasee_draw_sprites(void) {
