@@ -91,7 +91,6 @@ unsigned char energy;
 
 // Max score of 65535. That feels like it should be enough, right?
 unsigned int score;
-unsigned char enemy_score; // Unused??
 
 // 255 frames / 60 fps (NTSC) = 4.25 seconds
 // Should we also take PAL machines into account and try to change frame counts in these cases?

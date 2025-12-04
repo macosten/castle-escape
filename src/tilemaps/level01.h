@@ -9,8 +9,8 @@
 
 const unsigned char const level01_enemy[]={
 	0x61, 2, 2, // ENEMY_GRARRL
-	0x75, 1, 2, // ENEMY_GRARRL
 	0x60, 1, 2, // ENEMY_GRARRL
+	0x75, 1, 2, // ENEMY_GRARRL
 	0xFF
 };
 

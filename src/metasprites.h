@@ -929,4 +929,15 @@ const unsigned char const paused_text[] = {
   128
 };
 
+// Menu/UI sprites
+
+const unsigned char const hasee_trophy[] = {
+  4, 15, 0xDD, 0,
+  0,  0, 0xBE, 0,
+  8,  0, 0xBF, 0,
+  0,  8, 0xCE, 0,
+  8,  8, 0xCF, 0,
+  128
+};
+
 #pragma rodata-name(pop)

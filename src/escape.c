@@ -99,7 +99,7 @@ unsigned char enemies_extra2[MAX_ENEMIES]; // The use of this depends on the ene
 // Examples of what the extra bytes will contain: animation frame numbers, cached return values, subpixel values...
 unsigned char enemies_timer[MAX_ENEMIES]; // A timer value - most likely an animation timer. Probably gets decremented once per frame.
 unsigned char enemies_count; // How many enemies are actually loaded into RAM.
-
+unsigned char enemy_score; // How many points each enemy should be worth when slashed.
 
 // Extra memory used for bosses or the like.
 unsigned char boss_state;
@@ -236,6 +236,9 @@ void menu_game_complete_screen(void);
 void menu_settings(void);
 void menu_more_games_menu(void);
 void menu_hasee_bounce_menu(void);
+
+// Switch palettes/globals back to that of the more games menu.
+void menu_sub_back_to_moregames_menu(void);
 
 void load_level_selector(void);
 void load_game_type_select(void);
@@ -943,6 +946,9 @@ void load_more_games_menu(void) {
 
 void menu_more_games_menu(void) {
     simple_menu_shared_behavior();
+    if (hasee_1p_high_score >= 2000 || hasee_2p_high_score >= 2000) {
+        oam_meta_spr(40, 200, hasee_trophy);
+    }
 
     if (pad1_new & PAD_A) {
         menu = more_games_menu_links[menu_selection];
@@ -955,6 +961,20 @@ void menu_more_games_menu(void) {
         menu = MENU_GAME_SELECT;
         switch_menu();
     }
+}
+
+void menu_sub_back_to_moregames_menu(void) {
+    menu = MENU_MORE_GAMES;
+    active_game = GAME_CASTLE_ESCAPE;
+    // Change back to EfMC graphics
+    pal_fade_to(4, 0);
+    set_chr_bank_0(0);
+    set_chr_bank_1(1);
+    pal_bg(palette_bg);
+    pal_spr(palette_sp);
+    set_scroll_x(0);
+    switch_menu();
+    pal_bright(4);
 }
 
 // Menu -- Hasee Bounce
@@ -1009,17 +1029,7 @@ void menu_hasee_bounce_menu(void) {
     }
 
     if (pad1_new & PAD_B) { // Back to main menu
-        menu = MENU_MORE_GAMES;
-        active_game = GAME_CASTLE_ESCAPE;
-        // Change back to EfMC graphics
-        pal_fade_to(4, 0);
-        set_chr_bank_0(0);
-        set_chr_bank_1(1);
-        pal_bg(palette_bg);
-        pal_spr(palette_sp);
-        set_scroll_x(0);
-        switch_menu();
-        pal_bright(4);
+        menu_sub_back_to_moregames_menu();
     }
 }
 
@@ -1082,6 +1092,9 @@ void begin_level(void) {
 
     // We're alive now, so let's make sure we're marked as such.
     SET_STATUS_ALIVE();
+
+    // In case any other games change the mirroring mode, set it properly here:
+    set_mirroring(MIRROR_HORIZONTAL);
 
     // Load the level information.
     load_level_new();
@@ -1275,6 +1288,7 @@ void load_level_new(void) {
     }
 
     // Save the number of loaded enemies
+    enemy_score = x; // Number of points to award per enemy
     enemies_count = x+1+4; // Plus a bit of leeway for floating number effects
     
     // Set all the other enemies to be NONEs.
@@ -2476,7 +2490,8 @@ void collision_with_killable_slashable(void) {
         // Turn this into a particle effect.
         enemies_type[x] = ENEMY_PURPLE_DEATH_EFFECT;
         enemies_timer[x] = 12;
-        score += 1; // Add to the score 
+        score += enemy_score; // Add to the score
+        --enemy_score;
         SET_SCORE_CHANGED_THIS_FRAME();
 
         sfx_play(SFX_ENEMY_KILL, 0);
@@ -2488,7 +2503,8 @@ void collision_with_inert_slashable(void) {
     if (IS_SWINGING_SWORD && !SLASHABLE_UNKILLABLE_IS_SLASHED(x)) { 
         // If swinging and unslashed:
         SLASHABLE_UNKILLABLE_SET_SLASHED(x);
-        score += 1;
+        score += enemy_score;
+        --enemy_score;
         SET_SCORE_CHANGED_THIS_FRAME();
 
         sfx_play(SFX_ENEMY_KILL, 0);
@@ -2517,7 +2533,8 @@ void collision_with_splyke(void) {
         // Kill this.
         enemies_type[x] = ENEMY_SPLYKE_DEATH_EFFECT;
         enemies_timer[x] = 12;
-        score += 1;
+        score += enemy_score;
+        --enemy_score;
         SET_SCORE_CHANGED_THIS_FRAME();
 
         sfx_play(SFX_ENEMY_KILL, 0);

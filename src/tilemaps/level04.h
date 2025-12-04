@@ -13,8 +13,8 @@ const unsigned char const level04_enemy[]={
 	0x75, 2, 2,
 	0x45, 2, 2,
 	0x5D, 1, 2,
-	0x88, 1, 1,
 	0x37, 1, 1,
+	0x88, 1, 1,
 	0xFF
 };
 
