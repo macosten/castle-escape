@@ -146,6 +146,7 @@ extern unsigned char __fastcall__ divide_by_26(unsigned char input);
 
 void game_hasee_bounce(void);
 void begin_hasee_bounce(void);
+void begin_hasee_bounce_sub(void);
 void end_hasee_bounce(void);
 void calculate_next_treat(void);
 void hasee_sprite_collisions(void);
@@ -184,6 +185,20 @@ void begin_hasee_bounce(void) {
     clear_vram_buffer();
     oam_clear();
 
+    // Do stuff that can't be done in PRG1...
+    set_prg_bank(5);
+    temppointer = hasee_game_screen;
+    LZG_decode(temppointer, cmap);
+    vram_write(cmap, 32*32);
+    memfill(cmap, 0, 32); // For character buffering later on when we want spaces
+
+    set_prg_bank(HASEE_MOVEMENT_CODE_BANK);
+    begin_hasee_bounce_sub();
+}
+
+#pragma code-name(push, "BANK1")
+
+void begin_hasee_bounce_sub(void) {
     music_play(ICE_CREAM_MACHINE_SONG);
 
     game_seconds_timer = 105; 
@@ -215,15 +230,6 @@ void begin_hasee_bounce(void) {
     ORANGE_SET_DIRECTION_RIGHT();
     set_mt_pointer(hasee_metatiles);
 
-    set_prg_bank(5);
-    temppointer = hasee_game_screen;
-    LZG_decode(temppointer, cmap);
-    vram_write(cmap, 32*32);
-
-    memfill(cmap, 0, 32); // For character buffering later on when we want spaces
-
-    set_prg_bank(HASEE_MOVEMENT_CODE_BANK);
-
     letter_status[LETTER_H_INDEX] = LETTER_UNCOLLECTED;
     letter_status[LETTER_A_INDEX] = LETTER_UNCOLLECTED;
     letter_status[LETTER_S_INDEX] = LETTER_UNCOLLECTED;
@@ -250,8 +256,6 @@ void begin_hasee_bounce(void) {
     ppu_on_all();
     pal_bright(4);
 }
-
-#pragma code-name(push, "BANK1")
 
 void game_hasee_bounce(void) {
     HASEE_RESET_PLAYER_FLAGS_START_FRAME();
