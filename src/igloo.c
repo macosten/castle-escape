@@ -36,6 +36,18 @@
 
 #pragma rodata-name(push, "BANK1")
 
+unsigned char const igloo_palette_sp[] = {
+    0x21, 0x06, 0x29, 0x38, // Carassa, Umbrella
+    0x21, 0x01, 0x13, 0x21, // Mika, Potion
+    0x21, 0x0f, 0x00, 0x30, // Greyscale - stunned Mika, Piano, Chia Pop
+    0x21, 0x0f, 0x19, 0x30, // Reserved?
+};
+
+unsigned char igloo_palette_bg[] = {
+    // Still TBD
+    0x00,
+};
+
 // Relevant menu function here
 
 #pragma code-name(push, "BANK1")
