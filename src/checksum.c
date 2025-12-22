@@ -11,13 +11,14 @@ ZEROPAGE_EXTERN(unsigned char, temp0);
 ZEROPAGE_EXTERN(unsigned int, temp5);
 
 extern unsigned int checksum;
-extern unsigned int level_high_scores[]; // [256] ints ong
+extern unsigned int level_high_scores[]; // [256] ints long
 extern unsigned int gauntlet_high_score;
 extern unsigned int hasee_1p_high_score;
 extern unsigned int hasee_2p_high_score;
+extern unsigned int igloo_1p_high_score;
+extern unsigned int igloo_2p_high_score;
 
 extern unsigned char settings_memory[];
-
 
 // Our checksum will basically just be the sum of every saved value in memory, disregarding overflow.
 
@@ -27,6 +28,8 @@ void clear_saved_data(void) {
     gauntlet_high_score = 0;
     hasee_1p_high_score = 0;
     hasee_2p_high_score = 0;
+    igloo_1p_high_score = 0;
+    igloo_2p_high_score = 0;
     for (temp0 = 0; ; ++temp0) {
         // Zero out level_high_scores quicker by treating it like 2 char[256] arrays
         ((unsigned char *)level_high_scores)[temp0] = 0;
@@ -40,6 +43,8 @@ void calculate_checksum(void) {
     temp5 = gauntlet_high_score;
     temp5 += hasee_1p_high_score;
     temp5 += hasee_2p_high_score;
+    temp5 += igloo_1p_high_score;
+    temp5 += igloo_2p_high_score;
     for (temp0 = 0; ; ++temp0) {
         temp5 += level_high_scores[temp0];
         if (temp0 == 255) { break; }

@@ -10,9 +10,32 @@
 	.importzp	sp, sreg, regsave, regbank
 	.importzp	tmp1, tmp2, tmp3, tmp4, ptr1, ptr2, ptr3, ptr4
 	.macpack	longbranch
+	.import		_srand
+	.import		_multi_vram_buffer_horz
+	.import		_clear_vram_buffer
+	.import		_get_pad_new
+	.import		_pal_fade_to
+	.import		_seed_rng
+	.import		_pal_bright
+	.import		_ppu_wait_nmi
+	.import		_ppu_off
+	.import		_ppu_on_all
+	.import		_oam_clear
+	.importzp	_TEMP
+	.import		_oam_meta_spr_fast_sub
+	.import		_music_play
+	.import		_pad_poll
+	.import		_rand8
+	.import		_vram_write
+	.import		_memfill
+	.import		_score_string
+	.import		_convert_to_decimal
 	.export		_carassa_idle
 	.export		_carassa_walk1
 	.export		_carassa_walk2
+	.export		_mika_idle
+	.export		_mika_walk1
+	.export		_mika_walk2
 	.export		_item_potion
 	.export		_item_piano
 	.export		_item_chiapop
@@ -21,13 +44,55 @@
 	.export		_item_bomb
 	.export		_item_thingy
 	.export		_item_bag
+	.export		_igloo_game_screen
+	.importzp	_pad1
+	.importzp	_pad1_new
+	.importzp	_temppointer
+	.importzp	_score
+	.importzp	_game_mode
+	.importzp	_player_flags
+	.importzp	_menu
+	.importzp	_valrigard
+	.importzp	_player2
+	.importzp	_level_index
+	.importzp	_player_death_timer
+	.import		_cmap
 	.export		_igloo_palette_sp
 	.export		_igloo_palette_bg
+	.import		_clear_screen
+	.import		_set_prg_bank
+	.import		_switch_menu
+	.import		_LZG_decode
+	.import		_prepare_score_string
+	.export		_game_igloo
+	.export		_begin_igloo
+	.export		_begin_igloo_sub
+	.export		_end_igloo
+	.export		_igloo_item_movement
+	.export		_igloo_player_movement
+	.export		_igloo_sprite_collisions
+	.export		_igloo_draw_sprites
+	.export		_igloo_update_score
 
 .segment	"DATA"
 
 _igloo_palette_bg:
+	.byte	$31
+	.byte	$3C
+	.byte	$30
+	.byte	$15
+	.byte	$31
+	.byte	$07
+	.byte	$17
+	.byte	$27
+	.byte	$31
 	.byte	$00
+	.byte	$10
+	.byte	$0F
+	.byte	$31
+	.byte	$11
+	.byte	$2C
+	.byte	$30
 
 .segment	"RODATA"
 
@@ -182,6 +247,156 @@ _carassa_walk2:
 	.byte	$D1
 	.byte	$40
 	.byte	$80
+_mika_idle:
+	.byte	$00
+	.byte	$00
+	.byte	$83
+	.byte	$41
+	.byte	$08
+	.byte	$00
+	.byte	$82
+	.byte	$01
+	.byte	$10
+	.byte	$00
+	.byte	$83
+	.byte	$01
+	.byte	$00
+	.byte	$08
+	.byte	$93
+	.byte	$41
+	.byte	$08
+	.byte	$08
+	.byte	$92
+	.byte	$01
+	.byte	$10
+	.byte	$08
+	.byte	$93
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$A3
+	.byte	$41
+	.byte	$08
+	.byte	$10
+	.byte	$A2
+	.byte	$01
+	.byte	$10
+	.byte	$10
+	.byte	$A3
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$B3
+	.byte	$41
+	.byte	$08
+	.byte	$18
+	.byte	$B2
+	.byte	$01
+	.byte	$10
+	.byte	$18
+	.byte	$B3
+	.byte	$01
+	.byte	$80
+_mika_walk1:
+	.byte	$00
+	.byte	$00
+	.byte	$83
+	.byte	$41
+	.byte	$08
+	.byte	$00
+	.byte	$82
+	.byte	$01
+	.byte	$10
+	.byte	$00
+	.byte	$83
+	.byte	$01
+	.byte	$00
+	.byte	$08
+	.byte	$93
+	.byte	$41
+	.byte	$08
+	.byte	$08
+	.byte	$92
+	.byte	$01
+	.byte	$10
+	.byte	$08
+	.byte	$93
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$A3
+	.byte	$41
+	.byte	$08
+	.byte	$10
+	.byte	$A2
+	.byte	$01
+	.byte	$10
+	.byte	$10
+	.byte	$A3
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$C3
+	.byte	$41
+	.byte	$08
+	.byte	$18
+	.byte	$C2
+	.byte	$41
+	.byte	$10
+	.byte	$18
+	.byte	$D3
+	.byte	$01
+	.byte	$80
+_mika_walk2:
+	.byte	$00
+	.byte	$00
+	.byte	$83
+	.byte	$41
+	.byte	$08
+	.byte	$00
+	.byte	$82
+	.byte	$01
+	.byte	$10
+	.byte	$00
+	.byte	$83
+	.byte	$01
+	.byte	$00
+	.byte	$08
+	.byte	$93
+	.byte	$41
+	.byte	$08
+	.byte	$08
+	.byte	$92
+	.byte	$01
+	.byte	$10
+	.byte	$08
+	.byte	$93
+	.byte	$01
+	.byte	$00
+	.byte	$10
+	.byte	$A3
+	.byte	$41
+	.byte	$08
+	.byte	$10
+	.byte	$A2
+	.byte	$01
+	.byte	$10
+	.byte	$10
+	.byte	$A3
+	.byte	$01
+	.byte	$00
+	.byte	$18
+	.byte	$C3
+	.byte	$01
+	.byte	$08
+	.byte	$18
+	.byte	$C2
+	.byte	$01
+	.byte	$10
+	.byte	$18
+	.byte	$D3
+	.byte	$41
+	.byte	$80
 _item_potion:
 	.byte	$00
 	.byte	$00
@@ -315,6 +530,366 @@ _item_bag:
 	.byte	$43
 	.byte	$80
 .segment	"RODATA"
+.segment	"BANK5"
+_igloo_game_screen:
+	.byte	$4C
+	.byte	$5A
+	.byte	$47
+	.byte	$00
+	.byte	$00
+	.byte	$04
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$55
+	.byte	$27
+	.byte	$E0
+	.byte	$72
+	.byte	$79
+	.byte	$01
+	.byte	$01
+	.byte	$02
+	.byte	$03
+	.byte	$04
+	.byte	$00
+	.byte	$00
+	.byte	$04
+	.byte	$1E
+	.byte	$00
+	.byte	$00
+	.byte	$30
+	.byte	$30
+	.byte	$30
+	.byte	$04
+	.byte	$C9
+	.byte	$04
+	.byte	$01
+	.byte	$D6
+	.byte	$D7
+	.byte	$04
+	.byte	$A2
+	.byte	$F8
+	.byte	$F9
+	.byte	$03
+	.byte	$C6
+	.byte	$00
+	.byte	$06
+	.byte	$07
+	.byte	$08
+	.byte	$04
+	.byte	$C2
+	.byte	$16
+	.byte	$17
+	.byte	$18
+	.byte	$02
+	.byte	$05
+	.byte	$0F
+	.byte	$E6
+	.byte	$E7
+	.byte	$03
+	.byte	$41
+	.byte	$F6
+	.byte	$F7
+	.byte	$02
+	.byte	$13
+	.byte	$46
+	.byte	$F6
+	.byte	$F7
+	.byte	$D6
+	.byte	$D7
+	.byte	$03
+	.byte	$79
+	.byte	$F8
+	.byte	$F4
+	.byte	$F5
+	.byte	$F9
+	.byte	$E4
+	.byte	$E5
+	.byte	$02
+	.byte	$10
+	.byte	$18
+	.byte	$F4
+	.byte	$F5
+	.byte	$E6
+	.byte	$E7
+	.byte	$E6
+	.byte	$E7
+	.byte	$D6
+	.byte	$D7
+	.byte	$F6
+	.byte	$F7
+	.byte	$F6
+	.byte	$F7
+	.byte	$E3
+	.byte	$02
+	.byte	$05
+	.byte	$63
+	.byte	$04
+	.byte	$09
+	.byte	$03
+	.byte	$75
+	.byte	$04
+	.byte	$21
+	.byte	$E6
+	.byte	$E7
+	.byte	$F4
+	.byte	$F5
+	.byte	$F4
+	.byte	$F5
+	.byte	$D5
+	.byte	$02
+	.byte	$05
+	.byte	$63
+	.byte	$04
+	.byte	$09
+	.byte	$03
+	.byte	$75
+	.byte	$04
+	.byte	$21
+	.byte	$F1
+	.byte	$F1
+	.byte	$F2
+	.byte	$F1
+	.byte	$04
+	.byte	$06
+	.byte	$02
+	.byte	$08
+	.byte	$02
+	.byte	$03
+	.byte	$43
+	.byte	$03
+	.byte	$C6
+	.byte	$02
+	.byte	$05
+	.byte	$01
+	.byte	$02
+	.byte	$09
+	.byte	$13
+	.byte	$02
+	.byte	$08
+	.byte	$05
+	.byte	$04
+	.byte	$E2
+	.byte	$E0
+	.byte	$E0
+	.byte	$F0
+	.byte	$F0
+	.byte	$B6
+	.byte	$D0
+	.byte	$D0
+	.byte	$B7
+	.byte	$E2
+	.byte	$F0
+	.byte	$03
+	.byte	$02
+	.byte	$E0
+	.byte	$E2
+	.byte	$04
+	.byte	$01
+	.byte	$04
+	.byte	$82
+	.byte	$F0
+	.byte	$03
+	.byte	$41
+	.byte	$04
+	.byte	$C1
+	.byte	$03
+	.byte	$15
+	.byte	$03
+	.byte	$03
+	.byte	$C6
+	.byte	$D1
+	.byte	$D1
+	.byte	$C7
+	.byte	$03
+	.byte	$45
+	.byte	$03
+	.byte	$CF
+	.byte	$02
+	.byte	$05
+	.byte	$14
+	.byte	$03
+	.byte	$D9
+	.byte	$02
+	.byte	$09
+	.byte	$04
+	.byte	$02
+	.byte	$0A
+	.byte	$05
+	.byte	$B6
+	.byte	$D0
+	.byte	$B7
+	.byte	$B6
+	.byte	$D0
+	.byte	$D0
+	.byte	$E2
+	.byte	$B7
+	.byte	$02
+	.byte	$0A
+	.byte	$17
+	.byte	$04
+	.byte	$0A
+	.byte	$C6
+	.byte	$D1
+	.byte	$C7
+	.byte	$C6
+	.byte	$D1
+	.byte	$02
+	.byte	$03
+	.byte	$4E
+	.byte	$04
+	.byte	$08
+	.byte	$B6
+	.byte	$E2
+	.byte	$02
+	.byte	$02
+	.byte	$7F
+	.byte	$02
+	.byte	$07
+	.byte	$05
+	.byte	$03
+	.byte	$75
+	.byte	$02
+	.byte	$03
+	.byte	$88
+	.byte	$02
+	.byte	$03
+	.byte	$96
+	.byte	$03
+	.byte	$AC
+	.byte	$02
+	.byte	$09
+	.byte	$29
+	.byte	$02
+	.byte	$05
+	.byte	$8B
+	.byte	$02
+	.byte	$07
+	.byte	$03
+	.byte	$03
+	.byte	$5D
+	.byte	$B6
+	.byte	$B7
+	.byte	$03
+	.byte	$3B
+	.byte	$02
+	.byte	$0F
+	.byte	$6B
+	.byte	$B6
+	.byte	$D0
+	.byte	$B7
+	.byte	$02
+	.byte	$05
+	.byte	$BB
+	.byte	$C6
+	.byte	$02
+	.byte	$02
+	.byte	$6C
+	.byte	$02
+	.byte	$0B
+	.byte	$6B
+	.byte	$04
+	.byte	$01
+	.byte	$B7
+	.byte	$C6
+	.byte	$02
+	.byte	$05
+	.byte	$0B
+	.byte	$02
+	.byte	$09
+	.byte	$6A
+	.byte	$03
+	.byte	$C5
+	.byte	$02
+	.byte	$04
+	.byte	$45
+	.byte	$C7
+	.byte	$F0
+	.byte	$03
+	.byte	$39
+	.byte	$02
+	.byte	$0D
+	.byte	$6A
+	.byte	$03
+	.byte	$C5
+	.byte	$02
+	.byte	$06
+	.byte	$45
+	.byte	$02
+	.byte	$06
+	.byte	$39
+	.byte	$02
+	.byte	$0A
+	.byte	$F8
+	.byte	$F0
+	.byte	$E0
+	.byte	$02
+	.byte	$06
+	.byte	$AE
+	.byte	$04
+	.byte	$15
+	.byte	$F0
+	.byte	$02
+	.byte	$11
+	.byte	$83
+	.byte	$04
+	.byte	$03
+	.byte	$02
+	.byte	$1B
+	.byte	$30
+	.byte	$04
+	.byte	$01
+	.byte	$02
+	.byte	$16
+	.byte	$30
+	.byte	$04
+	.byte	$16
+	.byte	$D2
+	.byte	$D3
+	.byte	$D4
+	.byte	$04
+	.byte	$41
+	.byte	$04
+	.byte	$63
+	.byte	$04
+	.byte	$86
+	.byte	$02
+	.byte	$05
+	.byte	$0B
+	.byte	$03
+	.byte	$C8
+	.byte	$E1
+	.byte	$04
+	.byte	$1E
+	.byte	$04
+	.byte	$1D
+	.byte	$04
+	.byte	$05
+	.byte	$00
+	.byte	$00
+	.byte	$88
+	.byte	$AA
+	.byte	$AA
+	.byte	$AA
+	.byte	$00
+	.byte	$50
+	.byte	$10
+	.byte	$00
+	.byte	$98
+	.byte	$04
+	.byte	$E1
+	.byte	$50
+	.byte	$55
+	.byte	$05
+	.byte	$04
+	.byte	$05
+	.byte	$02
+	.byte	$73
+	.byte	$4B
+	.byte	$04
+	.byte	$11
+.segment	"RODATA"
 .segment	"BANK1"
 _igloo_palette_sp:
 	.byte	$21
@@ -330,8 +905,437 @@ _igloo_palette_sp:
 	.byte	$00
 	.byte	$30
 	.byte	$21
-	.byte	$0F
-	.byte	$19
-	.byte	$30
+	.byte	$05
+	.byte	$35
+	.byte	$38
 .segment	"RODATA"
+
+; ---------------------------------------------------------------
+; void __near__ game_igloo (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_game_igloo: near
+
+.segment	"BANK1"
+
+;
+; pad1 = pad_poll(0); // read the first controller
+;
+	lda     #$00
+	jsr     _pad_poll
+	sta     _pad1
+;
+; pad1_new = get_pad_new(0);
+;
+	lda     #$00
+	jsr     _get_pad_new
+	sta     _pad1_new
+;
+; ppu_wait_nmi(); // wait till beginning of the frame
+;
+	jsr     _ppu_wait_nmi
+;
+; clear_vram_buffer();
+;
+	jsr     _clear_vram_buffer
+;
+; set_prg_bank(IGLOO_CODE_BANK);
+;
+	lda     #$01
+	jsr     _set_prg_bank
+;
+; igloo_player_movement();
+;
+	jsr     _igloo_player_movement
+;
+; igloo_item_movement();
+;
+	jsr     _igloo_item_movement
+;
+; igloo_sprite_collisions();
+;
+	jsr     _igloo_sprite_collisions
+;
+; igloo_draw_sprites();
+;
+	jsr     _igloo_draw_sprites
+;
+; if (IGLOO_SCORE_CHANGED_THIS_FRAME) { igloo_update_score(); }
+;
+	lda     _player_flags
+	and     #$01
+	beq     L03D2
+	jsr     _igloo_update_score
+;
+; if (pad1 & PAD_B) {
+;
+L03D2:	lda     _pad1
+	and     #$40
+	cmp     #$00
+;
+; end_igloo();
+;
+	jne     _end_igloo
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ begin_igloo (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_begin_igloo: near
+
+.segment	"CODE"
+
+;
+; pal_fade_to(4, 0);
+;
+	lda     #$04
+	jsr     pusha
+	lda     #$00
+	jsr     _pal_fade_to
+;
+; ppu_off();
+;
+	jsr     _ppu_off
+;
+; clear_screen();
+;
+	jsr     _clear_screen
+;
+; clear_vram_buffer();
+;
+	jsr     _clear_vram_buffer
+;
+; oam_clear();
+;
+	jsr     _oam_clear
+;
+; set_prg_bank(5);
+;
+	lda     #$05
+	jsr     _set_prg_bank
+;
+; temppointer = igloo_game_screen;
+;
+	lda     #<(_igloo_game_screen)
+	ldx     #>(_igloo_game_screen)
+	sta     _temppointer
+	stx     _temppointer+1
+;
+; LZG_decode(temppointer, cmap);
+;
+	jsr     pushax
+	lda     #<(_cmap)
+	ldx     #>(_cmap)
+	jsr     _LZG_decode
+;
+; vram_write(cmap, 32*32);
+;
+	lda     #<(_cmap)
+	ldx     #>(_cmap)
+	jsr     pushax
+	ldx     #$04
+	lda     #$00
+	jsr     _vram_write
+;
+; memfill(cmap, 0, 32); // For character buffering later on when we want spaces
+;
+	jsr     decsp3
+	lda     #<(_cmap)
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     #>(_cmap)
+	sta     (sp),y
+	lda     #$00
+	tay
+	sta     (sp),y
+	tax
+	lda     #$20
+	jsr     _memfill
+;
+; set_prg_bank(IGLOO_CODE_BANK);
+;
+	lda     #$01
+	jsr     _set_prg_bank
+;
+; begin_igloo_sub();   
+;
+	jmp     _begin_igloo_sub
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ begin_igloo_sub (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_begin_igloo_sub: near
+
+.segment	"BANK1"
+
+;
+; music_play(ICE_CREAM_MACHINE_SONG);
+;
+	lda     #$07
+	jsr     _music_play
+;
+; game_mode = MODE_GAME;
+;
+	lda     #$01
+	sta     _game_mode
+;
+; mika.velocity_x = 0;
+;
+	lda     #$00
+	sta     _valrigard+4
+	sta     _valrigard+4+1
+;
+; mika.velocity_y = 0;
+;
+	sta     _valrigard+6
+	sta     _valrigard+6+1
+;
+; carassa.velocity_x = 0;
+;
+	sta     _player2+4
+	sta     _player2+4+1
+;
+; carassa.velocity_y = 0;
+;
+	sta     _player2+6
+	sta     _player2+6+1
+;
+; mika.x = 0x8000;
+;
+	ldx     #$80
+	sta     _valrigard
+	stx     _valrigard+1
+;
+; mika.y = 0xB000;
+;
+	ldx     #$B0
+	sta     _valrigard+2
+	stx     _valrigard+2+1
+;
+; carassa.x = 0x8000;
+;
+	ldx     #$80
+	sta     _player2
+	stx     _player2+1
+;
+; carassa.y = 0x2000;
+;
+	ldx     #$20
+	sta     _player2+2
+	stx     _player2+2+1
+;
+; level = 0;
+;
+	sta     _level_index
+;
+; player_stun_timer = 0;
+;
+	sta     _player_death_timer
+;
+; seed_rng();
+;
+	jsr     _seed_rng
+;
+; srand(rand8());
+;
+	jsr     _rand8
+	ldx     #$00
+	jsr     _srand
+;
+; igloo_update_score();
+;
+	jsr     _igloo_update_score
+;
+; ppu_on_all();
+;
+	jsr     _ppu_on_all
+;
+; pal_bright(4);
+;
+	lda     #$04
+	jmp     _pal_bright
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ end_igloo (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_end_igloo: near
+
+.segment	"BANK1"
+
+;
+; pal_fade_to(4, 0);
+;
+	lda     #$04
+	jsr     pusha
+	lda     #$00
+	jsr     _pal_fade_to
+;
+; menu = MENU_IGLOO;
+;
+	lda     #$07
+	sta     _menu
+;
+; switch_menu();
+;
+	jsr     _switch_menu
+;
+; music_play(MENU_SONG);
+;
+	lda     #$00
+	jsr     _music_play
+;
+; pal_bright(4);
+;
+	lda     #$04
+	jmp     _pal_bright
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_item_movement (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_item_movement: near
+
+.segment	"BANK1"
+
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_player_movement (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_player_movement: near
+
+.segment	"BANK1"
+
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_sprite_collisions (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_sprite_collisions: near
+
+.segment	"BANK1"
+
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_draw_sprites (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_draw_sprites: near
+
+.segment	"BANK1"
+
+;
+; oam_clear();
+;
+	jsr     _oam_clear
+;
+; oam_meta_spr(high_byte(mika.x), high_byte(mika.y), mika_idle);
+;
+	lda     _valrigard+1
+	sta     _TEMP+5
+	lda     _valrigard+3
+	sta     _TEMP+6
+	lda     #<(_mika_idle)
+	ldx     #>(_mika_idle)
+	jsr     _oam_meta_spr_fast_sub
+;
+; oam_meta_spr(high_byte(carassa.x), high_byte(carassa.y), carassa_idle);
+;
+	lda     _player2+1
+	sta     _TEMP+5
+	lda     _player2+3
+	sta     _TEMP+6
+	lda     #<(_carassa_idle)
+	ldx     #>(_carassa_idle)
+	jmp     _oam_meta_spr_fast_sub
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_update_score (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_update_score: near
+
+.segment	"BANK1"
+
+;
+; convert_to_decimal(score);
+;
+	lda     _score
+	ldx     _score+1
+	jsr     _convert_to_decimal
+;
+; prepare_score_string();
+;
+	jsr     _prepare_score_string
+;
+; multi_vram_buffer_horz(score_string, 5, NTADR_A(10, 2)); // Change, or if it doesn't change, just call hasee_update_score for code reuse as this is in the same bank
+;
+	jsr     decsp3
+	lda     #<(_score_string)
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     #>(_score_string)
+	sta     (sp),y
+	lda     #$05
+	ldy     #$00
+	sta     (sp),y
+	ldx     #$20
+	lda     #$4A
+	jmp     _multi_vram_buffer_horz
+
+.endproc
 
