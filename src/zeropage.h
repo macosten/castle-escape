@@ -68,7 +68,7 @@ unsigned char x; // Used as a loop index.
 unsigned char y; // Used as a loop index.
 unsigned char index; // Used as an index, for loops and otherwise.
 
-unsigned char nt; // nametable index (though it's only used in 1 place, so...)
+unsigned char nt; // nametable index 
 
 // unsigned int scroll_x;
 unsigned int pseudo_scroll_y;
@@ -78,7 +78,6 @@ unsigned int max_scroll_y;
 unsigned int initial_scroll;
 unsigned char scroll_count;
 
-unsigned char L_R_switch;
 unsigned int old_x;
 unsigned int old_y;
 // For enemies:

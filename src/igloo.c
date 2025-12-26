@@ -5,6 +5,7 @@
 
 #include "asm/macros.h"
 #include "asm/score.h"
+#include "enemy_macros.h"
 #include "other_macros.h"
 #include "structs.h"
 
@@ -24,10 +25,9 @@ ZEROPAGE_EXTERN(unsigned int, temp6);
 ZEROPAGE_EXTERN(unsigned char, pad1);
 ZEROPAGE_EXTERN(unsigned char, pad1_new);
 
-
 // ZEROPAGE_EXTERN(int, address);
 // ZEROPAGE_EXTERN(unsigned char, index);
-// ZEROPAGE_EXTERN(unsigned char, x);
+ZEROPAGE_EXTERN(unsigned char, x);
 // ZEROPAGE_EXTERN(unsigned char, y);
 ZEROPAGE_EXTERN(Hitbox, hitbox);
 ZEROPAGE_EXTERN(Hitbox, hitbox2);
@@ -38,6 +38,25 @@ ZEROPAGE_EXTERN(unsigned int, old_y);
 ZEROPAGE_EXTERN(unsigned char, game_mode);
 ZEROPAGE_EXTERN(unsigned char, player_flags);
 ZEROPAGE_EXTERN(unsigned char, menu);
+ZEROPAGE_EXTERN(unsigned char, shuffle_offset);
+ZEROPAGE_EXTERN(unsigned char, temp_x);
+ZEROPAGE_EXTERN(unsigned char, temp_y);
+ZEROPAGE_ARRAY_EXTERN(unsigned char, debug_values, 4);
+
+ZEROPAGE_EXTERN(unsigned char, eject_L);
+#define items_dropped_this_round eject_L
+
+ZEROPAGE_EXTERN(unsigned char, eject_R);
+#define round_begin_timer eject_R
+
+ZEROPAGE_EXTERN(unsigned char, eject_D);
+#define threshold_coin eject_D
+
+ZEROPAGE_EXTERN(unsigned char, eject_U);
+#define threshold_bomb eject_U
+
+ZEROPAGE_EXTERN(unsigned char, nt);
+#define threshold_piano nt
 
 ZEROPAGE_EXTERN(Player, valrigard);
 #define mika valrigard
@@ -46,10 +65,22 @@ ZEROPAGE_EXTERN(Player, player2);
 #define carassa player2
 
 ZEROPAGE_EXTERN(unsigned char, level_index);
-#define level level_index
+#define round_number level_index
 
 ZEROPAGE_EXTERN(unsigned char, player_death_timer);
 #define player_stun_timer player_death_timer
+
+ZEROPAGE_EXTERN(unsigned char, index);
+#define next_item_timer index
+
+ZEROPAGE_EXTERN(unsigned char, enemy_limit);
+#define game_seconds_timer enemy_limit
+
+ZEROPAGE_EXTERN(unsigned char, lowest_enemy_index);
+#define game_frame_timer lowest_enemy_index
+
+ZEROPAGE_EXTERN(unsigned int, pseudo_scroll_y);
+#define score_this_round pseudo_scroll_y
 
 extern unsigned char shuffle_array[];
 extern unsigned char shuffle_leg_size;
@@ -57,9 +88,17 @@ extern unsigned char shuffle_leg_size;
 // Importing only the enemies_whatever arrays we need to store Doughnutfruit data...
 extern unsigned char enemies_x[MAX_ENEMIES]; // Object X coords
 extern unsigned char enemies_y[MAX_ENEMIES]; // Object Y coords
-extern unsigned char enemies_extra[MAX_ENEMIES]; // Object subpixel Y?
+
+extern unsigned char enemies_actual_y[MAX_ENEMIES];
+#define enemies_subpixel_y enemies_actual_y
+
+extern unsigned char enemies_extra[MAX_ENEMIES];
+#define enemies_y_velocity_pixels enemies_extra
+
+extern unsigned char enemies_extra2[MAX_ENEMIES]; // Object speed index (actual speed saved in LUT)
+#define enemies_y_velocity_subpixels enemies_extra2
+
 extern unsigned char enemies_type[MAX_ENEMIES];
-extern unsigned char enemies_extra2[MAX_ENEMIES]; // Object speed?
 extern unsigned char enemies_flags[MAX_ENEMIES];
 extern unsigned char enemies_timer[MAX_ENEMIES]; // Timer???
 extern unsigned char enemies_count;
@@ -105,6 +144,21 @@ void igloo_player_movement(void);
 void igloo_sprite_collisions(void);
 void igloo_draw_sprites(void);
 void igloo_update_score(void);
+void igloo_update_time(void);
+void igloo_begin_new_round(void);
+void calculate_next_igloo_item(void);
+
+void igloo_item_ai_downwards_sub(void);
+void igloo_default_item_ai(void);
+void igloo_bomb_item_ai(void);
+void igloo_bomb_explosion_ai(void);
+
+void igloo_draw_chias(void);
+void igloo_draw_items(void);
+void igloo_default_draw(void);
+void igloo_bomb_draw(void);
+void igloo_bomb_explosion_draw(void);
+void igloo_piano_explosion_draw(void);
 
 // Relevant menu function here
 
@@ -142,18 +196,24 @@ void begin_igloo_sub(void) {
     carassa.velocity_y = 0;
 
     mika.x = 0x8000;
-    mika.y = 0xB000;
+    mika.y = MIKA_STARTING_Y;
     carassa.x = 0x8000;
-    carassa.y = 0x2000;
+    carassa.y = CARASSA_STARTING_Y;
 
-    level = 0;
-    //level_timer = LEVEL_FRAME_LENGTH;
-    player_stun_timer = 0;
+    round_number = 0;
+    score_this_round = 0;
+
+    enemies_count = ONSCREEN_JUNK_MAXIMUM; // Used by extern'd functions
+    for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
+        enemies_flags[x] = 0; // Clear (deactivate) all enemies
+    }
+    calculate_shuffle_array();
 
     seed_rng();
     srand(rand8());
 
     igloo_update_score();
+    igloo_update_time();
 
     ppu_on_all();
     pal_bright(4);
@@ -179,11 +239,68 @@ void game_igloo(void) {
 
     if (IGLOO_SCORE_CHANGED_THIS_FRAME) { igloo_update_score(); }
 
+    if (game_seconds_timer > 0) {
+        --game_frame_timer;
+        if (game_frame_timer == 0) {
+            game_frame_timer = 60;
+            --game_seconds_timer;
+            igloo_update_time();
+        }
+
+        --next_item_timer;
+        if (next_item_timer == 0) {
+            next_item_timer = 32 + (rand8() & 0b11111);
+            calculate_next_igloo_item();
+            
+            for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
+                debug_values[0] += 1;
+                if (!IS_ENEMY_ACTIVE(x)) {
+                    // insert here!
+                    temp0 = rand8();
+                    enemies_type[x] = temp4;
+                    enemies_flags[x] = 0;
+                    ACTIVATE_ENEMY(x);
+                    enemies_x[x] = (temp0 & 0b01111111) + 64;
+                    enemies_y[x] = IGLOO_BRIDGE_Y_CHAR; // minus whatever for the item's height? Maybe use a LUT for that
+                    enemies_subpixel_y[x] = 0;
+                    enemies_y_velocity_pixels[x] = 0;
+                    enemies_y_velocity_subpixels[x] = 0;
+                    enemies_timer[x] = 0;
+
+                    // Debug: In the future Carassa will need to walk to it to get it to start moving, but for now:
+                    IGLOO_START_MOVING_ITEM(x);
+                    enemies_y_velocity_pixels[x] = 1;
+
+                    debug_values[1] += 1;
+                    break;
+                }
+            } // And as before if the screen is full it will just fail silently. No biggie.
+        } 
+    } else if (game_frame_timer > 0)  {
+        // Start next round
+        --game_frame_timer;
+        if (game_frame_timer == 0) {
+            temp0 = MIN(round_number, 5);
+            game_seconds_timer = 30;
+            game_frame_timer = 60;
+        }
+    } else {
+        igloo_begin_new_round();
+    }
+
     if (pad1 & PAD_B) {
         end_igloo();
         return;
     }
     //gray_line();
+
+    oam_spr(30, 30, debug_values[0], 0);
+    oam_spr(38, 30, debug_values[1], 0);
+    oam_spr(38+8, 30, debug_values[2], 0);
+    oam_spr(38+8+8, 30, debug_values[3], 0);
+
+    oam_spr(30, 50, next_item_timer, 2);
+
 }
 
 void end_igloo(void) {
@@ -195,8 +312,36 @@ void end_igloo(void) {
 }
 
 
-void igloo_item_movement(void) {
+void igloo_begin_new_round(void) {
+    if (round_number < 255) { ++round_number; }
+    round_begin_timer = 180; // 1 per frame of waiting
+    player_stun_timer = 0;
 
+    temp0 = MIN(round_number, 5);
+    threshold_coin = IGLOOT_BASE_THRESHOLD + temp0;
+    threshold_bomb = threshold_coin + temp0;
+    threshold_piano = threshold_bomb + temp0; // Should top out at 248?
+
+    game_seconds_timer = 0;
+    game_frame_timer = 180;
+
+    // Clear all enemy active flags
+    for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
+        enemies_flags[x] = 0;
+    }
+
+    if (items_dropped_this_round == 0 && score_this_round > 0) {
+        score += score_this_round;
+        // Buffer message for All Items Collected bonus:
+        multi_vram_buffer_horz(igloo_all_items_bonus_phrase, 16, NTADR_A(8, 5));
+        convert_to_decimal(score_this_round);
+    }
+    items_dropped_this_round = 0;
+    score_this_round = 0;
+
+    next_item_timer = rand8() & 0b11111;
+
+    // Buffer 
 }
 
 void igloo_update_score(void) {
@@ -205,27 +350,185 @@ void igloo_update_score(void) {
     multi_vram_buffer_horz(score_string, 5, NTADR_A(10, 2)); // Change, or if it doesn't change, just call hasee_update_score for code reuse as this is in the same bank
 }
 
+void igloo_update_time(void) {
+    convert_to_decimal(game_seconds_timer);
+    prepare_score_string();
+    multi_vram_buffer_horz(score_string, 5, NTADR_A(17, 2));
+}
+
 void igloo_player_movement(void) {
 
 }
 
 void igloo_sprite_collisions(void) {
-
+    
 }
 
 void igloo_draw_sprites(void) {
     // clear all sprites from sprite buffer
     oam_clear();
+    igloo_draw_chias();
+    igloo_draw_items();
+}
 
+void calculate_next_igloo_item(void) {
+    temp5 = rand(); // 0...RAND_MAX (0x7FFF)
+    if (low_byte(temp5) < 73) {
+        temp4 = IGLOOT_BAG;
+    } else if (low_byte(temp5) < 131) {
+        temp4 = IGLOOT_CHIAPOP;
+    } else if (low_byte(temp5) < 174) {
+        temp4 = IGLOOT_UMBRELLA;
+    } else if (low_byte(temp5) < 203) {
+        temp4 = IGLOOT_THINGY;
+    } else if (low_byte(temp5) < IGLOOT_BASE_THRESHOLD) {
+        temp4 = IGLOOT_POTION;
+    } else if (low_byte(temp5) < threshold_coin) {
+        temp4 = IGLOOT_COIN;
+    } else if (low_byte(temp5) < threshold_bomb) {
+        temp4 = IGLOOT_BOMB;
+    } else if (low_byte(temp5) < threshold_piano) {
+        temp4 = IGLOOT_PIANO;
+    } else {
+        temp4 = IGLOOT_BAG;
+    }
+}
+
+const void (* const igloo_ai_pointers[])(void) = {
+    igloo_default_item_ai,
+    igloo_default_item_ai,
+    igloo_default_item_ai,
+    igloo_default_item_ai,
+    igloo_default_item_ai,
+    igloo_default_item_ai,
+    igloo_bomb_item_ai,
+    igloo_default_item_ai,
+    igloo_default_item_ai,
+    igloo_default_item_ai,
+};
+
+void igloo_item_movement(void) {
+    for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
+        if (IS_ENEMY_ACTIVE(x)) {
+            temp0 = enemies_type[x];
+            AsmCallFunctionAtPtrOffsetByIndexVar(igloo_ai_pointers, temp0);
+        }
+    }
+}
+
+void igloo_item_ai_downwards_sub(void) {
+    temp4 = 0; // temp4 = did this item touch the floor this frame
+    if (IGLOO_IS_ITEM_MOVING(x)) {
+        high_byte(temp5) = enemies_y[x];
+        low_byte(temp5) = enemies_subpixel_y[x];
+
+        high_byte(temp6) = enemies_y_velocity_pixels[x];
+        low_byte(temp6) = enemies_y_velocity_subpixels[x];
+
+        temp5 += temp6;
+        if (temp5 >= IGLOO_FLOOR_Y) {
+            temp5 = IGLOO_FLOOR_Y;
+            IGLOO_STOP_ITEM(x);
+            IGLOO_SET_ITEM_BROKEN(x);
+            temp4 = 1; 
+        }
+
+        enemies_y[x] = high_byte(temp5);
+        enemies_subpixel_y[x] = low_byte(temp5);
+    }
+}
+
+void igloo_default_item_ai(void) {
+    igloo_item_ai_downwards_sub();
+    if (temp4) {
+        items_dropped_this_round += 1;
+        // Debug so we can watch items drop:
+        DEACTIVATE_ENEMY(x);
+    }
+}
+
+void igloo_bomb_item_ai(void) {
+    igloo_item_ai_downwards_sub();
+    if (IGLOO_IS_ITEM_BROKEN(index)) {
+        if (enemies_timer[x] > 120) {
+            // Turn this into an explosion
+            enemies_timer[x] = 0;
+            enemies_type[x] = IGLOOT_BOMB_EXPLOSION;
+        } else {
+            ++enemies_timer[x];
+        }
+    }
+}
+
+void igloo_explosion_ai(void) {
+    // Just exist for a bit and then go away.
+    ++enemies_timer[x];
+    if (enemies_timer[x] > 60) {
+        DEACTIVATE_ENEMY(x);
+    }
+}
+
+const void (* const igloo_draw_func_pointers[])(void) = {
+    igloo_default_draw,
+    igloo_default_draw,
+    igloo_default_draw,
+    igloo_default_draw,
+    igloo_default_draw,
+    igloo_default_draw,
+    igloo_bomb_draw,
+    igloo_default_draw,
+    igloo_bomb_explosion_draw,
+    igloo_piano_explosion_draw,
+};
+
+void igloo_draw_chias(void) {
     // Mika
     oam_meta_spr(high_byte(mika.x), high_byte(mika.y), mika_idle);
-
     // Carassa
     oam_meta_spr(high_byte(carassa.x), high_byte(carassa.y), carassa_idle);
+}
 
+void igloo_draw_items(void) {
+    for (x = 0; x < shuffle_leg_size; ++x) {
+        temp1 = x + shuffle_offset;
+        AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
+        debug_values[2] += 1;
+        if (IS_ENEMY_ACTIVE(x)) {
+            temp_x = enemies_x[x];
+            temp_y = enemies_y[x];
+            temp0 = enemies_type[x];
+            AsmCallFunctionAtPtrOffsetByIndexVar(igloo_draw_func_pointers, temp0);
+            oam_meta_spr(temp_x, temp_y, temppointer);
+            debug_values[3] += 1;
+        }
+    }
+}
 
-    // Items
+void igloo_default_draw(void) {
+    temp0 <<= 1;
+    temp0 |= IGLOO_IS_ITEM_BROKEN(x);
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, igloot_metasprite_defaultdraw_lut, temp0);
+}
 
+void igloo_bomb_draw(void) {
+    if (!IGLOO_IS_ITEM_BROKEN(x)) {
+        temppointer = item_bomb;
+    } else {
+        // Animate fuse (later?)?
+        // AsmSet2ByteFromPtrAtIndexVar(temppointer, igloot_metasprite_defaultdraw_lut, temp0);
+        temppointer = item_bomb;
+    }
+    
+}
+
+void igloo_bomb_explosion_draw(void) {
+    //temp0 = enemies_timer[x];
+    temppointer = item_explosion_twinkle;
+}
+
+void igloo_piano_explosion_draw(void) {
+    //temp0 = enemies_timer[x];
+    temppointer = item_explosion_twinkle;
 }
 
 #pragma code-name(pop)

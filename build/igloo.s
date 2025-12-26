@@ -10,6 +10,7 @@
 	.importzp	sp, sreg, regsave, regbank
 	.importzp	tmp1, tmp2, tmp3, tmp4, ptr1, ptr2, ptr3, ptr4
 	.macpack	longbranch
+	.import		_rand
 	.import		_srand
 	.import		_multi_vram_buffer_horz
 	.import		_clear_vram_buffer
@@ -23,6 +24,7 @@
 	.import		_oam_clear
 	.importzp	_TEMP
 	.import		_oam_meta_spr_fast_sub
+	.import		_oam_spr_fast_sub
 	.import		_music_play
 	.import		_pad_poll
 	.import		_rand8
@@ -30,6 +32,9 @@
 	.import		_memfill
 	.import		_score_string
 	.import		_convert_to_decimal
+	.export		_igloo_all_items_bonus_phrase
+	.export		_igloo_starting_next_level_phrase
+	.export		_igloo_ellipsis
 	.export		_carassa_idle
 	.export		_carassa_walk1
 	.export		_carassa_walk2
@@ -37,30 +42,69 @@
 	.export		_mika_walk1
 	.export		_mika_walk2
 	.export		_item_potion
+	.export		_item_potion_broken
 	.export		_item_piano
 	.export		_item_chiapop
+	.export		_item_chiapop_broken
 	.export		_item_coin
+	.export		_item_coin_broken
 	.export		_item_umbrella
+	.export		_item_umbrella_broken
 	.export		_item_bomb
 	.export		_item_thingy
+	.export		_item_thingy_broken
 	.export		_item_bag
+	.export		_item_bag_broken
+	.export		_item_explosion_twinkle
+	.export		_igloot_metasprite_defaultdraw_lut
 	.export		_igloo_game_screen
+	.importzp	_temp0
+	.importzp	_temp1
+	.importzp	_temp4
+	.importzp	_temp5
+	.importzp	_temp6
 	.importzp	_pad1
 	.importzp	_pad1_new
+	.importzp	_x
 	.importzp	_temppointer
 	.importzp	_score
 	.importzp	_game_mode
 	.importzp	_player_flags
 	.importzp	_menu
+	.importzp	_shuffle_offset
+	.importzp	_temp_x
+	.importzp	_temp_y
+	.importzp	_debug_values
+	.importzp	_eject_L
+	.importzp	_eject_R
+	.importzp	_eject_D
+	.importzp	_eject_U
+	.importzp	_nt
 	.importzp	_valrigard
 	.importzp	_player2
 	.importzp	_level_index
 	.importzp	_player_death_timer
+	.importzp	_index
+	.importzp	_enemy_limit
+	.importzp	_lowest_enemy_index
+	.importzp	_pseudo_scroll_y
+	.import		_shuffle_array
+	.import		_shuffle_leg_size
+	.import		_enemies_x
+	.import		_enemies_y
+	.import		_enemies_actual_y
+	.import		_enemies_extra
+	.import		_enemies_extra2
+	.import		_enemies_type
+	.import		_enemies_flags
+	.import		_enemies_timer
+	.import		_enemies_count
 	.import		_cmap
 	.export		_igloo_palette_sp
 	.export		_igloo_palette_bg
 	.import		_clear_screen
 	.import		_set_prg_bank
+	.import		_calculate_shuffle_array
 	.import		_switch_menu
 	.import		_LZG_decode
 	.import		_prepare_score_string
@@ -73,6 +117,21 @@
 	.export		_igloo_sprite_collisions
 	.export		_igloo_draw_sprites
 	.export		_igloo_update_score
+	.export		_igloo_update_time
+	.export		_igloo_begin_new_round
+	.export		_calculate_next_igloo_item
+	.export		_igloo_item_ai_downwards_sub
+	.export		_igloo_default_item_ai
+	.export		_igloo_bomb_item_ai
+	.export		_igloo_draw_chias
+	.export		_igloo_draw_items
+	.export		_igloo_default_draw
+	.export		_igloo_bomb_draw
+	.export		_igloo_bomb_explosion_draw
+	.export		_igloo_piano_explosion_draw
+	.export		_igloo_ai_pointers
+	.export		_igloo_explosion_ai
+	.export		_igloo_draw_func_pointers
 
 .segment	"DATA"
 
@@ -97,6 +156,12 @@ _igloo_palette_bg:
 .segment	"RODATA"
 
 .segment	"BANK1"
+_igloo_all_items_bonus_phrase:
+	.addr	L0003
+_igloo_starting_next_level_phrase:
+	.addr	L0005
+_igloo_ellipsis:
+	.addr	L0007
 _carassa_idle:
 	.byte	$00
 	.byte	$00
@@ -415,6 +480,16 @@ _item_potion:
 	.byte	$97
 	.byte	$41
 	.byte	$80
+_item_potion_broken:
+	.byte	$00
+	.byte	$00
+	.byte	$A7
+	.byte	$01
+	.byte	$08
+	.byte	$00
+	.byte	$A7
+	.byte	$41
+	.byte	$80
 _item_piano:
 	.byte	$08
 	.byte	$00
@@ -444,7 +519,7 @@ _item_piano:
 	.byte	$10
 	.byte	$A5
 	.byte	$02
-	.byte	$10
+	.byte	$11
 	.byte	$10
 	.byte	$A4
 	.byte	$42
@@ -459,6 +534,16 @@ _item_chiapop:
 	.byte	$5F
 	.byte	$02
 	.byte	$80
+_item_chiapop_broken:
+	.byte	$00
+	.byte	$00
+	.byte	$C4
+	.byte	$02
+	.byte	$08
+	.byte	$00
+	.byte	$C5
+	.byte	$02
+	.byte	$80
 _item_coin:
 	.byte	$00
 	.byte	$00
@@ -467,6 +552,16 @@ _item_coin:
 	.byte	$08
 	.byte	$00
 	.byte	$5D
+	.byte	$00
+	.byte	$80
+_item_coin_broken:
+	.byte	$00
+	.byte	$00
+	.byte	$D6
+	.byte	$00
+	.byte	$08
+	.byte	$00
+	.byte	$D7
 	.byte	$00
 	.byte	$80
 _item_umbrella:
@@ -481,6 +576,16 @@ _item_umbrella:
 	.byte	$10
 	.byte	$00
 	.byte	$4E
+	.byte	$00
+	.byte	$80
+_item_umbrella_broken:
+	.byte	$04
+	.byte	$00
+	.byte	$C6
+	.byte	$00
+	.byte	$0C
+	.byte	$00
+	.byte	$C7
 	.byte	$00
 	.byte	$80
 _item_bomb:
@@ -507,7 +612,17 @@ _item_thingy:
 	.byte	$E2
 	.byte	$03
 	.byte	$00
+	.byte	$08
+	.byte	$F2
+	.byte	$03
+	.byte	$80
+_item_thingy_broken:
+	.byte	$FC
 	.byte	$00
+	.byte	$E2
+	.byte	$03
+	.byte	$04
+	.byte	$08
 	.byte	$F2
 	.byte	$03
 	.byte	$80
@@ -522,13 +637,58 @@ _item_bag:
 	.byte	$43
 	.byte	$00
 	.byte	$08
-	.byte	$E4
+	.byte	$F3
 	.byte	$03
 	.byte	$08
 	.byte	$08
-	.byte	$E4
+	.byte	$F3
 	.byte	$43
 	.byte	$80
+_item_bag_broken:
+	.byte	$00
+	.byte	$00
+	.byte	$B7
+	.byte	$03
+	.byte	$08
+	.byte	$00
+	.byte	$B7
+	.byte	$43
+	.byte	$80
+_item_explosion_twinkle:
+	.byte	$00
+	.byte	$00
+	.byte	$B4
+	.byte	$00
+	.byte	$08
+	.byte	$00
+	.byte	$B4
+	.byte	$40
+	.byte	$00
+	.byte	$08
+	.byte	$B4
+	.byte	$80
+	.byte	$08
+	.byte	$08
+	.byte	$B4
+	.byte	$C0
+	.byte	$80
+_igloot_metasprite_defaultdraw_lut:
+	.addr	_item_bag
+	.addr	_item_bag_broken
+	.addr	_item_chiapop
+	.addr	_item_chiapop_broken
+	.addr	_item_umbrella
+	.addr	_item_umbrella_broken
+	.addr	_item_thingy
+	.addr	_item_thingy_broken
+	.addr	_item_potion
+	.addr	_item_potion_broken
+	.addr	_item_coin
+	.addr	_item_coin_broken
+	.addr	_item_bomb
+	.addr	_item_bomb
+	.addr	_item_piano
+	.addr	_item_piano
 .segment	"RODATA"
 .segment	"BANK5"
 _igloo_game_screen:
@@ -908,7 +1068,36 @@ _igloo_palette_sp:
 	.byte	$05
 	.byte	$35
 	.byte	$38
+_igloo_ai_pointers:
+	.addr	_igloo_default_item_ai
+	.addr	_igloo_default_item_ai
+	.addr	_igloo_default_item_ai
+	.addr	_igloo_default_item_ai
+	.addr	_igloo_default_item_ai
+	.addr	_igloo_default_item_ai
+	.addr	_igloo_bomb_item_ai
+	.addr	_igloo_default_item_ai
+	.addr	_igloo_default_item_ai
+	.addr	_igloo_default_item_ai
+_igloo_draw_func_pointers:
+	.addr	_igloo_default_draw
+	.addr	_igloo_default_draw
+	.addr	_igloo_default_draw
+	.addr	_igloo_default_draw
+	.addr	_igloo_default_draw
+	.addr	_igloo_default_draw
+	.addr	_igloo_bomb_draw
+	.addr	_igloo_default_draw
+	.addr	_igloo_bomb_explosion_draw
+	.addr	_igloo_piano_explosion_draw
 .segment	"RODATA"
+L0003:
+	.byte	$41,$6C,$6C,$20,$69,$74,$65,$6D,$73,$20,$62,$6F,$6E,$75,$73,$3A
+	.byte	$00
+L0005:
+	.byte	$53,$74,$61,$72,$74,$69,$6E,$67,$20,$4C,$65,$76,$65,$6C,$20,$00
+L0007:
+	.byte	$2E,$2E,$2E,$00
 
 ; ---------------------------------------------------------------
 ; void __near__ game_igloo (void)
@@ -966,12 +1155,211 @@ _igloo_palette_sp:
 ;
 	lda     _player_flags
 	and     #$01
-	beq     L03D2
+	beq     L068F
 	jsr     _igloo_update_score
+;
+; if (game_seconds_timer > 0) {
+;
+L068F:	lda     _enemy_limit
+	jeq     L0693
+;
+; --game_frame_timer;
+;
+	dec     _lowest_enemy_index
+;
+; if (game_frame_timer == 0) {
+;
+	bne     L0690
+;
+; game_frame_timer = 60;
+;
+	lda     #$3C
+	sta     _lowest_enemy_index
+;
+; --game_seconds_timer;
+;
+	dec     _enemy_limit
+;
+; igloo_update_time();
+;
+	jsr     _igloo_update_time
+;
+; --next_item_timer;
+;
+L0690:	dec     _index
+;
+; if (next_item_timer == 0) {
+;
+	jne     L0696
+;
+; next_item_timer = 32 + (rand8() & 0b11111);
+;
+	jsr     _rand8
+	and     #$1F
+	clc
+	adc     #$20
+	sta     _index
+;
+; calculate_next_igloo_item();
+;
+	jsr     _calculate_next_igloo_item
+;
+; for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
+;
+	lda     #$00
+	sta     _x
+L0691:	lda     _x
+	cmp     #$0C
+	jcs     L0696
+;
+; debug_values[0] += 1;
+;
+	inc     _debug_values
+;
+; if (!IS_ENEMY_ACTIVE(x)) {
+;
+	ldy     _x
+	lda     _enemies_flags,y
+	and     #$80
+	bne     L0692
+;
+; temp0 = rand8();
+;
+	jsr     _rand8
+	sta     _temp0
+;
+; enemies_type[x] = temp4;
+;
+	ldy     _x
+	lda     _temp4
+	sta     _enemies_type,y
+;
+; enemies_flags[x] = 0;
+;
+	ldy     _x
+	lda     #$00
+	sta     _enemies_flags,y
+;
+; ACTIVATE_ENEMY(x);
+;
+	ldy     _x
+	lda     _enemies_flags,y
+	ora     #$80
+	sta     _enemies_flags,y
+;
+; enemies_x[x] = (temp0 & 0b01111111) + 64;
+;
+	lda     #<(_enemies_x)
+	ldx     #>(_enemies_x)
+	clc
+	adc     _x
+	bcc     L044A
+	inx
+L044A:	sta     ptr1
+	stx     ptr1+1
+	lda     _temp0
+	and     #$7F
+	clc
+	adc     #$40
+	ldy     #$00
+	sta     (ptr1),y
+;
+; enemies_y[x] = IGLOO_BRIDGE_Y_CHAR; // minus whatever for the item's height? Maybe use a LUT for that
+;
+	ldy     _x
+	lda     #$38
+	sta     _enemies_y,y
+;
+; enemies_subpixel_y[x] = 0;
+;
+	ldy     _x
+	lda     #$00
+	sta     _enemies_actual_y,y
+;
+; enemies_y_velocity_pixels[x] = 0;
+;
+	ldy     _x
+	sta     _enemies_extra,y
+;
+; enemies_y_velocity_subpixels[x] = 0;
+;
+	ldy     _x
+	sta     _enemies_extra2,y
+;
+; enemies_timer[x] = 0;
+;
+	ldy     _x
+	sta     _enemies_timer,y
+;
+; IGLOO_START_MOVING_ITEM(x);
+;
+	ldy     _x
+	lda     _enemies_flags,y
+	ora     #$40
+	sta     _enemies_flags,y
+;
+; enemies_y_velocity_pixels[x] = 1;
+;
+	ldy     _x
+	lda     #$01
+	sta     _enemies_extra,y
+;
+; debug_values[1] += 1;
+;
+	inc     _debug_values+1
+;
+; break;
+;
+	jmp     L0696
+;
+; for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
+;
+L0692:	inc     _x
+	jmp     L0691
+;
+; } else if (game_frame_timer > 0)  {
+;
+L0693:	lda     _lowest_enemy_index
+	beq     L0472
+;
+; --game_frame_timer;
+;
+	dec     _lowest_enemy_index
+;
+; if (game_frame_timer == 0) {
+;
+	bne     L0696
+;
+; temp0 = MIN(round_number, 5);
+;
+	lda     _level_index
+	cmp     #$05
+	bcs     L0694
+	jmp     L0695
+L0694:	lda     #$05
+L0695:	sta     _temp0
+;
+; game_seconds_timer = 30;
+;
+	lda     #$1E
+	sta     _enemy_limit
+;
+; game_frame_timer = 60;
+;
+	lda     #$3C
+	sta     _lowest_enemy_index
+;
+; } else {
+;
+	jmp     L0696
+;
+; igloo_begin_new_round();
+;
+L0472:	jsr     _igloo_begin_new_round
 ;
 ; if (pad1 & PAD_B) {
 ;
-L03D2:	lda     _pad1
+L0696:	lda     _pad1
 	and     #$40
 	cmp     #$00
 ;
@@ -979,9 +1367,59 @@ L03D2:	lda     _pad1
 ;
 	jne     _end_igloo
 ;
-; }
+; oam_spr(30, 30, debug_values[0], 0);
 ;
-	rts
+	lda     #$1E
+	sta     _TEMP
+	sta     _TEMP+1
+	lda     _debug_values
+	sta     _TEMP+2
+	lda     #$00
+	jsr     _oam_spr_fast_sub
+;
+; oam_spr(38, 30, debug_values[1], 0);
+;
+	lda     #$26
+	sta     _TEMP
+	lda     #$1E
+	sta     _TEMP+1
+	lda     _debug_values+1
+	sta     _TEMP+2
+	lda     #$00
+	jsr     _oam_spr_fast_sub
+;
+; oam_spr(38+8, 30, debug_values[2], 0);
+;
+	lda     #$2E
+	sta     _TEMP
+	lda     #$1E
+	sta     _TEMP+1
+	lda     _debug_values+2
+	sta     _TEMP+2
+	lda     #$00
+	jsr     _oam_spr_fast_sub
+;
+; oam_spr(38+8+8, 30, debug_values[3], 0);
+;
+	lda     #$36
+	sta     _TEMP
+	lda     #$1E
+	sta     _TEMP+1
+	lda     _debug_values+3
+	sta     _TEMP+2
+	lda     #$00
+	jsr     _oam_spr_fast_sub
+;
+; oam_spr(30, 50, next_item_timer, 2);
+;
+	lda     #$1E
+	sta     _TEMP
+	lda     #$32
+	sta     _TEMP+1
+	lda     _index
+	sta     _TEMP+2
+	lda     #$02
+	jmp     _oam_spr_fast_sub
 
 .endproc
 
@@ -1122,7 +1560,7 @@ L03D2:	lda     _pad1
 	sta     _valrigard
 	stx     _valrigard+1
 ;
-; mika.y = 0xB000;
+; mika.y = MIKA_STARTING_Y;
 ;
 	ldx     #$B0
 	sta     _valrigard+2
@@ -1134,19 +1572,48 @@ L03D2:	lda     _pad1
 	sta     _player2
 	stx     _player2+1
 ;
-; carassa.y = 0x2000;
+; carassa.y = CARASSA_STARTING_Y;
 ;
 	ldx     #$20
 	sta     _player2+2
 	stx     _player2+2+1
 ;
-; level = 0;
+; round_number = 0;
 ;
 	sta     _level_index
 ;
-; player_stun_timer = 0;
+; score_this_round = 0;
 ;
-	sta     _player_death_timer
+	sta     _pseudo_scroll_y
+	sta     _pseudo_scroll_y+1
+;
+; enemies_count = ONSCREEN_JUNK_MAXIMUM; // Used by extern'd functions
+;
+	lda     #$0C
+	sta     _enemies_count
+;
+; for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
+;
+	lda     #$00
+	sta     _x
+L0698:	lda     _x
+	cmp     #$0C
+	bcs     L03EE
+;
+; enemies_flags[x] = 0; // Clear (deactivate) all enemies
+;
+	ldy     _x
+	lda     #$00
+	sta     _enemies_flags,y
+;
+; for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
+;
+	inc     _x
+	jmp     L0698
+;
+; calculate_shuffle_array();
+;
+L03EE:	jsr     _calculate_shuffle_array
 ;
 ; seed_rng();
 ;
@@ -1161,6 +1628,10 @@ L03D2:	lda     _pad1
 ; igloo_update_score();
 ;
 	jsr     _igloo_update_score
+;
+; igloo_update_time();
+;
+	jsr     _igloo_update_time
 ;
 ; ppu_on_all();
 ;
@@ -1223,9 +1694,43 @@ L03D2:	lda     _pad1
 .segment	"BANK1"
 
 ;
+; for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
+;
+	lda     #$00
+	sta     _x
+L0699:	lda     _x
+	cmp     #$0C
+	bcs     L0574
+;
+; if (IS_ENEMY_ACTIVE(x)) {
+;
+	ldy     _x
+	lda     _enemies_flags,y
+	and     #$80
+	beq     L069A
+;
+; temp0 = enemies_type[x];
+;
+	ldy     _x
+	lda     _enemies_type,y
+	sta     _temp0
+;
+; AsmCallFunctionAtPtrOffsetByIndexVar(igloo_ai_pointers, temp0);
+;
+	asl     a
+	tay
+	lda     _igloo_ai_pointers,y
+	ldx     _igloo_ai_pointers+1,y
+	jsr     callax
+;
+; for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
+;
+L069A:	inc     _x
+	jmp     L0699
+;
 ; }
 ;
-	rts
+L0574:	rts
 
 .endproc
 
@@ -1278,25 +1783,13 @@ L03D2:	lda     _pad1
 ;
 	jsr     _oam_clear
 ;
-; oam_meta_spr(high_byte(mika.x), high_byte(mika.y), mika_idle);
+; igloo_draw_chias();
 ;
-	lda     _valrigard+1
-	sta     _TEMP+5
-	lda     _valrigard+3
-	sta     _TEMP+6
-	lda     #<(_mika_idle)
-	ldx     #>(_mika_idle)
-	jsr     _oam_meta_spr_fast_sub
+	jsr     _igloo_draw_chias
 ;
-; oam_meta_spr(high_byte(carassa.x), high_byte(carassa.y), carassa_idle);
+; igloo_draw_items();
 ;
-	lda     _player2+1
-	sta     _TEMP+5
-	lda     _player2+3
-	sta     _TEMP+6
-	lda     #<(_carassa_idle)
-	ldx     #>(_carassa_idle)
-	jmp     _oam_meta_spr_fast_sub
+	jmp     _igloo_draw_items
 
 .endproc
 
@@ -1336,6 +1829,814 @@ L03D2:	lda     _pad1
 	ldx     #$20
 	lda     #$4A
 	jmp     _multi_vram_buffer_horz
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_update_time (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_update_time: near
+
+.segment	"BANK1"
+
+;
+; convert_to_decimal(game_seconds_timer);
+;
+	lda     _enemy_limit
+	ldx     #$00
+	jsr     _convert_to_decimal
+;
+; prepare_score_string();
+;
+	jsr     _prepare_score_string
+;
+; multi_vram_buffer_horz(score_string, 5, NTADR_A(17, 2));
+;
+	jsr     decsp3
+	lda     #<(_score_string)
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     #>(_score_string)
+	sta     (sp),y
+	lda     #$05
+	ldy     #$00
+	sta     (sp),y
+	ldx     #$20
+	lda     #$51
+	jmp     _multi_vram_buffer_horz
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_begin_new_round (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_begin_new_round: near
+
+.segment	"BANK1"
+
+;
+; if (round_number < 255) { ++round_number; }
+;
+	lda     _level_index
+	cmp     #$FF
+	bcs     L069D
+	inc     _level_index
+;
+; round_begin_timer = 180; // 1 per frame of waiting
+;
+L069D:	lda     #$B4
+	sta     _eject_R
+;
+; player_stun_timer = 0;
+;
+	lda     #$00
+	sta     _player_death_timer
+;
+; temp0 = MIN(round_number, 5);
+;
+	lda     _level_index
+	cmp     #$05
+	bcs     L069E
+	jmp     L069F
+L069E:	lda     #$05
+L069F:	sta     _temp0
+;
+; threshold_coin = IGLOOT_BASE_THRESHOLD + temp0;
+;
+	clc
+	adc     #$DA
+	sta     _eject_D
+;
+; threshold_bomb = threshold_coin + temp0;
+;
+	clc
+	adc     _temp0
+	sta     _eject_U
+;
+; threshold_piano = threshold_bomb + temp0; // Should top out at 248?
+;
+	clc
+	adc     _temp0
+	sta     _nt
+;
+; game_seconds_timer = 0;
+;
+	lda     #$00
+	sta     _enemy_limit
+;
+; game_frame_timer = 180;
+;
+	lda     #$B4
+	sta     _lowest_enemy_index
+;
+; for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
+;
+	lda     #$00
+	sta     _x
+L06A0:	lda     _x
+	cmp     #$0C
+	bcs     L06A1
+;
+; enemies_flags[x] = 0;
+;
+	ldy     _x
+	lda     #$00
+	sta     _enemies_flags,y
+;
+; for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
+;
+	inc     _x
+	jmp     L06A0
+;
+; if (items_dropped_this_round == 0 && score_this_round > 0) {
+;
+L06A1:	lda     _eject_L
+	bne     L06A6
+	lda     _pseudo_scroll_y
+	ora     _pseudo_scroll_y+1
+	beq     L06A7
+;
+; score += score_this_round;
+;
+	lda     _pseudo_scroll_y
+	clc
+	adc     _score
+	sta     _score
+	lda     _pseudo_scroll_y+1
+	adc     _score+1
+	sta     _score+1
+;
+; multi_vram_buffer_horz(igloo_all_items_bonus_phrase, 16, NTADR_A(8, 5));
+;
+	jsr     decsp3
+	lda     _igloo_all_items_bonus_phrase
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     _igloo_all_items_bonus_phrase+1
+	sta     (sp),y
+	lda     #$10
+	ldy     #$00
+	sta     (sp),y
+	ldx     #$20
+	lda     #$A8
+	jsr     _multi_vram_buffer_horz
+;
+; convert_to_decimal(score_this_round);
+;
+	lda     _pseudo_scroll_y
+	ldx     _pseudo_scroll_y+1
+	jsr     _convert_to_decimal
+;
+; items_dropped_this_round = 0;
+;
+L06A6:	lda     #$00
+L06A7:	sta     _eject_L
+;
+; score_this_round = 0;
+;
+	sta     _pseudo_scroll_y
+	sta     _pseudo_scroll_y+1
+;
+; next_item_timer = rand8() & 0b11111;
+;
+	jsr     _rand8
+	and     #$1F
+	sta     _index
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ calculate_next_igloo_item (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_calculate_next_igloo_item: near
+
+.segment	"BANK1"
+
+;
+; temp5 = rand(); // 0...RAND_MAX (0x7FFF)
+;
+	jsr     _rand
+	sta     _temp5
+	stx     _temp5+1
+;
+; if (low_byte(temp5) < 73) {
+;
+	ldx     #$00
+	lda     _temp5
+	cmp     #$49
+;
+; } else if (low_byte(temp5) < 131) {
+;
+	bcc     L06B0
+	cmp     #$83
+	bcs     L06AA
+;
+; temp4 = IGLOOT_CHIAPOP;
+;
+	lda     #$01
+;
+; } else if (low_byte(temp5) < 174) {
+;
+	jmp     L06A8
+L06AA:	lda     _temp5
+	cmp     #$AE
+	bcs     L06AB
+;
+; temp4 = IGLOOT_UMBRELLA;
+;
+	lda     #$02
+;
+; } else if (low_byte(temp5) < 203) {
+;
+	jmp     L06A8
+L06AB:	lda     _temp5
+	cmp     #$CB
+	bcs     L06AC
+;
+; temp4 = IGLOOT_THINGY;
+;
+	lda     #$03
+;
+; } else if (low_byte(temp5) < IGLOOT_BASE_THRESHOLD) {
+;
+	jmp     L06A8
+L06AC:	lda     _temp5
+	cmp     #$DA
+	bcs     L06AD
+;
+; temp4 = IGLOOT_POTION;
+;
+	lda     #$04
+;
+; } else if (low_byte(temp5) < threshold_coin) {
+;
+	jmp     L06A8
+L06AD:	lda     _temp5
+	cmp     _eject_D
+	bcs     L06AE
+;
+; temp4 = IGLOOT_COIN;
+;
+	lda     #$05
+;
+; } else if (low_byte(temp5) < threshold_bomb) {
+;
+	jmp     L06A8
+L06AE:	lda     _temp5
+	cmp     _eject_U
+	bcs     L06AF
+;
+; temp4 = IGLOOT_BOMB;
+;
+	lda     #$06
+;
+; } else if (low_byte(temp5) < threshold_piano) {
+;
+	jmp     L06A8
+L06AF:	lda     _temp5
+	cmp     _nt
+	txa
+	bcs     L06A8
+;
+; temp4 = IGLOOT_PIANO;
+;
+	lda     #$07
+;
+; } else {
+;
+	jmp     L06A8
+;
+; temp4 = IGLOOT_BAG;
+;
+L06B0:	txa
+L06A8:	sta     _temp4
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_item_ai_downwards_sub (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_item_ai_downwards_sub: near
+
+.segment	"BANK1"
+
+;
+; temp4 = 0; // temp4 = did this item touch the floor this frame
+;
+	lda     #$00
+	sta     _temp4
+;
+; if (IGLOO_IS_ITEM_MOVING(x)) {
+;
+	ldy     _x
+	lda     _enemies_flags,y
+	and     #$40
+	beq     L0593
+;
+; high_byte(temp5) = enemies_y[x];
+;
+	ldy     _x
+	lda     _enemies_y,y
+	sta     _temp5+1
+;
+; low_byte(temp5) = enemies_subpixel_y[x];
+;
+	ldy     _x
+	lda     _enemies_actual_y,y
+	sta     _temp5
+;
+; high_byte(temp6) = enemies_y_velocity_pixels[x];
+;
+	ldy     _x
+	lda     _enemies_extra,y
+	sta     _temp6+1
+;
+; low_byte(temp6) = enemies_y_velocity_subpixels[x];
+;
+	ldy     _x
+	lda     _enemies_extra2,y
+	sta     _temp6
+;
+; temp5 += temp6;
+;
+	clc
+	adc     _temp5
+	sta     _temp5
+	lda     _temp6+1
+	adc     _temp5+1
+	sta     _temp5+1
+;
+; if (temp5 >= IGLOO_FLOOR_Y) {
+;
+	lda     _temp5
+	cmp     #$00
+	lda     _temp5+1
+	sbc     #$C8
+	bcc     L05AE
+;
+; temp5 = IGLOO_FLOOR_Y;
+;
+	ldx     #$C8
+	lda     #$00
+	sta     _temp5
+	stx     _temp5+1
+;
+; IGLOO_STOP_ITEM(x);
+;
+	ldy     _x
+	lda     _enemies_flags,y
+	and     #$BF
+	sta     _enemies_flags,y
+;
+; IGLOO_SET_ITEM_BROKEN(x);
+;
+	ldy     _x
+	lda     _enemies_flags,y
+	ora     #$01
+	sta     _enemies_flags,y
+;
+; temp4 = 1; 
+;
+	lda     #$01
+	sta     _temp4
+;
+; enemies_y[x] = high_byte(temp5);
+;
+L05AE:	ldy     _x
+	lda     _temp5+1
+	sta     _enemies_y,y
+;
+; enemies_subpixel_y[x] = low_byte(temp5);
+;
+	ldy     _x
+	lda     _temp5
+	sta     _enemies_actual_y,y
+;
+; }
+;
+L0593:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_default_item_ai (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_default_item_ai: near
+
+.segment	"BANK1"
+
+;
+; igloo_item_ai_downwards_sub();
+;
+	jsr     _igloo_item_ai_downwards_sub
+;
+; if (temp4) {
+;
+	lda     _temp4
+	beq     L05D0
+;
+; items_dropped_this_round += 1;
+;
+	inc     _eject_L
+;
+; DEACTIVATE_ENEMY(x);
+;
+	ldy     _x
+	lda     _enemies_flags,y
+	and     #$7F
+	sta     _enemies_flags,y
+;
+; }
+;
+L05D0:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_bomb_item_ai (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_bomb_item_ai: near
+
+.segment	"BANK1"
+
+;
+; igloo_item_ai_downwards_sub();
+;
+	jsr     _igloo_item_ai_downwards_sub
+;
+; if (IGLOO_IS_ITEM_BROKEN(index)) {
+;
+	ldy     _index
+	lda     _enemies_flags,y
+	and     #$01
+	beq     L05F0
+;
+; if (enemies_timer[x] > 120) {
+;
+	ldy     _x
+	lda     _enemies_timer,y
+	cmp     #$79
+	bcc     L05E4
+;
+; enemies_timer[x] = 0;
+;
+	ldy     _x
+	lda     #$00
+	sta     _enemies_timer,y
+;
+; enemies_type[x] = IGLOOT_BOMB_EXPLOSION;
+;
+	ldy     _x
+	lda     #$08
+	sta     _enemies_type,y
+;
+; } else {
+;
+	rts
+;
+; ++enemies_timer[x];
+;
+L05E4:	lda     #<(_enemies_timer)
+	ldx     #>(_enemies_timer)
+	clc
+	adc     _x
+	bcc     L05F3
+	inx
+L05F3:	sta     ptr1
+	stx     ptr1+1
+	ldy     #$00
+	lda     #$01
+	clc
+	adc     (ptr1),y
+	sta     (ptr1),y
+;
+; }
+;
+L05F0:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_draw_chias (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_draw_chias: near
+
+.segment	"BANK1"
+
+;
+; oam_meta_spr(high_byte(mika.x), high_byte(mika.y), mika_idle);
+;
+	lda     _valrigard+1
+	sta     _TEMP+5
+	lda     _valrigard+3
+	sta     _TEMP+6
+	lda     #<(_mika_idle)
+	ldx     #>(_mika_idle)
+	jsr     _oam_meta_spr_fast_sub
+;
+; oam_meta_spr(high_byte(carassa.x), high_byte(carassa.y), carassa_idle);
+;
+	lda     _player2+1
+	sta     _TEMP+5
+	lda     _player2+3
+	sta     _TEMP+6
+	lda     #<(_carassa_idle)
+	ldx     #>(_carassa_idle)
+	jmp     _oam_meta_spr_fast_sub
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_draw_items (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_draw_items: near
+
+.segment	"BANK1"
+
+;
+; for (x = 0; x < shuffle_leg_size; ++x) {
+;
+	lda     #$00
+	sta     _x
+	tax
+L06B2:	lda     _x
+	cmp     _shuffle_leg_size
+	txa
+	sbc     #$00
+	bcs     L062A
+;
+; temp1 = x + shuffle_offset;
+;
+	lda     _x
+	clc
+	adc     _shuffle_offset
+	sta     _temp1
+;
+; AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
+;
+	ldy     _temp1
+	lda     _shuffle_array,y
+	sta     _x
+;
+; debug_values[2] += 1;
+;
+	inc     _debug_values+2
+;
+; if (IS_ENEMY_ACTIVE(x)) {
+;
+	ldy     _x
+	lda     _enemies_flags,y
+	and     #$80
+	beq     L06B3
+;
+; temp_x = enemies_x[x];
+;
+	ldy     _x
+	lda     _enemies_x,y
+	sta     _temp_x
+;
+; temp_y = enemies_y[x];
+;
+	ldy     _x
+	lda     _enemies_y,y
+	sta     _temp_y
+;
+; temp0 = enemies_type[x];
+;
+	ldy     _x
+	lda     _enemies_type,y
+	sta     _temp0
+;
+; AsmCallFunctionAtPtrOffsetByIndexVar(igloo_draw_func_pointers, temp0);
+;
+	asl     a
+	tay
+	lda     _igloo_draw_func_pointers,y
+	ldx     _igloo_draw_func_pointers+1,y
+	jsr     callax
+;
+; oam_meta_spr(temp_x, temp_y, temppointer);
+;
+	lda     _temp_x
+	sta     _TEMP+5
+	lda     _temp_y
+	sta     _TEMP+6
+	lda     _temppointer
+	ldx     _temppointer+1
+	jsr     _oam_meta_spr_fast_sub
+;
+; debug_values[3] += 1;
+;
+	inc     _debug_values+3
+;
+; for (x = 0; x < shuffle_leg_size; ++x) {
+;
+	ldx     #$00
+L06B3:	inc     _x
+	jmp     L06B2
+;
+; }
+;
+L062A:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_default_draw (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_default_draw: near
+
+.segment	"BANK1"
+
+;
+; temp0 <<= 1;
+;
+	lda     _temp0
+	asl     a
+	sta     _temp0
+;
+; temp0 |= IGLOO_IS_ITEM_BROKEN(x);
+;
+	ldy     _x
+	lda     _enemies_flags,y
+	and     #$01
+	ora     _temp0
+	sta     _temp0
+;
+; AsmSet2ByteFromPtrAtIndexVar(temppointer, igloot_metasprite_defaultdraw_lut, temp0);
+;
+	asl     a
+	tay
+	lda     _igloot_metasprite_defaultdraw_lut,y
+	sta     _temppointer
+	lda     _igloot_metasprite_defaultdraw_lut+1,y
+	sta     _temppointer+1
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_bomb_draw (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_bomb_draw: near
+
+.segment	"BANK1"
+
+;
+; if (!IGLOO_IS_ITEM_BROKEN(x)) {
+;
+	ldy     _x
+	lda     _enemies_flags,y
+	and     #$01
+;
+; temppointer = item_bomb;
+;
+	lda     #>(_item_bomb)
+	sta     _temppointer+1
+	lda     #<(_item_bomb)
+	sta     _temppointer
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_bomb_explosion_draw (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_bomb_explosion_draw: near
+
+.segment	"BANK1"
+
+;
+; temppointer = item_explosion_twinkle;
+;
+	lda     #>(_item_explosion_twinkle)
+	sta     _temppointer+1
+	lda     #<(_item_explosion_twinkle)
+	sta     _temppointer
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_piano_explosion_draw (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_piano_explosion_draw: near
+
+.segment	"BANK1"
+
+;
+; temppointer = item_explosion_twinkle;
+;
+	lda     #>(_item_explosion_twinkle)
+	sta     _temppointer+1
+	lda     #<(_item_explosion_twinkle)
+	sta     _temppointer
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_explosion_ai (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_explosion_ai: near
+
+.segment	"BANK1"
+
+;
+; ++enemies_timer[x];
+;
+	lda     #<(_enemies_timer)
+	ldx     #>(_enemies_timer)
+	clc
+	adc     _x
+	bcc     L05F7
+	inx
+L05F7:	sta     ptr1
+	stx     ptr1+1
+	ldy     #$00
+	lda     #$01
+	clc
+	adc     (ptr1),y
+	sta     (ptr1),y
+;
+; if (enemies_timer[x] > 60) {
+;
+	ldy     _x
+	lda     _enemies_timer,y
+	cmp     #$3D
+	bcc     L05F8
+;
+; DEACTIVATE_ENEMY(x);
+;
+	ldy     _x
+	lda     _enemies_flags,y
+	and     #$7F
+	sta     _enemies_flags,y
+;
+; }
+;
+L05F8:	rts
 
 .endproc
 

@@ -1793,9 +1793,7 @@ void movement(void) {
     // The collision routine also requires an 8-bit value anyway.
 
     // conveyor_delta can still modify our x value, so we won't check its validity until after we apply it.
-    
-    //L_R_switch = 1; // Shrinks the Y values in bg_coll. This makes head/foot collisions less problematic (examine this)
-    
+        
     // Copying these bytes like this is faster than passing a pointer to Valrigard.
     hitbox.x = high_byte(valrigard.x);
     hitbox.y = high_byte(valrigard.y);
@@ -1852,7 +1850,6 @@ void movement(void) {
     else if (high_byte(valrigard.y) > 0xf0) { valrigard.y = 0xf000; }
     
     // MARK: - Collision
-    //L_R_switch = 0;
     
     hitbox.x = high_byte(valrigard.x);
     hitbox.y = high_byte(valrigard.y);
@@ -1985,12 +1982,6 @@ void bg_collision(void){
     
     temp3 = hitbox.y;
 
-    // if(L_R_switch) temp3 += 2; // fix bug, walking through walls
-    // Removed this line and I'm not having any issues walking through walls.
-    // On the contrary, star collection is now more consistent - before, it would be a little messed up 
-    // the top of hitbox was on a different nametable than the bottom.
-    // Keeping it here just in case...
-
     // if(temp3 >= 0xf0) return; // This line will probably only really be relevant if there's no floor/cieling.
     // There shouldn't really be no floor in this game, but maybe I'll want to reuse this code in
     // another game, so I'll leave this line in...
@@ -2042,7 +2033,6 @@ void bg_collision(void){
     // bottom right, x hasn't changed
 
     temp3 = hitbox.y + hitbox.height; // y bottom
-    // if(L_R_switch) temp3 -= 2; // fix bug, walking through walls -- commented out for now (because *it* was causing bugs).
     
     add_scroll_y(temp5, temp3, scroll_y); // upper left
     temp3 = low_byte(temp5); // low byte y

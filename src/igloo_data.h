@@ -4,6 +4,10 @@
 
 #pragma rodata-name(push, "BANK1")
 
+const char * const igloo_all_items_bonus_phrase = "All items bonus:";
+const char * const igloo_starting_next_level_phrase = "Starting Level ";
+const char * const igloo_ellipsis = "...";
+
 const unsigned char const carassa_idle[] = {
   0, 0, 0x81, 0|OAM_FLIP_H,
   8, 0, 0x80, 0,
@@ -110,6 +114,12 @@ const unsigned char item_potion[] = {
     128
 };
 
+const unsigned char item_potion_broken[] = {
+    0, 0, 0xA7, 1,
+    8, 0, 0xA7, 1|OAM_FLIP_H,
+    128
+};
+
 const unsigned char item_piano[] = {
     8, 0, 0x85, 2,
    16, 0, 0x86, 2,
@@ -118,7 +128,7 @@ const unsigned char item_piano[] = {
    16, 8, 0x96, 2,
     0,16, 0xA4, 2,
     8,16, 0xA5, 2,
-   16,16, 0xA4, 2|OAM_FLIP_H,
+   17,16, 0xA4, 2|OAM_FLIP_H,
    128 
 };
 
@@ -128,9 +138,21 @@ const unsigned char item_chiapop[] = {
     128
 };
 
+const unsigned char item_chiapop_broken[] = {
+    0, 0, 0xC4, 2,
+    8, 0, 0xC5, 2,
+    128
+};
+
 const unsigned char item_coin[] = {
     0, 0, 0x5C, 0,
     8, 0, 0x5D, 0,
+    128
+};
+
+const unsigned char item_coin_broken[] = {
+    0, 0, 0xD6, 0,
+    8, 0, 0xD7, 0,
     128
 };
 
@@ -138,6 +160,12 @@ const unsigned char item_umbrella[] = {
     0, 0, 0x4C, 0,
     8, 0, 0x4D, 0,
    16, 0, 0x4E, 0,
+   128
+};
+
+const unsigned char item_umbrella_broken[] = {
+    4, 0, 0xC6, 0,
+   12, 0, 0xC7, 0,
    128
 };
 
@@ -151,16 +179,47 @@ const unsigned char item_bomb[] = {
 
 const unsigned char item_thingy[] = {
     0, 0, 0xE2, 3,
-    0, 0, 0xF2, 3,
+    0, 8, 0xF2, 3,
+    128
+};
+
+const unsigned char item_thingy_broken[] = {
+   -4, 0, 0xE2, 3,
+    4, 8, 0xF2, 3,
     128
 };
 
 const unsigned char item_bag[] = {
     0, 0, 0xE3, 3,
     8, 0, 0xE3, 3|OAM_FLIP_H,
-    0, 8, 0xE4, 3,
-    8, 8, 0xE4, 3|OAM_FLIP_H,
+    0, 8, 0xF3, 3,
+    8, 8, 0xF3, 3|OAM_FLIP_H,
     128
+};
+
+const unsigned char item_bag_broken[] = {
+    0, 0, 0xB7, 3,
+    8, 0, 0xB7, 3|OAM_FLIP_H,
+    128
+};
+
+const unsigned char item_explosion_twinkle[] = {
+    0, 0, 0xB4, 0,
+    8, 0, 0xB4, 0|OAM_FLIP_H,
+    0, 8, 0xB4, 0|OAM_FLIP_V,
+    8, 8, 0xB4, 0|OAM_FLIP_H|OAM_FLIP_V,
+    128
+};
+
+const unsigned char * const igloot_metasprite_defaultdraw_lut[] = {
+    item_bag, item_bag_broken,
+    item_chiapop, item_chiapop_broken,
+    item_umbrella, item_umbrella_broken,
+    item_thingy, item_thingy_broken,
+    item_potion, item_potion_broken,
+    item_coin, item_coin_broken,
+    item_bomb, item_bomb,
+    item_piano, item_piano
 };
 
 #pragma rodata-name(pop)
