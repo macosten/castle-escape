@@ -189,25 +189,16 @@ void begin_igloo_sub(void) {
     music_play(ICE_CREAM_MACHINE_SONG);
 
     game_mode = MODE_GAME;
-
-    mika.velocity_x = 0;
-    mika.velocity_y = 0;
-    carassa.velocity_x = 0;
-    carassa.velocity_y = 0;
-
-    mika.x = CHIA_STARTING_X;
-    mika.y = MIKA_STARTING_Y;
-    carassa.x = CHIA_STARTING_X;
-    carassa.y = CARASSA_STARTING_Y;
-
-    round_number = 0;
-    score_this_round = 0;
-
     enemies_count = ONSCREEN_JUNK_MAXIMUM; // Used by extern'd functions
-    for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
-        enemies_flags[x] = 0; // Clear (deactivate) all enemies
-    }
     calculate_shuffle_array();
+
+    // A bit of shared code, but with a bit of upkeep:
+    score_this_round = 0; // don't buffer a message...
+    igloo_begin_new_round();
+    round_number = 0; // Don't start on Round 2 by mistake.
+    // igloo_begin_new_round will be called again later but this puts
+    // the Chias in the right place without needing to copy+paste the
+    // code to do so.
 
     seed_rng();
     srand(rand8());
@@ -317,6 +308,16 @@ void igloo_begin_new_round(void) {
     round_begin_timer = 180; // 1 per frame of waiting
     player_stun_timer = 0;
 
+    mika.velocity_x = 0;
+    mika.velocity_y = 0;
+    carassa.velocity_x = 0;
+    carassa.velocity_y = 0;
+
+    mika.x = CHIA_STARTING_X;
+    mika.y = MIKA_STARTING_Y;
+    carassa.x = CHIA_STARTING_X;
+    carassa.y = CARASSA_STARTING_Y;
+
     temp0 = MIN(round_number, 5);
     threshold_coin = IGLOOT_BASE_THRESHOLD + temp0;
     threshold_bomb = threshold_coin + temp0;
@@ -361,33 +362,48 @@ void igloo_player_movement(void) {
         old_x = mika.x;
 
         // Encase in "if not jumping" later on...?
-        if (pad1 & PAD_LEFT) {
-            mika.velocity_x -= IGLOO_ACCEL;
-        } else if (pad1 & PAD_RIGHT) {
-            mika.velocity_x += IGLOO_ACCEL;
+        if (IGLOO_IS_JUMPING) {
+            if (high_byte(mika.y) >= 0xB0) {
+                mika.velocity_y = 0;
+                mika.y = MIKA_STARTING_Y;
+                IGLOO_SET_NOT_JUMPING();
+            } else {
+                mika.velocity_y += IGLOO_GRAVITY;
+            }
         } else {
-            if (mika.velocity_x > 0) {
-                if (mika.velocity_x < IGLOO_FRICTION) {
-                    mika.velocity_x = 0;
-                } else {
-                    mika.velocity_x -= IGLOO_FRICTION;
+            if (pad1 & PAD_A) {
+                IGLOO_SET_JUMPING();
+                mika.velocity_y = -MIKA_JUMP_STRENGTH;
+            } else if (pad1 & PAD_LEFT) {
+                mika.velocity_x -= IGLOO_ACCEL;
+            } else if (pad1 & PAD_RIGHT) {
+                mika.velocity_x += IGLOO_ACCEL;
+            } else {
+                if (mika.velocity_x > 0) {
+                    if (mika.velocity_x < IGLOO_FRICTION) {
+                        mika.velocity_x = 0;
+                    } else {
+                        mika.velocity_x -= IGLOO_FRICTION;
+                    }
+                } else if (mika.velocity_x < 0) {
+                    if (mika.velocity_x > -IGLOO_FRICTION) {
+                        mika.velocity_x = 0;
+                    } else {
+                        mika.velocity_x += IGLOO_FRICTION;
+                    }
                 }
-            } else if (mika.velocity_x < 0) {
-                if (mika.velocity_x > -IGLOO_FRICTION) {
-                    mika.velocity_x = 0;
-                } else {
-                    mika.velocity_x += IGLOO_FRICTION;
-                }
+            }
+
+            if (mika.velocity_x > IGLOO_MAX_SPEED) {
+                mika.velocity_x = IGLOO_MAX_SPEED;
+            } else if (mika.velocity_x < -IGLOO_MAX_SPEED) {
+                mika.velocity_x = -IGLOO_MAX_SPEED;
             }
         }
 
-        if (mika.velocity_x > IGLOO_MAX_SPEED) {
-            mika.velocity_x = IGLOO_MAX_SPEED;
-        } else if (mika.velocity_x < -IGLOO_MAX_SPEED) {
-            mika.velocity_x = -IGLOO_MAX_SPEED;
-        }
-
         mika.x += mika.velocity_x;
+        mika.y += mika.velocity_y;
+
         hitbox.x = high_byte(mika.x);
         hitbox.y = high_byte(mika.y);
 
