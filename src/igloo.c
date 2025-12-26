@@ -195,9 +195,9 @@ void begin_igloo_sub(void) {
     carassa.velocity_x = 0;
     carassa.velocity_y = 0;
 
-    mika.x = 0x8000;
+    mika.x = CHIA_STARTING_X;
     mika.y = MIKA_STARTING_Y;
-    carassa.x = 0x8000;
+    carassa.x = CHIA_STARTING_X;
     carassa.y = CARASSA_STARTING_Y;
 
     round_number = 0;
@@ -357,7 +357,43 @@ void igloo_update_time(void) {
 }
 
 void igloo_player_movement(void) {
+    if (game_seconds_timer > 0 /* && items_dropped_this_round < 5 */ /*i.e game isn't over; change if I add a flag for this*/) {
+        old_x = mika.x;
 
+        // Encase in "if not jumping" later on...?
+        if (pad1 & PAD_LEFT) {
+            mika.velocity_x -= IGLOO_ACCEL;
+        } else if (pad1 & PAD_RIGHT) {
+            mika.velocity_x += IGLOO_ACCEL;
+        } else {
+            if (mika.velocity_x > 0) {
+                if (mika.velocity_x < IGLOO_FRICTION) {
+                    mika.velocity_x = 0;
+                } else {
+                    mika.velocity_x -= IGLOO_FRICTION;
+                }
+            } else if (mika.velocity_x < 0) {
+                if (mika.velocity_x > -IGLOO_FRICTION) {
+                    mika.velocity_x = 0;
+                } else {
+                    mika.velocity_x += IGLOO_FRICTION;
+                }
+            }
+        }
+
+        if (mika.velocity_x > IGLOO_MAX_SPEED) {
+            mika.velocity_x = IGLOO_MAX_SPEED;
+        } else if (mika.velocity_x < -IGLOO_MAX_SPEED) {
+            mika.velocity_x = -IGLOO_MAX_SPEED;
+        }
+
+        mika.x += mika.velocity_x;
+        hitbox.x = high_byte(mika.x);
+        hitbox.y = high_byte(mika.y);
+
+        hitbox.width = MIKA_WIDTH;
+        hitbox.height = MIKA_HEIGHT;
+    }
 }
 
 void igloo_sprite_collisions(void) {

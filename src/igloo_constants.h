@@ -19,6 +19,7 @@
 
 #define IGLOOT_BASE_THRESHOLD 218
 
+#define CHIA_STARTING_X (0x8000 - 0x0C00)
 #define MIKA_STARTING_Y 0xB000
 #define IGLOO_FLOOR_Y MIKA_STARTING_Y + 0x1800
 #define IGLOO_FLOOR_Y_CHAR 0xC8
@@ -26,6 +27,14 @@
 #define CARASSA_STARTING_Y 0x2000
 #define IGLOO_BRIDGE_Y CARASSA_STARTING_Y + 0x1800
 #define IGLOO_BRIDGE_Y_CHAR 0x38
+
+#define IGLOO_GRAVITY 0x0100
+#define IGLOO_MAX_SPEED 0x500
+#define IGLOO_ACCEL 0x100
+#define IGLOO_FRICTION 0x40
+
+#define MIKA_WIDTH 3 * 8
+#define MIKA_HEIGHT 4 * 8
 
 // Flags that need to be cleared at the start of each frame...
 #define IGLOO_DID_SCORE_CHANGE_THIS_FRAME_MASK      0b00000001
