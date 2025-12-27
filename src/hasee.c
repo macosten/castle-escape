@@ -43,6 +43,7 @@ ZEROPAGE_EXTERN(unsigned char, player_flags);
 ZEROPAGE_EXTERN(unsigned char, player_flags2);
 ZEROPAGE_EXTERN(unsigned char, menu);
 ZEROPAGE_EXTERN(unsigned char, shuffle_offset);
+ZEROPAGE_EXTERN(unsigned char, shuffle_maximum);
 ZEROPAGE_EXTERN(unsigned char, temp_x);
 ZEROPAGE_EXTERN(unsigned char, temp_y);
 ZEROPAGE_EXTERN(unsigned char, menu_selection);
@@ -486,6 +487,8 @@ void hasee_draw_goodies(void) {
             oam_meta_spr(temp_x, temp_y, temppointer);
         }
     }
+    shuffle_offset += shuffle_leg_size;
+    if (shuffle_offset == shuffle_maximum) { shuffle_offset = 0; }
 }
 
 void hasee_update_score(void) {

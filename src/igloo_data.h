@@ -4,9 +4,8 @@
 
 #pragma rodata-name(push, "BANK1")
 
-const char * const igloo_all_items_bonus_phrase = "All items bonus:";
+const char * const igloo_all_items_bonus_phrase = "All items bonus: ";
 const char * const igloo_starting_next_level_phrase = "Starting Level ";
-const char * const igloo_ellipsis = "...";
 
 const unsigned char const carassa_idle[] = {
   0, 0, 0x81, 0|OAM_FLIP_H,
@@ -21,6 +20,22 @@ const unsigned char const carassa_idle[] = {
   0,24, 0xB1, 0|OAM_FLIP_H,
   8,24, 0xB0, 0,
  16,24, 0xB1, 0,
+ 128
+};
+
+const unsigned char const carassa_idle_behind[] = {
+  0, 0, 0x81, 0|OAM_FLIP_H|OAM_BEHIND,
+  8, 0, 0x80, 0|OAM_BEHIND,
+ 16, 0, 0x81, 0|OAM_BEHIND,
+  0, 8, 0x91, 0|OAM_FLIP_H|OAM_BEHIND,
+  8, 8, 0x90, 0|OAM_BEHIND,
+ 16, 8, 0x91, 0|OAM_BEHIND,
+  0,16, 0xA1, 0|OAM_FLIP_H|OAM_BEHIND,
+  8,16, 0xA0, 0|OAM_BEHIND,
+ 16,16, 0xA1, 0|OAM_BEHIND,
+  0,24, 0xB1, 0|OAM_FLIP_H|OAM_BEHIND,
+  8,24, 0xB0, 0|OAM_BEHIND,
+ 16,24, 0xB1, 0|OAM_BEHIND,
  128
 };
 
