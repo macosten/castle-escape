@@ -2538,7 +2538,6 @@ void collision_with_killable_slashable(void) {
         SET_SCORE_CHANGED_THIS_FRAME();
 
         sfx_play(SFX_ENEMY_KILL, 0);
-        // (todo: make a counter of total active enemies to mimic scoring from original)
     }
 }
 

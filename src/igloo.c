@@ -145,6 +145,7 @@ void igloo_sprite_collisions(void);
 void igloo_draw_sprites(void);
 void igloo_update_score(void);
 void igloo_update_time(void);
+void igloo_end_round(void);
 void igloo_begin_new_round(void);
 void calculate_next_igloo_item(void);
 
@@ -152,6 +153,12 @@ void igloo_item_ai_downwards_sub(void);
 void igloo_default_item_ai(void);
 void igloo_bomb_item_ai(void);
 void igloo_bomb_explosion_ai(void);
+
+void igloo_collision_empty_function(void);
+void igloo_collision_with_points(void);
+void igloo_collision_with_bomb(void);
+void igloo_collision_with_bomb_explosion(void);
+void igloo_collision_with_piano(void);
 
 void igloo_draw_chias(void);
 void igloo_draw_items(void);
@@ -199,6 +206,11 @@ void begin_igloo_sub(void) {
     // igloo_begin_new_round will be called again later but this puts
     // the Chias in the right place without needing to copy+paste the
     // code to do so.
+
+    game_frame_timer = 180;
+
+    hitbox.width = MIKA_WIDTH;
+    hitbox.height = MIKA_HEIGHT;
 
     seed_rng();
     srand(rand8());
@@ -267,16 +279,15 @@ void game_igloo(void) {
                 }
             } // And as before if the screen is full it will just fail silently. No biggie.
         } 
-    } else if (game_frame_timer > 0)  {
+    } else if (round_begin_timer > 0) {
         // Start next round
-        --game_frame_timer;
-        if (game_frame_timer == 0) {
+        --round_begin_timer;
+        if (round_begin_timer == 0) {
             temp0 = MIN(round_number, 5);
-            game_seconds_timer = 30;
+            game_seconds_timer = 31;
             game_frame_timer = 60;
+            igloo_begin_new_round();
         }
-    } else {
-        igloo_begin_new_round();
     }
 
     if (pad1 & PAD_B) {
@@ -322,9 +333,6 @@ void igloo_begin_new_round(void) {
     threshold_coin = IGLOOT_BASE_THRESHOLD + temp0;
     threshold_bomb = threshold_coin + temp0;
     threshold_piano = threshold_bomb + temp0; // Should top out at 248?
-
-    game_seconds_timer = 0;
-    game_frame_timer = 180;
 
     // Clear all enemy active flags
     for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
@@ -403,17 +411,86 @@ void igloo_player_movement(void) {
 
         mika.x += mika.velocity_x;
         mika.y += mika.velocity_y;
-
-        hitbox.x = high_byte(mika.x);
-        hitbox.y = high_byte(mika.y);
-
-        hitbox.width = MIKA_WIDTH;
-        hitbox.height = MIKA_HEIGHT;
     }
 }
 
+const void (* const igloo_collision_functions[])(void) = {
+    igloo_collision_with_points,
+    igloo_collision_with_points,
+    igloo_collision_with_points,
+    igloo_collision_with_points,
+    igloo_collision_with_points,
+    igloo_collision_with_points,
+    igloo_collision_with_bomb,
+    igloo_collision_with_piano,
+    igloo_collision_with_bomb_explosion,
+    igloo_collision_empty_function    
+};
+
 void igloo_sprite_collisions(void) {
-    
+    hitbox.x = high_byte(mika.x);
+    hitbox.y = high_byte(mika.y);
+
+    // Half each frame...
+    x = get_frame_count() & 1;
+    for (x; x < enemy_limit; x += 2) {
+        if (IS_ENEMY_ACTIVE(x) && !IGLOO_IS_ITEM_BROKEN(x)) {
+            temp1 = GET_ENEMY_TYPE(x);
+            
+            hitbox2.width = igloot_hitbox_width_lookup_table[temp1];
+            hitbox2.height = igloot_hitbox_height_lookup_table[temp1];
+
+            hitbox2.x = enemies_x[x];
+            hitbox2.x += igloot_hitbox_x_offset_lookup_table[temp1];
+
+            hitbox2.y = enemies_y[x];
+            hitbox2.y += igloot_hitbox_y_offset_lookup_table[temp1];
+
+            check_collision(temp0, hitbox, hitbox2);
+            if (temp0) {
+                AsmCallFunctionAtPtrOffsetByIndexVar(igloo_collision_functions, temp1);
+            }
+        }
+    }
+}
+
+void igloo_collision_empty_function(void) { }
+
+void igloo_collision_with_points(void) {
+    // Turn this into a points effect, if we want to do that:
+    // enemies_type[x] = whatever_lut_we_keep_this_in[x];
+    // but for now:
+    DEACTIVATE_ENEMY(x);
+    IGLOO_SET_SCORE_CHANGED_THIS_FRAME();
+    temp0 = enemies_type[x];
+    score += igloot_point_values[temp0];
+    sfx_play(SFX_STAR_COLLECT, 0);
+}
+
+void igloo_collision_with_bomb(void) {
+    // Immediately turn into an explosion and stun the player
+    enemies_type[x] = IGLOOT_BOMB_EXPLOSION;
+    enemies_timer[x] = 0;
+    player_stun_timer = 180;
+    sfx_play(SFX_CANNON_FIRE, 0);
+}
+
+void igloo_collision_with_bomb_explosion(void) {
+    if (player_stun_timer == 0) {
+        player_stun_timer = 180;
+        sfx_play(SFX_CANNON_FIRE, 0);
+    }
+}
+
+void igloo_collision_with_piano(void) {
+    // Die immediately...
+    if (items_dropped_this_round < 5) {
+        sfx_play(SFX_CANNON_FIRE, 0);
+        sfx_play(SFX_ENEMY_KILL, 1);
+        // Unless we decide to add a new flag for the game being over specifically:
+        items_dropped_this_round += 5;
+        player_stun_timer = 0xFF;
+    }
 }
 
 void igloo_draw_sprites(void) {
@@ -501,11 +578,12 @@ void igloo_default_item_ai(void) {
 
 void igloo_bomb_item_ai(void) {
     igloo_item_ai_downwards_sub();
-    if (IGLOO_IS_ITEM_BROKEN(index)) {
+    if (IGLOO_IS_ITEM_BROKEN(index)) { // TODO - is this the right condition?
         if (enemies_timer[x] > 120) {
             // Turn this into an explosion
             enemies_timer[x] = 0;
             enemies_type[x] = IGLOOT_BOMB_EXPLOSION;
+            sfx_play(SFX_CANNON_FIRE, 0);
         } else {
             ++enemies_timer[x];
         }

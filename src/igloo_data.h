@@ -222,6 +222,67 @@ const unsigned char * const igloot_metasprite_defaultdraw_lut[] = {
     item_piano, item_piano
 };
 
+const unsigned char igloot_hitbox_width_lookup_table[] = {
+    16, // Bag
+    16, // Chia Pop
+    24, // Umbrella
+    8,  // Thingy
+    16, // Potion
+    16, // Coin
+    12, // Bomb
+    20, // Piano
+    16, // Bomb Explosion
+    0,  // Piano Explosion
+};
+
+const unsigned char igloot_hitbox_height_lookup_table[] = {
+    16, // Bag
+    8,  // Chia Pop
+    8,  // Umbrella
+    16, // Thingy
+    16, // Potion
+    8,  // Coin
+    12, // Bomb
+    20, // Piano
+    16, // Bomb Explosion
+    0,  // Piano Explosion
+};
+
+const unsigned char igloot_hitbox_x_offset_lookup_table[] = {
+    0, // Bag
+    0, // Chia Pop
+    0, // Umbrella
+    0, // Thingy
+    0, // Potion
+    0,  // Coin
+    4, // Bomb
+    4, // Piano
+    0, // Bomb Explosion
+    0, // Piano Explosion
+};
+
+const unsigned char igloot_hitbox_y_offset_lookup_table[] = {
+    0, // Bag
+    0, // Chia Pop
+    0, // Umbrella
+    0, // Thingy
+    0, // Potion
+    0, // Coin
+    4, // Bomb
+    4, // Piano
+    0, // Bomb Explosion
+    0, // Piano Explosion
+};
+
+const unsigned char igloot_point_values[] = {
+    1,  // Bag
+    2,  // Chia Pop
+    3,  // Umbrella
+    5,  // Thingy
+    10, // Potion
+    50  // Coin
+};
+
 #pragma rodata-name(pop)
 
 #pragma rodata-name(push, "BANK5")
