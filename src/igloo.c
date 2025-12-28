@@ -146,18 +146,19 @@ void igloo_sprite_collisions(void);
 void igloo_draw_sprites(void);
 void igloo_update_score(void);
 void igloo_update_time(void);
+void igloo_write_fake_time(void);
 void igloo_clear_top_message(void);
 void igloo_clear_bottom_message(void);
 void igloo_write_decimal_in_message_sub(void);
 void igloo_write_allitems_message(void);
 void igloo_write_nextlevel_message(void);
-void igloo_end_round(void);
 void igloo_begin_new_round(void);
 void calculate_next_igloo_item(void);
 
 void igloo_item_ai_downwards_sub(void);
 void igloo_default_item_ai(void);
 void igloo_bomb_item_ai(void);
+void igloo_piano_item_ai(void);
 void igloo_explosion_ai(void);
 
 void igloo_collision_empty_function(void);
@@ -206,9 +207,10 @@ void begin_igloo_sub(void) {
     calculate_shuffle_array();
 
     // A bit of shared code, but with a bit of upkeep:
+    score = 0;
+    round_number = 0;
     score_this_round = 0; // don't buffer a message...
     igloo_begin_new_round();
-    round_number = 0;
     // igloo_begin_new_round will be called again later but this puts
     // the Chias in the right place without needing to copy+paste the
     // code to do so.
@@ -220,14 +222,13 @@ void begin_igloo_sub(void) {
     srand(rand8());
 
     igloo_update_score();
-    igloo_update_time();
 
     ppu_on_all();
     pal_bright(4);
 }
 
 void game_igloo(void) {
-    //IGLOO_RESET_PLAYER_FLAGS_START_FRAME();
+    IGLOO_RESET_PLAYER_FLAGS_START_FRAME();
 
     pad1 = pad_poll(0); // read the first controller
     pad1_new = get_pad_new(0);
@@ -302,7 +303,7 @@ void game_igloo(void) {
     }
     //gray_line();
 
-    oam_spr(30, 30, items_dropped_this_round, 0);
+    // oam_spr(30, 30, items_dropped_this_round, 0);
     // oam_spr(38, 30, debug_values[1], 0);
     // oam_spr(38+8, 30, debug_values[2], 0);
     // oam_spr(38+8+8, 30, debug_values[3], 0);
@@ -312,6 +313,8 @@ void game_igloo(void) {
 }
 
 void end_igloo(void) {
+    game_frame_timer = 0;
+    game_seconds_timer = 0;
     pal_fade_to(4, 0);
     menu = MENU_IGLOO;
     switch_menu();
@@ -353,21 +356,17 @@ void igloo_begin_new_round(void) {
     score_this_round = 0;
 
     next_item_timer = rand8() & 0b11111;
-
-    // Buffer 
-    multi_vram_buffer_horz(igloo_starting_next_level_phrase, 15, NTADR_A(8, 7));
-}
-
-void igloo_end_round(void) {
-    
+    igloo_write_nextlevel_message();
+    igloo_write_fake_time();
 }
 
 void igloo_write_decimal_in_message_sub(void) {
+    prepare_score_string();
     // Count non-space chars...
     temp0 = 0; // Digit count
     temp1 = 64; // Offset to cmap to write to as temporary buffer
-    for (x = 0; x < 4; ++x) { // Assuming at least one digit every time
-        if (score_string[x] != 0) {
+    for (x = 0; x < 5; ++x) { // Assuming at least one digit every time
+        if (score_string[x] >= '0') {
             ++temp0;
             cmap[temp1] = score_string[x];
             ++temp1;
@@ -376,27 +375,27 @@ void igloo_write_decimal_in_message_sub(void) {
 }
 
 void igloo_write_allitems_message(void) {
-    multi_vram_buffer_horz(igloo_all_items_bonus_phrase, 16, NTADR_A(8, 5));
+    multi_vram_buffer_horz(igloo_all_items_bonus_phrase, 15, NTADR_A(10, 5));
+    multi_vram_buffer_horz(igloo_all_items_bonus_prefix, 7, NTADR_A(12, 6));
     convert_to_decimal(score_this_round);
     igloo_write_decimal_in_message_sub();
-    cmap[temp1] = '!';
-    ++temp0;
-    multi_vram_buffer_horz(cmap+64, temp0, NTADR_A(24, 5));
+    multi_vram_buffer_horz(cmap+64, temp0, NTADR_A(19, 6));
 }
 
 void igloo_write_nextlevel_message(void) {
-    multi_vram_buffer_horz(igloo_starting_next_level_phrase, 15, NTADR_A(8, 7));
+    multi_vram_buffer_horz(igloo_starting_next_level_phrase, 6, NTADR_A(13, 7));
     convert_to_decimal(round_number);
     igloo_write_decimal_in_message_sub();
-    multi_vram_buffer_horz(cmap+64, temp0, NTADR_A(24, 7));
+    multi_vram_buffer_horz(cmap+64, temp0, NTADR_A(19, 7));
 }
 
 void igloo_clear_top_message(void) {
-    multi_vram_buffer_horz(cmap, 6 + 17, NTADR_A(8, 5));
+    multi_vram_buffer_horz(cmap, 15, NTADR_A(10, 5));
+    multi_vram_buffer_horz(cmap, 12, NTADR_A(11, 6));
 }
 
 void igloo_clear_bottom_message(void) {
-    multi_vram_buffer_horz(cmap, 15 + 3 + 3, NTADR_A(8, 7));
+    multi_vram_buffer_horz(cmap, 15, NTADR_A(10, 7));
 }
 
 void igloo_update_score(void) {
@@ -409,6 +408,10 @@ void igloo_update_time(void) {
     convert_to_decimal(game_seconds_timer);
     prepare_score_string();
     multi_vram_buffer_horz(score_string, 5, NTADR_A(17, 2));
+}
+
+void igloo_write_fake_time(void) {
+    multi_vram_buffer_horz(fake_time, 3, NTADR_A(19, 2));
 }
 
 void igloo_player_movement(void) {
@@ -506,6 +509,7 @@ void igloo_collision_with_points(void) {
     IGLOO_SET_SCORE_CHANGED_THIS_FRAME();
     temp0 = enemies_type[x];
     score += igloot_point_values[temp0];
+    score_this_round += igloot_point_values[temp0];
     sfx_play(SFX_STAR_COLLECT, 0);
 }
 
@@ -573,7 +577,7 @@ const void (* const igloo_ai_pointers[])(void) = {
     igloo_default_item_ai,
     igloo_default_item_ai,
     igloo_bomb_item_ai,
-    igloo_default_item_ai,
+    igloo_piano_item_ai,
     igloo_explosion_ai,
     igloo_explosion_ai,
 };
@@ -601,7 +605,8 @@ void igloo_item_ai_downwards_sub(void) {
             temp5 = IGLOO_FLOOR_Y;
             IGLOO_STOP_ITEM(x);
             IGLOO_SET_ITEM_BROKEN(x);
-            temp4 = 1; 
+            temp4 = 1;
+            sfx_play(SFX_SMACK, 0);
         }
 
         enemies_y[x] = high_byte(temp5);
@@ -627,6 +632,19 @@ void igloo_bomb_item_ai(void) {
         } else {
             ++enemies_timer[x];
         }
+    } else if (high_byte(temp5) >= 0xC8) { // Bombs should stop a bit sooner
+        enemies_y[x] = 0xC8;
+        IGLOO_STOP_ITEM(x);
+        IGLOO_SET_ITEM_BROKEN(x);
+    }
+}
+
+void igloo_piano_item_ai(void) {
+    igloo_item_ai_downwards_sub();
+    if (high_byte(temp5) >= 0xC4) {
+        enemies_timer[x] = 0;
+        enemies_type[x] = IGLOOT_PIANO_EXPLOSION;
+        sfx_play(SFX_CANNON_FIRE, 0);
     }
 }
 
@@ -656,12 +674,9 @@ void igloo_draw_chias(void) {
     oam_meta_spr(high_byte(mika.x), high_byte(mika.y), mika_idle);
     
     // Carassa
-    if (round_begin_timer > 0) {
-        oam_meta_spr(high_byte(carassa.x), high_byte(carassa.y), carassa_idle_behind);
-    } else {
+    if (round_begin_timer == 0) {
         oam_meta_spr(high_byte(carassa.x), high_byte(carassa.y), carassa_idle);
     }
-    
 }
 
 void igloo_draw_items(void) {

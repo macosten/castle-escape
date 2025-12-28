@@ -4,8 +4,10 @@
 
 #pragma rodata-name(push, "BANK1")
 
-const char * const igloo_all_items_bonus_phrase = "All items bonus: ";
-const char * const igloo_starting_next_level_phrase = "Starting Level ";
+const char * const igloo_all_items_bonus_phrase = "Got all items!";
+const char * const igloo_all_items_bonus_prefix = "Bonus: ";
+const char * const igloo_starting_next_level_phrase = "Level ";
+const char * const fake_time = " 30";
 
 const unsigned char const carassa_idle[] = {
   0, 0, 0x81, 0|OAM_FLIP_H,
@@ -23,21 +25,21 @@ const unsigned char const carassa_idle[] = {
  128
 };
 
-const unsigned char const carassa_idle_behind[] = {
-  0, 0, 0x81, 0|OAM_FLIP_H|OAM_BEHIND,
-  8, 0, 0x80, 0|OAM_BEHIND,
- 16, 0, 0x81, 0|OAM_BEHIND,
-  0, 8, 0x91, 0|OAM_FLIP_H|OAM_BEHIND,
-  8, 8, 0x90, 0|OAM_BEHIND,
- 16, 8, 0x91, 0|OAM_BEHIND,
-  0,16, 0xA1, 0|OAM_FLIP_H|OAM_BEHIND,
-  8,16, 0xA0, 0|OAM_BEHIND,
- 16,16, 0xA1, 0|OAM_BEHIND,
-  0,24, 0xB1, 0|OAM_FLIP_H|OAM_BEHIND,
-  8,24, 0xB0, 0|OAM_BEHIND,
- 16,24, 0xB1, 0|OAM_BEHIND,
- 128
-};
+// const unsigned char const carassa_idle_behind[] = {
+//   0, 0, 0x81, 0|OAM_FLIP_H|OAM_BEHIND,
+//   8, 0, 0x80, 0|OAM_BEHIND,
+//  16, 0, 0x81, 0|OAM_BEHIND,
+//   0, 8, 0x91, 0|OAM_FLIP_H|OAM_BEHIND,
+//   8, 8, 0x90, 0|OAM_BEHIND,
+//  16, 8, 0x91, 0|OAM_BEHIND,
+//   0,16, 0xA1, 0|OAM_FLIP_H|OAM_BEHIND,
+//   8,16, 0xA0, 0|OAM_BEHIND,
+//  16,16, 0xA1, 0|OAM_BEHIND,
+//   0,24, 0xB1, 0|OAM_FLIP_H|OAM_BEHIND,
+//   8,24, 0xB0, 0|OAM_BEHIND,
+//  16,24, 0xB1, 0|OAM_BEHIND,
+//  128
+// };
 
 const unsigned char const carassa_walk1[] = {
   0, 0, 0x81, 0|OAM_FLIP_H,
@@ -199,8 +201,8 @@ const unsigned char item_thingy[] = {
 };
 
 const unsigned char item_thingy_broken[] = {
-   -4, 0, 0xE2, 3,
-    4, 8, 0xF2, 3,
+   -4, 0, 0xD4, 3,
+    4, 0, 0xD5, 3,
     128
 };
 
