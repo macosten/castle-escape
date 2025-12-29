@@ -37,6 +37,8 @@
 #define MIKA_WIDTH 3 * 8
 #define MIKA_HEIGHT 4 * 8
 
+#define IGLOOT_MIN_SPEED 0x0080
+
 // Flags that need to be cleared at the start of each frame...
 #define IGLOO_DID_SCORE_CHANGE_THIS_FRAME_MASK      0b00000001
 #define IGLOO_DID_BUFFER_MESSAGE_THIS_FRAME_MASK    0b00000010

@@ -84,6 +84,8 @@
 	__asm__("sta %v+1", variable); \
 }
 
+// Using this can avoid scenarios in which cc65 will try to save the state of something irrelevant.
+// Don't use this if offset > 127.
 #define AsmSet2ByteAtPtrWithOffset(pointer, offset, variable) {\
 	__asm__("lda %v", offset);\
 	__asm__("asl");\
@@ -92,6 +94,32 @@
 	__asm__("sta %v, %s", pointer, y);\
 	__asm__("lda %v+1", variable);\
 	__asm__("sta %v+1,%s", pointer, y);\
+}
+
+// Using this can avoid scenarios in which cc65 will try to save the state of something irrelevant.
+// Don't use this if offset > 127.
+#define AsmSet2ByteAtMutPtrWithOffset(pointer, offset, variable) {\
+	__asm__("lda %v", offset);\
+	__asm__("asl");\
+	__asm__("tay");\
+	__asm__("lda %v", variable);\
+	__asm__("sta (%v), %s", pointer, y);\
+	__asm__("lda %v+1", variable);\
+	__asm__("iny");\
+	__asm__("sta (%v),%s", pointer, y);\
+}
+
+// Using this can avoid scenarios in which cc65 will try to save the state of something irrelevant.
+// Don't use this if offset > 127.
+#define AsmSet2ByteFromMutPtrWithOffset(variable, pointer, indexVariable) {\
+	__asm__("lda %v", indexVariable);\
+	__asm__("asl");\
+	__asm__("tay");\
+	__asm__("lda (%v), %s", pointer, y); \
+	__asm__("sta %v", variable); \
+	__asm__("iny"); \
+	__asm__("lda (%v), %s", pointer, y); \
+	__asm__("sta %v+1", variable); \
 }
 
 // Something like this that supports cases of indexVariable > 127 will be more complicated.

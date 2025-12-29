@@ -83,6 +83,9 @@ ZEROPAGE_EXTERN(unsigned char, lowest_enemy_index);
 ZEROPAGE_EXTERN(unsigned int, pseudo_scroll_y);
 #define score_this_round pseudo_scroll_y
 
+ZEROPAGE_EXTERN(unsigned char *, temp_mutablepointer);
+#define igloo_item_drop_speeds ((unsigned int *)(temp_mutablepointer))
+
 extern unsigned char shuffle_array[];
 extern unsigned char shuffle_leg_size;
 
@@ -210,6 +213,8 @@ void begin_igloo_sub(void) {
     score = 0;
     round_number = 0;
     score_this_round = 0; // don't buffer a message...
+    temp_mutablepointer = ((void *)(cmap + 128)); // Pointer crimes ("it's memory, just do what I want please")
+
     igloo_begin_new_round();
     // igloo_begin_new_round will be called again later but this puts
     // the Chias in the right place without needing to copy+paste the
@@ -281,7 +286,11 @@ void game_igloo(void) {
 
                     // Debug: In the future Carassa will need to walk to it to get it to start moving, but for now:
                     IGLOO_START_MOVING_ITEM(x);
-                    enemies_y_velocity_pixels[x] = 1;
+                    temp0 = rand8() & 0b111;
+                    //temp5 = igloo_item_drop_speeds[temp0];
+                    AsmSet2ByteFromMutPtrWithOffset(temp5, temp_mutablepointer, temp0);
+                    enemies_y_velocity_pixels[x] = high_byte(temp5);
+                    enemies_y_velocity_subpixels[x] = low_byte(temp5);
                     break;
                 }
             } // And as before if the screen is full it will just fail silently. No biggie.
@@ -302,14 +311,6 @@ void game_igloo(void) {
         return;
     }
     //gray_line();
-
-    // oam_spr(30, 30, items_dropped_this_round, 0);
-    // oam_spr(38, 30, debug_values[1], 0);
-    // oam_spr(38+8, 30, debug_values[2], 0);
-    // oam_spr(38+8+8, 30, debug_values[3], 0);
-
-    // oam_spr(30, 50, next_item_timer, 2);
-
 }
 
 void end_igloo(void) {
@@ -354,6 +355,16 @@ void igloo_begin_new_round(void) {
     }
     items_dropped_this_round = 0;
     score_this_round = 0;
+
+    // Calculate falling speed table
+    temp0 = MIN(round_number, 8);
+    temp1 = igloot_speed_increments[temp0];
+    temp5 = IGLOOT_MIN_SPEED;
+    for (x = 0; x < 8; ++x) {
+        temp5 += temp1;
+        //igloo_item_drop_speeds[x] = temp5;
+        AsmSet2ByteAtMutPtrWithOffset(temp_mutablepointer, x, temp5);
+    }
 
     next_item_timer = rand8() & 0b11111;
     igloo_write_nextlevel_message();
@@ -709,17 +720,16 @@ void igloo_bomb_draw(void) {
         // AsmSet2ByteFromPtrAtIndexVar(temppointer, igloot_metasprite_defaultdraw_lut, temp0);
         temppointer = item_bomb;
     }
-    
 }
 
 void igloo_bomb_explosion_draw(void) {
-    //temp0 = enemies_timer[x];
-    temppointer = item_explosion_twinkle;
+    temp0 = enemies_timer[x] & 0b11;
+    temppointer = item_explosion_animation[temp0];
 }
 
 void igloo_piano_explosion_draw(void) {
-    //temp0 = enemies_timer[x];
-    temppointer = item_explosion_twinkle;
+    temp0 = enemies_timer[x] & 0b11;
+    temppointer = item_explosion_animation[temp0];
 }
 
 #pragma code-name(pop)

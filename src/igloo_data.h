@@ -228,6 +228,61 @@ const unsigned char item_explosion_twinkle[] = {
     128
 };
 
+const unsigned char item_explosion1[] = {
+    0, 0, 0xB4, 0,
+    8, 0, 0xB4, 0|OAM_FLIP_H,
+    0, 8, 0xB4, 0|OAM_FLIP_V,
+    8, 8, 0xB4, 0|OAM_FLIP_H|OAM_FLIP_V,
+    -3, 14, 0xB6, 0,
+    10, -8, 0xB6, 0,
+    4, -10, 0xB5, 0,
+    12, 10, 0xB5, 0,
+    128
+};
+
+const unsigned char item_explosion2[] = {
+    -1, 0, 0xB4, 0,
+    7, 0, 0xB4, 0|OAM_FLIP_H,
+    -1, 8, 0xB4, 0|OAM_FLIP_V,
+    7, 8, 0xB4, 0|OAM_FLIP_H|OAM_FLIP_V,
+    4, -10, 0xB6, 0,
+    12, 10, 0xB6, 0,
+    -7, 3, 0xB5, 0,
+    15, -4, 0xB5, 0,
+    128
+};
+
+const unsigned char item_explosion3[] = {
+    -1, -1, 0xB4, 0,
+    7, -1, 0xB4, 0|OAM_FLIP_H,
+    -1, 7, 0xB4, 0|OAM_FLIP_V,
+    7, 7, 0xB4, 0|OAM_FLIP_H|OAM_FLIP_V,
+    -7, 3, 0xB6, 0,
+    15, -4, 0xB6, 0,
+    -10, -9, 0xB5, 0,
+    6, 17, 0xB5, 0,
+    128
+};
+
+const unsigned char item_explosion4[] = {
+    0, -1, 0xB4, 0,
+    8, -1, 0xB4, 0|OAM_FLIP_H,
+    0, 7, 0xB4, 0|OAM_FLIP_V,
+    8, 7, 0xB4, 0|OAM_FLIP_H|OAM_FLIP_V,
+    -10, -9, 0xB6, 0,
+    6, 17, 0xB6, 0,
+    -3, 14, 0xB5, 0,
+    10, -8, 0xB5, 0,
+    128
+};
+
+const unsigned char * const item_explosion_animation[] = {
+    item_explosion1,
+    item_explosion2,
+    item_explosion3,
+    item_explosion4,
+};
+
 const unsigned char * const igloot_metasprite_defaultdraw_lut[] = {
     item_bag, item_bag_broken,
     item_chiapop, item_chiapop_broken,
@@ -298,6 +353,29 @@ const unsigned char igloot_point_values[] = {
     5,  // Thingy
     10, // Potion
     50  // Coin
+};
+
+// High byte is pixels, low byte is subpixels
+// const unsigned int igloot_speed_values[] = {
+//     0x0080, 0x0090, 0x00A0, 0x00B0, 0x00C0, 0x00D0, 0x00E0, 0x00F0, // 0x0100
+//     0x0080, 0x0098, 0x00B0, 0x00C8, 0x00E0, 0x00F8, 0x0110, 0x0128, // 0x0140
+//     0x0080, 0x00A0, 0x00C0, 0x00E0, 0x0100, 0x0120, 0x0140, 0x0160, // 0x0180
+        // 0x200
+        // 0x280
+        // 0x300
+// };
+
+// Min speed is 0x0080; add this increment N times to igloot_speeds[N]
+const unsigned char igloot_speed_increments[] = {
+    0x05, // There is no level 0 so this shouldn't actually ever happen
+    0x10,
+    0x15,
+    0x20,
+    0x30,
+    0x40,
+    0x50,
+    0x60,
+    0x70, // Max speed increment
 };
 
 #pragma rodata-name(pop)
