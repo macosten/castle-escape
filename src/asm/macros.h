@@ -51,8 +51,9 @@
 // When used, something like
 // temppointer[i] = temp0
 // becomes:
-// AsmSet1ByteAtZpPtrWithOffset(temppointer, i, temp0);
-#define AsmSet1ByteAtZpPtrWithOffset(pointer, offset, variable) {\
+// AsmSet1ByteAtMutPtrWithOffset(temppointer, i, temp0);
+// ("Mut" meaning "Not a const value in ROM" in this case)
+#define AsmSet1ByteAtMutPtrWithOffset(pointer, offset, variable) {\
 	__asm__("ldy %v", offset);\
 	__asm__("lda %v", variable);\
 	__asm__("sta (%v), %s", pointer, Y);\

@@ -19568,7 +19568,7 @@ L406F:
 L4069:
 	.byte	$3F,$20,$42,$6C,$6F,$63,$6B,$20,$54,$65,$73,$74,$00
 L4B73:
-	.byte	$44,$65,$63,$20,$32,$39,$20,$32,$30,$32,$35,$00
+	.byte	$44,$65,$63,$20,$33,$30,$20,$32,$30,$32,$35,$00
 L4067:
 	.byte	$45,$6E,$65,$6D,$79,$20,$54,$65,$73,$74,$00
 L4063:
@@ -19586,7 +19586,7 @@ L4049:
 L403D:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$32,$00
 L4B7E:
-	.byte	$30,$34,$3A,$31,$38,$3A,$35,$31,$00
+	.byte	$31,$35,$3A,$35,$33,$3A,$35,$35,$00
 L4045:
 	.byte	$4C,$65,$76,$65,$6C,$20,$31,$36,$00
 L403B:
@@ -22832,7 +22832,7 @@ L5DBD:	lda     _temp2
 	lda     (_temppointer),y
 	sta     _temp3
 ;
-; AsmSet1ByteAtZpPtrWithOffset(temp_mutablepointer, temp2, temp3); //temp_mutablepointer[temp2] = temp3;
+; AsmSet1ByteAtMutPtrWithOffset(temp_mutablepointer, temp2, temp3); //temp_mutablepointer[temp2] = temp3;
 ;
 	ldy     _temp2
 	lda     _temp3

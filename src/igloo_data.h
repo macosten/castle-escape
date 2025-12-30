@@ -355,16 +355,6 @@ const unsigned char igloot_point_values[] = {
     50  // Coin
 };
 
-// High byte is pixels, low byte is subpixels
-// const unsigned int igloot_speed_values[] = {
-//     0x0080, 0x0090, 0x00A0, 0x00B0, 0x00C0, 0x00D0, 0x00E0, 0x00F0, // 0x0100
-//     0x0080, 0x0098, 0x00B0, 0x00C8, 0x00E0, 0x00F8, 0x0110, 0x0128, // 0x0140
-//     0x0080, 0x00A0, 0x00C0, 0x00E0, 0x0100, 0x0120, 0x0140, 0x0160, // 0x0180
-        // 0x200
-        // 0x280
-        // 0x300
-// };
-
 // Min speed is 0x0080; add this increment N times to igloot_speeds[N]
 const unsigned char igloot_speed_increments[] = {
     0x05, // There is no level 0 so this shouldn't actually ever happen
@@ -376,6 +366,25 @@ const unsigned char igloot_speed_increments[] = {
     0x50,
     0x60,
     0x70, // Max speed increment
+};
+
+const unsigned int carassa_speeds[] = {
+    0x0100,
+    0x0100, // 400
+    0x0110, // 425
+    0x0120, // 450
+    0x0130, // 475
+    0x0140, // 500
+    0x0150, // 525
+    0x0160, // 550
+    0x0180, // 600,
+    0x01A0, // 650
+    0x01C0, // 700,
+    0x0200, // 800,
+    0x0240, // 900,
+    0x0280, // 1000,
+    0x02C0, // 1100,
+    0x0300, // 1200,
 };
 
 #pragma rodata-name(pop)

@@ -33,8 +33,6 @@ ZEROPAGE_EXTERN(Hitbox, hitbox);
 ZEROPAGE_EXTERN(Hitbox, hitbox2);
 ZEROPAGE_EXTERN(const unsigned char *, temppointer);
 ZEROPAGE_EXTERN(unsigned int, score);
-ZEROPAGE_EXTERN(unsigned int, old_x);
-ZEROPAGE_EXTERN(unsigned int, old_y);
 ZEROPAGE_EXTERN(unsigned char, game_mode);
 ZEROPAGE_EXTERN(unsigned char, player_flags);
 ZEROPAGE_EXTERN(unsigned char, menu);
@@ -86,6 +84,21 @@ ZEROPAGE_EXTERN(unsigned int, pseudo_scroll_y);
 ZEROPAGE_EXTERN(unsigned char *, temp_mutablepointer);
 #define igloo_item_drop_speeds ((unsigned int *)(temp_mutablepointer))
 
+ZEROPAGE_EXTERN(unsigned int, old_x); // Just blatantly extern an unsigned int as a pointer...
+#define carassa_item_walk_x_queue ((unsigned char *)(old_x))
+
+ZEROPAGE_EXTERN(unsigned int, old_y);
+#define carassa_item_walk_index_queue ((unsigned char *)(old_y))
+
+ZEROPAGE_EXTERN(unsigned char, tile_clear_front);
+#define carassa_item_walk_queue_front tile_clear_front
+
+ZEROPAGE_EXTERN(unsigned char, tile_clear_back);
+#define carassa_item_walk_queue_back tile_clear_back
+
+ZEROPAGE_EXTERN(unsigned int, min_scroll_y);
+#define carassa_speed min_scroll_y
+
 extern unsigned char shuffle_array[];
 extern unsigned char shuffle_leg_size;
 
@@ -111,6 +124,10 @@ extern unsigned char cmap[];
 
 extern unsigned int igloo_1p_high_score;
 extern unsigned int igloo_2p_high_score;
+
+#if ONSCREEN_JUNK_MAXIMUM>15
+    #warning "Careful (igloo): ONSCREEN_JUNK_MAXIMUM is high; may have to change logic for carassa walk queue(s)."
+#endif
 
 #pragma rodata-name(push, "BANK1")
 
@@ -145,6 +162,7 @@ void begin_igloo_sub(void);
 void end_igloo(void);
 void igloo_item_movement(void);
 void igloo_player_movement(void);
+void igloo_carassa_movement(void);
 void igloo_sprite_collisions(void);
 void igloo_draw_sprites(void);
 void igloo_update_score(void);
@@ -213,7 +231,13 @@ void begin_igloo_sub(void) {
     score = 0;
     round_number = 0;
     score_this_round = 0; // don't buffer a message...
+
+    // Item drop speeds
     temp_mutablepointer = ((void *)(cmap + 128)); // Pointer crimes ("it's memory, just do what I want please")
+    
+    // Carassa walking queue pointers
+    old_x = ((unsigned int)(temp_mutablepointer)) + 16;
+    old_y = old_x + ONSCREEN_JUNK_MAXIMUM;
 
     igloo_begin_new_round();
     // igloo_begin_new_round will be called again later but this puts
@@ -222,6 +246,7 @@ void begin_igloo_sub(void) {
 
     hitbox.width = MIKA_WIDTH;
     hitbox.height = MIKA_HEIGHT;
+    carassa_speed = 0x0100;
 
     seed_rng();
     srand(rand8());
@@ -246,6 +271,7 @@ void game_igloo(void) {
     set_prg_bank(IGLOO_CODE_BANK);
 
     igloo_player_movement();
+    igloo_carassa_movement();
     igloo_item_movement();
     igloo_sprite_collisions();
     igloo_draw_sprites();
@@ -280,17 +306,25 @@ void game_igloo(void) {
                     enemies_x[x] = (temp0 & 0b01111111) + 64;
                     enemies_y[x] = IGLOO_BRIDGE_Y_CHAR; // minus whatever for the item's height? Maybe use a LUT for that
                     enemies_subpixel_y[x] = 0;
-                    enemies_y_velocity_pixels[x] = 0;
-                    enemies_y_velocity_subpixels[x] = 0;
                     enemies_timer[x] = 0;
 
-                    // Debug: In the future Carassa will need to walk to it to get it to start moving, but for now:
-                    IGLOO_START_MOVING_ITEM(x);
+                    carassa_item_walk_index_queue[carassa_item_walk_queue_back] = x;
+                    temp0 = enemies_x[x];
+                    temp0 -= ((igloot_hitbox_x_offset_lookup_table[temp4] + igloot_hitbox_width_lookup_table[temp4]) >> 1); // Half of the visible sprite width
+                    // carassa_item_walk_x_queue[carassa_item_walk_queue_back] = temp0;
+                    AsmSet1ByteAtMutPtrWithOffset(old_x, tile_clear_back, temp0);
+
+                    ++carassa_item_walk_queue_back;
+                    carassa_item_walk_queue_back &= 0b1111;
+
                     temp0 = rand8() & 0b111;
                     //temp5 = igloo_item_drop_speeds[temp0];
                     AsmSet2ByteFromMutPtrWithOffset(temp5, temp_mutablepointer, temp0);
                     enemies_y_velocity_pixels[x] = high_byte(temp5);
                     enemies_y_velocity_subpixels[x] = low_byte(temp5);
+
+                    // Debug: In the future Carassa will need to walk to it to get it to start moving, but for now:
+                    // IGLOO_START_MOVING_ITEM(x);
                     break;
                 }
             } // And as before if the screen is full it will just fail silently. No biggie.
@@ -366,6 +400,12 @@ void igloo_begin_new_round(void) {
         AsmSet2ByteAtMutPtrWithOffset(temp_mutablepointer, x, temp5);
     }
 
+    temp0 = MIN(round_number, 15);
+    carassa_speed = carassa_speeds[temp0];
+
+    carassa_item_walk_queue_back = 0;
+    carassa_item_walk_queue_front = 0;
+
     next_item_timer = rand8() & 0b11111;
     igloo_write_nextlevel_message();
     igloo_write_fake_time();
@@ -427,7 +467,6 @@ void igloo_write_fake_time(void) {
 
 void igloo_player_movement(void) {
     if (game_seconds_timer > 0 || game_frame_timer > 0 /* && items_dropped_this_round < 5 */ /*i.e game isn't over; change if I add a flag for this*/) {
-        old_x = mika.x;
         if (IGLOO_IS_JUMPING) {
             if (high_byte(mika.y) >= 0xB0) {
                 mika.velocity_y = 0;
@@ -469,6 +508,34 @@ void igloo_player_movement(void) {
 
         mika.x += mika.velocity_x;
         mika.y += mika.velocity_y;
+    }
+}
+
+void igloo_carassa_movement(void) {
+    if (game_seconds_timer == 0 && game_frame_timer == 0 /* || items_dropped_this_round < 5 */) { return; } // Game or Round over?
+    if (carassa_item_walk_queue_back == carassa_item_walk_queue_front) { return; } // Empty queue, we're caught up
+    
+    // Target an item:
+    temp1 = carassa_item_walk_x_queue[carassa_item_walk_queue_front];
+    
+    if (high_byte(carassa.x) < temp1) {
+        carassa.x += carassa_speed;
+        if (high_byte(carassa.x) > temp1) {
+            high_byte(carassa.x) = temp1;
+            low_byte(carassa.x) = 0;
+        }
+    } else if (high_byte(carassa.x) > temp1) {
+        carassa.x -= carassa_speed;
+        if (high_byte(carassa.x) < temp1) {
+            high_byte(carassa.x) = temp1;
+            low_byte(carassa.x) = 0;
+        }
+    } else {
+        // Let the item drop!
+        temp0 = carassa_item_walk_index_queue[carassa_item_walk_queue_front];
+        IGLOO_START_MOVING_ITEM(temp0);
+        ++carassa_item_walk_queue_front;
+        carassa_item_walk_queue_front &= 0b1111;
     }
 }
 

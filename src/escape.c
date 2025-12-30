@@ -1109,7 +1109,7 @@ void load_level_welcome_screen(void) {
     // Actually copy the text.
     for (temp2 = 0; temp2 < temp0; ++temp2) {
         AsmSet1ByteFromZpPtrAtIndexVar(temp3, temppointer, temp2); //temp3 = temppointer[temp2];
-        AsmSet1ByteAtZpPtrWithOffset(temp_mutablepointer, temp2, temp3); //temp_mutablepointer[temp2] = temp3;
+        AsmSet1ByteAtMutPtrWithOffset(temp_mutablepointer, temp2, temp3); //temp_mutablepointer[temp2] = temp3;
     }
 
     // Write what we've buffered to cmap into vram. (That WRAM sure is convenient...)
