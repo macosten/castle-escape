@@ -99,6 +99,9 @@ ZEROPAGE_EXTERN(unsigned char, tile_clear_back);
 ZEROPAGE_EXTERN(unsigned int, min_scroll_y);
 #define carassa_speed min_scroll_y
 
+ZEROPAGE_EXTERN(unsigned char, did_headbonk);
+#define item_spawn_frame_delay_index_base did_headbonk
+
 extern unsigned char shuffle_array[];
 extern unsigned char shuffle_leg_size;
 
@@ -293,9 +296,11 @@ void game_igloo(void) {
 
         --next_item_timer;
         if (next_item_timer == 0) {
-            next_item_timer = 32 + (rand8() & 0b11111);
+            temp0 = (rand8() & 0b111);
+            temp0 += item_spawn_frame_delay_index_base;
+            next_item_timer = item_spawn_frame_delays[temp0];
             calculate_next_igloo_item();
-            
+
             for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
                 if (!IS_ENEMY_ACTIVE(x)) {
                     // insert here!
@@ -310,7 +315,8 @@ void game_igloo(void) {
 
                     carassa_item_walk_index_queue[carassa_item_walk_queue_back] = x;
                     temp0 = enemies_x[x];
-                    temp0 -= ((igloot_hitbox_x_offset_lookup_table[temp4] + igloot_hitbox_width_lookup_table[temp4]) >> 1); // Half of the visible sprite width
+                    temp0 += (igloot_hitbox_width_lookup_table[temp4] >> 1) + igloot_hitbox_x_offset_lookup_table[temp4]; // Half of the visible sprite width
+                    temp0 -= 12; // Half the visual size of three 8-by-3 sprites (Carassa's width)
                     // carassa_item_walk_x_queue[carassa_item_walk_queue_back] = temp0;
                     AsmSet1ByteAtMutPtrWithOffset(old_x, tile_clear_back, temp0);
 
@@ -322,9 +328,6 @@ void game_igloo(void) {
                     AsmSet2ByteFromMutPtrWithOffset(temp5, temp_mutablepointer, temp0);
                     enemies_y_velocity_pixels[x] = high_byte(temp5);
                     enemies_y_velocity_subpixels[x] = low_byte(temp5);
-
-                    // Debug: In the future Carassa will need to walk to it to get it to start moving, but for now:
-                    // IGLOO_START_MOVING_ITEM(x);
                     break;
                 }
             } // And as before if the screen is full it will just fail silently. No biggie.
@@ -405,6 +408,8 @@ void igloo_begin_new_round(void) {
 
     carassa_item_walk_queue_back = 0;
     carassa_item_walk_queue_front = 0;
+
+    item_spawn_frame_delay_index_base = MIN(round_number, 12) << 3;
 
     next_item_timer = rand8() & 0b11111;
     igloo_write_nextlevel_message();
