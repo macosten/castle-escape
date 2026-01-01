@@ -35,6 +35,7 @@ ZEROPAGE_EXTERN(const unsigned char *, temppointer);
 ZEROPAGE_EXTERN(unsigned int, score);
 ZEROPAGE_EXTERN(unsigned char, game_mode);
 ZEROPAGE_EXTERN(unsigned char, player_flags);
+ZEROPAGE_EXTERN(unsigned char, player_frame_timer);
 ZEROPAGE_EXTERN(unsigned char, menu);
 ZEROPAGE_EXTERN(unsigned char, shuffle_offset);
 ZEROPAGE_EXTERN(unsigned char, shuffle_maximum);
@@ -68,6 +69,9 @@ ZEROPAGE_EXTERN(unsigned char, level_index);
 
 ZEROPAGE_EXTERN(unsigned char, player_death_timer);
 #define player_stun_timer player_death_timer
+
+ZEROPAGE_EXTERN(unsigned char, player_sword_timer);
+#define carassa_walking_frame_timer player_sword_timer
 
 ZEROPAGE_EXTERN(unsigned char, index);
 #define next_item_timer index
@@ -191,7 +195,8 @@ void igloo_collision_with_bomb(void);
 void igloo_collision_with_bomb_explosion(void);
 void igloo_collision_with_piano(void);
 
-void igloo_draw_chias(void);
+void igloo_draw_mika(void);
+void igloo_draw_carassa(void);
 void igloo_draw_items(void);
 void igloo_default_draw(void);
 void igloo_bomb_draw(void);
@@ -234,6 +239,7 @@ void begin_igloo_sub(void) {
     score = 0;
     round_number = 0;
     score_this_round = 0; // don't buffer a message...
+    player_frame_timer = 0;
 
     // Item drop speeds
     temp_mutablepointer = ((void *)(cmap + 128)); // Pointer crimes ("it's memory, just do what I want please")
@@ -486,8 +492,10 @@ void igloo_player_movement(void) {
                 mika.velocity_y = -MIKA_JUMP_STRENGTH;
             } else if (pad1 & PAD_LEFT) {
                 mika.velocity_x -= IGLOO_ACCEL;
+                --player_frame_timer;
             } else if (pad1 & PAD_RIGHT) {
                 mika.velocity_x += IGLOO_ACCEL;
+                ++player_frame_timer;
             } else {
                 if (mika.velocity_x > 0) {
                     if (mika.velocity_x < IGLOO_FRICTION) {
@@ -513,13 +521,29 @@ void igloo_player_movement(void) {
 
         mika.x += mika.velocity_x;
         mika.y += mika.velocity_y;
+
+        if (high_byte(mika.x) < IGLOO_MIN_X) {
+            mika.x = IGLOO_MIN_X << 8;
+        } else if (high_byte(mika.x) > IGLOO_MAX_X) {
+            mika.x = IGLOO_MAX_X << 8;
+        }
     }
 }
 
 void igloo_carassa_movement(void) {
-    if (game_seconds_timer == 0 && game_frame_timer == 0 /* || items_dropped_this_round < 5 */) { return; } // Game or Round over?
-    if (carassa_item_walk_queue_back == carassa_item_walk_queue_front) { return; } // Empty queue, we're caught up
+    if (game_seconds_timer == 0 && game_frame_timer == 0 /* || items_dropped_this_round < 5 */) {
+        carassa_walking_frame_timer = 0;
+        IGLOO_SET_CARASSA_NOT_WALKING();
+        return;
+    } // Game or Round over?
+    if (carassa_item_walk_queue_back == carassa_item_walk_queue_front) {
+        carassa_walking_frame_timer = 0;
+        IGLOO_SET_CARASSA_NOT_WALKING();
+        return;
+    } // Empty queue, we're caught up
     
+    IGLOO_SET_CARASSA_WALKING();
+    ++carassa_walking_frame_timer;
     // Target an item:
     temp1 = carassa_item_walk_x_queue[carassa_item_walk_queue_front];
     
@@ -625,8 +649,9 @@ void igloo_collision_with_piano(void) {
 void igloo_draw_sprites(void) {
     // clear all sprites from sprite buffer
     oam_clear();
-    igloo_draw_chias();
+    igloo_draw_carassa();
     igloo_draw_items();
+    igloo_draw_mika();
 }
 
 void calculate_next_igloo_item(void) {
@@ -752,14 +777,30 @@ const void (* const igloo_draw_func_pointers[])(void) = {
     igloo_piano_explosion_draw,
 };
 
-void igloo_draw_chias(void) {
-    // Mika
-    oam_meta_spr(high_byte(mika.x), high_byte(mika.y), mika_idle);
-    
-    // Carassa
-    if (round_begin_timer == 0) {
-        oam_meta_spr(high_byte(carassa.x), high_byte(carassa.y), carassa_idle);
+void igloo_draw_mika(void) {
+    if (!IGLOO_IS_JUMPING) {
+        if (high_byte(mika.velocity_x) > 0) {
+            temp0 = (player_frame_timer >> 4) & 0b1;
+            AsmSet2ByteFromPtrAtIndexVar(temppointer, mika_walk_animation, temp0);
+        } else {
+            temppointer = mika_idle;
+        }
+    } else {
+        temppointer = mika_idle;
     }
+    oam_meta_spr(high_byte(mika.x), high_byte(mika.y), temppointer);
+}
+
+void igloo_draw_carassa(void) {
+    if (round_begin_timer != 0 ) { return; }
+    if (!IGLOO_IS_CARASSA_WALKING) {
+        temppointer = carassa_idle;   
+    } else {
+        temp0 = (carassa_walking_frame_timer >> 4) & 0b1;
+        //temppointer = carassa_walk_animation[temp0];
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, carassa_walk_animation, temp0);
+    }
+    oam_meta_spr(high_byte(carassa.x), high_byte(carassa.y), temppointer);
 }
 
 void igloo_draw_items(void) {

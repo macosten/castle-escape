@@ -67,10 +67,15 @@ const unsigned char const carassa_walk2[] = {
   0,16, 0xA1, 0|OAM_FLIP_H,
   8,16, 0xA0, 0,
  16,16, 0xA1, 0,
-  0,24, 0xC1, 0,
+ 16,24, 0xC1, 0,
   8,24, 0xC0, 0,
- 16,24, 0xD1, 0|OAM_FLIP_H,
+  0,24, 0xD1, 0|OAM_FLIP_H,
  128
+};
+
+const unsigned char * const carassa_walk_animation[] = {
+    carassa_walk1,
+    carassa_walk2,
 };
 
 const unsigned char const mika_idle[] = {
@@ -115,10 +120,15 @@ const unsigned char const mika_walk2[] = {
   0,16, 0xA3, 1|OAM_FLIP_H,
   8,16, 0xA2, 1,
  16,16, 0xA3, 1,
-  0,24, 0xC3, 1,
+ 16,24, 0xC3, 1,
   8,24, 0xC2, 1,
- 16,24, 0xD3, 1|OAM_FLIP_H,
+  0,24, 0xD3, 1|OAM_FLIP_H,
  128
+};
+
+const unsigned char * const mika_walk_animation[] = {
+    mika_walk1,
+    mika_walk2,
 };
 
 // Items

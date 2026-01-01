@@ -39,6 +39,9 @@
 
 #define IGLOOT_MIN_SPEED 0x0080
 
+#define IGLOO_MIN_X 16
+#define IGLOO_MAX_X (255 - IGLOO_MIN_X - MIKA_WIDTH)
+
 // Flags that need to be cleared at the start of each frame...
 #define IGLOO_DID_SCORE_CHANGE_THIS_FRAME_MASK      0b00000001
 #define IGLOO_DID_BUFFER_MESSAGE_THIS_FRAME_MASK    0b00000010
@@ -47,6 +50,7 @@
 
 // Flags that don't
 #define IGLOO_JUMPING_MASK               0b00000100
+#define IGLOO_CARASSA_WALKING_MASK       0b00001000
 
 #define IGLOO_SCORE_CHANGED_THIS_FRAME          (player_flags & IGLOO_DID_SCORE_CHANGE_THIS_FRAME_MASK)
 #define IGLOO_SET_SCORE_CHANGED_THIS_FRAME()    (player_flags |= IGLOO_DID_SCORE_CHANGE_THIS_FRAME_MASK)
@@ -54,10 +58,12 @@
 #define IGLOO_DID_BUFFER_MESSAGE_THIS_FRAME     (player_flags & IGLOO_DID_BUFFER_MESSAGE_THIS_FRAME_MASK)
 #define IGLOO_SET_BUFFERED_MESSAGE_THIS_FRAME() (player_flags |= IGLOO_DID_BUFFER_MESSAGE_THIS_FRAME_MASK)
 
-
 #define IGLOO_IS_JUMPING                        (player_flags & IGLOO_JUMPING_MASK)
 #define IGLOO_SET_JUMPING()                     (player_flags |= IGLOO_JUMPING_MASK)
 #define IGLOO_SET_NOT_JUMPING()                 (player_flags &= ~IGLOO_JUMPING_MASK)
+#define IGLOO_IS_CARASSA_WALKING                (player_flags & IGLOO_CARASSA_WALKING_MASK)
+#define IGLOO_SET_CARASSA_WALKING()             (player_flags |= IGLOO_CARASSA_WALKING_MASK)
+#define IGLOO_SET_CARASSA_NOT_WALKING()         (player_flags &= ~IGLOO_CARASSA_WALKING_MASK)
 
 // Original macros defined in enemy_macros.h. Specifically chosen so zeroing out flags brings them to their first/default state
 
