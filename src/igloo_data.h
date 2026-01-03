@@ -196,12 +196,69 @@ const unsigned char item_umbrella_broken[] = {
    128
 };
 
-const unsigned char item_bomb[] = {
-    0, 0, 0xE0, 2,
-    8, 0, 0xE1, 2,
-    0, 8, 0xF0, 2,
-    8, 8, 0xF1, 2,
+const unsigned char item_bomb0[] = {
+    0,-8, 0xE0, 0,
+    0, 0, 0xF0, 2,
     128
+};
+
+const unsigned char item_bomb1[] = {
+    0,-8, 0xE1, 0,
+    0, 0, 0xF0, 2,
+    128
+};
+
+const unsigned char item_bomb2[] = {
+    0,-8, 0xF1, 0,
+    0, 0, 0xF0, 2,
+    128
+};
+
+const unsigned char item_bomb3[] = {
+    0,-8, 0xE4, 0,
+    0, 0, 0xF0, 2,
+    128
+};
+
+const unsigned char item_bomb4[] = {
+    0,-8, 0xF4, 0,
+    0, 0, 0xF0, 2,
+    128
+};
+
+const unsigned char item_bomb5[] = {
+   -1,-8, 0xE5, 0,
+    0, 0, 0xF0, 2,
+    128
+};
+
+const unsigned char item_bomb6[] = {
+   -1,-8, 0xF5, 0,
+    0, 0, 0xF0, 2,
+    128
+};
+
+const unsigned char item_bomb7[] = {
+   -1,-8, 0xE6, 0,
+    0, 0, 0xF0, 2,
+    128
+};
+
+const unsigned char item_bomb8[] = {
+   -1,-8, 0xF6, 0,
+    0, 0, 0xF0, 2,
+    128
+};
+
+const unsigned char * const item_bomb_fuse_animation[] = {
+    item_bomb1,
+    item_bomb2,
+    item_bomb3,
+    item_bomb4,
+    item_bomb5,
+    item_bomb6,
+    item_bomb7,
+    item_bomb8,
 };
 
 const unsigned char item_thingy[] = {
@@ -269,7 +326,7 @@ const unsigned char item_explosion3[] = {
     7, 7, 0xB4, 0|OAM_FLIP_H|OAM_FLIP_V,
     -7, 3, 0xB6, 0,
     15, -4, 0xB6, 0,
-    -10, -9, 0xB5, 0,
+    -8, -8, 0xB5, 0,
     6, 17, 0xB5, 0,
     128
 };
@@ -279,7 +336,7 @@ const unsigned char item_explosion4[] = {
     8, -1, 0xB4, 0|OAM_FLIP_H,
     0, 7, 0xB4, 0|OAM_FLIP_V,
     8, 7, 0xB4, 0|OAM_FLIP_H|OAM_FLIP_V,
-    -10, -9, 0xB6, 0,
+    -8, -8, 0xB6, 0,
     6, 17, 0xB6, 0,
     -3, 14, 0xB5, 0,
     10, -8, 0xB5, 0,
@@ -293,6 +350,87 @@ const unsigned char * const item_explosion_animation[] = {
     item_explosion4,
 };
 
+const unsigned char item_piano_explosion1[] = {
+    4, 4, 0xB5, 2,
+    4, 12, 0xB5, 2,
+    12, 4, 0xB5, 2,
+    12, 12, 0xB5, 2,
+    128
+};
+
+const unsigned char item_piano_explosion2[] = {
+    4, 0, 0xB5, 2,
+    4, 8, 0xB5, 2,
+    12, 0, 0xB5, 2,
+    12, 8, 0xB5, 2,
+    128
+};
+
+const unsigned char item_piano_explosion3[] = {
+    4, -4, 0xB5, 2,
+    4, 4, 0xB5, 2,
+    12, -4, 0xB5, 2,
+    12, 4, 0xB5, 2,
+    128
+};
+
+const unsigned char item_piano_explosion4[] = {
+    4, -8, 0xB5, 2,
+    4, 0, 0xB5, 2,
+    12, -8, 0xB5, 2,
+    12, 0, 0xB5, 2,
+    128
+};
+
+const unsigned char item_piano_explosion5[] = {
+    4, -10, 0xB5, 2,
+    4, -2, 0xB5, 2,
+    12, -10, 0xB5, 2,
+    12, -2, 0xB5, 2,
+    128
+};
+
+const unsigned char item_piano_explosion6[] = {
+    2, -8, 0xB5, 2,
+    2, 0, 0xB5, 2,
+    14, -8, 0xB5, 2,
+    14, 0, 0xB5, 2,
+    128
+};
+
+const unsigned char item_piano_explosion7[] = {
+    0, -6, 0xB6, 2,
+    0, 2, 0xB6, 2,
+    16, -6, 0xB6, 2,
+    16, 2, 0xB6, 2,
+    128
+};
+
+const unsigned char item_piano_explosion8[] = {
+    -2, -4, 0xB6, 2,
+    -2, 4, 0xB6, 2,
+    18, -4, 0xB6, 2,
+    18, 4, 0xB6, 2,
+    128
+};
+
+const unsigned char * const item_piano_explosion_animation[] = {
+    item_piano_explosion1,
+    item_piano_explosion2,
+    item_piano_explosion3,
+    item_piano_explosion4,
+    item_piano_explosion4,
+    item_piano_explosion5,
+    item_piano_explosion5,
+    item_piano_explosion6,
+    item_piano_explosion6,
+    item_piano_explosion7,
+    item_piano_explosion7,
+    item_piano_explosion8,
+    item_piano_explosion8,
+    item_piano_explosion8,
+};
+
 const unsigned char * const igloot_metasprite_defaultdraw_lut[] = {
     item_bag, item_bag_broken,
     item_chiapop, item_chiapop_broken,
@@ -300,7 +438,7 @@ const unsigned char * const igloot_metasprite_defaultdraw_lut[] = {
     item_thingy, item_thingy_broken,
     item_potion, item_potion_broken,
     item_coin, item_coin_broken,
-    item_bomb, item_bomb,
+    item_bomb0, item_bomb0,
     item_piano, item_piano
 };
 
@@ -311,7 +449,7 @@ const unsigned char igloot_hitbox_width_lookup_table[] = {
     8,  // Thingy
     16, // Potion
     16, // Coin
-    12, // Bomb
+    6, // Bomb
     20, // Piano
     16, // Bomb Explosion
     0,  // Piano Explosion
@@ -324,7 +462,7 @@ const unsigned char igloot_hitbox_height_lookup_table[] = {
     16, // Thingy
     16, // Potion
     8,  // Coin
-    12, // Bomb
+    6, // Bomb
     20, // Piano
     16, // Bomb Explosion
     0,  // Piano Explosion
@@ -337,7 +475,7 @@ const unsigned char igloot_hitbox_x_offset_lookup_table[] = {
     0, // Thingy
     0, // Potion
     0,  // Coin
-    4, // Bomb
+    1, // Bomb
     4, // Piano
     0, // Bomb Explosion
     0, // Piano Explosion
@@ -350,7 +488,7 @@ const unsigned char igloot_hitbox_y_offset_lookup_table[] = {
     0, // Thingy
     0, // Potion
     0, // Coin
-    4, // Bomb
+    1, // Bomb
     4, // Piano
     0, // Bomb Explosion
     0, // Piano Explosion

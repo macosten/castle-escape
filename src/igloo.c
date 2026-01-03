@@ -188,6 +188,7 @@ void igloo_default_item_ai(void);
 void igloo_bomb_item_ai(void);
 void igloo_piano_item_ai(void);
 void igloo_explosion_ai(void);
+void igloo_piano_explosion_ai(void);
 
 void igloo_collision_empty_function(void);
 void igloo_collision_with_points(void);
@@ -310,11 +311,11 @@ void game_igloo(void) {
             for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
                 if (!IS_ENEMY_ACTIVE(x)) {
                     // insert here!
-                    temp0 = rand8();
+                    // temp5 still = rand() from calculate_next_igloo_item;
                     enemies_type[x] = temp4;
                     enemies_flags[x] = 0;
                     ACTIVATE_ENEMY(x);
-                    enemies_x[x] = (temp0 & 0b01111111) + 64;
+                    enemies_x[x] = high_byte(temp5) + 64; // since rand() is 0...0x7FFF, high_byte is 0...127
                     enemies_y[x] = IGLOO_BRIDGE_Y_CHAR; // minus whatever for the item's height? Maybe use a LUT for that
                     enemies_subpixel_y[x] = 0;
                     enemies_timer[x] = 0;
@@ -337,7 +338,7 @@ void game_igloo(void) {
                     break;
                 }
             } // And as before if the screen is full it will just fail silently. No biggie.
-        } 
+        }
     } else if (round_begin_timer > 0) {
         // Start next round
         --round_begin_timer;
@@ -395,6 +396,7 @@ void igloo_begin_new_round(void) {
     if (items_dropped_this_round == 0 && score_this_round > 0) {
         score += score_this_round;
         igloo_write_allitems_message();
+        igloo_update_score();
     }
     items_dropped_this_round = 0;
     score_this_round = 0;
@@ -483,6 +485,7 @@ void igloo_player_movement(void) {
                 mika.velocity_y = 0;
                 mika.y = MIKA_STARTING_Y;
                 IGLOO_SET_NOT_JUMPING();
+                sfx_play(SFX_SMACK, 1);
             } else {
                 mika.velocity_y += IGLOO_GRAVITY;
             }
@@ -490,6 +493,7 @@ void igloo_player_movement(void) {
             if (pad1 & PAD_A) {
                 IGLOO_SET_JUMPING();
                 mika.velocity_y = -MIKA_JUMP_STRENGTH;
+                sfx_play(SFX_JUMP, 1);
             } else if (pad1 & PAD_LEFT) {
                 mika.velocity_x -= IGLOO_ACCEL;
                 --player_frame_timer;
@@ -531,6 +535,8 @@ void igloo_player_movement(void) {
 }
 
 void igloo_carassa_movement(void) {
+    debug_values[0] = 0xDE;
+    debug_values[1] = 0xAD;
     if (game_seconds_timer == 0 && game_frame_timer == 0 /* || items_dropped_this_round < 5 */) {
         carassa_walking_frame_timer = 0;
         IGLOO_SET_CARASSA_NOT_WALKING();
@@ -547,6 +553,12 @@ void igloo_carassa_movement(void) {
     // Target an item:
     temp1 = carassa_item_walk_x_queue[carassa_item_walk_queue_front];
     
+    // TODO - sometimes there is an odd bug where Carassa will walk all the way to the left (tends to happen around levels 8-11?). Why?
+    debug_values[2] = temp1;
+    debug_values[3] = carassa_item_walk_index_queue[carassa_item_walk_queue_front];
+
+    // if (temp1 < 64 || temp1 > 127+64) { /* Invalid target X, figure something else out */ }
+
     if (high_byte(carassa.x) < temp1) {
         carassa.x += carassa_speed;
         if (high_byte(carassa.x) > temp1) {
@@ -687,7 +699,7 @@ const void (* const igloo_ai_pointers[])(void) = {
     igloo_bomb_item_ai,
     igloo_piano_item_ai,
     igloo_explosion_ai,
-    igloo_explosion_ai,
+    igloo_piano_explosion_ai,
 };
 
 void igloo_item_movement(void) {
@@ -758,9 +770,27 @@ void igloo_piano_item_ai(void) {
 
 void igloo_explosion_ai(void) {
     // Just exist for a bit and then go away.
-    ++enemies_timer[x];
-    if (enemies_timer[x] > 60) {
-        DEACTIVATE_ENEMY(x);
+    //++enemies_timer[x];
+    AsmSet1ByteFromPtrAtIndexVar(temp0, enemies_timer, x);
+    if (temp0 > 60) {
+        enemies_flags[x] = 0;
+        enemies_timer[x] = 0;
+    } else {
+        ++temp0;
+        AsmSet1ByteAtPtrWithOffset(enemies_timer, x, temp0);
+    }
+}
+
+void igloo_piano_explosion_ai(void) {
+    // Just exist for a bit and then go away.
+    //++enemies_timer[x]
+    AsmSet1ByteFromPtrAtIndexVar(temp0, enemies_timer, x);
+    if (enemies_timer[x] > 26) {
+        enemies_flags[x] = 0;
+        enemies_timer[x] = 0;
+    } else {
+        ++temp0;
+        AsmSet1ByteAtPtrWithOffset(enemies_timer, x, temp0);
     }
 }
 
@@ -827,22 +857,23 @@ void igloo_default_draw(void) {
 
 void igloo_bomb_draw(void) {
     if (!IGLOO_IS_ITEM_BROKEN(x)) {
-        temppointer = item_bomb;
+        temppointer = item_bomb0;
     } else {
-        // Animate fuse (later?)?
-        // AsmSet2ByteFromPtrAtIndexVar(temppointer, igloot_metasprite_defaultdraw_lut, temp0);
-        temppointer = item_bomb;
+        temp0 = enemies_timer[x] >> 4;
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, item_bomb_fuse_animation, temp0);
     }
 }
 
 void igloo_bomb_explosion_draw(void) {
-    temp0 = enemies_timer[x] & 0b11;
-    temppointer = item_explosion_animation[temp0];
+    temp0 = (enemies_timer[x] >> 1) & 0b11;
+    // temppointer = item_explosion_animation[temp0];
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, item_explosion_animation, temp0);
 }
 
 void igloo_piano_explosion_draw(void) {
-    temp0 = enemies_timer[x] & 0b11;
-    temppointer = item_explosion_animation[temp0];
+    temp0 = enemies_timer[x] >> 1;
+    // temppointer = item_piano_explosion_animation[temp0];
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, item_piano_explosion_animation, temp0);
 }
 
 #pragma code-name(pop)
