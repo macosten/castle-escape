@@ -14,22 +14,22 @@
 	__asm__("sta %v", variable); \
 }
 
+// (Technically misnamed and should be "Mut" instead of "Zp")
 // When used, something like
 // temp0 = array[i];
 // becomes:
 // AsmSet1ByteFromPtrAtIndexVar(temp0, array, i);
-
 #define AsmSet1ByteFromZpPtrAtIndexVar(variable, zppointer, indexVariable) { \
 	__asm__("ldy %v", indexVariable); \
 	__asm__("lda (%v), %s", zppointer, Y); \
 	__asm__("sta %v", variable); \
 }
 
+// (Technically misnamed and should be "Mut" instead of "Zp")
 // When used, something like
 // temp0 = array[5];
 // becomes:
 // AsmSet1ByteFromPtrAtConst(temp0, array, 5);
-
 #define AsmSet1ByteFromZpPtrAtConst(variable, zppointer, uint8const) { \
 	__asm__("ldy #%b", uint8const); \
 	__asm__("lda (%v), %s", zppointer, Y); \
@@ -41,7 +41,6 @@
 // array[i] = temp0;
 // becomes:
 // AsmSet1ByteAtPtrWithOffset(array, i, temp0);
-
 #define AsmSet1ByteAtPtrWithOffset(pointer, offset, variable) {\
 	__asm__("ldy %v", offset);\
 	__asm__("lda %v", variable);\

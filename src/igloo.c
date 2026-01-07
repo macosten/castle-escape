@@ -88,9 +88,6 @@ ZEROPAGE_EXTERN(unsigned int, pseudo_scroll_y);
 ZEROPAGE_EXTERN(unsigned char *, temp_mutablepointer);
 #define igloo_item_drop_speeds ((unsigned int *)(temp_mutablepointer))
 
-ZEROPAGE_EXTERN(unsigned int, old_x); // Just blatantly extern an unsigned int as a pointer...
-#define carassa_item_walk_x_queue ((unsigned char *)(old_x))
-
 ZEROPAGE_EXTERN(unsigned int, old_y);
 #define carassa_item_walk_index_queue ((unsigned char *)(old_y))
 
@@ -246,8 +243,7 @@ void begin_igloo_sub(void) {
     temp_mutablepointer = ((void *)(cmap + 128)); // Pointer crimes ("it's memory, just do what I want please")
     
     // Carassa walking queue pointers
-    old_x = ((unsigned int)(temp_mutablepointer)) + 16;
-    old_y = old_x + ONSCREEN_JUNK_MAXIMUM;
+    old_y = ((unsigned int)(temp_mutablepointer)) + 16;
 
     igloo_begin_new_round();
     // igloo_begin_new_round will be called again later but this puts
@@ -321,11 +317,6 @@ void game_igloo(void) {
                     enemies_timer[x] = 0;
 
                     carassa_item_walk_index_queue[carassa_item_walk_queue_back] = x;
-                    temp0 = enemies_x[x];
-                    temp0 += (igloot_hitbox_width_lookup_table[temp4] >> 1) + igloot_hitbox_x_offset_lookup_table[temp4]; // Half of the visible sprite width
-                    temp0 -= 12; // Half the visual size of three 8-by-3 sprites (Carassa's width)
-                    // carassa_item_walk_x_queue[carassa_item_walk_queue_back] = temp0;
-                    AsmSet1ByteAtMutPtrWithOffset(old_x, tile_clear_back, temp0);
 
                     ++carassa_item_walk_queue_back;
                     carassa_item_walk_queue_back &= 0b1111;
@@ -382,6 +373,7 @@ void igloo_begin_new_round(void) {
     mika.y = MIKA_STARTING_Y;
     carassa.x = CHIA_STARTING_X;
     carassa.y = CARASSA_STARTING_Y;
+    IGLOO_SET_NOT_JUMPING();
 
     temp0 = MIN(round_number, 5);
     threshold_coin = IGLOOT_BASE_THRESHOLD + temp0;
@@ -535,8 +527,6 @@ void igloo_player_movement(void) {
 }
 
 void igloo_carassa_movement(void) {
-    debug_values[0] = 0xDE;
-    debug_values[1] = 0xAD;
     if (game_seconds_timer == 0 && game_frame_timer == 0 /* || items_dropped_this_round < 5 */) {
         carassa_walking_frame_timer = 0;
         IGLOO_SET_CARASSA_NOT_WALKING();
@@ -551,11 +541,23 @@ void igloo_carassa_movement(void) {
     IGLOO_SET_CARASSA_WALKING();
     ++carassa_walking_frame_timer;
     // Target an item:
-    temp1 = carassa_item_walk_x_queue[carassa_item_walk_queue_front];
-    
-    // TODO - sometimes there is an odd bug where Carassa will walk all the way to the left (tends to happen around levels 8-11?). Why?
-    debug_values[2] = temp1;
-    debug_values[3] = carassa_item_walk_index_queue[carassa_item_walk_queue_front];
+    //x = carassa_item_walk_index_queue[carassa_item_walk_queue_front];
+    AsmSet1ByteFromZpPtrAtIndexVar(x, old_y, tile_clear_front);
+
+    if (!IS_ENEMY_ACTIVE(x)) { // Somehow trying to walk to an inactive item, don't do that?
+        IGLOO_SET_CARASSA_NOT_WALKING();
+        return;
+    }
+
+    temp1 = enemies_x[x];
+    temp4 = enemies_type[x];
+    temp1 += (igloot_hitbox_width_lookup_table[temp4] >> 1) + igloot_hitbox_x_offset_lookup_table[temp4]; // Half of the visible sprite width
+    temp1 -= 12; // Half the visual size of three 8-by-3 sprites (Carassa's width)
+
+    // There was an odd bug where Carassa will sometimes walk all the way to the left, presumably
+    // because an invalid/inactive target item whose x coordinate was cleared was being walked to.
+    // It's not clear if moving the x coordinate calculation here fixes it fully as intended
+    // but I haven't seen it happen since doing so yet. If it's still messed up:
 
     // if (temp1 < 64 || temp1 > 127+64) { /* Invalid target X, figure something else out */ }
 
