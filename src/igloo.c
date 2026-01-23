@@ -164,9 +164,11 @@ void game_igloo(void);
 void begin_igloo(void);
 void begin_igloo_sub(void);
 void end_igloo(void);
+
 void igloo_item_movement(void);
 void igloo_player_movement(void);
 void igloo_carassa_movement(void);
+
 void igloo_sprite_collisions(void);
 void igloo_draw_sprites(void);
 void igloo_update_score(void);
@@ -177,6 +179,10 @@ void igloo_clear_bottom_message(void);
 void igloo_write_decimal_in_message_sub(void);
 void igloo_write_allitems_message(void);
 void igloo_write_nextlevel_message(void);
+void igloo_write_general_gameover_message(void);
+void igloo_write_piano_gameover_message(void);
+void igloo_write_itemdrop_gameover_message(void);
+
 void igloo_begin_new_round(void);
 void calculate_next_igloo_item(void);
 
@@ -353,6 +359,7 @@ void end_igloo(void) {
     game_seconds_timer = 0;
     pal_fade_to(4, 0);
     menu = MENU_IGLOO;
+    round_number = 0;
     switch_menu();
     music_play(MENU_SONG);
     pal_bright(4);
@@ -411,7 +418,7 @@ void igloo_begin_new_round(void) {
 
     item_spawn_frame_delay_index_base = MIN(round_number, 12) << 3;
 
-    next_item_timer = rand8() & 0b11111;
+    next_item_timer = 1 + rand8() & 0b11111;
     igloo_write_nextlevel_message();
     igloo_write_fake_time();
 }
@@ -470,9 +477,24 @@ void igloo_write_fake_time(void) {
     multi_vram_buffer_horz(fake_time, 3, NTADR_A(19, 2));
 }
 
+void igloo_write_general_gameover_message(void) {
+    multi_vram_buffer_horz(igloo_game_over_message, 9, NTADR_A(19, 7));
+}
+
+void igloo_write_piano_gameover_message(void) {
+    multi_vram_buffer_horz(igloo_piano_troll_message_1, 15, NTADR_A(10, 5));
+    multi_vram_buffer_horz(igloo_piano_troll_message_2, 12, NTADR_A(11, 6));
+}
+
+void igloo_write_itemdrop_gameover_message(void) {
+    multi_vram_buffer_horz(igloo_itemdrop_troll_message_1, 13, NTADR_A(10, 5));
+    multi_vram_buffer_horz(igloo_itemdrop_troll_message_2, 12, NTADR_A(11, 6));
+}
+
 void igloo_player_movement(void) {
+    if (player_stun_timer > 0) { --player_stun_timer; }
     if (game_seconds_timer > 0 || game_frame_timer > 0 /* && items_dropped_this_round < 5 */ /*i.e game isn't over; change if I add a flag for this*/) {
-        if (IGLOO_IS_JUMPING) {
+        if (IGLOO_IS_JUMPING) { // Jump (if jumping)
             if (high_byte(mika.y) >= 0xB0) {
                 mika.velocity_y = 0;
                 mika.y = MIKA_STARTING_Y;
@@ -481,7 +503,21 @@ void igloo_player_movement(void) {
             } else {
                 mika.velocity_y += IGLOO_GRAVITY;
             }
-        } else {
+        } else if (!(pad1 & (PAD_A | PAD_LEFT | PAD_RIGHT))) { // Ground friction (if not pressing )
+            if (mika.velocity_x > 0) {
+                if (mika.velocity_x < IGLOO_FRICTION) {
+                    mika.velocity_x = 0;
+                } else {
+                    mika.velocity_x -= IGLOO_FRICTION;
+                }
+            } else if (mika.velocity_x < 0) {
+                if (mika.velocity_x > -IGLOO_FRICTION) {
+                    mika.velocity_x = 0;
+                } else {
+                    mika.velocity_x += IGLOO_FRICTION;
+                }
+            }
+        } else if (player_stun_timer == 0) { // Process inputs if not stunned
             if (pad1 & PAD_A) {
                 IGLOO_SET_JUMPING();
                 mika.velocity_y = -MIKA_JUMP_STRENGTH;
@@ -492,20 +528,6 @@ void igloo_player_movement(void) {
             } else if (pad1 & PAD_RIGHT) {
                 mika.velocity_x += IGLOO_ACCEL;
                 ++player_frame_timer;
-            } else {
-                if (mika.velocity_x > 0) {
-                    if (mika.velocity_x < IGLOO_FRICTION) {
-                        mika.velocity_x = 0;
-                    } else {
-                        mika.velocity_x -= IGLOO_FRICTION;
-                    }
-                } else if (mika.velocity_x < 0) {
-                    if (mika.velocity_x > -IGLOO_FRICTION) {
-                        mika.velocity_x = 0;
-                    } else {
-                        mika.velocity_x += IGLOO_FRICTION;
-                    }
-                }
             }
 
             if (mika.velocity_x > IGLOO_MAX_SPEED) {
@@ -640,12 +662,14 @@ void igloo_collision_with_bomb(void) {
     enemies_timer[x] = 0;
     player_stun_timer = 180;
     sfx_play(SFX_CANNON_FIRE, 0);
+    sfx_play(SFX_ENEMY_KILL, 1);
 }
 
 void igloo_collision_with_bomb_explosion(void) {
-    if (player_stun_timer == 0) {
+    if (!IGLOO_IS_JUMPING && player_stun_timer == 0 && enemies_timer[x] <= 1) { // Don't stun if in the air
         player_stun_timer = 180;
         sfx_play(SFX_CANNON_FIRE, 0);
+        sfx_play(SFX_ENEMY_KILL, 1);
     }
 }
 
@@ -750,11 +774,12 @@ void igloo_bomb_item_ai(void) {
             // Turn this into an explosion
             enemies_timer[x] = 0;
             enemies_type[x] = IGLOOT_BOMB_EXPLOSION;
+            IGLOO_SET_ITEM_UNBROKEN(x);
             sfx_play(SFX_CANNON_FIRE, 0);
         } else {
             ++enemies_timer[x];
         }
-    } else if (high_byte(temp5) >= 0xC8) { // Bombs should stop a bit sooner
+    } else if (enemies_y[x] >= 0xC8) { // Bombs should stop a bit sooner
         enemies_y[x] = 0xC8;
         IGLOO_STOP_ITEM(x);
         IGLOO_SET_ITEM_BROKEN(x);
@@ -774,7 +799,7 @@ void igloo_explosion_ai(void) {
     // Just exist for a bit and then go away.
     //++enemies_timer[x];
     AsmSet1ByteFromPtrAtIndexVar(temp0, enemies_timer, x);
-    if (temp0 > 60) {
+    if (temp0 > 30) {
         enemies_flags[x] = 0;
         enemies_timer[x] = 0;
     } else {
@@ -810,7 +835,9 @@ const void (* const igloo_draw_func_pointers[])(void) = {
 };
 
 void igloo_draw_mika(void) {
-    if (!IGLOO_IS_JUMPING) {
+    if (player_stun_timer > 0) {
+        temppointer = mika_stunned;
+    } else if (!IGLOO_IS_JUMPING) {
         if (high_byte(mika.velocity_x) > 0) {
             temp0 = (player_frame_timer >> 4) & 0b1;
             AsmSet2ByteFromPtrAtIndexVar(temppointer, mika_walk_animation, temp0);
@@ -824,9 +851,9 @@ void igloo_draw_mika(void) {
 }
 
 void igloo_draw_carassa(void) {
-    if (round_begin_timer != 0 ) { return; }
+    if (round_begin_timer != 0) { return; }
     if (!IGLOO_IS_CARASSA_WALKING) {
-        temppointer = carassa_idle;   
+        temppointer = carassa_idle;
     } else {
         temp0 = (carassa_walking_frame_timer >> 4) & 0b1;
         //temppointer = carassa_walk_animation[temp0];

@@ -9,6 +9,14 @@ const char * const igloo_all_items_bonus_prefix = "Bonus: ";
 const char * const igloo_starting_next_level_phrase = "Level ";
 const char * const fake_time = " 30";
 
+const char * const igloo_piano_troll_message_1 = "Catching pianos";
+const char * const igloo_piano_troll_message_2 = "is a bad idea!";
+
+const char * const igloo_itemdrop_troll_message_1 = "Broken items";
+const char * const igloo_itemdrop_troll_message_2 = "don't sell!";
+
+const char * const igloo_game_over_message = "Game Over";
+
 const unsigned char const carassa_idle[] = {
   0, 0, 0x81, 0|OAM_FLIP_H,
   8, 0, 0x80, 0,
@@ -52,7 +60,7 @@ const unsigned char const carassa_walk1[] = {
   8,16, 0xA0, 0,
  16,16, 0xA1, 0,
   0,24, 0xC1, 0|OAM_FLIP_H,
-  8,24, 0xC0, 0|OAM_FLIP_H,
+  8,24, 0xD0, 0,
  16,24, 0xD1, 0,
  128
 };
@@ -70,6 +78,22 @@ const unsigned char const carassa_walk2[] = {
  16,24, 0xC1, 0,
   8,24, 0xC0, 0,
   0,24, 0xD1, 0|OAM_FLIP_H,
+ 128
+};
+
+const unsigned char const carassa_drop[] = {
+  0, 0, 0x81, 0|OAM_FLIP_H,
+  8, 0, 0x80, 0,
+ 16, 0, 0x81, 0,
+  0, 8, 0x91, 0|OAM_FLIP_H,
+  8, 8, 0x90, 0,
+ 16, 8, 0x91, 0,
+  0,16, 0xE7, 0|OAM_FLIP_H,
+  8,16, 0xD2, 0,
+ 16,16, 0xE7, 0,
+  0,24, 0xB1, 0|OAM_FLIP_H,
+  8,24, 0xB0, 0,
+ 16,24, 0xB1, 0,
  128
 };
 
@@ -129,6 +153,22 @@ const unsigned char const mika_walk2[] = {
 const unsigned char * const mika_walk_animation[] = {
     mika_walk1,
     mika_walk2,
+};
+
+const unsigned char const mika_stunned[] = {
+  0, 0, 0x83, 2|OAM_FLIP_H,
+  8, 0, 0x82, 2,
+ 16, 0, 0x83, 2,
+  0, 8, 0x93, 2|OAM_FLIP_H,
+  8, 8, 0x92, 2,
+ 16, 8, 0x93, 2,
+  0,16, 0xA3, 2|OAM_FLIP_H,
+  8,16, 0xA2, 2,
+ 16,16, 0xA3, 2,
+  0,24, 0xB3, 2|OAM_FLIP_H,
+  8,24, 0xB2, 2,
+ 16,24, 0xB3, 2,
+ 128
 };
 
 // Items

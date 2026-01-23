@@ -37,14 +37,21 @@
 	.export		_igloo_all_items_bonus_prefix
 	.export		_igloo_starting_next_level_phrase
 	.export		_fake_time
+	.export		_igloo_piano_troll_message_1
+	.export		_igloo_piano_troll_message_2
+	.export		_igloo_itemdrop_troll_message_1
+	.export		_igloo_itemdrop_troll_message_2
+	.export		_igloo_game_over_message
 	.export		_carassa_idle
 	.export		_carassa_walk1
 	.export		_carassa_walk2
+	.export		_carassa_drop
 	.export		_carassa_walk_animation
 	.export		_mika_idle
 	.export		_mika_walk1
 	.export		_mika_walk2
 	.export		_mika_walk_animation
+	.export		_mika_stunned
 	.export		_item_potion
 	.export		_item_potion_broken
 	.export		_item_piano
@@ -171,6 +178,9 @@
 	.export		_igloo_write_decimal_in_message_sub
 	.export		_igloo_write_allitems_message
 	.export		_igloo_write_nextlevel_message
+	.export		_igloo_write_general_gameover_message
+	.export		_igloo_write_piano_gameover_message
+	.export		_igloo_write_itemdrop_gameover_message
 	.export		_igloo_begin_new_round
 	.export		_calculate_next_igloo_item
 	.export		_igloo_item_ai_downwards_sub
@@ -226,6 +236,16 @@ _igloo_starting_next_level_phrase:
 	.addr	L0007
 _fake_time:
 	.addr	L0009
+_igloo_piano_troll_message_1:
+	.addr	L000B
+_igloo_piano_troll_message_2:
+	.addr	L000D
+_igloo_itemdrop_troll_message_1:
+	.addr	L000F
+_igloo_itemdrop_troll_message_2:
+	.addr	L0011
+_igloo_game_over_message:
+	.addr	L0013
 _carassa_idle:
 	.byte	$00
 	.byte	$00
@@ -319,8 +339,8 @@ _carassa_walk1:
 	.byte	$40
 	.byte	$08
 	.byte	$18
-	.byte	$C0
-	.byte	$40
+	.byte	$D0
+	.byte	$00
 	.byte	$10
 	.byte	$18
 	.byte	$D1
@@ -375,6 +395,56 @@ _carassa_walk2:
 	.byte	$18
 	.byte	$D1
 	.byte	$40
+	.byte	$80
+_carassa_drop:
+	.byte	$00
+	.byte	$00
+	.byte	$81
+	.byte	$40
+	.byte	$08
+	.byte	$00
+	.byte	$80
+	.byte	$00
+	.byte	$10
+	.byte	$00
+	.byte	$81
+	.byte	$00
+	.byte	$00
+	.byte	$08
+	.byte	$91
+	.byte	$40
+	.byte	$08
+	.byte	$08
+	.byte	$90
+	.byte	$00
+	.byte	$10
+	.byte	$08
+	.byte	$91
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$E7
+	.byte	$40
+	.byte	$08
+	.byte	$10
+	.byte	$D2
+	.byte	$00
+	.byte	$10
+	.byte	$10
+	.byte	$E7
+	.byte	$00
+	.byte	$00
+	.byte	$18
+	.byte	$B1
+	.byte	$40
+	.byte	$08
+	.byte	$18
+	.byte	$B0
+	.byte	$00
+	.byte	$10
+	.byte	$18
+	.byte	$B1
+	.byte	$00
 	.byte	$80
 _carassa_walk_animation:
 	.addr	_carassa_walk1
@@ -532,6 +602,56 @@ _mika_walk2:
 _mika_walk_animation:
 	.addr	_mika_walk1
 	.addr	_mika_walk2
+_mika_stunned:
+	.byte	$00
+	.byte	$00
+	.byte	$83
+	.byte	$42
+	.byte	$08
+	.byte	$00
+	.byte	$82
+	.byte	$02
+	.byte	$10
+	.byte	$00
+	.byte	$83
+	.byte	$02
+	.byte	$00
+	.byte	$08
+	.byte	$93
+	.byte	$42
+	.byte	$08
+	.byte	$08
+	.byte	$92
+	.byte	$02
+	.byte	$10
+	.byte	$08
+	.byte	$93
+	.byte	$02
+	.byte	$00
+	.byte	$10
+	.byte	$A3
+	.byte	$42
+	.byte	$08
+	.byte	$10
+	.byte	$A2
+	.byte	$02
+	.byte	$10
+	.byte	$10
+	.byte	$A3
+	.byte	$02
+	.byte	$00
+	.byte	$18
+	.byte	$B3
+	.byte	$42
+	.byte	$08
+	.byte	$18
+	.byte	$B2
+	.byte	$02
+	.byte	$10
+	.byte	$18
+	.byte	$B3
+	.byte	$02
+	.byte	$80
 _item_potion:
 	.byte	$00
 	.byte	$00
@@ -1736,8 +1856,18 @@ _igloo_draw_func_pointers:
 	.addr	_igloo_bomb_explosion_draw
 	.addr	_igloo_piano_explosion_draw
 .segment	"RODATA"
+L000B:
+	.byte	$43,$61,$74,$63,$68,$69,$6E,$67,$20,$70,$69,$61,$6E,$6F,$73,$00
+L000D:
+	.byte	$69,$73,$20,$61,$20,$62,$61,$64,$20,$69,$64,$65,$61,$21,$00
 L0003:
 	.byte	$47,$6F,$74,$20,$61,$6C,$6C,$20,$69,$74,$65,$6D,$73,$21,$00
+L000F:
+	.byte	$42,$72,$6F,$6B,$65,$6E,$20,$69,$74,$65,$6D,$73,$00
+L0011:
+	.byte	$64,$6F,$6E,$27,$74,$20,$73,$65,$6C,$6C,$21,$00
+L0013:
+	.byte	$47,$61,$6D,$65,$20,$4F,$76,$65,$72,$00
 L0005:
 	.byte	$42,$6F,$6E,$75,$73,$3A,$20,$00
 L0007:
@@ -1811,23 +1941,23 @@ L0009:
 ;
 	lda     _player_flags
 	and     #$01
-	beq     L0B60
+	beq     L0C21
 	jsr     _igloo_update_score
 ;
 ; if (game_seconds_timer > 0 || game_frame_timer > 0) {
 ;
-L0B60:	lda     _enemy_limit
-	bne     L0B61
+L0C21:	lda     _enemy_limit
+	bne     L0C22
 	lda     _lowest_enemy_index
-	jeq     L0B66
+	jeq     L0C27
 ;
 ; --game_frame_timer;
 ;
-L0B61:	dec     _lowest_enemy_index
+L0C22:	dec     _lowest_enemy_index
 ;
 ; if (game_frame_timer == 0) {
 ;
-	bne     L0B63
+	bne     L0C24
 ;
 ; if (game_seconds_timer == 0) {
 ;
@@ -1852,11 +1982,11 @@ L0B61:	dec     _lowest_enemy_index
 ;
 ; --next_item_timer;
 ;
-L0B63:	dec     _index
+L0C24:	dec     _index
 ;
 ; if (next_item_timer == 0) {
 ;
-	jne     L0B67
+	jne     L0C28
 ;
 ; temp0 = (rand8() & 0b111);
 ;
@@ -1885,16 +2015,16 @@ L0B63:	dec     _index
 ;
 	lda     #$00
 	sta     _x
-L0B64:	lda     _x
+L0C25:	lda     _x
 	cmp     #$0C
-	jcs     L0B67
+	jcs     L0C28
 ;
 ; if (!IS_ENEMY_ACTIVE(x)) {
 ;
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$80
-	jne     L0B65
+	jne     L0C26
 ;
 ; enemies_type[x] = temp4;
 ;
@@ -1921,9 +2051,9 @@ L0B64:	lda     _x
 	ldx     #>(_enemies_x)
 	clc
 	adc     _x
-	bcc     L066E
+	bcc     L06DA
 	inx
-L066E:	sta     ptr1
+L06DA:	sta     ptr1
 	stx     ptr1+1
 	lda     _temp5+1
 	clc
@@ -1954,9 +2084,9 @@ L066E:	sta     ptr1
 	ldx     _old_y+1
 	clc
 	adc     _tile_clear_back
-	bcc     L0B5F
+	bcc     L0C20
 	inx
-L0B5F:	sta     ptr1
+L0C20:	sta     ptr1
 	stx     ptr1+1
 	lda     _x
 	ldy     #$00
@@ -2002,17 +2132,17 @@ L0B5F:	sta     ptr1
 ;
 ; break;
 ;
-	jmp     L0B67
+	jmp     L0C28
 ;
 ; for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
 ;
-L0B65:	inc     _x
-	jmp     L0B64
+L0C26:	inc     _x
+	jmp     L0C25
 ;
 ; } else if (round_begin_timer > 0) {
 ;
-L0B66:	lda     _eject_R
-	beq     L0B67
+L0C27:	lda     _eject_R
+	beq     L0C28
 ;
 ; --round_begin_timer;
 ;
@@ -2020,7 +2150,7 @@ L0B66:	lda     _eject_R
 ;
 ; if (round_begin_timer == 0) {
 ;
-	bne     L0B67
+	bne     L0C28
 ;
 ; game_seconds_timer = 30;
 ;
@@ -2042,7 +2172,7 @@ L0B66:	lda     _eject_R
 ;
 ; if (pad1 & PAD_B) {
 ;
-L0B67:	lda     _pad1
+L0C28:	lda     _pad1
 	and     #$40
 	cmp     #$00
 ;
@@ -2205,9 +2335,9 @@ L0B67:	lda     _pad1
 ;
 	clc
 	adc     #$10
-	bcc     L060D
+	bcc     L0679
 	inx
-L060D:	sta     _old_y
+L0679:	sta     _old_y
 	stx     _old_y+1
 ;
 ; igloo_begin_new_round();
@@ -2288,6 +2418,11 @@ L060D:	sta     _old_y
 	lda     #$07
 	sta     _menu
 ;
+; round_number = 0;
+;
+	lda     #$00
+	sta     _level_index
+;
 ; switch_menu();
 ;
 	jsr     _switch_menu
@@ -2319,16 +2454,16 @@ L060D:	sta     _old_y
 ;
 	lda     #$00
 	sta     _x
-L0B68:	lda     _x
+L0C29:	lda     _x
 	cmp     #$0C
-	bcs     L0992
+	bcs     L0A45
 ;
 ; if (IS_ENEMY_ACTIVE(x)) {
 ;
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$80
-	beq     L0B69
+	beq     L0C2A
 ;
 ; temp0 = enemies_type[x];
 ;
@@ -2346,12 +2481,12 @@ L0B68:	lda     _x
 ;
 ; for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
 ;
-L0B69:	inc     _x
-	jmp     L0B68
+L0C2A:	inc     _x
+	jmp     L0C29
 ;
 ; }
 ;
-L0992:	rts
+L0A45:	rts
 
 .endproc
 
@@ -2366,25 +2501,31 @@ L0992:	rts
 .segment	"BANK1"
 
 ;
+; if (player_stun_timer > 0) { --player_stun_timer; }
+;
+	lda     _player_death_timer
+	beq     L0C2E
+	dec     _player_death_timer
+;
 ; if (game_seconds_timer > 0 || game_frame_timer > 0 /* && items_dropped_this_round < 5 */ /*i.e game isn't over; change if I add a flag for this*/) {
 ;
-	lda     _enemy_limit
-	bne     L0B6C
+L0C2E:	lda     _enemy_limit
+	bne     L0C2F
 	lda     _lowest_enemy_index
-	bne     L0B6C
+	bne     L0C2F
 	rts
 ;
-; if (IGLOO_IS_JUMPING) {
+; if (IGLOO_IS_JUMPING) { // Jump (if jumping)
 ;
-L0B6C:	lda     _player_flags
+L0C2F:	lda     _player_flags
 	and     #$04
-	beq     L0B6D
+	beq     L0C30
 ;
 ; if (high_byte(mika.y) >= 0xB0) {
 ;
 	lda     _valrigard+3
 	cmp     #$B0
-	bcc     L07EB
+	bcc     L088D
 ;
 ; mika.velocity_y = 0;
 ;
@@ -2413,26 +2554,108 @@ L0B6C:	lda     _player_flags
 ;
 ; } else {
 ;
-	jmp     L0834
+	jmp     L08DC
 ;
 ; mika.velocity_y += IGLOO_GRAVITY;
 ;
-L07EB:	lda     #$60
+L088D:	lda     #$60
 	clc
 	adc     _valrigard+6
 	sta     _valrigard+6
-	jcc     L0834
+	jcc     L08DC
 	inc     _valrigard+6+1
+;
+; } else if (!(pad1 & (PAD_A | PAD_LEFT | PAD_RIGHT))) { // Ground friction (if not pressing )
+;
+	jmp     L08DC
+L0C30:	lda     _pad1
+	and     #$83
+	bne     L0C31
+;
+; if (mika.velocity_x > 0) {
+;
+	lda     _valrigard+4
+	cmp     #$01
+	lda     _valrigard+4+1
+	sbc     #$00
+	bvs     L08A5
+	eor     #$80
+L08A5:	bpl     L08A3
+;
+; if (mika.velocity_x < IGLOO_FRICTION) {
+;
+	lda     _valrigard+4
+	cmp     #$40
+	lda     _valrigard+4+1
+	sbc     #$00
+	bvc     L08A8
+	eor     #$80
+L08A8:	bpl     L08A6
+;
+; mika.velocity_x = 0;
+;
+	lda     #$00
+	sta     _valrigard+4
+	sta     _valrigard+4+1
 ;
 ; } else {
 ;
-	jmp     L0834
+	jmp     L08DC
+;
+; mika.velocity_x -= IGLOO_FRICTION;
+;
+L08A6:	lda     _valrigard+4
+	sec
+	sbc     #$40
+	sta     _valrigard+4
+	jcs     L08DC
+	dec     _valrigard+4+1
+;
+; } else if (mika.velocity_x < 0) {
+;
+	jmp     L08DC
+L08A3:	ldx     _valrigard+4+1
+	cpx     #$80
+	jcc     L08DC
+;
+; if (mika.velocity_x > -IGLOO_FRICTION) {
+;
+	lda     _valrigard+4
+	cmp     #$C1
+	lda     _valrigard+4+1
+	sbc     #$FF
+	bvs     L08B4
+	eor     #$80
+L08B4:	bpl     L08B2
+;
+; mika.velocity_x = 0;
+;
+	ldx     #$00
+;
+; } else {
+;
+	jmp     L0C37
+;
+; mika.velocity_x += IGLOO_FRICTION;
+;
+L08B2:	lda     #$40
+	clc
+	adc     _valrigard+4
+	sta     _valrigard+4
+	jcc     L08DC
+	inc     _valrigard+4+1
+;
+; } else if (player_stun_timer == 0) { // Process inputs if not stunned
+;
+	jmp     L08DC
+L0C31:	lda     _player_death_timer
+	jne     L08DC
 ;
 ; if (pad1 & PAD_A) {
 ;
-L0B6D:	lda     _pad1
+	lda     _pad1
 	and     #$80
-	beq     L0B6E
+	beq     L0C32
 ;
 ; IGLOO_SET_JUMPING();
 ;
@@ -2456,10 +2679,10 @@ L0B6D:	lda     _pad1
 ;
 ; } else if (pad1 & PAD_LEFT) {
 ;
-	jmp     L082A
-L0B6E:	lda     _pad1
+	jmp     L08D0
+L0C32:	lda     _pad1
 	and     #$02
-	beq     L0B6F
+	beq     L0C33
 ;
 ; mika.velocity_x -= IGLOO_ACCEL;
 ;
@@ -2467,19 +2690,19 @@ L0B6E:	lda     _pad1
 	sec
 	sbc     #$D0
 	sta     _valrigard+4
-	bcs     L080C
+	bcs     L08CD
 	dec     _valrigard+4+1
 ;
 ; --player_frame_timer;
 ;
-L080C:	dec     _player_frame_timer
+L08CD:	dec     _player_frame_timer
 ;
 ; } else if (pad1 & PAD_RIGHT) {
 ;
-	jmp     L082A
-L0B6F:	lda     _pad1
+	jmp     L08D0
+L0C33:	lda     _pad1
 	and     #$01
-	beq     L080F
+	beq     L08D0
 ;
 ; mika.velocity_x += IGLOO_ACCEL;
 ;
@@ -2487,101 +2710,22 @@ L0B6F:	lda     _pad1
 	clc
 	adc     _valrigard+4
 	sta     _valrigard+4
-	bcc     L0813
+	bcc     L08D4
 	inc     _valrigard+4+1
 ;
 ; ++player_frame_timer;
 ;
-L0813:	inc     _player_frame_timer
-;
-; } else {
-;
-	jmp     L082A
-;
-; if (mika.velocity_x > 0) {
-;
-L080F:	lda     _valrigard+4
-	cmp     #$01
-	lda     _valrigard+4+1
-	sbc     #$00
-	bvs     L0818
-	eor     #$80
-L0818:	bpl     L0816
-;
-; if (mika.velocity_x < IGLOO_FRICTION) {
-;
-	lda     _valrigard+4
-	cmp     #$40
-	lda     _valrigard+4+1
-	sbc     #$00
-	bvc     L081B
-	eor     #$80
-L081B:	bpl     L0819
-;
-; mika.velocity_x = 0;
-;
-	lda     #$00
-	sta     _valrigard+4
-	sta     _valrigard+4+1
-;
-; } else {
-;
-	jmp     L082A
-;
-; mika.velocity_x -= IGLOO_FRICTION;
-;
-L0819:	lda     _valrigard+4
-	sec
-	sbc     #$40
-	sta     _valrigard+4
-	bcs     L082A
-	dec     _valrigard+4+1
-;
-; } else if (mika.velocity_x < 0) {
-;
-	jmp     L082A
-L0816:	ldx     _valrigard+4+1
-	cpx     #$80
-	bcc     L082A
-;
-; if (mika.velocity_x > -IGLOO_FRICTION) {
-;
-	lda     _valrigard+4
-	cmp     #$C1
-	lda     _valrigard+4+1
-	sbc     #$FF
-	bvs     L0827
-	eor     #$80
-L0827:	bpl     L0825
-;
-; mika.velocity_x = 0;
-;
-	lda     #$00
-	sta     _valrigard+4
-	sta     _valrigard+4+1
-;
-; } else {
-;
-	jmp     L082A
-;
-; mika.velocity_x += IGLOO_FRICTION;
-;
-L0825:	lda     #$40
-	clc
-	adc     _valrigard+4
-	sta     _valrigard+4
-	bcc     L082A
-	inc     _valrigard+4+1
+L08D4:	inc     _player_frame_timer
 ;
 ; if (mika.velocity_x > IGLOO_MAX_SPEED) {
 ;
-L082A:	lda     _valrigard+4
+L08D0:	lda     _valrigard+4
 	cmp     #$01
 	lda     _valrigard+4+1
 	sbc     #$04
-	bvs     L0830
+	bvs     L08D8
 	eor     #$80
-L0830:	bpl     L082E
+L08D8:	bpl     L08D6
 ;
 ; mika.velocity_x = IGLOO_MAX_SPEED;
 ;
@@ -2589,25 +2733,25 @@ L0830:	bpl     L082E
 ;
 ; } else if (mika.velocity_x < -IGLOO_MAX_SPEED) {
 ;
-	jmp     L0B73
-L082E:	lda     _valrigard+4
+	jmp     L0C37
+L08D6:	lda     _valrigard+4
 	cmp     #$00
 	lda     _valrigard+4+1
 	sbc     #$FC
-	bvc     L0836
+	bvc     L08DE
 	eor     #$80
-L0836:	bpl     L0834
+L08DE:	bpl     L08DC
 ;
 ; mika.velocity_x = -IGLOO_MAX_SPEED;
 ;
 	ldx     #$FC
-L0B73:	lda     #$00
+L0C37:	lda     #$00
 	sta     _valrigard+4
 	stx     _valrigard+4+1
 ;
 ; mika.x += mika.velocity_x;
 ;
-L0834:	lda     _valrigard+4
+L08DC:	lda     _valrigard+4
 	clc
 	adc     _valrigard
 	sta     _valrigard
@@ -2629,7 +2773,7 @@ L0834:	lda     _valrigard+4
 ;
 	lda     _valrigard+1
 	cmp     #$10
-	bcs     L0B70
+	bcs     L0C34
 ;
 ; mika.x = IGLOO_MIN_X << 8;
 ;
@@ -2637,21 +2781,21 @@ L0834:	lda     _valrigard+4
 ;
 ; } else if (high_byte(mika.x) > IGLOO_MAX_X) {
 ;
-	jmp     L0B74
-L0B70:	lda     _valrigard+1
+	jmp     L0C38
+L0C34:	lda     _valrigard+1
 	cmp     #$D8
-	bcc     L0843
+	bcc     L08EB
 ;
 ; mika.x = IGLOO_MAX_X << 8;
 ;
 	ldx     #$D7
-L0B74:	lda     #$00
+L0C38:	lda     #$00
 	sta     _valrigard
 	stx     _valrigard+1
 ;
 ; }
 ;
-L0843:	rts
+L08EB:	rts
 
 .endproc
 
@@ -2669,9 +2813,9 @@ L0843:	rts
 ; if (game_seconds_timer == 0 && game_frame_timer == 0 /* || items_dropped_this_round < 5 */) {
 ;
 	lda     _enemy_limit
-	bne     L0B7A
+	bne     L0C3E
 	lda     _lowest_enemy_index
-	bne     L0B7A
+	bne     L0C3E
 ;
 ; carassa_walking_frame_timer = 0;
 ;
@@ -2689,9 +2833,9 @@ L0843:	rts
 ;
 ; if (carassa_item_walk_queue_back == carassa_item_walk_queue_front) {
 ;
-L0B7A:	lda     _tile_clear_front
+L0C3E:	lda     _tile_clear_front
 	cmp     _tile_clear_back
-	bne     L0B7B
+	bne     L0C3F
 ;
 ; carassa_walking_frame_timer = 0;
 ;
@@ -2710,7 +2854,7 @@ L0B7A:	lda     _tile_clear_front
 ;
 ; IGLOO_SET_CARASSA_WALKING();
 ;
-L0B7B:	lda     _player_flags
+L0C3F:	lda     _player_flags
 	ora     #$08
 	sta     _player_flags
 ;
@@ -2729,7 +2873,7 @@ L0B7B:	lda     _player_flags
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$80
-	bne     L0865
+	bne     L090D
 ;
 ; IGLOO_SET_CARASSA_NOT_WALKING();
 ;
@@ -2743,7 +2887,7 @@ L0B7B:	lda     _player_flags
 ;
 ; temp1 = enemies_x[x];
 ;
-L0865:	ldy     _x
+L090D:	ldy     _x
 	lda     _enemies_x,y
 	sta     _temp1
 ;
@@ -2777,7 +2921,7 @@ L0865:	ldy     _x
 ;
 	lda     _player2+1
 	cmp     _temp1
-	bcs     L0B7E
+	bcs     L0C42
 ;
 ; carassa.x += carassa_speed;
 ;
@@ -2793,8 +2937,8 @@ L0865:	ldy     _x
 ;
 	sec
 	sbc     _temp1
-	bcc     L089B
-	beq     L089B
+	bcc     L0943
+	beq     L0943
 ;
 ; high_byte(carassa.x) = temp1;
 ;
@@ -2809,11 +2953,11 @@ L0865:	ldy     _x
 ; } else if (high_byte(carassa.x) > temp1) {
 ;
 	rts
-L0B7E:	lda     _player2+1
+L0C42:	lda     _player2+1
 	sec
 	sbc     _temp1
-	bcc     L088D
-	beq     L088D
+	bcc     L0935
+	beq     L0935
 ;
 ; carassa.x -= carassa_speed;
 ;
@@ -2830,7 +2974,7 @@ L0B7E:	lda     _player2+1
 ; if (high_byte(carassa.x) < temp1) {
 ;
 	cmp     _temp1
-	bcs     L089B
+	bcs     L0943
 ;
 ; high_byte(carassa.x) = temp1;
 ;
@@ -2848,7 +2992,7 @@ L0B7E:	lda     _player2+1
 ;
 ; temp0 = carassa_item_walk_index_queue[carassa_item_walk_queue_front];
 ;
-L088D:	lda     _old_y
+L0935:	lda     _old_y
 	ldx     _old_y+1
 	ldy     _tile_clear_front
 	sta     ptr1
@@ -2875,7 +3019,7 @@ L088D:	lda     _old_y
 ;
 ; }
 ;
-L089B:	rts
+L0943:	rts
 
 .endproc
 
@@ -2904,9 +3048,9 @@ L089B:	rts
 ;
 	lda     #$00
 	sta     _x
-L0B7F:	lda     _x
+L0C43:	lda     _x
 	cmp     #$0C
-	bcc     L0B84
+	bcc     L0C48
 ;
 ; }
 ;
@@ -2914,14 +3058,14 @@ L0B7F:	lda     _x
 ;
 ; if (IS_ENEMY_ACTIVE(x) && !IGLOO_IS_ITEM_BROKEN(x)) {
 ;
-L0B84:	ldy     _x
+L0C48:	ldy     _x
 	lda     _enemies_flags,y
 	and     #$80
-	jeq     L0B83
+	jeq     L0C47
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$01
-	bne     L0B83
+	bne     L0C47
 ;
 ; temp1 = GET_ENEMY_TYPE(x);
 ;
@@ -2985,7 +3129,7 @@ L0B84:	ldy     _x
 ; if (temp0) {
 ;
 	lda     _temp0
-	beq     L0B83
+	beq     L0C47
 ;
 ; AsmCallFunctionAtPtrOffsetByIndexVar(igloo_collision_functions, temp1);
 ;
@@ -2998,8 +3142,8 @@ L0B84:	ldy     _x
 ;
 ; for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
 ;
-L0B83:	inc     _x
-	jmp     L0B7F
+L0C47:	inc     _x
+	jmp     L0C43
 
 .endproc
 
@@ -3242,16 +3386,16 @@ L0B83:	inc     _x
 ;
 	lda     #$00
 	sta     _x
-L0B85:	lda     _x
+L0C49:	lda     _x
 	cmp     #$05
-	bcs     L075B
+	bcs     L07CA
 ;
 ; if (score_string[x] >= '0') {
 ;
 	ldy     _x
 	lda     _score_string,y
 	cmp     #$30
-	bcc     L0B86
+	bcc     L0C4A
 ;
 ; ++temp0;
 ;
@@ -3263,9 +3407,9 @@ L0B85:	lda     _x
 	ldx     #>(_cmap)
 	clc
 	adc     _temp1
-	bcc     L0769
+	bcc     L07D8
 	inx
-L0769:	sta     ptr1
+L07D8:	sta     ptr1
 	stx     ptr1+1
 	ldy     _x
 	lda     _score_string,y
@@ -3278,12 +3422,12 @@ L0769:	sta     ptr1
 ;
 ; for (x = 0; x < 5; ++x) { // Assuming at least one digit every time
 ;
-L0B86:	inc     _x
-	jmp     L0B85
+L0C4A:	inc     _x
+	jmp     L0C49
 ;
 ; }
 ;
-L075B:	rts
+L07CA:	rts
 
 .endproc
 
@@ -3414,6 +3558,125 @@ L075B:	rts
 .endproc
 
 ; ---------------------------------------------------------------
+; void __near__ igloo_write_general_gameover_message (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_write_general_gameover_message: near
+
+.segment	"BANK1"
+
+;
+; multi_vram_buffer_horz(igloo_game_over_message, 9, NTADR_A(19, 7));
+;
+	jsr     decsp3
+	lda     _igloo_game_over_message
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     _igloo_game_over_message+1
+	sta     (sp),y
+	lda     #$09
+	ldy     #$00
+	sta     (sp),y
+	ldx     #$20
+	lda     #$F3
+	jmp     _multi_vram_buffer_horz
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_write_piano_gameover_message (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_write_piano_gameover_message: near
+
+.segment	"BANK1"
+
+;
+; multi_vram_buffer_horz(igloo_piano_troll_message_1, 15, NTADR_A(10, 5));
+;
+	jsr     decsp3
+	lda     _igloo_piano_troll_message_1
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     _igloo_piano_troll_message_1+1
+	sta     (sp),y
+	lda     #$0F
+	ldy     #$00
+	sta     (sp),y
+	ldx     #$20
+	lda     #$AA
+	jsr     _multi_vram_buffer_horz
+;
+; multi_vram_buffer_horz(igloo_piano_troll_message_2, 12, NTADR_A(11, 6));
+;
+	jsr     decsp3
+	lda     _igloo_piano_troll_message_2
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     _igloo_piano_troll_message_2+1
+	sta     (sp),y
+	lda     #$0C
+	ldy     #$00
+	sta     (sp),y
+	ldx     #$20
+	lda     #$CB
+	jmp     _multi_vram_buffer_horz
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ igloo_write_itemdrop_gameover_message (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_igloo_write_itemdrop_gameover_message: near
+
+.segment	"BANK1"
+
+;
+; multi_vram_buffer_horz(igloo_itemdrop_troll_message_1, 13, NTADR_A(10, 5));
+;
+	jsr     decsp3
+	lda     _igloo_itemdrop_troll_message_1
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     _igloo_itemdrop_troll_message_1+1
+	sta     (sp),y
+	lda     #$0D
+	ldy     #$00
+	sta     (sp),y
+	ldx     #$20
+	lda     #$AA
+	jsr     _multi_vram_buffer_horz
+;
+; multi_vram_buffer_horz(igloo_itemdrop_troll_message_2, 12, NTADR_A(11, 6));
+;
+	jsr     decsp3
+	lda     _igloo_itemdrop_troll_message_2
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     _igloo_itemdrop_troll_message_2+1
+	sta     (sp),y
+	lda     #$0C
+	ldy     #$00
+	sta     (sp),y
+	ldx     #$20
+	lda     #$CB
+	jmp     _multi_vram_buffer_horz
+
+.endproc
+
+; ---------------------------------------------------------------
 ; void __near__ igloo_begin_new_round (void)
 ; ---------------------------------------------------------------
 
@@ -3428,12 +3691,12 @@ L075B:	rts
 ;
 	lda     _level_index
 	cmp     #$FF
-	bcs     L0B8B
+	bcs     L0C4F
 	inc     _level_index
 ;
 ; round_begin_timer = 180; // 1 per frame of waiting
 ;
-L0B8B:	lda     #$B4
+L0C4F:	lda     #$B4
 	sta     _eject_R
 ;
 ; player_stun_timer = 0;
@@ -3495,10 +3758,10 @@ L0B8B:	lda     #$B4
 ;
 	lda     _level_index
 	cmp     #$05
-	bcs     L0B8C
-	jmp     L0B8D
-L0B8C:	lda     #$05
-L0B8D:	sta     _temp0
+	bcs     L0C50
+	jmp     L0C51
+L0C50:	lda     #$05
+L0C51:	sta     _temp0
 ;
 ; threshold_coin = IGLOOT_BASE_THRESHOLD + temp0;
 ;
@@ -3522,9 +3785,9 @@ L0B8D:	sta     _temp0
 ;
 	lda     #$00
 	sta     _x
-L0B8E:	lda     _x
+L0C52:	lda     _x
 	cmp     #$0C
-	bcs     L0B8F
+	bcs     L0C53
 ;
 ; enemies_flags[x] = 0;
 ;
@@ -3535,15 +3798,15 @@ L0B8E:	lda     _x
 ; for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
 ;
 	inc     _x
-	jmp     L0B8E
+	jmp     L0C52
 ;
 ; if (items_dropped_this_round == 0 && score_this_round > 0) {
 ;
-L0B8F:	lda     _eject_L
-	bne     L0B9B
+L0C53:	lda     _eject_L
+	bne     L0C5F
 	lda     _pseudo_scroll_y
 	ora     _pseudo_scroll_y+1
-	beq     L0B9C
+	beq     L0C60
 ;
 ; score += score_this_round;
 ;
@@ -3565,8 +3828,8 @@ L0B8F:	lda     _eject_L
 ;
 ; items_dropped_this_round = 0;
 ;
-L0B9B:	lda     #$00
-L0B9C:	sta     _eject_L
+L0C5F:	lda     #$00
+L0C60:	sta     _eject_L
 ;
 ; score_this_round = 0;
 ;
@@ -3578,10 +3841,10 @@ L0B9C:	sta     _eject_L
 ;
 	lda     _level_index
 	cmp     #$08
-	bcs     L0B94
-	jmp     L0B95
-L0B94:	lda     #$08
-L0B95:	sta     _temp0
+	bcs     L0C58
+	jmp     L0C59
+L0C58:	lda     #$08
+L0C59:	sta     _temp0
 ;
 ; temp1 = igloot_speed_increments[temp0];
 ;
@@ -3598,9 +3861,9 @@ L0B95:	sta     _temp0
 ; for (x = 0; x < 8; ++x) {
 ;
 	stx     _x
-L0B96:	lda     _x
+L0C5A:	lda     _x
 	cmp     #$08
-	bcs     L0B97
+	bcs     L0C5B
 ;
 ; temp5 += temp1;
 ;
@@ -3626,26 +3889,26 @@ L0B96:	lda     _x
 ; for (x = 0; x < 8; ++x) {
 ;
 	inc     _x
-	jmp     L0B96
+	jmp     L0C5A
 ;
 ; temp0 = MIN(round_number, 15);
 ;
-L0B97:	lda     _level_index
+L0C5B:	lda     _level_index
 	cmp     #$0F
-	bcs     L0B98
-	jmp     L0B99
-L0B98:	lda     #$0F
-L0B99:	sta     _temp0
+	bcs     L0C5C
+	jmp     L0C5D
+L0C5C:	lda     #$0F
+L0C5D:	sta     _temp0
 ;
 ; carassa_speed = carassa_speeds[temp0];
 ;
 	ldx     #$00
 	lda     _temp0
 	asl     a
-	bcc     L0B8A
+	bcc     L0C4E
 	inx
 	clc
-L0B8A:	adc     #<(_carassa_speeds)
+L0C4E:	adc     #<(_carassa_speeds)
 	sta     ptr1
 	txa
 	adc     #>(_carassa_speeds)
@@ -3670,17 +3933,19 @@ L0B8A:	adc     #<(_carassa_speeds)
 ;
 	lda     _level_index
 	cmp     #$0C
-	bcs     L0B9A
-	jmp     L074D
-L0B9A:	lda     #$0C
-L074D:	asl     a
+	bcs     L0C5E
+	jmp     L07BB
+L0C5E:	lda     #$0C
+L07BB:	asl     a
 	asl     a
 	asl     a
 	sta     _did_headbonk
 ;
-; next_item_timer = rand8() & 0b11111;
+; next_item_timer = 1 + rand8() & 0b11111;
 ;
 	jsr     _rand8
+	clc
+	adc     #$01
 	and     #$1F
 	sta     _index
 ;
@@ -3719,9 +3984,9 @@ L074D:	asl     a
 ;
 ; } else if (low_byte(temp5) < 131) {
 ;
-	bcc     L0BA5
+	bcc     L0C69
 	cmp     #$83
-	bcs     L0B9F
+	bcs     L0C63
 ;
 ; temp4 = IGLOOT_CHIAPOP;
 ;
@@ -3729,10 +3994,10 @@ L074D:	asl     a
 ;
 ; } else if (low_byte(temp5) < 174) {
 ;
-	jmp     L0B9D
-L0B9F:	lda     _temp5
+	jmp     L0C61
+L0C63:	lda     _temp5
 	cmp     #$AE
-	bcs     L0BA0
+	bcs     L0C64
 ;
 ; temp4 = IGLOOT_UMBRELLA;
 ;
@@ -3740,10 +4005,10 @@ L0B9F:	lda     _temp5
 ;
 ; } else if (low_byte(temp5) < 203) {
 ;
-	jmp     L0B9D
-L0BA0:	lda     _temp5
+	jmp     L0C61
+L0C64:	lda     _temp5
 	cmp     #$CB
-	bcs     L0BA1
+	bcs     L0C65
 ;
 ; temp4 = IGLOOT_THINGY;
 ;
@@ -3751,10 +4016,10 @@ L0BA0:	lda     _temp5
 ;
 ; } else if (low_byte(temp5) < IGLOOT_BASE_THRESHOLD) {
 ;
-	jmp     L0B9D
-L0BA1:	lda     _temp5
+	jmp     L0C61
+L0C65:	lda     _temp5
 	cmp     #$DA
-	bcs     L0BA2
+	bcs     L0C66
 ;
 ; temp4 = IGLOOT_POTION;
 ;
@@ -3762,10 +4027,10 @@ L0BA1:	lda     _temp5
 ;
 ; } else if (low_byte(temp5) < threshold_coin) {
 ;
-	jmp     L0B9D
-L0BA2:	lda     _temp5
+	jmp     L0C61
+L0C66:	lda     _temp5
 	cmp     _eject_D
-	bcs     L0BA3
+	bcs     L0C67
 ;
 ; temp4 = IGLOOT_COIN;
 ;
@@ -3773,10 +4038,10 @@ L0BA2:	lda     _temp5
 ;
 ; } else if (low_byte(temp5) < threshold_bomb) {
 ;
-	jmp     L0B9D
-L0BA3:	lda     _temp5
+	jmp     L0C61
+L0C67:	lda     _temp5
 	cmp     _eject_U
-	bcs     L0BA4
+	bcs     L0C68
 ;
 ; temp4 = IGLOOT_BOMB;
 ;
@@ -3784,11 +4049,11 @@ L0BA3:	lda     _temp5
 ;
 ; } else if (low_byte(temp5) < threshold_piano) {
 ;
-	jmp     L0B9D
-L0BA4:	lda     _temp5
+	jmp     L0C61
+L0C68:	lda     _temp5
 	cmp     _nt
 	txa
-	bcs     L0B9D
+	bcs     L0C61
 ;
 ; temp4 = IGLOOT_PIANO;
 ;
@@ -3796,12 +4061,12 @@ L0BA4:	lda     _temp5
 ;
 ; } else {
 ;
-	jmp     L0B9D
+	jmp     L0C61
 ;
 ; temp4 = IGLOOT_BAG;
 ;
-L0BA5:	txa
-L0B9D:	sta     _temp4
+L0C69:	txa
+L0C61:	sta     _temp4
 ;
 ; }
 ;
@@ -3830,7 +4095,7 @@ L0B9D:	sta     _temp4
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$40
-	bne     L0BA6
+	bne     L0C6A
 ;
 ; }
 ;
@@ -3838,7 +4103,7 @@ L0B9D:	sta     _temp4
 ;
 ; high_byte(temp5) = enemies_y[x];
 ;
-L0BA6:	ldy     _x
+L0C6A:	ldy     _x
 	lda     _enemies_y,y
 	sta     _temp5+1
 ;
@@ -3875,7 +4140,7 @@ L0BA6:	ldy     _x
 	cmp     #$00
 	lda     _temp5+1
 	sbc     #$D0
-	bcc     L09CC
+	bcc     L0A7F
 ;
 ; temp5 = IGLOO_FLOOR_Y;
 ;
@@ -3912,7 +4177,7 @@ L0BA6:	ldy     _x
 ;
 ; enemies_y[x] = high_byte(temp5);
 ;
-L09CC:	ldy     _x
+L0A7F:	ldy     _x
 	lda     _temp5+1
 	sta     _enemies_y,y
 ;
@@ -3946,7 +4211,7 @@ L09CC:	ldy     _x
 ; if (temp4) {
 ;
 	lda     _temp4
-	beq     L09F3
+	beq     L0AA6
 ;
 ; items_dropped_this_round += 1;
 ;
@@ -3954,7 +4219,7 @@ L09CC:	ldy     _x
 ;
 ; }
 ;
-L09F3:	rts
+L0AA6:	rts
 
 .endproc
 
@@ -3978,14 +4243,14 @@ L09F3:	rts
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$01
-	beq     L0BA7
+	beq     L0AAC
 ;
 ; if (enemies_timer[x] > 120) {
 ;
 	ldy     _x
 	lda     _enemies_timer,y
 	cmp     #$79
-	bcc     L09FE
+	bcc     L0AB1
 ;
 ; enemies_timer[x] = 0;
 ;
@@ -3999,6 +4264,13 @@ L09F3:	rts
 	lda     #$08
 	sta     _enemies_type,y
 ;
+; IGLOO_SET_ITEM_UNBROKEN(x);
+;
+	ldy     _x
+	lda     _enemies_flags,y
+	and     #$FE
+	sta     _enemies_flags,y
+;
 ; sfx_play(SFX_CANNON_FIRE, 0);
 ;
 	lda     #$03
@@ -4008,13 +4280,13 @@ L09F3:	rts
 ;
 ; ++enemies_timer[x];
 ;
-L09FE:	lda     #<(_enemies_timer)
+L0AB1:	lda     #<(_enemies_timer)
 	ldx     #>(_enemies_timer)
 	clc
 	adc     _x
-	bcc     L0A10
+	bcc     L0ACB
 	inx
-L0A10:	sta     ptr1
+L0ACB:	sta     ptr1
 	stx     ptr1+1
 	ldy     #$00
 	lda     #$01
@@ -4022,12 +4294,13 @@ L0A10:	sta     ptr1
 	adc     (ptr1),y
 	sta     (ptr1),y
 ;
-; } else if (high_byte(temp5) >= 0xC8) { // Bombs should stop a bit sooner
+; } else if (enemies_y[x] >= 0xC8) { // Bombs should stop a bit sooner
 ;
 	rts
-L0BA7:	lda     _temp5+1
+L0AAC:	ldy     _x
+	lda     _enemies_y,y
 	cmp     #$C8
-	bcc     L0A12
+	bcc     L0ACD
 ;
 ; enemies_y[x] = 0xC8;
 ;
@@ -4051,7 +4324,7 @@ L0BA7:	lda     _temp5+1
 ;
 ; }
 ;
-L0A12:	rts
+L0ACD:	rts
 
 .endproc
 
@@ -4074,7 +4347,7 @@ L0A12:	rts
 ;
 	lda     _temp5+1
 	cmp     #$C4
-	bcc     L0A2B
+	bcc     L0AE7
 ;
 ; enemies_timer[x] = 0;
 ;
@@ -4097,7 +4370,7 @@ L0A12:	rts
 ;
 ; }
 ;
-L0A2B:	rts
+L0AE7:	rts
 
 .endproc
 
@@ -4118,10 +4391,10 @@ L0A2B:	rts
 	lda     _enemies_timer,y
 	sta     _temp0
 ;
-; if (temp0 > 60) {
+; if (temp0 > 30) {
 ;
-	cmp     #$3D
-	bcc     L0BA9
+	cmp     #$1F
+	bcc     L0C6C
 ;
 ; enemies_flags[x] = 0;
 ;
@@ -4135,17 +4408,17 @@ L0A2B:	rts
 ;
 ; } else {
 ;
-	jmp     L0BA8
+	jmp     L0C6B
 ;
 ; ++temp0;
 ;
-L0BA9:	inc     _temp0
+L0C6C:	inc     _temp0
 ;
 ; AsmSet1ByteAtPtrWithOffset(enemies_timer, x, temp0);
 ;
 	ldy     _x
 	lda     _temp0
-L0BA8:	sta     _enemies_timer,y
+L0C6B:	sta     _enemies_timer,y
 ;
 ; }
 ;
@@ -4175,7 +4448,7 @@ L0BA8:	sta     _enemies_timer,y
 	ldy     _x
 	lda     _enemies_timer,y
 	cmp     #$1B
-	bcc     L0BAB
+	bcc     L0C6E
 ;
 ; enemies_flags[x] = 0;
 ;
@@ -4189,17 +4462,17 @@ L0BA8:	sta     _enemies_timer,y
 ;
 ; } else {
 ;
-	jmp     L0BAA
+	jmp     L0C6D
 ;
 ; ++temp0;
 ;
-L0BAB:	inc     _temp0
+L0C6E:	inc     _temp0
 ;
 ; AsmSet1ByteAtPtrWithOffset(enemies_timer, x, temp0);
 ;
 	ldy     _x
 	lda     _temp0
-L0BAA:	sta     _enemies_timer,y
+L0C6D:	sta     _enemies_timer,y
 ;
 ; }
 ;
@@ -4318,6 +4591,13 @@ L0BAA:	sta     _enemies_timer,y
 	lda     #$03
 	jsr     pusha
 	lda     #$00
+	jsr     _sfx_play
+;
+; sfx_play(SFX_ENEMY_KILL, 1);
+;
+	lda     #$02
+	jsr     pusha
+	lda     #$01
 	jmp     _sfx_play
 
 .endproc
@@ -4333,14 +4613,22 @@ L0BAA:	sta     _enemies_timer,y
 .segment	"BANK1"
 
 ;
-; if (player_stun_timer == 0) {
+; if (!IGLOO_IS_JUMPING && player_stun_timer == 0 && enemies_timer[x] <= 1) { // Don't stun if in the air
 ;
+	lda     _player_flags
+	and     #$04
+	bne     L0C6F
 	lda     _player_death_timer
-	bne     L0938
+	bne     L0C6F
+	ldy     _x
+	lda     _enemies_timer,y
+	cmp     #$02
+	bcc     L0C70
+L0C6F:	rts
 ;
 ; player_stun_timer = 180;
 ;
-	lda     #$B4
+L0C70:	lda     #$B4
 	sta     _player_death_timer
 ;
 ; sfx_play(SFX_CANNON_FIRE, 0);
@@ -4348,11 +4636,14 @@ L0BAA:	sta     _enemies_timer,y
 	lda     #$03
 	jsr     pusha
 	lda     #$00
+	jsr     _sfx_play
+;
+; sfx_play(SFX_ENEMY_KILL, 1);
+;
+	lda     #$02
+	jsr     pusha
+	lda     #$01
 	jmp     _sfx_play
-;
-; }
-;
-L0938:	rts
 
 .endproc
 
@@ -4371,7 +4662,7 @@ L0938:	rts
 ;
 	lda     _eject_L
 	cmp     #$05
-	bcs     L0940
+	bcs     L09F3
 ;
 ; sfx_play(SFX_CANNON_FIRE, 0);
 ;
@@ -4401,7 +4692,7 @@ L0938:	rts
 ;
 ; }
 ;
-L0940:	rts
+L09F3:	rts
 
 .endproc
 
@@ -4416,16 +4707,28 @@ L0940:	rts
 .segment	"BANK1"
 
 ;
-; if (!IGLOO_IS_JUMPING) {
+; if (player_stun_timer > 0) {
 ;
-	lda     _player_flags
+	lda     _player_death_timer
+	beq     L0C72
+;
+; temppointer = mika_stunned;
+;
+	lda     #>(_mika_stunned)
+	sta     _temppointer+1
+	lda     #<(_mika_stunned)
+;
+; } else if (!IGLOO_IS_JUMPING) {
+;
+	jmp     L0C71
+L0C72:	lda     _player_flags
 	and     #$04
-	bne     L0A78
+	bne     L0B39
 ;
 ; if (high_byte(mika.velocity_x) > 0) {
 ;
 	lda     _valrigard+5
-	beq     L0A78
+	beq     L0B39
 ;
 ; temp0 = (player_frame_timer >> 4) & 0b1;
 ;
@@ -4448,18 +4751,18 @@ L0940:	rts
 ;
 ; } else {
 ;
-	jmp     L0BAD
+	jmp     L0C73
 ;
 ; temppointer = mika_idle;
 ;
-L0A78:	lda     #>(_mika_idle)
+L0B39:	lda     #>(_mika_idle)
 	sta     _temppointer+1
 	lda     #<(_mika_idle)
-	sta     _temppointer
+L0C71:	sta     _temppointer
 ;
 ; oam_meta_spr(high_byte(mika.x), high_byte(mika.y), temppointer);
 ;
-L0BAD:	lda     _valrigard+1
+L0C73:	lda     _valrigard+1
 	sta     _TEMP+5
 	lda     _valrigard+3
 	sta     _TEMP+6
@@ -4480,18 +4783,18 @@ L0BAD:	lda     _valrigard+1
 .segment	"BANK1"
 
 ;
-; if (round_begin_timer != 0 ) { return; }
+; if (round_begin_timer != 0) { return; }
 ;
 	lda     _eject_R
-	bne     L0AA1
+	bne     L0B62
 ;
 ; if (!IGLOO_IS_CARASSA_WALKING) {
 ;
 	lda     _player_flags
 	and     #$08
-	bne     L0BB0
+	bne     L0C76
 ;
-; temppointer = carassa_idle;   
+; temppointer = carassa_idle;
 ;
 	lda     #>(_carassa_idle)
 	sta     _temppointer+1
@@ -4500,11 +4803,11 @@ L0BAD:	lda     _valrigard+1
 ;
 ; } else {
 ;
-	jmp     L0BB1
+	jmp     L0C77
 ;
 ; temp0 = (carassa_walking_frame_timer >> 4) & 0b1;
 ;
-L0BB0:	lda     _player_sword_timer
+L0C76:	lda     _player_sword_timer
 	lsr     a
 	lsr     a
 	lsr     a
@@ -4523,7 +4826,7 @@ L0BB0:	lda     _player_sword_timer
 ;
 ; oam_meta_spr(high_byte(carassa.x), high_byte(carassa.y), temppointer);
 ;
-L0BB1:	lda     _player2+1
+L0C77:	lda     _player2+1
 	sta     _TEMP+5
 	lda     _player2+3
 	sta     _TEMP+6
@@ -4533,7 +4836,7 @@ L0BB1:	lda     _player2+1
 ;
 ; }
 ;
-L0AA1:	rts
+L0B62:	rts
 
 .endproc
 
@@ -4553,11 +4856,11 @@ L0AA1:	rts
 	lda     #$00
 	sta     _y
 	tax
-L0BB4:	lda     _y
+L0C7A:	lda     _y
 	cmp     _shuffle_leg_size
 	txa
 	sbc     #$00
-	bcs     L0BB6
+	bcs     L0C7C
 ;
 ; temp1 = y + shuffle_offset;
 ;
@@ -4577,7 +4880,7 @@ L0BB4:	lda     _y
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$80
-	beq     L0BB5
+	beq     L0C7B
 ;
 ; temp_x = enemies_x[x];
 ;
@@ -4618,12 +4921,12 @@ L0BB4:	lda     _y
 ; for (y = 0; y < shuffle_leg_size; ++y) {
 ;
 	ldx     #$00
-L0BB5:	inc     _y
-	jmp     L0BB4
+L0C7B:	inc     _y
+	jmp     L0C7A
 ;
 ; shuffle_offset += shuffle_leg_size;
 ;
-L0BB6:	lda     _shuffle_leg_size
+L0C7C:	lda     _shuffle_leg_size
 	clc
 	adc     _shuffle_offset
 	sta     _shuffle_offset
@@ -4632,13 +4935,13 @@ L0BB6:	lda     _shuffle_leg_size
 ;
 	lda     _shuffle_maximum
 	cmp     _shuffle_offset
-	bne     L0B01
+	bne     L0BC2
 	lda     #$00
 	sta     _shuffle_offset
 ;
 ; }
 ;
-L0B01:	rts
+L0BC2:	rts
 
 .endproc
 
@@ -4698,7 +5001,7 @@ L0B01:	rts
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$01
-	bne     L0B1C
+	bne     L0BDD
 ;
 ; temppointer = item_bomb0;
 ;
@@ -4713,7 +5016,7 @@ L0B01:	rts
 ;
 ; temp0 = enemies_timer[x] >> 4;
 ;
-L0B1C:	ldy     _x
+L0BDD:	ldy     _x
 	lda     _enemies_timer,y
 	lsr     a
 	lsr     a
