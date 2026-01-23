@@ -317,12 +317,14 @@ void game_igloo(void) {
                     enemies_type[x] = temp4;
                     enemies_flags[x] = 0;
                     ACTIVATE_ENEMY(x);
-                    enemies_x[x] = high_byte(temp5) + 64; // since rand() is 0...0x7FFF, high_byte is 0...127
+                    temp0 = high_byte(temp5) + 64; // since rand() is 0...0x7FFF, high_byte is 0...127
+                    enemies_x[x] = temp0;
                     enemies_y[x] = IGLOO_BRIDGE_Y_CHAR; // minus whatever for the item's height? Maybe use a LUT for that
                     enemies_subpixel_y[x] = 0;
                     enemies_timer[x] = 0;
 
-                    carassa_item_walk_index_queue[carassa_item_walk_queue_back] = x;
+                    //carassa_item_walk_index_queue[carassa_item_walk_queue_back] = x;
+                    AsmSet1ByteAtMutPtrWithOffset(old_y, tile_clear_back, x);
 
                     ++carassa_item_walk_queue_back;
                     carassa_item_walk_queue_back &= 0b1111;
@@ -411,7 +413,8 @@ void igloo_begin_new_round(void) {
     }
 
     temp0 = MIN(round_number, 15);
-    carassa_speed = carassa_speeds[temp0];
+    //carassa_speed = carassa_speeds[temp0];
+    AsmSet2ByteFromPtrAtIndexVar(min_scroll_y, carassa_speeds, temp0)
 
     carassa_item_walk_queue_back = 0;
     carassa_item_walk_queue_front = 0;
@@ -431,7 +434,9 @@ void igloo_write_decimal_in_message_sub(void) {
     for (x = 0; x < 5; ++x) { // Assuming at least one digit every time
         if (score_string[x] >= '0') {
             ++temp0;
-            cmap[temp1] = score_string[x];
+            // cmap[temp1] = score_string[x];
+            temp2 = score_string[x];
+            cmap[temp1] = temp2;
             ++temp1;
         }
     }
@@ -597,7 +602,8 @@ void igloo_carassa_movement(void) {
         }
     } else {
         // Let the item drop!
-        temp0 = carassa_item_walk_index_queue[carassa_item_walk_queue_front];
+        // temp0 = carassa_item_walk_index_queue[carassa_item_walk_queue_front];
+        AsmSet1ByteFromZpPtrAtIndexVar(temp0, old_y, tile_clear_front);
         IGLOO_START_MOVING_ITEM(temp0);
         ++carassa_item_walk_queue_front;
         carassa_item_walk_queue_front &= 0b1111;
@@ -777,7 +783,12 @@ void igloo_bomb_item_ai(void) {
             IGLOO_SET_ITEM_UNBROKEN(x);
             sfx_play(SFX_CANNON_FIRE, 0);
         } else {
-            ++enemies_timer[x];
+            //++enemies_timer[x];
+            __asm__("ldy %v", x);
+            __asm__("lda #$01");
+            __asm__("clc");
+            __asm__("adc %v,y", enemies_timer);
+            __asm__("sta %v,y", enemies_timer);
         }
     } else if (enemies_y[x] >= 0xC8) { // Bombs should stop a bit sooner
         enemies_y[x] = 0xC8;
