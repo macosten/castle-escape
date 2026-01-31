@@ -168,6 +168,7 @@ void end_igloo(void);
 void igloo_item_movement(void);
 void igloo_player_movement(void);
 void igloo_carassa_movement(void);
+void igloo_carassa_movement_gameover(void);
 
 void igloo_sprite_collisions(void);
 void igloo_draw_sprites(void);
@@ -244,6 +245,8 @@ void begin_igloo_sub(void) {
     round_number = 0;
     score_this_round = 0; // don't buffer a message...
     player_frame_timer = 0;
+    player_flags = 0;
+    temp3 = 0;
 
     // Item drop speeds
     temp_mutablepointer = ((void *)(cmap + 128)); // Pointer crimes ("it's memory, just do what I want please")
@@ -282,15 +285,22 @@ void game_igloo(void) {
     // If not paused:
     set_prg_bank(IGLOO_CODE_BANK);
 
-    igloo_player_movement();
-    igloo_carassa_movement();
+    if (!IGLOO_IS_GAME_OVER) {
+        igloo_player_movement();
+        igloo_carassa_movement();
+    } else {
+        igloo_carassa_movement_gameover();
+    }
+
     igloo_item_movement();
     igloo_sprite_collisions();
     igloo_draw_sprites();
 
     if (IGLOO_SCORE_CHANGED_THIS_FRAME) { igloo_update_score(); }
 
-    if (game_seconds_timer > 0 || game_frame_timer > 0) {
+    if (IGLOO_IS_GAME_OVER) {
+        
+    } else if (game_seconds_timer > 0 || game_frame_timer > 0) {
         --game_frame_timer;
         if (game_frame_timer == 0) {
             if (game_seconds_timer == 0) {
@@ -349,11 +359,12 @@ void game_igloo(void) {
         }
     }
 
-    if (pad1 & PAD_B) {
-        end_igloo();
-        return;
+    if (pad1 && IGLOO_IS_GAME_OVER) {
+        if (pad1 & PAD_B || temp3) {
+            end_igloo();
+            return;
+        }
     }
-    //gray_line();
 }
 
 void end_igloo(void) {
@@ -483,22 +494,22 @@ void igloo_write_fake_time(void) {
 }
 
 void igloo_write_general_gameover_message(void) {
-    multi_vram_buffer_horz(igloo_game_over_message, 9, NTADR_A(19, 7));
+    multi_vram_buffer_horz(igloo_game_over_message, 9, NTADR_A(13, 7));
 }
 
 void igloo_write_piano_gameover_message(void) {
-    multi_vram_buffer_horz(igloo_piano_troll_message_1, 15, NTADR_A(10, 5));
-    multi_vram_buffer_horz(igloo_piano_troll_message_2, 12, NTADR_A(11, 6));
+    multi_vram_buffer_horz(igloo_piano_troll_message_1, 14, NTADR_A(10, 5));
+    multi_vram_buffer_horz(igloo_piano_troll_message_2, 14, NTADR_A(10, 6));
 }
 
 void igloo_write_itemdrop_gameover_message(void) {
-    multi_vram_buffer_horz(igloo_itemdrop_troll_message_1, 13, NTADR_A(10, 5));
-    multi_vram_buffer_horz(igloo_itemdrop_troll_message_2, 12, NTADR_A(11, 6));
+    multi_vram_buffer_horz(igloo_itemdrop_troll_message_1, 10, NTADR_A(12, 5));
+    multi_vram_buffer_horz(igloo_itemdrop_troll_message_2, 10, NTADR_A(12, 6));
 }
 
 void igloo_player_movement(void) {
     if (player_stun_timer > 0) { --player_stun_timer; }
-    if (game_seconds_timer > 0 || game_frame_timer > 0 /* && items_dropped_this_round < 5 */ /*i.e game isn't over; change if I add a flag for this*/) {
+    if ((game_seconds_timer > 0 || game_frame_timer > 0)) {
         if (IGLOO_IS_JUMPING) { // Jump (if jumping)
             if (high_byte(mika.y) >= 0xB0) {
                 mika.velocity_y = 0;
@@ -554,7 +565,7 @@ void igloo_player_movement(void) {
 }
 
 void igloo_carassa_movement(void) {
-    if (game_seconds_timer == 0 && game_frame_timer == 0 /* || items_dropped_this_round < 5 */) {
+    if (game_seconds_timer == 0 && game_frame_timer == 0) {
         carassa_walking_frame_timer = 0;
         IGLOO_SET_CARASSA_NOT_WALKING();
         return;
@@ -607,6 +618,29 @@ void igloo_carassa_movement(void) {
         IGLOO_START_MOVING_ITEM(temp0);
         ++carassa_item_walk_queue_front;
         carassa_item_walk_queue_front &= 0b1111;
+    }
+}
+
+void igloo_carassa_movement_gameover(void) {
+    if (temp3 == 0) {
+        if (high_byte(carassa.x) < 0xE7) {
+            IGLOO_SET_CARASSA_WALKING();
+            ++carassa_walking_frame_timer;
+            carassa.x += carassa_speed;
+        } else {
+            temp3 = 1;
+            carassa.y = MIKA_STARTING_Y;
+        }
+    } else if (temp3 == 1) {
+        if (high_byte(carassa.x) > (26 + high_byte(mika.x))) {
+            IGLOO_SET_CARASSA_WALKING();
+            carassa.x -= carassa_speed;
+            ++carassa_walking_frame_timer;
+        } else {
+            temp3 = 2;
+        }
+    } else {
+        IGLOO_SET_CARASSA_NOT_WALKING();
     }
 }
 
@@ -681,12 +715,16 @@ void igloo_collision_with_bomb_explosion(void) {
 
 void igloo_collision_with_piano(void) {
     // Die immediately...
-    if (items_dropped_this_round < 5) {
+    if (!IGLOO_IS_GAME_OVER) {
         sfx_play(SFX_CANNON_FIRE, 0);
         sfx_play(SFX_ENEMY_KILL, 1);
-        // Unless we decide to add a new flag for the game being over specifically:
-        items_dropped_this_round += 5;
         player_stun_timer = 0xFF;
+        IGLOO_SET_GAME_OVER();
+        game_frame_timer = 180;
+        temp3 = 0; // Carassa game over movement state
+        igloo_write_piano_gameover_message();
+        igloo_write_general_gameover_message(); 
+        IGLOO_SET_BUFFERED_MESSAGE_THIS_FRAME();
     }
 }
 
@@ -770,6 +808,14 @@ void igloo_default_item_ai(void) {
     igloo_item_ai_downwards_sub();
     if (temp4) {
         items_dropped_this_round += 1;
+        if (items_dropped_this_round >= IGLOO_ITEM_DROP_GAMEOVER_QUANTITY) {
+            IGLOO_SET_GAME_OVER();
+            game_frame_timer = 180;
+            temp3 = 0;
+            igloo_write_itemdrop_gameover_message();
+            igloo_write_general_gameover_message(); 
+            IGLOO_SET_BUFFERED_MESSAGE_THIS_FRAME();
+        }
     }
 }
 
@@ -862,11 +908,13 @@ void igloo_draw_mika(void) {
 }
 
 void igloo_draw_carassa(void) {
-    if (round_begin_timer != 0) { return; }
-    if (!IGLOO_IS_CARASSA_WALKING) {
-        temppointer = carassa_idle;
+    if (round_begin_timer != 0) { 
+        return;
+    } else if (!IGLOO_IS_CARASSA_WALKING) {
+        temppointer = IGLOO_IS_GAME_OVER ? carassa_idle_shocked : carassa_idle;
     } else {
         temp0 = (carassa_walking_frame_timer >> 4) & 0b1;
+        if (IGLOO_IS_GAME_OVER) { temp0 |= 0b10; }
         //temppointer = carassa_walk_animation[temp0];
         AsmSet2ByteFromPtrAtIndexVar(temppointer, carassa_walk_animation, temp0);
     }

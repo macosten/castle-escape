@@ -9,11 +9,11 @@ const char * const igloo_all_items_bonus_prefix = "Bonus: ";
 const char * const igloo_starting_next_level_phrase = "Level ";
 const char * const fake_time = " 30";
 
-const char * const igloo_piano_troll_message_1 = "Catching pianos";
+const char * const igloo_piano_troll_message_1 = "Piano catching";
 const char * const igloo_piano_troll_message_2 = "is a bad idea!";
 
-const char * const igloo_itemdrop_troll_message_1 = "Broken items";
-const char * const igloo_itemdrop_troll_message_2 = "don't sell!";
+const char * const igloo_itemdrop_troll_message_1 = "Cleanup on";
+const char * const igloo_itemdrop_troll_message_2 = "aisle you!";
 
 const char * const igloo_game_over_message = "Game Over";
 
@@ -33,21 +33,21 @@ const unsigned char const carassa_idle[] = {
  128
 };
 
-// const unsigned char const carassa_idle_behind[] = {
-//   0, 0, 0x81, 0|OAM_FLIP_H|OAM_BEHIND,
-//   8, 0, 0x80, 0|OAM_BEHIND,
-//  16, 0, 0x81, 0|OAM_BEHIND,
-//   0, 8, 0x91, 0|OAM_FLIP_H|OAM_BEHIND,
-//   8, 8, 0x90, 0|OAM_BEHIND,
-//  16, 8, 0x91, 0|OAM_BEHIND,
-//   0,16, 0xA1, 0|OAM_FLIP_H|OAM_BEHIND,
-//   8,16, 0xA0, 0|OAM_BEHIND,
-//  16,16, 0xA1, 0|OAM_BEHIND,
-//   0,24, 0xB1, 0|OAM_FLIP_H|OAM_BEHIND,
-//   8,24, 0xB0, 0|OAM_BEHIND,
-//  16,24, 0xB1, 0|OAM_BEHIND,
-//  128
-// };
+const unsigned char const carassa_idle_shocked[] = {
+  0, 0, 0x81, 0|OAM_FLIP_H,
+  8, 0, 0x80, 0,
+ 16, 0, 0x81, 0,
+  0, 8, 0xA9, 0|OAM_FLIP_H,
+  8, 8, 0xA8, 0,
+ 16, 8, 0xA9, 0,
+  0,16, 0xA1, 0|OAM_FLIP_H,
+  8,16, 0xA0, 0,
+ 16,16, 0xA1, 0,
+  0,24, 0xB1, 0|OAM_FLIP_H,
+  8,24, 0xB0, 0,
+ 16,24, 0xB1, 0,
+ 128
+};
 
 const unsigned char const carassa_walk1[] = {
   0, 0, 0x81, 0|OAM_FLIP_H,
@@ -81,6 +81,38 @@ const unsigned char const carassa_walk2[] = {
  128
 };
 
+const unsigned char const carassa_shocked_walk1[] = {
+  0, 0, 0x81, 0|OAM_FLIP_H,
+  8, 0, 0x80, 0,
+ 16, 0, 0x81, 0,
+  0, 8, 0xA9, 0|OAM_FLIP_H,
+  8, 8, 0xA8, 0,
+ 16, 8, 0xA9, 0,
+  0,16, 0xA1, 0|OAM_FLIP_H,
+  8,16, 0xA0, 0,
+ 16,16, 0xA1, 0,
+  0,24, 0xC1, 0|OAM_FLIP_H,
+  8,24, 0xD0, 0,
+ 16,24, 0xD1, 0,
+ 128
+};
+
+const unsigned char const carassa_shocked_walk2[] = {
+  0, 0, 0x81, 0|OAM_FLIP_H,
+  8, 0, 0x80, 0,
+ 16, 0, 0x81, 0,
+  0, 8, 0xA9, 0|OAM_FLIP_H,
+  8, 8, 0xA8, 0,
+ 16, 8, 0xA9, 0,
+  0,16, 0xA1, 0|OAM_FLIP_H,
+  8,16, 0xA0, 0,
+ 16,16, 0xA1, 0,
+ 16,24, 0xC1, 0,
+  8,24, 0xC0, 0,
+  0,24, 0xD1, 0|OAM_FLIP_H,
+ 128
+};
+
 const unsigned char const carassa_drop[] = {
   0, 0, 0x81, 0|OAM_FLIP_H,
   8, 0, 0x80, 0,
@@ -100,6 +132,8 @@ const unsigned char const carassa_drop[] = {
 const unsigned char * const carassa_walk_animation[] = {
     carassa_walk1,
     carassa_walk2,
+    carassa_shocked_walk1,
+    carassa_shocked_walk2,
 };
 
 const unsigned char const mika_idle[] = {
