@@ -85,7 +85,8 @@ ZEROPAGE_EXTERN(unsigned int, pseudo_scroll_y);
 ZEROPAGE_EXTERN(unsigned char, did_headbonk);
 #define treat_timer did_headbonk
 
-// ZEROPAGE_EXTERN(unsigned char, enemy_is_using_bg_collision);
+ZEROPAGE_EXTERN(unsigned char, enemy_is_using_bg_collision);
+#define min_treat_time enemy_is_using_bg_collision
 
 // extern unsigned char eject_R;
 // #pragma zpsym("eject_R")
@@ -248,6 +249,8 @@ void begin_hasee_bounce_sub(void) {
     hitbox2.width = TREAT_WIDTH;
     hitbox2.height = TREAT_HEIGHT;
 
+    min_treat_time = 32;
+
     seed_rng();
     srand(rand8());
 
@@ -293,7 +296,12 @@ void game_hasee_bounce(void) {
         --level_timer;
         if (level_timer == 0) {
             level_timer = LEVEL_FRAME_LENGTH;
-            if (level < 0xFF) { ++level; }
+            if (level < 0xFF) { 
+                ++level;
+                if (min_treat_time > 2) {
+                    --min_treat_time;
+                }
+            }
         }
 
         --game_frame_timer;
@@ -316,7 +324,7 @@ void game_hasee_bounce(void) {
 
         --treat_timer;
         if (treat_timer == 0) {
-            treat_timer = 32 + (rand8() & 0b11111);
+            treat_timer = min_treat_time + (rand8() & 0b11111);
             calculate_next_treat();
             if (!HASEE_DID_BUFFER_MESSAGE_THIS_FRAME) {
                 if (temp4 >= TREAT_BLUE && temp4 <= TREAT_GRUNDOUGHNUTFRUIT) {
