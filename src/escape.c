@@ -959,8 +959,12 @@ void load_more_games_menu(void) {
 
 void menu_more_games_menu(void) {
     simple_menu_shared_behavior();
-    if (hasee_1p_high_score >= 2000 || hasee_2p_high_score >= 2000) {
+    if (HAS_HASEE_TROPHY) {
         oam_meta_spr(40, 200, hasee_trophy);
+    }
+
+    if (HAS_IGLOO_TROPHY) {
+        oam_meta_spr(60, 200, igloo_trophy);
     }
 
     if (pad1_new & PAD_A) {

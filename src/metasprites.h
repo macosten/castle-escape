@@ -940,4 +940,14 @@ const unsigned char const hasee_trophy[] = {
   128
 };
 
+const unsigned char const igloo_trophy[] = {
+  4, 15, 0xDD, 0,
+  0,  0, 0x9E, 0,
+  8,  0, 0x9F, 0,
+  0,  8, 0xAE, 0,
+  8,  8, 0xAF, 0,
+  128
+};
+
+
 #pragma rodata-name(pop)

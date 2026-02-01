@@ -26,4 +26,7 @@
     put_str_sub();\
 }
 
+#define HAS_HASEE_TROPHY (hasee_1p_high_score >= 2000 || hasee_2p_high_score >= 2000)
+#define HAS_IGLOO_TROPHY (igloo_1p_high_score >= 1000 || igloo_2p_high_score >= 1000)
+
 #endif
