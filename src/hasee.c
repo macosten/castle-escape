@@ -175,8 +175,6 @@ void orange_hasee_lr_movement(void);
 void purple_hasee_lr_movement(void);
 void handle_letter_collection(void);
 
-extern const char const about_screen[];
-
 void begin_hasee_bounce(void) {
     // Change the menu screen so that it becomes the game screen...
     pal_fade_to(4, 0);
