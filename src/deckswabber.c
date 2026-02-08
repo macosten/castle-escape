@@ -9,8 +9,8 @@
 #include "structs.h"
 
 #include "constants.h"
-// #include "deckswabber_constants.h"
-// #include "deckswabber_data.h"
+#include "deckswabber_constants.h"
+#include "deckswabber_data.h"
 #include "menu_screens_constants.h"
 
 ZEROPAGE_EXTERN(unsigned char, temp0);
@@ -45,8 +45,8 @@ unsigned char deckswabber_palette_sp[] = {
 };
 
 unsigned char const deckswabber_palette_bg[] = {
-    0x21, 0x17, 0x27, 0x37, // Wood / Brown tiles / Paper
-    0x21, 0x01, 0x2B, 0x39, // Blue + Green Tiles
-    0x21, 0x11, 0x21, 0x30, // Water tiles, then one useless color??
-    0x21, 0x37, 0x30, 0x0f, // ??? Hud??
+    0x37, 0x17, 0x27, 0x0f, // Wood / Brown tiles / Paper / text
+    0x37, 0x01, 0x2B, 0x39, // Blue + Green Tiles
+    0x37, 0x11, 0x21, 0x0f, // Water tiles + black (for parchment HUD)
+    0x37, 0x37, 0x30, 0x0f, // ?????
 };
