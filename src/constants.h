@@ -24,6 +24,7 @@
 #define GAME_CASTLE_ESCAPE 0
 #define GAME_HASEE_BOUNCE 1
 #define GAME_IGLOO 2
+#define GAME_DECKSWABBER 3
 
 // Should the game continue to the next level, or exit the game when we finish this?
 #define LEVEL_UP_BEHAVIOR_EXIT 0

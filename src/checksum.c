@@ -16,7 +16,7 @@ extern unsigned int gauntlet_high_score;
 extern unsigned int hasee_1p_high_score;
 extern unsigned int hasee_2p_high_score;
 extern unsigned int igloo_1p_high_score;
-extern unsigned int igloo_2p_high_score;
+extern unsigned int deckswabber_1p_high_score;
 
 extern unsigned char settings_memory[];
 
@@ -29,7 +29,7 @@ void clear_saved_data(void) {
     hasee_1p_high_score = 0;
     hasee_2p_high_score = 0;
     igloo_1p_high_score = 0;
-    igloo_2p_high_score = 0;
+    deckswabber_1p_high_score = 0;
     for (temp0 = 0; ; ++temp0) {
         // Zero out level_high_scores quicker by treating it like 2 char[256] arrays
         ((unsigned char *)level_high_scores)[temp0] = 0;
@@ -44,7 +44,7 @@ void calculate_checksum(void) {
     temp5 += hasee_1p_high_score;
     temp5 += hasee_2p_high_score;
     temp5 += igloo_1p_high_score;
-    temp5 += igloo_2p_high_score;
+    temp5 += deckswabber_1p_high_score;
     for (temp0 = 0; ; ++temp0) {
         temp5 += level_high_scores[temp0];
         if (temp0 == 255) { break; }

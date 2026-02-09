@@ -22,7 +22,7 @@
 	.import		_hasee_1p_high_score
 	.import		_hasee_2p_high_score
 	.import		_igloo_1p_high_score
-	.import		_igloo_2p_high_score
+	.import		_deckswabber_1p_high_score
 	.import		_settings_memory
 
 ; ---------------------------------------------------------------
@@ -73,13 +73,13 @@
 	adc     _temp5+1
 	sta     _temp5+1
 ;
-; temp5 += igloo_2p_high_score;
+; temp5 += deckswabber_1p_high_score;
 ;
-	lda     _igloo_2p_high_score
+	lda     _deckswabber_1p_high_score
 	clc
 	adc     _temp5
 	sta     _temp5
-	lda     _igloo_2p_high_score+1
+	lda     _deckswabber_1p_high_score+1
 	adc     _temp5+1
 	sta     _temp5+1
 ;
@@ -239,10 +239,10 @@ L004E:	jne     _clear_saved_data
 	sta     _igloo_1p_high_score
 	sta     _igloo_1p_high_score+1
 ;
-; igloo_2p_high_score = 0;
+; deckswabber_1p_high_score = 0;
 ;
-	sta     _igloo_2p_high_score
-	sta     _igloo_2p_high_score+1
+	sta     _deckswabber_1p_high_score
+	sta     _deckswabber_1p_high_score+1
 ;
 ; for (temp0 = 0; ; ++temp0) {
 ;

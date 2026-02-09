@@ -6,5 +6,6 @@
 // #define MENU_MORE_GAMES 5 // defined in menu_screens.h
 #define MENU_HASEE_BOUNCE 6
 #define MENU_IGLOO 7
+#define MENU_DECKSWABBER 8
 
 #define MENU_DATA_BANK 5

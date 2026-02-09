@@ -10,9 +10,36 @@
 	.importzp	sp, sreg, regsave, regbank
 	.importzp	tmp1, tmp2, tmp3, tmp4, ptr1, ptr2, ptr3, ptr4
 	.macpack	longbranch
+	.import		_srand
+	.import		_clear_vram_buffer
+	.import		_get_pad_new
+	.import		_pal_fade_to
+	.import		_seed_rng
+	.import		_pal_bright
+	.import		_ppu_wait_nmi
+	.import		_ppu_on_all
+	.import		_music_play
+	.import		_pad_poll
+	.import		_rand8
+	.import		_vram_write
+	.import		_memfill
 	.export		_deckswabber_game_screen
+	.importzp	_pad1
+	.importzp	_pad1_new
+	.importzp	_temppointer
+	.importzp	_game_mode
+	.importzp	_menu
+	.import		_cmap
 	.export		_deckswabber_palette_sp
 	.export		_deckswabber_palette_bg
+	.import		_set_prg_bank
+	.import		_prepare_screen_transition
+	.import		_switch_menu
+	.import		_LZG_decode
+	.export		_game_deckswabber
+	.export		_begin_deckswabber
+	.export		_begin_deckswabber_sub
+	.export		_end_deckswabber
 
 .segment	"DATA"
 
@@ -371,15 +398,226 @@ _deckswabber_palette_bg:
 	.byte	$27
 	.byte	$0F
 	.byte	$37
-	.byte	$01
-	.byte	$2B
-	.byte	$39
-	.byte	$37
 	.byte	$11
 	.byte	$21
 	.byte	$0F
 	.byte	$37
+	.byte	$01
+	.byte	$2B
+	.byte	$39
+	.byte	$37
 	.byte	$37
 	.byte	$30
 	.byte	$0F
+.segment	"RODATA"
+
+; ---------------------------------------------------------------
+; void __near__ game_deckswabber (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_game_deckswabber: near
+
+.segment	"BANK1"
+
+;
+; pad1 = pad_poll(0); // read the first controller
+;
+	lda     #$00
+	jsr     _pad_poll
+	sta     _pad1
+;
+; pad1_new = get_pad_new(0);
+;
+	lda     #$00
+	jsr     _get_pad_new
+	sta     _pad1_new
+;
+; ppu_wait_nmi(); // wait till beginning of the frame
+;
+	jsr     _ppu_wait_nmi
+;
+; clear_vram_buffer();
+;
+	jsr     _clear_vram_buffer
+;
+; set_prg_bank(DECKSWABBER_CODE_BANK);
+;
+	lda     #$01
+	jsr     _set_prg_bank
+;
+; if (pad1 & PAD_B) {
+;
+	lda     _pad1
+	and     #$40
+	cmp     #$00
+;
+; end_deckswabber();
+;
+	jne     _end_deckswabber
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ begin_deckswabber (void)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_begin_deckswabber: near
+
+.segment	"CODE"
+
+;
+; pal_fade_to(4, 0);
+;
+	lda     #$04
+	jsr     pusha
+	lda     #$00
+	jsr     _pal_fade_to
+;
+; prepare_screen_transition();
+;
+	jsr     _prepare_screen_transition
+;
+; set_prg_bank(5);
+;
+	lda     #$05
+	jsr     _set_prg_bank
+;
+; temppointer = deckswabber_game_screen;
+;
+	lda     #<(_deckswabber_game_screen)
+	ldx     #>(_deckswabber_game_screen)
+	sta     _temppointer
+	stx     _temppointer+1
+;
+; LZG_decode(temppointer, cmap);
+;
+	jsr     pushax
+	lda     #<(_cmap)
+	ldx     #>(_cmap)
+	jsr     _LZG_decode
+;
+; vram_write(cmap, 32*32);
+;
+	lda     #<(_cmap)
+	ldx     #>(_cmap)
+	jsr     pushax
+	ldx     #$04
+	lda     #$00
+	jsr     _vram_write
+;
+; memfill(cmap, 0, 32); // For character buffering later on when we want spaces
+;
+	jsr     decsp3
+	lda     #<(_cmap)
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     #>(_cmap)
+	sta     (sp),y
+	lda     #$00
+	tay
+	sta     (sp),y
+	tax
+	lda     #$20
+	jsr     _memfill
+;
+; set_prg_bank(DECKSWABBER_CODE_BANK);
+;
+	lda     #$01
+	jsr     _set_prg_bank
+;
+; begin_deckswabber_sub();
+;
+	jmp     _begin_deckswabber_sub
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ begin_deckswabber_sub (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_begin_deckswabber_sub: near
+
+.segment	"BANK1"
+
+;
+; music_play(ICE_CREAM_MACHINE_SONG);
+;
+	lda     #$07
+	jsr     _music_play
+;
+; game_mode = MODE_GAME;
+;
+	lda     #$01
+	sta     _game_mode
+;
+; seed_rng();
+;
+	jsr     _seed_rng
+;
+; srand(rand8());
+;
+	jsr     _rand8
+	ldx     #$00
+	jsr     _srand
+;
+; ppu_on_all();
+;
+	jsr     _ppu_on_all
+;
+; pal_bright(4);
+;
+	lda     #$04
+	jmp     _pal_bright
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ end_deckswabber (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_end_deckswabber: near
+
+.segment	"BANK1"
+
+;
+; pal_fade_to(4, 0);
+;
+	lda     #$04
+	jsr     pusha
+	lda     #$00
+	jsr     _pal_fade_to
+;
+; menu = MENU_DECKSWABBER;
+;
+	lda     #$08
+	sta     _menu
+;
+; switch_menu();
+;
+	jsr     _switch_menu
+;
+; music_play(MENU_SONG);
+;
+	lda     #$00
+	jsr     _music_play
+;
+; pal_bright(4);
+;
+	lda     #$04
+	jmp     _pal_bright
+
+.endproc
 

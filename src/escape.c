@@ -130,7 +130,7 @@ unsigned int gauntlet_high_score;
 unsigned int hasee_1p_high_score;
 unsigned int hasee_2p_high_score;
 unsigned int igloo_1p_high_score;
-unsigned int igloo_2p_high_score;
+unsigned int deckswabber_1p_high_score;
 
 unsigned char settings_memory[1];
 
@@ -150,6 +150,7 @@ const unsigned char * const cmaps[] = {cmap, cmap + 240, cmap+240*2, cmap+240*3,
 void game_castle_escape(void);
 extern void game_hasee_bounce(void);
 extern void game_igloo(void);
+extern void game_deckswabber(void);
 
 // Drawing functions.
 
@@ -229,6 +230,7 @@ void death_effect_timer_ai(void);
 void fire_at_target(void);
 
 // Menu functions.
+void prepare_screen_transition(void);
 void switch_menu(void);
 void simple_menu_shared_behavior(void);
 
@@ -240,6 +242,7 @@ void menu_settings(void);
 void menu_more_games_menu(void);
 void menu_hasee_bounce_menu(void);
 void menu_igloo_menu(void);
+void menu_deckswabber_menu(void);
 
 // Switch palettes/globals back to that of the more games menu.
 void menu_sub_back_to_moregames_menu(void);
@@ -252,6 +255,7 @@ void load_settings_menu(void);
 void load_more_games_menu(void);
 void load_hasee_bounce_menu(void);
 void load_igloo_menu(void);
+void load_deckswabber_menu(void);
 
 // Functions in other files.
 extern void dialog_box_handler(void);
@@ -270,6 +274,7 @@ extern void draw_boss_dying(void);
 
 extern void begin_hasee_bounce(void);
 extern void begin_igloo(void);
+extern void begin_deckswabber(void);
 
 extern unsigned char const * titlescreen;
 
@@ -304,6 +309,7 @@ const void (* const menu_logic_functions[])(void) = {
     menu_more_games_menu,
     menu_hasee_bounce_menu,
     menu_igloo_menu,
+    menu_deckswabber_menu,
 };
 
 // If a menu needs something extra/special to be done before showing it, it'll do so in one of these functions.
@@ -316,6 +322,7 @@ const void (* const menu_load_functions[])(void) = {
     load_more_games_menu,
     load_hasee_bounce_menu,
     load_igloo_menu,
+    load_deckswabber_menu,
 };
 
 const unsigned char * const menu_compressed_data[] = {
@@ -327,6 +334,7 @@ const unsigned char * const menu_compressed_data[] = {
     more_games_screen,
     hasee_menu_screen, // Having 7 here (or really, I think, adding 2 ROM bytes around here) fixes it. Maybe it has something to do with crossing a page boundary messing with some some timing somewhere?? Might be worth investigating if it causes bigger problems later...
     igloo_menu_screen,
+    deckswabber_menu_screen,
 };
 
 const unsigned char const eligible_level_music[] = { LEVEL_SONG_SNEAKY, LEVEL_SONG_PIZZICATO };
@@ -335,6 +343,7 @@ const void (* const game_functions[])(void) = {
     game_castle_escape,
     game_hasee_bounce,
     game_igloo,
+    game_deckswabber,
 };
 
 void main (void) {
@@ -583,7 +592,7 @@ void put_str_sub(void) {
     }
 }
 
-void switch_menu(void) {
+void prepare_screen_transition(void) {
     // We always want to do these things before changing a menu:
     ppu_wait_nmi();
     ppu_off();
@@ -592,6 +601,10 @@ void switch_menu(void) {
     // Devensive programming: clear these buffers.
     clear_vram_buffer();
     oam_clear();
+}
+
+void switch_menu(void) {
+    prepare_screen_transition();    
 
     game_mode = MODE_MENU; // Ensure the correct game mode is active.
     menu_selection = 0; // Just to make sure we don't accidentally point to an invalid menu item somehow.
@@ -934,21 +947,24 @@ void menu_settings(void) {
 
 // Menu -- More Games
 
-#define MORE_GAMES_OPTIONS 2
+#define MORE_GAMES_OPTIONS 3
 
 const unsigned char const more_games_menu_links[] = { 
     MENU_HASEE_BOUNCE,
     MENU_IGLOO,
+    MENU_DECKSWABBER,
 };
 
 const unsigned char const more_games_menu_selector_x[] = { // in pixels
     8 * 8 + 4,
     6 * 8 + 4,
+    8 * 8 + 4,
 };
 
 const unsigned char const more_games_menu_selector_y[] = { // in pixels
     9 * 8 - 1,
     11 * 8 - 1,
+    13 * 8 - 1,
 };
 
 void load_more_games_menu(void) {
@@ -1073,7 +1089,7 @@ void load_igloo_menu(void) {
     multi_vram_buffer_horz(score_string, 5, NTADR_A(16, 7));
 
     pal_bright(4);
-    set_scroll_x(8); // Center the off-centered play area...
+    //set_scroll_x(8); // Center the off-centered play area...
 }
 
 void menu_igloo_menu(void) {
@@ -1088,6 +1104,53 @@ void menu_igloo_menu(void) {
     if (pad1_new & PAD_B) { // Back to main menu
         menu_sub_back_to_moregames_menu();
     }
+}
+
+void menu_deckswabber_menu(void) {
+    //  PRG bank must be 1 (unless we change it?)
+    simple_menu_shared_behavior();
+
+    if (pad1_new & PAD_A) {
+        begin_deckswabber();
+        return;
+    }
+
+    if (pad1_new & PAD_B) { // Back to main menu
+        menu_sub_back_to_moregames_menu();
+    }
+}
+
+#define DECKSWABBER_OPTIONS 1
+
+extern unsigned char const deckswabber_palette_sp[];
+extern unsigned char const deckswabber_palette_bg[];
+
+const unsigned char const deckswabber_menu_selector_x[] = {
+    11 * 8 + 4,
+};
+
+const unsigned char const deckswabber_menu_selector_y[] = {
+    4 * 8 - 1,
+};
+
+void load_deckswabber_menu(void) {
+    menu_selection_count = DECKSWABBER_OPTIONS;
+    temppointer = deckswabber_menu_selector_x;
+    temppointer1 = deckswabber_menu_selector_y;
+    active_game = GAME_DECKSWABBER;
+    // Change to Deckswabber graphics
+    pal_fade_to(4, 0);
+    set_prg_bank(1);
+    set_chr_bank_0(6);
+    set_chr_bank_1(7);
+    pal_bg(deckswabber_palette_bg);
+    pal_spr(deckswabber_palette_sp);
+    // Load high scores
+    convert_to_decimal(deckswabber_1p_high_score);
+    prepare_score_string();
+    multi_vram_buffer_horz(score_string, 5, NTADR_A(21, 3));
+
+    pal_bright(4);
 }
 
 // End of menus -- Castle Escape gameplay below here

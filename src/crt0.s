@@ -340,3 +340,4 @@ sounds_data:
     .incbin "escape.chr"
     .incbin "titlescreen.chr"
     .incbin "hasee.chr"
+    .incbin "deckswabber.chr"

@@ -137,6 +137,7 @@ extern void clear_screen(void);
 extern void put_str_sub(void);
 extern void set_prg_bank(unsigned char bank);
 extern void calculate_shuffle_array(void);
+extern void prepare_screen_transition(void);
 extern void switch_menu(void);
 
 // Make sure prg bank is 5 before calling:
@@ -178,12 +179,7 @@ void handle_letter_collection(void);
 void begin_hasee_bounce(void) {
     // Change the menu screen so that it becomes the game screen...
     pal_fade_to(4, 0);
-    ppu_off();
-    clear_screen();
-
-    // Devensive programming: clear these buffers.
-    clear_vram_buffer();
-    oam_clear();
+    prepare_screen_transition();
 
     // Do stuff that can't be done in PRG1...
     set_prg_bank(5);

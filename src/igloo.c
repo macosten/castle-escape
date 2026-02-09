@@ -127,7 +127,6 @@ extern unsigned char enemies_count;
 extern unsigned char cmap[];
 
 extern unsigned int igloo_1p_high_score;
-extern unsigned int igloo_2p_high_score;
 
 #if ONSCREEN_JUNK_MAXIMUM>15
     #warning "Careful (igloo): ONSCREEN_JUNK_MAXIMUM is high; may have to change logic for carassa walk queue(s)."
@@ -154,6 +153,7 @@ extern void clear_screen(void);
 extern void put_str_sub(void);
 extern void set_prg_bank(unsigned char bank);
 extern void calculate_shuffle_array(void);
+extern void prepare_screen_transition(void);
 extern void switch_menu(void);
 
 extern void LZG_decode(const unsigned char *src, unsigned char *dest);
@@ -213,12 +213,7 @@ void igloo_piano_explosion_draw(void);
 void begin_igloo(void) {
     // Change the menu screen so that it becomes the game screen...
     pal_fade_to(4, 0);
-    ppu_off();
-    clear_screen();
-
-    // Devensive programming: clear these buffers.
-    clear_vram_buffer();
-    oam_clear();
+    prepare_screen_transition();
 
     // Do stuff that can't be done in PRG1...
     set_prg_bank(5);
