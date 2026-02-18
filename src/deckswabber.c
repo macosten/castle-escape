@@ -53,13 +53,14 @@ extern unsigned int deckswabber_1p_high_score;
 #pragma rodata-name(push, "BANK1")
 
 unsigned char deckswabber_palette_sp[] = {
-    0x37, 0x1c, 0x38, 0x0f, // Player Character (Teal/Yellow/Black), Mynci?
-    0x21, 0x3D, 0x16, 0x0f, // Grey + Brown (Sword, Boxes, Cannon, etc)
-    0x21, 0x0f, 0x00, 0x00, // ???
-    0x21, 0x0f, 0x00, 0x00, // ???
+    0x37, 0x1c, 0x38, 0x0f, // Player Character (Teal/Yellow/Black)
+    0x21, 0x3d, 0x16, 0x0f, // Grey + Brown (Sword, Boxes, Cannon, Coins/Chests etc)
+    0x21, 0x30, 0x27, 0x0f, // White + Gold (Kiko Skeleton, Gold Coins/Chests, flags)
+    0x21, 0x0f, 0x00, 0x00, // Reserved for Mynci/Techo color palette
 };
 
 // Techo Pirate - 0x2A, 0x26, 0x0f
+// Mynci Pirate - 0x14, 0x36, 0x0f
 
 unsigned char const deckswabber_palette_bg[] = {
     0x37, 0x17, 0x27, 0x0f, // Wood / Brown tiles / Paper / text

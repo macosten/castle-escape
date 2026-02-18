@@ -361,59 +361,51 @@ const unsigned char item_bag_broken[] = {
     128
 };
 
-const unsigned char item_explosion_twinkle[] = {
-    0, 0, 0xB4, 0,
-    8, 0, 0xB4, 0|OAM_FLIP_H,
-    0, 8, 0xB4, 0|OAM_FLIP_V,
-    8, 8, 0xB4, 0|OAM_FLIP_H|OAM_FLIP_V,
-    128
-};
-
 const unsigned char item_explosion1[] = {
-    0, 0, 0xB4, 0,
-    8, 0, 0xB4, 0|OAM_FLIP_H,
-    0, 8, 0xB4, 0|OAM_FLIP_V,
-    8, 8, 0xB4, 0|OAM_FLIP_H|OAM_FLIP_V,
-    -3, 14, 0xB6, 0,
-    10, -8, 0xB6, 0,
-    4, -10, 0xB5, 0,
-    12, 10, 0xB5, 0,
+    0, 0, 0xFD, 0,
+    8, 0, 0xFD, 0|OAM_FLIP_H,
+    0, 8, 0xFD, 0|OAM_FLIP_V,
+    8, 8, 0xFD, 0|OAM_FLIP_H|OAM_FLIP_V,
+    -3, 14, 0xFF, 0,
+    10, -8, 0xFF, 0,
+    4, -10, 0xFE, 0,
+    12, 10, 0xFE, 0,
     128
 };
 
 const unsigned char item_explosion2[] = {
-    -1, 0, 0xB4, 0,
-    7, 0, 0xB4, 0|OAM_FLIP_H,
-    -1, 8, 0xB4, 0|OAM_FLIP_V,
-    7, 8, 0xB4, 0|OAM_FLIP_H|OAM_FLIP_V,
-    4, -10, 0xB6, 0,
-    12, 10, 0xB6, 0,
-    -7, 3, 0xB5, 0,
-    15, -4, 0xB5, 0,
+    -1, 0, 0xFD, 0,
+    7, 0, 0xFD, 0|OAM_FLIP_H,
+    -1, 8, 0xFD, 0|OAM_FLIP_V,
+    7, 8, 0xFD, 0|OAM_FLIP_H|OAM_FLIP_V,
+    4, -10, 0xFF, 0,
+    12, 10, 0xFF, 0,
+    -7, 3, 0xFE, 0,
+    15, -4, 0xFE, 0,
     128
 };
 
 const unsigned char item_explosion3[] = {
-    -1, -1, 0xB4, 0,
-    7, -1, 0xB4, 0|OAM_FLIP_H,
-    -1, 7, 0xB4, 0|OAM_FLIP_V,
-    7, 7, 0xB4, 0|OAM_FLIP_H|OAM_FLIP_V,
-    -7, 3, 0xB6, 0,
-    15, -4, 0xB6, 0,
-    -8, -8, 0xB5, 0,
-    6, 17, 0xB5, 0,
+    -1, -1, 0xFD, 0,
+    7, -1, 0xFD, 0|OAM_FLIP_H,
+    -1, 7, 0xFD, 0|OAM_FLIP_V,
+    7, 7, 0xFD, 0|OAM_FLIP_H|OAM_FLIP_V,
+    -7, 3, 0xFF, 0,
+    15, -4, 0xFF, 0,
+    -8, -8, 0xFE, 0,
+    6, 17, 0xFE, 0,
     128
 };
 
 const unsigned char item_explosion4[] = {
-    0, -1, 0xB4, 0,
-    8, -1, 0xB4, 0|OAM_FLIP_H,
-    0, 7, 0xB4, 0|OAM_FLIP_V,
-    8, 7, 0xB4, 0|OAM_FLIP_H|OAM_FLIP_V,
-    -8, -8, 0xB6, 0,
-    6, 17, 0xB6, 0,
-    -3, 14, 0xB5, 0,
-    10, -8, 0xB5, 0,
+    0, -1, 0xFD, 0,
+    8, -1, 0xFD, 0|OAM_FLIP_H,
+    0, 7, 0xFD, 0|OAM_FLIP_V,
+    8, 7, 0xFD, 0|OAM_FLIP_H|OAM_FLIP_V,
+    -8, -8, 0xFF, 0,
+    6, 17, 0xFF, 0,
+    -3, 14, 0xFE, 0,
+    10, -8, 0xFE, 0,
     128
 };
 
@@ -425,66 +417,66 @@ const unsigned char * const item_explosion_animation[] = {
 };
 
 const unsigned char item_piano_explosion1[] = {
-    4, 4, 0xB5, 2,
-    4, 12, 0xB5, 2,
-    12, 4, 0xB5, 2,
-    12, 12, 0xB5, 2,
+    4, 4, 0xFE, 2,
+    4, 12, 0xFE, 2,
+    12, 4, 0xFE, 2,
+    12, 12, 0xFE, 2,
     128
 };
 
 const unsigned char item_piano_explosion2[] = {
-    4, 0, 0xB5, 2,
-    4, 8, 0xB5, 2,
-    12, 0, 0xB5, 2,
-    12, 8, 0xB5, 2,
+    4, 0, 0xFE, 2,
+    4, 8, 0xFE, 2,
+    12, 0, 0xFE, 2,
+    12, 8, 0xFE, 2,
     128
 };
 
 const unsigned char item_piano_explosion3[] = {
-    4, -4, 0xB5, 2,
-    4, 4, 0xB5, 2,
-    12, -4, 0xB5, 2,
-    12, 4, 0xB5, 2,
+    4, -4, 0xFE, 2,
+    4, 4, 0xFE, 2,
+    12, -4, 0xFE, 2,
+    12, 4, 0xFE, 2,
     128
 };
 
 const unsigned char item_piano_explosion4[] = {
-    4, -8, 0xB5, 2,
-    4, 0, 0xB5, 2,
-    12, -8, 0xB5, 2,
-    12, 0, 0xB5, 2,
+    4, -8, 0xFE, 2,
+    4, 0, 0xFE, 2,
+    12, -8, 0xFE, 2,
+    12, 0, 0xFE, 2,
     128
 };
 
 const unsigned char item_piano_explosion5[] = {
-    4, -10, 0xB5, 2,
-    4, -2, 0xB5, 2,
-    12, -10, 0xB5, 2,
-    12, -2, 0xB5, 2,
+    4, -10, 0xFE, 2,
+    4, -2, 0xFE, 2,
+    12, -10, 0xFE, 2,
+    12, -2, 0xFE, 2,
     128
 };
 
 const unsigned char item_piano_explosion6[] = {
-    2, -8, 0xB5, 2,
-    2, 0, 0xB5, 2,
-    14, -8, 0xB5, 2,
-    14, 0, 0xB5, 2,
+    2, -8, 0xFE, 2,
+    2, 0, 0xFE, 2,
+    14, -8, 0xFE, 2,
+    14, 0, 0xFE, 2,
     128
 };
 
 const unsigned char item_piano_explosion7[] = {
-    0, -6, 0xB6, 2,
-    0, 2, 0xB6, 2,
-    16, -6, 0xB6, 2,
-    16, 2, 0xB6, 2,
+    0, -6, 0xFF, 2,
+    0, 2, 0xFF, 2,
+    16, -6, 0xFF, 2,
+    16, 2, 0xFF, 2,
     128
 };
 
 const unsigned char item_piano_explosion8[] = {
-    -2, -4, 0xB6, 2,
-    -2, 4, 0xB6, 2,
-    18, -4, 0xB6, 2,
-    18, 4, 0xB6, 2,
+    -2, -4, 0xFF, 2,
+    -2, 4, 0xFF, 2,
+    18, -4, 0xFF, 2,
+    18, 4, 0xFF, 2,
     128
 };
 
