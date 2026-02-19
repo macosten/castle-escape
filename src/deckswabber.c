@@ -42,18 +42,22 @@ ZEROPAGE_EXTERN(unsigned char, player_flags2);
 ZEROPAGE_EXTERN(unsigned char, menu);
 ZEROPAGE_EXTERN(unsigned char, shuffle_offset);
 ZEROPAGE_EXTERN(unsigned char, shuffle_maximum);
-ZEROPAGE_EXTERN(unsigned char, temp_x);
-ZEROPAGE_EXTERN(unsigned char, temp_y);
+
 ZEROPAGE_EXTERN(unsigned char, player_frame_timer);
 
 extern unsigned char cmap[];
-#define tilemap (cmap)
-#define enemymap (cmap + 64)
-#define chrbuffer (cmap + 128)
+#define tile_typemap (cmap)
+#define tile_colormap (cmap + 64)
+#define enemymap (cmap + 128)
+#define chrbuffer (cmap + 192)
 
-ZEROPAGE_EXTERN(Player, valrigard);
-#define player_tile_x (high_byte(valrigard.x))
-#define player_tile_y (high_byte(valrigard.y))
+ZEROPAGE_EXTERN(unsigned char, temp_x);
+ZEROPAGE_EXTERN(unsigned char, temp_y);
+#define player_tile_x (temp_x)
+#define player_tile_y (temp_y)
+
+ZEROPAGE_EXTERN(unsigned char, eject_L);
+#define tile_color_increment_type eject_L
 
 extern unsigned int deckswabber_1p_high_score;
 extern unsigned int previous_score;
@@ -73,8 +77,8 @@ unsigned char deckswabber_palette_sp[] = {
 unsigned char const deckswabber_palette_bg[] = {
     0x37, 0x17, 0x27, 0x0f, // Wood / Brown tiles / Paper / text
     0x37, 0x11, 0x21, 0x0f, // Water tiles + black (for parchment HUD)
-    0x37, 0x01, 0x2B, 0x39, // Blue + Green Tiles
-    0x37, 0x37, 0x30, 0x0f, // ?????
+    0x37, 0x12, 0x2B, 0x39, // Blue + Green Tiles
+    0x37, 0x15, 0x24, 0x33, // Red + Pink + Periwinkle (Red/Pink board)
 };
 
 extern void clear_screen(void);
@@ -99,6 +103,28 @@ void deckswabber_player_movement(void);
 
 void deckswabber_draw_sprites(void);
 void deckswabber_draw_player(void);
+void deckswabber_redraw_player_tile(void);
+
+void deckswabber_tile_increment_fn_original_round1(void);
+void deckswabber_tile_increment_fn_original_round2(void);
+void deckswabber_tile_increment_fn_original_round3(void);
+void deckswabber_tile_increment_fn_original_round4(void);
+void deckswabber_tile_increment_fn_original_round5(void);
+void deckswabber_tile_increment_fn_original_round6(void);
+void deckswabber_tile_increment_fn_original_round7(void);
+void deckswabber_tile_increment_fn_original_round8(void);
+
+// Lookup table for behavior when landing on a tile. Assume that player_tile_x and player_tile_y is correctly set when called.
+const void (* const tile_increment_functions[])(void) = {
+    deckswabber_tile_increment_fn_original_round1,
+    deckswabber_tile_increment_fn_original_round2,
+    deckswabber_tile_increment_fn_original_round3,
+    deckswabber_tile_increment_fn_original_round4,
+    deckswabber_tile_increment_fn_original_round5,
+    deckswabber_tile_increment_fn_original_round6,
+    deckswabber_tile_increment_fn_original_round7,
+    deckswabber_tile_increment_fn_original_round8,
+};
 
 void begin_deckswabber(void) {
     // Change the menu screen so that it becomes the game screen...
@@ -110,7 +136,6 @@ void begin_deckswabber(void) {
     temppointer = deckswabber_game_screen;
     LZG_decode(temppointer, cmap);
     vram_write(cmap, 32*32);
-    memfill(cmap, 0, 64 + 64 + 32); // 64 game board tiles + 64 game board enemy presences + 32 characters for text buffering
 
     set_prg_bank(DECKSWABBER_CODE_BANK);
     begin_deckswabber_sub();
@@ -126,22 +151,36 @@ void begin_deckswabber_sub(void) {
     seed_rng();
     srand(rand8());
 
+    set_mt_pointer(deckswabber_metatiles);
+
+    // Begin first level...
+    begin_deckswabber_level();
+
     ppu_on_all();
     pal_bright(4);
 }
 
 void begin_deckswabber_level(void) {
-    // X and Y coordinates for this game will be in tiles; the drawing routines will figure out where they belong on-screen...
-    player_tile_x = 0;
-    player_tile_y = 0;
-    // Reset tilemap, enemymap, and chrbuffer
-    memfill(cmap, 0, 64 + 64 + 32);
+    // Reset tile typemap, tile colormap, tile enemymap, and chrbuffer
+    // TODO - make it so that we only reset colormap and later, we can just write over typemap once on load
+    memfill(cmap, 0, 64 + 64 + 64 + 32); // 64 tile types + 64 tile colors + 64 game board enemy presences + 32 characters for text buffering
 
     // Reset all PPU palette entries on the board
     // ...
 
     // (Re)draw the "goal" indicator, if applicable?
     // ...
+
+    // Increment the starting tile by 1 and update it
+
+    // X and Y coordinates for this game will be in tiles; the drawing routines will figure out where they belong on-screen...
+    player_tile_x = 0;
+    player_tile_y = 0;
+
+    // This should become some kind of lookup to the update function
+    tile_color_increment_type = 0; // Set based on some level info
+    AsmCallFunctionAtPtrOffsetByIndexVar(tile_increment_functions, eject_L);
+    deckswabber_redraw_player_tile();
 }
 
 void game_deckswabber(void) {
@@ -162,6 +201,11 @@ void game_deckswabber(void) {
     if (pad1 & PAD_B) {
         end_deckswabber();
         return;
+    }
+
+    if (pad1_new & PAD_START) {
+        ++tile_color_increment_type; // Cycle through for debug
+        tile_color_increment_type &= 0b111; // 0-7
     }
     // gray_line();
 }
@@ -192,6 +236,10 @@ void deckswabber_player_movement(void) {
     if (temp0) {
         sfx_play(SFX_JUMP, 0);
         player_frame_timer = 12;
+        // Update new tile if necessary
+        AsmCallFunctionAtPtrOffsetByIndexVar(tile_increment_functions, eject_L);
+        // Update the tile under the player
+        deckswabber_redraw_player_tile();
     }
 }
 
@@ -212,6 +260,72 @@ void deckswabber_draw_player(void) {
     temp0 = 64 + (player_tile_x << 4);
     temp1 = 54 + (player_tile_y << 4);
     oam_meta_spr(temp0, temp1, temppointer);
+}
+
+// Tile increment functions:
+// - Modify the color of the tile
+// - set temp0 to the tile's index in the tilemaps (DeckswabberGetTileIndex(temp0, ..., ...))
+// - set temp1 to the just-set color of the tile, in case something else wants to know
+void deckswabber_tile_increment_fn_original_round1(void) {
+    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    tile_colormap[temp0] = 1;
+    temp1 = 1;
+}
+
+void deckswabber_tile_increment_fn_original_round2(void) {
+    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp1 = tile_colormap[temp0];
+    temp1 ^= 1;
+    tile_colormap[temp0] = temp1;
+}
+
+void deckswabber_tile_increment_fn_original_round3(void) {
+    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp1 = tile_colormap[temp0] + 1;
+    if (temp1 > 2) { temp1 = 1; }
+    tile_colormap[temp0] = temp1;
+}
+
+void deckswabber_tile_increment_fn_original_round4(void) {
+    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp1 = tile_colormap[temp0] + 1;
+    if (temp1 > 2) { temp1 = 0; }
+    tile_colormap[temp0] = temp1;
+}
+
+void deckswabber_tile_increment_fn_original_round5(void) {
+    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp1 = tile_colormap[temp0] + 1;
+    if (temp1 > 3) { temp1 = 2; }
+    tile_colormap[temp0] = temp1;
+}
+
+void deckswabber_tile_increment_fn_original_round6(void) {
+    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp1 = tile_colormap[temp0] + 1;
+    if (temp1 > 3) { temp1 = 0; }
+    tile_colormap[temp0] = temp1;
+}
+
+void deckswabber_tile_increment_fn_original_round7(void) {
+    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp1 = tile_colormap[temp0] + 1;
+    if (temp1 > 4) { temp1 = 3; }
+    tile_colormap[temp0] = temp1;
+}
+
+void deckswabber_tile_increment_fn_original_round8(void) {
+    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp1 = tile_colormap[temp0] + 1;
+    if (temp1 > 4) { temp1 = 0; }
+    tile_colormap[temp0] = temp1;
+}
+
+void deckswabber_redraw_player_tile(void) {
+    temp2 = 8 + (player_tile_x << 1);
+    temp3 = 8 + (player_tile_y << 1);
+    address = NTADR_A(temp2, temp3);
+    buffer_1_mt(address, temp1);
 }
 
 #pragma code-name(pop)

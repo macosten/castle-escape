@@ -14,6 +14,8 @@
 	.import		_clear_vram_buffer
 	.import		_get_pad_new
 	.import		_pal_fade_to
+	.import		_set_mt_pointer
+	.import		_buffer_1_mt_fast_sub
 	.import		_seed_rng
 	.import		_pal_bright
 	.import		_ppu_wait_nmi
@@ -105,17 +107,23 @@
 	.export		_deckswabber_original_map9
 	.export		_deckswabber_original_map10
 	.export		_deckswabber_original_starting_coords
+	.export		_deckswabber_metatiles
 	.export		_deckswabber_game_screen
 	.importzp	_temp0
 	.importzp	_temp1
+	.importzp	_temp2
+	.importzp	_temp3
 	.importzp	_pad1
 	.importzp	_pad1_new
+	.importzp	_address
 	.importzp	_temppointer
 	.importzp	_game_mode
 	.importzp	_menu
 	.importzp	_player_frame_timer
 	.import		_cmap
-	.importzp	_valrigard
+	.importzp	_temp_x
+	.importzp	_temp_y
+	.importzp	_eject_L
 	.export		_deckswabber_palette_sp
 	.export		_deckswabber_palette_bg
 	.import		_set_prg_bank
@@ -130,6 +138,16 @@
 	.export		_deckswabber_player_movement
 	.export		_deckswabber_draw_sprites
 	.export		_deckswabber_draw_player
+	.export		_deckswabber_redraw_player_tile
+	.export		_deckswabber_tile_increment_fn_original_round1
+	.export		_deckswabber_tile_increment_fn_original_round2
+	.export		_deckswabber_tile_increment_fn_original_round3
+	.export		_deckswabber_tile_increment_fn_original_round4
+	.export		_deckswabber_tile_increment_fn_original_round5
+	.export		_deckswabber_tile_increment_fn_original_round6
+	.export		_deckswabber_tile_increment_fn_original_round7
+	.export		_deckswabber_tile_increment_fn_original_round8
+	.export		_tile_increment_functions
 
 .segment	"DATA"
 
@@ -1682,16 +1700,47 @@ _deckswabber_original_map10:
 	.byte	$00
 	.byte	$00
 _deckswabber_original_starting_coords:
-	.word	$0000
-	.word	$0000
-	.word	$0000
-	.word	$0077
-	.word	$0033
-	.word	$0000
-	.word	$0033
-	.word	$0000
-	.word	$0033
-	.word	$0077
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$77
+	.byte	$33
+	.byte	$00
+	.byte	$33
+	.byte	$00
+	.byte	$33
+	.byte	$77
+_deckswabber_metatiles:
+	.byte	$80
+	.byte	$81
+	.byte	$90
+	.byte	$91
+	.byte	$00
+	.byte	$A8
+	.byte	$A9
+	.byte	$B8
+	.byte	$B9
+	.byte	$00
+	.byte	$A0
+	.byte	$A1
+	.byte	$B0
+	.byte	$B1
+	.byte	$02
+	.byte	$A2
+	.byte	$A3
+	.byte	$B2
+	.byte	$B3
+	.byte	$02
+	.byte	$84
+	.byte	$85
+	.byte	$94
+	.byte	$95
+	.byte	$03
+	.byte	$A4
+	.byte	$A5
+	.byte	$B4
+	.byte	$B5
+	.byte	$03
 .segment	"RODATA"
 .segment	"BANK5"
 _deckswabber_game_screen:
@@ -2030,13 +2079,22 @@ _deckswabber_palette_bg:
 	.byte	$21
 	.byte	$0F
 	.byte	$37
-	.byte	$01
+	.byte	$12
 	.byte	$2B
 	.byte	$39
 	.byte	$37
-	.byte	$37
-	.byte	$30
-	.byte	$0F
+	.byte	$15
+	.byte	$24
+	.byte	$33
+_tile_increment_functions:
+	.addr	_deckswabber_tile_increment_fn_original_round1
+	.addr	_deckswabber_tile_increment_fn_original_round2
+	.addr	_deckswabber_tile_increment_fn_original_round3
+	.addr	_deckswabber_tile_increment_fn_original_round4
+	.addr	_deckswabber_tile_increment_fn_original_round5
+	.addr	_deckswabber_tile_increment_fn_original_round6
+	.addr	_deckswabber_tile_increment_fn_original_round7
+	.addr	_deckswabber_tile_increment_fn_original_round8
 .segment	"RODATA"
 
 ; ---------------------------------------------------------------
@@ -2093,9 +2151,25 @@ _deckswabber_palette_bg:
 ;
 	jne     _end_deckswabber
 ;
+; if (pad1_new & PAD_START) {
+;
+	lda     _pad1_new
+	and     #$10
+	beq     L07AE
+;
+; ++tile_color_increment_type; // Cycle through for debug
+;
+	inc     _eject_L
+;
+; tile_color_increment_type &= 0b111; // 0-7
+;
+	lda     _eject_L
+	and     #$07
+	sta     _eject_L
+;
 ; }
 ;
-	rts
+L07AE:	rts
 
 .endproc
 
@@ -2149,22 +2223,6 @@ _deckswabber_palette_bg:
 	lda     #$00
 	jsr     _vram_write
 ;
-; memfill(cmap, 0, 64 + 64 + 32); // 64 game board tiles + 64 game board enemy presences + 32 characters for text buffering
-;
-	jsr     decsp3
-	lda     #<(_cmap)
-	ldy     #$01
-	sta     (sp),y
-	iny
-	lda     #>(_cmap)
-	sta     (sp),y
-	lda     #$00
-	tay
-	sta     (sp),y
-	tax
-	lda     #$A0
-	jsr     _memfill
-;
 ; set_prg_bank(DECKSWABBER_CODE_BANK);
 ;
 	lda     #$01
@@ -2206,6 +2264,16 @@ _deckswabber_palette_bg:
 	jsr     _rand8
 	ldx     #$00
 	jsr     _srand
+;
+; set_mt_pointer(deckswabber_metatiles);
+;
+	lda     #<(_deckswabber_metatiles)
+	ldx     #>(_deckswabber_metatiles)
+	jsr     _set_mt_pointer
+;
+; begin_deckswabber_level();
+;
+	jsr     _begin_deckswabber_level
 ;
 ; ppu_on_all();
 ;
@@ -2268,16 +2336,7 @@ _deckswabber_palette_bg:
 .segment	"BANK1"
 
 ;
-; player_tile_x = 0;
-;
-	lda     #$00
-	sta     _valrigard+1
-;
-; player_tile_y = 0;
-;
-	sta     _valrigard+3
-;
-; memfill(cmap, 0, 64 + 64 + 32);
+; memfill(cmap, 0, 64 + 64 + 64 + 32); // 64 tile types + 64 tile colors + 64 game board enemy presences + 32 characters for text buffering
 ;
 	jsr     decsp3
 	lda     #<(_cmap)
@@ -2290,8 +2349,33 @@ _deckswabber_palette_bg:
 	tay
 	sta     (sp),y
 	tax
-	lda     #$A0
-	jmp     _memfill
+	lda     #$E0
+	jsr     _memfill
+;
+; player_tile_x = 0;
+;
+	lda     #$00
+	sta     _temp_x
+;
+; player_tile_y = 0;
+;
+	sta     _temp_y
+;
+; tile_color_increment_type = 0; // Set based on some level info
+;
+	sta     _eject_L
+;
+; AsmCallFunctionAtPtrOffsetByIndexVar(tile_increment_functions, eject_L);
+;
+	asl     a
+	tay
+	lda     _tile_increment_functions,y
+	ldx     _tile_increment_functions+1,y
+	jsr     callax
+;
+; deckswabber_redraw_player_tile();
+;
+	jmp     _deckswabber_redraw_player_tile
 
 .endproc
 
@@ -2315,64 +2399,64 @@ _deckswabber_palette_bg:
 ;
 	lda     _pad1_new
 	and     #$08
-	beq     L07F9
-	lda     _valrigard+3
-	beq     L07F9
+	beq     L092B
+	lda     _temp_y
+	beq     L092B
 ;
 ; player_tile_y -= 1;
 ;
-	dec     _valrigard+3
+	dec     _temp_y
 ;
 ; } else if (pad1_new & PAD_DOWN && player_tile_y < DECKSWABBER_TILE_HEIGHT-1) {
 ;
-	jmp     L0805
-L07F9:	lda     _pad1_new
+	jmp     L0937
+L092B:	lda     _pad1_new
 	and     #$04
-	beq     L07FD
-	lda     _valrigard+3
+	beq     L092F
+	lda     _temp_y
 	cmp     #$07
-	bcs     L07FD
+	bcs     L092F
 ;
 ; player_tile_y += 1;
 ;
-	inc     _valrigard+3
+	inc     _temp_y
 ;
 ; } else if (pad1_new & PAD_LEFT && player_tile_x > 0) {
 ;
-	jmp     L0805
-L07FD:	lda     _pad1_new
+	jmp     L0937
+L092F:	lda     _pad1_new
 	and     #$02
-	beq     L0801
-	lda     _valrigard+1
-	beq     L0801
+	beq     L0933
+	lda     _temp_x
+	beq     L0933
 ;
 ; player_tile_x -= 1;
 ;
-	dec     _valrigard+1
+	dec     _temp_x
 ;
 ; } else if (pad1_new & PAD_RIGHT && player_tile_x < DECKSWABBER_TILE_WIDTH-1) {
 ;
-	jmp     L0805
-L0801:	lda     _pad1_new
+	jmp     L0937
+L0933:	lda     _pad1_new
 	and     #$01
-	beq     L07B1
-	lda     _valrigard+1
+	beq     L07E2
+	lda     _temp_x
 	cmp     #$07
-	bcs     L07B1
+	bcs     L07E2
 ;
 ; player_tile_x += 1;
 ;
-	inc     _valrigard+1
+	inc     _temp_x
 ;
 ; temp0 = 1;
 ;
-L0805:	lda     #$01
+L0937:	lda     #$01
 	sta     _temp0
 ;
 ; if (temp0) {
 ;
-L07B1:	lda     _temp0
-	beq     L07BD
+L07E2:	lda     _temp0
+	beq     L07EC
 ;
 ; sfx_play(SFX_JUMP, 0);
 ;
@@ -2386,9 +2470,22 @@ L07B1:	lda     _temp0
 	lda     #$0C
 	sta     _player_frame_timer
 ;
+; AsmCallFunctionAtPtrOffsetByIndexVar(tile_increment_functions, eject_L);
+;
+	lda     _eject_L
+	asl     a
+	tay
+	lda     _tile_increment_functions,y
+	ldx     _tile_increment_functions+1,y
+	jsr     callax
+;
+; deckswabber_redraw_player_tile();
+;
+	jmp     _deckswabber_redraw_player_tile
+;
 ; }
 ;
-L07BD:	rts
+L07EC:	rts
 
 .endproc
 
@@ -2432,7 +2529,7 @@ L07BD:	rts
 ; if (player_frame_timer) {
 ;
 	lda     _player_frame_timer
-	beq     L07CA
+	beq     L0806
 ;
 ; --player_frame_timer;
 ;
@@ -2440,7 +2537,7 @@ L07BD:	rts
 ;
 ; temp0 = player_frame_timer >> 2;
 ;
-L07CA:	lda     _player_frame_timer
+L0806:	lda     _player_frame_timer
 	lsr     a
 	lsr     a
 	sta     _temp0
@@ -2456,7 +2553,7 @@ L07CA:	lda     _player_frame_timer
 ;
 ; temp0 = 64 + (player_tile_x << 4);
 ;
-	lda     _valrigard+1
+	lda     _temp_x
 	asl     a
 	asl     a
 	asl     a
@@ -2467,7 +2564,7 @@ L07CA:	lda     _player_frame_timer
 ;
 ; temp1 = 54 + (player_tile_y << 4);
 ;
-	lda     _valrigard+3
+	lda     _temp_y
 	asl     a
 	asl     a
 	asl     a
@@ -2485,6 +2582,425 @@ L07CA:	lda     _player_frame_timer
 	lda     _temppointer
 	ldx     _temppointer+1
 	jmp     _oam_meta_spr_fast_sub
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ deckswabber_redraw_player_tile (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_redraw_player_tile: near
+
+.segment	"BANK1"
+
+;
+; temp2 = 8 + (player_tile_x << 1);
+;
+	lda     _temp_x
+	asl     a
+	clc
+	adc     #$08
+	sta     _temp2
+;
+; temp3 = 8 + (player_tile_y << 1);
+;
+	lda     _temp_y
+	asl     a
+	clc
+	adc     #$08
+	sta     _temp3
+;
+; address = NTADR_A(temp2, temp3);
+;
+	ldx     #$00
+	lda     _temp3
+	jsr     aslax4
+	stx     tmp1
+	asl     a
+	rol     tmp1
+	sta     ptr1
+	lda     _temp2
+	ora     ptr1
+	pha
+	lda     tmp1
+	ora     #$20
+	tax
+	pla
+	sta     _address
+	stx     _address+1
+;
+; buffer_1_mt(address, temp1);
+;
+	and     #$de
+	sta     _TEMP
+	txa
+	ora     #$40
+	sta     _TEMP+1
+	lda     _temp1
+	jmp     _buffer_1_mt_fast_sub
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ deckswabber_tile_increment_fn_original_round1 (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_tile_increment_fn_original_round1: near
+
+.segment	"BANK1"
+
+;
+; DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+;
+	lda     _temp_y
+	asl     a
+	asl     a
+	asl     a
+	ora     _temp_x
+	sta     _temp0
+;
+; tile_colormap[temp0] = 1;
+;
+	ldy     _temp0
+	lda     #$01
+	sta     _cmap+64,y
+;
+; temp1 = 1;
+;
+	sta     _temp1
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ deckswabber_tile_increment_fn_original_round2 (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_tile_increment_fn_original_round2: near
+
+.segment	"BANK1"
+
+;
+; DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+;
+	lda     _temp_y
+	asl     a
+	asl     a
+	asl     a
+	ora     _temp_x
+	sta     _temp0
+;
+; temp1 = tile_colormap[temp0];
+;
+	ldy     _temp0
+	lda     _cmap+64,y
+	sta     _temp1
+;
+; temp1 ^= 1;
+;
+	eor     #$01
+	sta     _temp1
+;
+; tile_colormap[temp0] = temp1;
+;
+	ldy     _temp0
+	lda     _temp1
+	sta     _cmap+64,y
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ deckswabber_tile_increment_fn_original_round3 (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_tile_increment_fn_original_round3: near
+
+.segment	"BANK1"
+
+;
+; DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+;
+	lda     _temp_y
+	asl     a
+	asl     a
+	asl     a
+	ora     _temp_x
+	sta     _temp0
+;
+; temp1 = tile_colormap[temp0] + 1;
+;
+	ldy     _temp0
+	lda     _cmap+64,y
+	clc
+	adc     #$01
+	sta     _temp1
+;
+; if (temp1 > 2) { temp1 = 1; }
+;
+	cmp     #$03
+	bcc     L086D
+	lda     #$01
+	sta     _temp1
+;
+; tile_colormap[temp0] = temp1;
+;
+L086D:	ldy     _temp0
+	lda     _temp1
+	sta     _cmap+64,y
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ deckswabber_tile_increment_fn_original_round4 (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_tile_increment_fn_original_round4: near
+
+.segment	"BANK1"
+
+;
+; DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+;
+	lda     _temp_y
+	asl     a
+	asl     a
+	asl     a
+	ora     _temp_x
+	sta     _temp0
+;
+; temp1 = tile_colormap[temp0] + 1;
+;
+	ldy     _temp0
+	lda     _cmap+64,y
+	clc
+	adc     #$01
+	sta     _temp1
+;
+; if (temp1 > 2) { temp1 = 0; }
+;
+	cmp     #$03
+	bcc     L0889
+	lda     #$00
+	sta     _temp1
+;
+; tile_colormap[temp0] = temp1;
+;
+L0889:	ldy     _temp0
+	lda     _temp1
+	sta     _cmap+64,y
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ deckswabber_tile_increment_fn_original_round5 (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_tile_increment_fn_original_round5: near
+
+.segment	"BANK1"
+
+;
+; DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+;
+	lda     _temp_y
+	asl     a
+	asl     a
+	asl     a
+	ora     _temp_x
+	sta     _temp0
+;
+; temp1 = tile_colormap[temp0] + 1;
+;
+	ldy     _temp0
+	lda     _cmap+64,y
+	clc
+	adc     #$01
+	sta     _temp1
+;
+; if (temp1 > 3) { temp1 = 2; }
+;
+	cmp     #$04
+	bcc     L08A5
+	lda     #$02
+	sta     _temp1
+;
+; tile_colormap[temp0] = temp1;
+;
+L08A5:	ldy     _temp0
+	lda     _temp1
+	sta     _cmap+64,y
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ deckswabber_tile_increment_fn_original_round6 (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_tile_increment_fn_original_round6: near
+
+.segment	"BANK1"
+
+;
+; DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+;
+	lda     _temp_y
+	asl     a
+	asl     a
+	asl     a
+	ora     _temp_x
+	sta     _temp0
+;
+; temp1 = tile_colormap[temp0] + 1;
+;
+	ldy     _temp0
+	lda     _cmap+64,y
+	clc
+	adc     #$01
+	sta     _temp1
+;
+; if (temp1 > 3) { temp1 = 0; }
+;
+	cmp     #$04
+	bcc     L08C1
+	lda     #$00
+	sta     _temp1
+;
+; tile_colormap[temp0] = temp1;
+;
+L08C1:	ldy     _temp0
+	lda     _temp1
+	sta     _cmap+64,y
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ deckswabber_tile_increment_fn_original_round7 (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_tile_increment_fn_original_round7: near
+
+.segment	"BANK1"
+
+;
+; DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+;
+	lda     _temp_y
+	asl     a
+	asl     a
+	asl     a
+	ora     _temp_x
+	sta     _temp0
+;
+; temp1 = tile_colormap[temp0] + 1;
+;
+	ldy     _temp0
+	lda     _cmap+64,y
+	clc
+	adc     #$01
+	sta     _temp1
+;
+; if (temp1 > 4) { temp1 = 3; }
+;
+	cmp     #$05
+	bcc     L08DD
+	lda     #$03
+	sta     _temp1
+;
+; tile_colormap[temp0] = temp1;
+;
+L08DD:	ldy     _temp0
+	lda     _temp1
+	sta     _cmap+64,y
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ deckswabber_tile_increment_fn_original_round8 (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_tile_increment_fn_original_round8: near
+
+.segment	"BANK1"
+
+;
+; DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+;
+	lda     _temp_y
+	asl     a
+	asl     a
+	asl     a
+	ora     _temp_x
+	sta     _temp0
+;
+; temp1 = tile_colormap[temp0] + 1;
+;
+	ldy     _temp0
+	lda     _cmap+64,y
+	clc
+	adc     #$01
+	sta     _temp1
+;
+; if (temp1 > 4) { temp1 = 0; }
+;
+	cmp     #$05
+	bcc     L08F9
+	lda     #$00
+	sta     _temp1
+;
+; tile_colormap[temp0] = temp1;
+;
+L08F9:	ldy     _temp0
+	lda     _temp1
+	sta     _cmap+64,y
+;
+; }
+;
+	rts
 
 .endproc
 

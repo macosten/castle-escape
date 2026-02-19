@@ -679,7 +679,7 @@ const unsigned char deckswabber_original_map10[] = {
 };
 
 // Bitpacked tile x,y
-const deckswabber_original_starting_coords[] = {
+const unsigned char deckswabber_original_starting_coords[] = {
     0x00,
     0x00,
     0x00,
@@ -690,6 +690,15 @@ const deckswabber_original_starting_coords[] = {
     0x00,
     0x33,
     0x77,
+};
+
+const unsigned char deckswabber_metatiles[] = {
+    0x80, 0x81, 0x90, 0x91, 0, // Brown board, plain
+    0xA8, 0xA9, 0xB8, 0xB9, 0, // Yellow board, plain
+    0xA0, 0xA1, 0xB0, 0xB1, 2, // Blue board, wavy
+    0xA2, 0xA3, 0xB2, 0xB3, 2, // Green board, wavy
+    0x84, 0x85, 0x94, 0x95, 3, // Red board, chevron
+    0xA4, 0xA5, 0xB4, 0xB5, 3, // Pink board, chevron
 };
 
 #pragma rodata-name(pop);
