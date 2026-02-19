@@ -25,10 +25,10 @@ const unsigned char blumaroo_jump1[] = {
 };
 
 const unsigned char blumaroo_jump2[] = {
-    0, 8, 0x14, 0,
-    8, 8, 0x15, 0,
-    0,16, 0x24, 0,
-    8,16, 0x25, 0,
+    0, 8, 0x04, 0,
+    8, 8, 0x05, 0,
+    0,16, 0x14, 0,
+    8,16, 0x15, 0,
     128
 };
 
@@ -475,6 +475,7 @@ const unsigned char * const blumaroo_jump_animation[] = {
     blumaroo_idle,
     blumaroo_jump2,
     blumaroo_jump1,
+    // blumaroo_jump1,
 };
 
 const unsigned char * const techo_jump_animation[] = {

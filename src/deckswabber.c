@@ -30,7 +30,6 @@ ZEROPAGE_EXTERN(int, address);
 ZEROPAGE_EXTERN(unsigned char, index);
 ZEROPAGE_EXTERN(unsigned char, x);
 ZEROPAGE_EXTERN(unsigned char, y);
-ZEROPAGE_EXTERN(Player, player2);
 ZEROPAGE_EXTERN(Hitbox, hitbox);
 ZEROPAGE_EXTERN(Hitbox, hitbox2);
 ZEROPAGE_EXTERN(const unsigned char *, temppointer);
@@ -45,10 +44,19 @@ ZEROPAGE_EXTERN(unsigned char, shuffle_offset);
 ZEROPAGE_EXTERN(unsigned char, shuffle_maximum);
 ZEROPAGE_EXTERN(unsigned char, temp_x);
 ZEROPAGE_EXTERN(unsigned char, temp_y);
+ZEROPAGE_EXTERN(unsigned char, player_frame_timer);
 
 extern unsigned char cmap[];
+#define tilemap (cmap)
+#define enemymap (cmap + 64)
+#define chrbuffer (cmap + 128)
+
+ZEROPAGE_EXTERN(Player, valrigard);
+#define player_tile_x (high_byte(valrigard.x))
+#define player_tile_y (high_byte(valrigard.y))
 
 extern unsigned int deckswabber_1p_high_score;
+extern unsigned int previous_score;
 
 #pragma rodata-name(push, "BANK1")
 
@@ -85,6 +93,13 @@ void begin_deckswabber(void);
 void begin_deckswabber_sub(void);
 void end_deckswabber(void);
 
+void begin_deckswabber_level(void);
+
+void deckswabber_player_movement(void);
+
+void deckswabber_draw_sprites(void);
+void deckswabber_draw_player(void);
+
 void begin_deckswabber(void) {
     // Change the menu screen so that it becomes the game screen...
     pal_fade_to(4, 0);
@@ -95,7 +110,7 @@ void begin_deckswabber(void) {
     temppointer = deckswabber_game_screen;
     LZG_decode(temppointer, cmap);
     vram_write(cmap, 32*32);
-    memfill(cmap, 0, 32); // For character buffering later on when we want spaces
+    memfill(cmap, 0, 64 + 64 + 32); // 64 game board tiles + 64 game board enemy presences + 32 characters for text buffering
 
     set_prg_bank(DECKSWABBER_CODE_BANK);
     begin_deckswabber_sub();
@@ -115,6 +130,20 @@ void begin_deckswabber_sub(void) {
     pal_bright(4);
 }
 
+void begin_deckswabber_level(void) {
+    // X and Y coordinates for this game will be in tiles; the drawing routines will figure out where they belong on-screen...
+    player_tile_x = 0;
+    player_tile_y = 0;
+    // Reset tilemap, enemymap, and chrbuffer
+    memfill(cmap, 0, 64 + 64 + 32);
+
+    // Reset all PPU palette entries on the board
+    // ...
+
+    // (Re)draw the "goal" indicator, if applicable?
+    // ...
+}
+
 void game_deckswabber(void) {
     pad1 = pad_poll(0); // read the first controller
     pad1_new = get_pad_new(0);
@@ -125,6 +154,10 @@ void game_deckswabber(void) {
 
     // If not paused:
     set_prg_bank(DECKSWABBER_CODE_BANK);
+
+    deckswabber_player_movement();
+
+    deckswabber_draw_sprites();
 
     if (pad1 & PAD_B) {
         end_deckswabber();
@@ -139,6 +172,47 @@ void end_deckswabber(void) {
     switch_menu();
     music_play(MENU_SONG);
     pal_bright(4);
+}
+
+void deckswabber_player_movement(void) {
+    temp0 = 0;
+    if (pad1_new & PAD_UP && player_tile_y > 0) {
+        player_tile_y -= 1;
+        temp0 = 1;
+    } else if (pad1_new & PAD_DOWN && player_tile_y < DECKSWABBER_TILE_HEIGHT-1) {
+        player_tile_y += 1;
+        temp0 = 1;
+    } else if (pad1_new & PAD_LEFT && player_tile_x > 0) {
+        player_tile_x -= 1;
+        temp0 = 1;
+    } else if (pad1_new & PAD_RIGHT && player_tile_x < DECKSWABBER_TILE_WIDTH-1) {
+        player_tile_x += 1;
+        temp0 = 1;
+    }
+    if (temp0) {
+        sfx_play(SFX_JUMP, 0);
+        player_frame_timer = 12;
+    }
+}
+
+void deckswabber_draw_sprites(void) {
+    set_prg_bank(DECKSWABBER_METASPRITE_BANK);
+    oam_clear();
+
+    // This will need to be made to draw things from "front" to "back", but for now:
+    deckswabber_draw_player();
+}
+
+void deckswabber_draw_player(void) {
+    if (player_frame_timer) {
+        --player_frame_timer;
+    }
+    temp0 = player_frame_timer >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, blumaroo_jump_animation, temp0);
+
+    temp0 = 64 + (player_tile_x << 4);
+    temp1 = 54 + (player_tile_y << 4);
+    oam_meta_spr(temp0, temp1, temppointer);
 }
 
 #pragma code-name(pop)

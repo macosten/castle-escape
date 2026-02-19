@@ -18,7 +18,11 @@
 	.import		_pal_bright
 	.import		_ppu_wait_nmi
 	.import		_ppu_on_all
+	.import		_oam_clear
+	.importzp	_TEMP
+	.import		_oam_meta_spr_fast_sub
 	.import		_music_play
+	.import		_sfx_play
 	.import		_pad_poll
 	.import		_rand8
 	.import		_vram_write
@@ -91,12 +95,16 @@
 	.export		_mynci_jump_animation
 	.export		_cannon_jump_animation
 	.export		_deckswabber_game_screen
+	.importzp	_temp0
+	.importzp	_temp1
 	.importzp	_pad1
 	.importzp	_pad1_new
 	.importzp	_temppointer
 	.importzp	_game_mode
 	.importzp	_menu
+	.importzp	_player_frame_timer
 	.import		_cmap
+	.importzp	_valrigard
 	.export		_deckswabber_palette_sp
 	.export		_deckswabber_palette_bg
 	.import		_set_prg_bank
@@ -107,6 +115,10 @@
 	.export		_begin_deckswabber
 	.export		_begin_deckswabber_sub
 	.export		_end_deckswabber
+	.export		_begin_deckswabber_level
+	.export		_deckswabber_player_movement
+	.export		_deckswabber_draw_sprites
+	.export		_deckswabber_draw_player
 
 .segment	"DATA"
 
@@ -186,19 +198,19 @@ _blumaroo_jump1:
 _blumaroo_jump2:
 	.byte	$00
 	.byte	$08
+	.byte	$04
+	.byte	$00
+	.byte	$08
+	.byte	$08
+	.byte	$05
+	.byte	$00
+	.byte	$00
+	.byte	$10
 	.byte	$14
 	.byte	$00
 	.byte	$08
-	.byte	$08
+	.byte	$10
 	.byte	$15
-	.byte	$00
-	.byte	$00
-	.byte	$10
-	.byte	$24
-	.byte	$00
-	.byte	$08
-	.byte	$10
-	.byte	$25
 	.byte	$00
 	.byte	$80
 _techo_idle:
@@ -1711,6 +1723,14 @@ _deckswabber_palette_bg:
 	lda     #$01
 	jsr     _set_prg_bank
 ;
+; deckswabber_player_movement();
+;
+	jsr     _deckswabber_player_movement
+;
+; deckswabber_draw_sprites();
+;
+	jsr     _deckswabber_draw_sprites
+;
 ; if (pad1 & PAD_B) {
 ;
 	lda     _pad1
@@ -1777,7 +1797,7 @@ _deckswabber_palette_bg:
 	lda     #$00
 	jsr     _vram_write
 ;
-; memfill(cmap, 0, 32); // For character buffering later on when we want spaces
+; memfill(cmap, 0, 64 + 64 + 32); // 64 game board tiles + 64 game board enemy presences + 32 characters for text buffering
 ;
 	jsr     decsp3
 	lda     #<(_cmap)
@@ -1790,7 +1810,7 @@ _deckswabber_palette_bg:
 	tay
 	sta     (sp),y
 	tax
-	lda     #$20
+	lda     #$A0
 	jsr     _memfill
 ;
 ; set_prg_bank(DECKSWABBER_CODE_BANK);
@@ -1882,6 +1902,237 @@ _deckswabber_palette_bg:
 ;
 	lda     #$04
 	jmp     _pal_bright
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ begin_deckswabber_level (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_begin_deckswabber_level: near
+
+.segment	"BANK1"
+
+;
+; player_tile_x = 0;
+;
+	lda     #$00
+	sta     _valrigard+1
+;
+; player_tile_y = 0;
+;
+	sta     _valrigard+3
+;
+; memfill(cmap, 0, 64 + 64 + 32);
+;
+	jsr     decsp3
+	lda     #<(_cmap)
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     #>(_cmap)
+	sta     (sp),y
+	lda     #$00
+	tay
+	sta     (sp),y
+	tax
+	lda     #$A0
+	jmp     _memfill
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ deckswabber_player_movement (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_player_movement: near
+
+.segment	"BANK1"
+
+;
+; temp0 = 0;
+;
+	lda     #$00
+	sta     _temp0
+;
+; if (pad1_new & PAD_UP && player_tile_y > 0) {
+;
+	lda     _pad1_new
+	and     #$08
+	beq     L06AF
+	lda     _valrigard+3
+	beq     L06AF
+;
+; player_tile_y -= 1;
+;
+	dec     _valrigard+3
+;
+; } else if (pad1_new & PAD_DOWN && player_tile_y < DECKSWABBER_TILE_HEIGHT-1) {
+;
+	jmp     L06BB
+L06AF:	lda     _pad1_new
+	and     #$04
+	beq     L06B3
+	lda     _valrigard+3
+	cmp     #$07
+	bcs     L06B3
+;
+; player_tile_y += 1;
+;
+	inc     _valrigard+3
+;
+; } else if (pad1_new & PAD_LEFT && player_tile_x > 0) {
+;
+	jmp     L06BB
+L06B3:	lda     _pad1_new
+	and     #$02
+	beq     L06B7
+	lda     _valrigard+1
+	beq     L06B7
+;
+; player_tile_x -= 1;
+;
+	dec     _valrigard+1
+;
+; } else if (pad1_new & PAD_RIGHT && player_tile_x < DECKSWABBER_TILE_WIDTH-1) {
+;
+	jmp     L06BB
+L06B7:	lda     _pad1_new
+	and     #$01
+	beq     L0667
+	lda     _valrigard+1
+	cmp     #$07
+	bcs     L0667
+;
+; player_tile_x += 1;
+;
+	inc     _valrigard+1
+;
+; temp0 = 1;
+;
+L06BB:	lda     #$01
+	sta     _temp0
+;
+; if (temp0) {
+;
+L0667:	lda     _temp0
+	beq     L0673
+;
+; sfx_play(SFX_JUMP, 0);
+;
+	lda     #$08
+	jsr     pusha
+	lda     #$00
+	jsr     _sfx_play
+;
+; player_frame_timer = 12;
+;
+	lda     #$0C
+	sta     _player_frame_timer
+;
+; }
+;
+L0673:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ deckswabber_draw_sprites (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_draw_sprites: near
+
+.segment	"BANK1"
+
+;
+; set_prg_bank(DECKSWABBER_METASPRITE_BANK);
+;
+	lda     #$01
+	jsr     _set_prg_bank
+;
+; oam_clear();
+;
+	jsr     _oam_clear
+;
+; deckswabber_draw_player();
+;
+	jmp     _deckswabber_draw_player
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ deckswabber_draw_player (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_draw_player: near
+
+.segment	"BANK1"
+
+;
+; if (player_frame_timer) {
+;
+	lda     _player_frame_timer
+	beq     L0680
+;
+; --player_frame_timer;
+;
+	dec     _player_frame_timer
+;
+; temp0 = player_frame_timer >> 2;
+;
+L0680:	lda     _player_frame_timer
+	lsr     a
+	lsr     a
+	sta     _temp0
+;
+; AsmSet2ByteFromPtrAtIndexVar(temppointer, blumaroo_jump_animation, temp0);
+;
+	asl     a
+	tay
+	lda     _blumaroo_jump_animation,y
+	sta     _temppointer
+	lda     _blumaroo_jump_animation+1,y
+	sta     _temppointer+1
+;
+; temp0 = 64 + (player_tile_x << 4);
+;
+	lda     _valrigard+1
+	asl     a
+	asl     a
+	asl     a
+	asl     a
+	clc
+	adc     #$40
+	sta     _temp0
+;
+; temp1 = 54 + (player_tile_y << 4);
+;
+	lda     _valrigard+3
+	asl     a
+	asl     a
+	asl     a
+	asl     a
+	clc
+	adc     #$36
+	sta     _temp1
+;
+; oam_meta_spr(temp0, temp1, temppointer);
+;
+	lda     _temp0
+	sta     _TEMP+5
+	lda     _temp1
+	sta     _TEMP+6
+	lda     _temppointer
+	ldx     _temppointer+1
+	jmp     _oam_meta_spr_fast_sub
 
 .endproc
 
