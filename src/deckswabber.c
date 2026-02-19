@@ -209,7 +209,6 @@ void deckswabber_draw_player(void) {
     }
     temp0 = player_frame_timer >> 2;
     AsmSet2ByteFromPtrAtIndexVar(temppointer, blumaroo_jump_animation, temp0);
-
     temp0 = 64 + (player_tile_x << 4);
     temp1 = 54 + (player_tile_y << 4);
     oam_meta_spr(temp0, temp1, temppointer);

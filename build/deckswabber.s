@@ -94,6 +94,17 @@
 	.export		_dirt_bomb_square_jump_animation
 	.export		_mynci_jump_animation
 	.export		_cannon_jump_animation
+	.export		_deckswabber_original_map1
+	.export		_deckswabber_original_map2
+	.export		_deckswabber_original_map3
+	.export		_deckswabber_original_map4
+	.export		_deckswabber_original_map5
+	.export		_deckswabber_original_map6
+	.export		_deckswabber_original_map7
+	.export		_deckswabber_original_map8
+	.export		_deckswabber_original_map9
+	.export		_deckswabber_original_map10
+	.export		_deckswabber_original_starting_coords
 	.export		_deckswabber_game_screen
 	.importzp	_temp0
 	.importzp	_temp1
@@ -1340,6 +1351,347 @@ _cannon_jump_animation:
 	.addr	_cannon_idle
 	.addr	_cannon_jump2
 	.addr	_cannon_jump1
+_deckswabber_original_map1:
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+_deckswabber_original_map2:
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$10
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$10
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+_deckswabber_original_map3:
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+_deckswabber_original_map4:
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$01
+	.byte	$10
+	.byte	$10
+	.byte	$01
+	.byte	$01
+	.byte	$10
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+_deckswabber_original_map5:
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$01
+	.byte	$10
+	.byte	$01
+	.byte	$10
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$10
+	.byte	$01
+	.byte	$10
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+_deckswabber_original_map6:
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+_deckswabber_original_map7:
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+_deckswabber_original_map8:
+	.byte	$00
+	.byte	$01
+	.byte	$10
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$10
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$10
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$10
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$10
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$10
+	.byte	$00
+_deckswabber_original_map9:
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$10
+	.byte	$01
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$10
+	.byte	$01
+	.byte	$10
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+_deckswabber_original_map10:
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$01
+	.byte	$01
+	.byte	$11
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$00
+	.byte	$00
+	.byte	$10
+	.byte	$01
+	.byte	$11
+	.byte	$10
+	.byte	$10
+	.byte	$00
+	.byte	$00
+	.byte	$00
+	.byte	$00
+_deckswabber_original_starting_coords:
+	.word	$0000
+	.word	$0000
+	.word	$0000
+	.word	$0077
+	.word	$0033
+	.word	$0000
+	.word	$0033
+	.word	$0000
+	.word	$0033
+	.word	$0077
 .segment	"RODATA"
 .segment	"BANK5"
 _deckswabber_game_screen:
@@ -1963,9 +2315,9 @@ _deckswabber_palette_bg:
 ;
 	lda     _pad1_new
 	and     #$08
-	beq     L06AF
+	beq     L07F9
 	lda     _valrigard+3
-	beq     L06AF
+	beq     L07F9
 ;
 ; player_tile_y -= 1;
 ;
@@ -1973,13 +2325,13 @@ _deckswabber_palette_bg:
 ;
 ; } else if (pad1_new & PAD_DOWN && player_tile_y < DECKSWABBER_TILE_HEIGHT-1) {
 ;
-	jmp     L06BB
-L06AF:	lda     _pad1_new
+	jmp     L0805
+L07F9:	lda     _pad1_new
 	and     #$04
-	beq     L06B3
+	beq     L07FD
 	lda     _valrigard+3
 	cmp     #$07
-	bcs     L06B3
+	bcs     L07FD
 ;
 ; player_tile_y += 1;
 ;
@@ -1987,12 +2339,12 @@ L06AF:	lda     _pad1_new
 ;
 ; } else if (pad1_new & PAD_LEFT && player_tile_x > 0) {
 ;
-	jmp     L06BB
-L06B3:	lda     _pad1_new
+	jmp     L0805
+L07FD:	lda     _pad1_new
 	and     #$02
-	beq     L06B7
+	beq     L0801
 	lda     _valrigard+1
-	beq     L06B7
+	beq     L0801
 ;
 ; player_tile_x -= 1;
 ;
@@ -2000,13 +2352,13 @@ L06B3:	lda     _pad1_new
 ;
 ; } else if (pad1_new & PAD_RIGHT && player_tile_x < DECKSWABBER_TILE_WIDTH-1) {
 ;
-	jmp     L06BB
-L06B7:	lda     _pad1_new
+	jmp     L0805
+L0801:	lda     _pad1_new
 	and     #$01
-	beq     L0667
+	beq     L07B1
 	lda     _valrigard+1
 	cmp     #$07
-	bcs     L0667
+	bcs     L07B1
 ;
 ; player_tile_x += 1;
 ;
@@ -2014,13 +2366,13 @@ L06B7:	lda     _pad1_new
 ;
 ; temp0 = 1;
 ;
-L06BB:	lda     #$01
+L0805:	lda     #$01
 	sta     _temp0
 ;
 ; if (temp0) {
 ;
-L0667:	lda     _temp0
-	beq     L0673
+L07B1:	lda     _temp0
+	beq     L07BD
 ;
 ; sfx_play(SFX_JUMP, 0);
 ;
@@ -2036,7 +2388,7 @@ L0667:	lda     _temp0
 ;
 ; }
 ;
-L0673:	rts
+L07BD:	rts
 
 .endproc
 
@@ -2080,7 +2432,7 @@ L0673:	rts
 ; if (player_frame_timer) {
 ;
 	lda     _player_frame_timer
-	beq     L0680
+	beq     L07CA
 ;
 ; --player_frame_timer;
 ;
@@ -2088,7 +2440,7 @@ L0673:	rts
 ;
 ; temp0 = player_frame_timer >> 2;
 ;
-L0680:	lda     _player_frame_timer
+L07CA:	lda     _player_frame_timer
 	lsr     a
 	lsr     a
 	sta     _temp0
