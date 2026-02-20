@@ -1,6 +1,9 @@
 //NES hardware-dependent functions by Shiru (shiru@mail.ru)
 //Feel free to do anything you want with this code, consider it Public Domain
 
+// macosten's version, 2026-02
+// Added ATADR macros.
+
 // macosten's version, 2020-11
 // Removed stack usage from oam functions completely. They should be even faster now.
 
@@ -346,6 +349,18 @@ void __fastcall__ delay(unsigned char frames);
 #define NTADR_B(x,y) 	(NAMETABLE_B|(((y)<<5)|(x)))
 #define NTADR_C(x,y) 	(NAMETABLE_C|(((y)<<5)|(x)))
 #define NTADR_D(x,y) 	(NAMETABLE_D|(((y)<<5)|(x)))
+
+#define ATTRIBTABLE_A	0x23C0
+#define ATTRIBTABLE_B	0x27C0
+#define ATTRIBTABLE_C	0x2BC0
+#define ATTRIBTABLE_D	0x2FC0
+
+// Macro to calculate attribute table address from X,Y.
+// Note that X/Y should both be no greater than 7.
+#define ATADR_A(x,y)	(ATTRIBTABLE_A|(((y) << 3)|(x)))
+#define ATADR_B(x,y)	(ATTRIBTABLE_B|(((y) << 3)|(x)))
+#define ATADR_C(x,y)	(ATTRIBTABLE_C|(((y) << 3)|(x)))
+#define ATADR_D(x,y)	(ATTRIBTABLE_D|(((y) << 3)|(x)))
 
 //macro to get MSB and LSB
 

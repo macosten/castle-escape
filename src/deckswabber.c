@@ -326,6 +326,52 @@ void deckswabber_redraw_player_tile(void) {
     temp3 = 8 + (player_tile_y << 1);
     address = NTADR_A(temp2, temp3);
     buffer_1_mt(address, temp1);
+
+    // Figure out the attribute table update address
+    address = ATTRIBTABLE_A;
+    
+    temp2 = 2 + (player_tile_x >> 1);
+    temp3 = 2 + (player_tile_y >> 1);
+
+    temp0 = (temp3 << 3) + temp2;
+    address += temp0;
+
+    // Figure out what the new attribute byte *should* be
+    temp2 = player_tile_x | 1; // Ensure we start on the bottom-right metatile for this attribute table byte
+    temp3 = player_tile_y | 1;
+
+    temp4 = 0; // Destination byte buffer
+
+    // Work from MSB to LSB
+    // Bottom-right (bits 7 and 6)
+    DeckswabberGetTileIndex(temp0, temp2, temp3);
+    temp0 = tile_colormap[temp0];
+    temp4 = deckswabber_metatile_palettes[temp0];
+
+    // bottom-left (bits 5 and 4)
+    --temp2;
+    DeckswabberGetTileIndex(temp0, temp2, temp3);
+    temp0 = tile_colormap[temp0];
+    temp4 <<= 2;
+    temp4 |= deckswabber_metatile_palettes[temp0];
+
+    // Top-right (bits 3 and 2)
+    ++temp2;
+    --temp3;
+    DeckswabberGetTileIndex(temp0, temp2, temp3);
+    temp0 = tile_colormap[temp0];
+    temp4 <<= 2;
+    temp4 |= deckswabber_metatile_palettes[temp0];
+
+    // Bottom-left (bits 1 and 0)
+    --temp2;
+    DeckswabberGetTileIndex(temp0, temp2, temp3);
+    temp0 = tile_colormap[temp0];
+    temp4 <<= 2;
+    temp4 |= deckswabber_metatile_palettes[temp0];
+
+    // Write it!
+    one_vram_buffer(temp4, address);
 }
 
 #pragma code-name(pop)

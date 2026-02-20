@@ -701,6 +701,16 @@ const unsigned char deckswabber_metatiles[] = {
     0xA4, 0xA5, 0xB4, 0xB5, 3, // Pink board, chevron
 };
 
+// Code using these values assumes all will be 0...3
+const unsigned char deckswabber_metatile_palettes[] = {
+    0,
+    0,
+    2,
+    2,
+    3,
+    3,
+};
+
 #pragma rodata-name(pop);
 
 #pragma rodata-name(push, "BANK5")

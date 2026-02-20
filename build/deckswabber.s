@@ -11,6 +11,7 @@
 	.importzp	tmp1, tmp2, tmp3, tmp4, ptr1, ptr2, ptr3, ptr4
 	.macpack	longbranch
 	.import		_srand
+	.import		_one_vram_buffer
 	.import		_clear_vram_buffer
 	.import		_get_pad_new
 	.import		_pal_fade_to
@@ -108,11 +109,13 @@
 	.export		_deckswabber_original_map10
 	.export		_deckswabber_original_starting_coords
 	.export		_deckswabber_metatiles
+	.export		_deckswabber_metatile_palettes
 	.export		_deckswabber_game_screen
 	.importzp	_temp0
 	.importzp	_temp1
 	.importzp	_temp2
 	.importzp	_temp3
+	.importzp	_temp4
 	.importzp	_pad1
 	.importzp	_pad1_new
 	.importzp	_address
@@ -1741,6 +1744,13 @@ _deckswabber_metatiles:
 	.byte	$B4
 	.byte	$B5
 	.byte	$03
+_deckswabber_metatile_palettes:
+	.byte	$00
+	.byte	$00
+	.byte	$02
+	.byte	$02
+	.byte	$03
+	.byte	$03
 .segment	"RODATA"
 .segment	"BANK5"
 _deckswabber_game_screen:
@@ -2155,7 +2165,7 @@ _tile_increment_functions:
 ;
 	lda     _pad1_new
 	and     #$10
-	beq     L07AE
+	beq     L07B4
 ;
 ; ++tile_color_increment_type; // Cycle through for debug
 ;
@@ -2169,7 +2179,7 @@ _tile_increment_functions:
 ;
 ; }
 ;
-L07AE:	rts
+L07B4:	rts
 
 .endproc
 
@@ -2399,9 +2409,9 @@ L07AE:	rts
 ;
 	lda     _pad1_new
 	and     #$08
-	beq     L092B
+	beq     L09AB
 	lda     _temp_y
-	beq     L092B
+	beq     L09AB
 ;
 ; player_tile_y -= 1;
 ;
@@ -2409,13 +2419,13 @@ L07AE:	rts
 ;
 ; } else if (pad1_new & PAD_DOWN && player_tile_y < DECKSWABBER_TILE_HEIGHT-1) {
 ;
-	jmp     L0937
-L092B:	lda     _pad1_new
+	jmp     L09B7
+L09AB:	lda     _pad1_new
 	and     #$04
-	beq     L092F
+	beq     L09AF
 	lda     _temp_y
 	cmp     #$07
-	bcs     L092F
+	bcs     L09AF
 ;
 ; player_tile_y += 1;
 ;
@@ -2423,12 +2433,12 @@ L092B:	lda     _pad1_new
 ;
 ; } else if (pad1_new & PAD_LEFT && player_tile_x > 0) {
 ;
-	jmp     L0937
-L092F:	lda     _pad1_new
+	jmp     L09B7
+L09AF:	lda     _pad1_new
 	and     #$02
-	beq     L0933
+	beq     L09B3
 	lda     _temp_x
-	beq     L0933
+	beq     L09B3
 ;
 ; player_tile_x -= 1;
 ;
@@ -2436,13 +2446,13 @@ L092F:	lda     _pad1_new
 ;
 ; } else if (pad1_new & PAD_RIGHT && player_tile_x < DECKSWABBER_TILE_WIDTH-1) {
 ;
-	jmp     L0937
-L0933:	lda     _pad1_new
+	jmp     L09B7
+L09B3:	lda     _pad1_new
 	and     #$01
-	beq     L07E2
+	beq     L07E8
 	lda     _temp_x
 	cmp     #$07
-	bcs     L07E2
+	bcs     L07E8
 ;
 ; player_tile_x += 1;
 ;
@@ -2450,13 +2460,13 @@ L0933:	lda     _pad1_new
 ;
 ; temp0 = 1;
 ;
-L0937:	lda     #$01
+L09B7:	lda     #$01
 	sta     _temp0
 ;
 ; if (temp0) {
 ;
-L07E2:	lda     _temp0
-	beq     L07EC
+L07E8:	lda     _temp0
+	beq     L07F2
 ;
 ; sfx_play(SFX_JUMP, 0);
 ;
@@ -2485,7 +2495,7 @@ L07E2:	lda     _temp0
 ;
 ; }
 ;
-L07EC:	rts
+L07F2:	rts
 
 .endproc
 
@@ -2529,7 +2539,7 @@ L07EC:	rts
 ; if (player_frame_timer) {
 ;
 	lda     _player_frame_timer
-	beq     L0806
+	beq     L080C
 ;
 ; --player_frame_timer;
 ;
@@ -2537,7 +2547,7 @@ L07EC:	rts
 ;
 ; temp0 = player_frame_timer >> 2;
 ;
-L0806:	lda     _player_frame_timer
+L080C:	lda     _player_frame_timer
 	lsr     a
 	lsr     a
 	sta     _temp0
@@ -2639,7 +2649,196 @@ L0806:	lda     _player_frame_timer
 	ora     #$40
 	sta     _TEMP+1
 	lda     _temp1
-	jmp     _buffer_1_mt_fast_sub
+	jsr     _buffer_1_mt_fast_sub
+;
+; address = ATTRIBTABLE_A;
+;
+	ldx     #$23
+	lda     #$C0
+	sta     _address
+	stx     _address+1
+;
+; temp2 = 2 + (player_tile_x >> 1);
+;
+	lda     _temp_x
+	lsr     a
+	clc
+	adc     #$02
+	sta     _temp2
+;
+; temp3 = 2 + (player_tile_y >> 1);
+;
+	lda     _temp_y
+	lsr     a
+	clc
+	adc     #$02
+	sta     _temp3
+;
+; temp0 = (temp3 << 3) + temp2;
+;
+	asl     a
+	asl     a
+	asl     a
+	clc
+	adc     _temp2
+	sta     _temp0
+;
+; address += temp0;
+;
+	clc
+	adc     _address
+	sta     _address
+	lda     #$00
+	adc     _address+1
+	sta     _address+1
+;
+; temp2 = player_tile_x | 1; // Ensure we start on the bottom-right metatile for this attribute table byte
+;
+	lda     _temp_x
+	ora     #$01
+	sta     _temp2
+;
+; temp3 = player_tile_y | 1;
+;
+	lda     _temp_y
+	ora     #$01
+	sta     _temp3
+;
+; temp4 = 0; // Destination byte buffer
+;
+	lda     #$00
+	sta     _temp4
+;
+; DeckswabberGetTileIndex(temp0, temp2, temp3);
+;
+	lda     _temp3
+	asl     a
+	asl     a
+	asl     a
+	ora     _temp2
+	sta     _temp0
+;
+; temp0 = tile_colormap[temp0];
+;
+	ldy     _temp0
+	lda     _cmap+64,y
+	sta     _temp0
+;
+; temp4 = deckswabber_metatile_palettes[temp0];
+;
+	ldy     _temp0
+	lda     _deckswabber_metatile_palettes,y
+	sta     _temp4
+;
+; --temp2;
+;
+	dec     _temp2
+;
+; DeckswabberGetTileIndex(temp0, temp2, temp3);
+;
+	lda     _temp3
+	asl     a
+	asl     a
+	asl     a
+	ora     _temp2
+	sta     _temp0
+;
+; temp0 = tile_colormap[temp0];
+;
+	ldy     _temp0
+	lda     _cmap+64,y
+	sta     _temp0
+;
+; temp4 <<= 2;
+;
+	lda     _temp4
+	asl     a
+	asl     a
+	sta     _temp4
+;
+; temp4 |= deckswabber_metatile_palettes[temp0];
+;
+	ldy     _temp0
+	lda     _deckswabber_metatile_palettes,y
+	ora     _temp4
+	sta     _temp4
+;
+; ++temp2;
+;
+	inc     _temp2
+;
+; --temp3;
+;
+	dec     _temp3
+;
+; DeckswabberGetTileIndex(temp0, temp2, temp3);
+;
+	lda     _temp3
+	asl     a
+	asl     a
+	asl     a
+	ora     _temp2
+	sta     _temp0
+;
+; temp0 = tile_colormap[temp0];
+;
+	ldy     _temp0
+	lda     _cmap+64,y
+	sta     _temp0
+;
+; temp4 <<= 2;
+;
+	lda     _temp4
+	asl     a
+	asl     a
+	sta     _temp4
+;
+; temp4 |= deckswabber_metatile_palettes[temp0];
+;
+	ldy     _temp0
+	lda     _deckswabber_metatile_palettes,y
+	ora     _temp4
+	sta     _temp4
+;
+; --temp2;
+;
+	dec     _temp2
+;
+; DeckswabberGetTileIndex(temp0, temp2, temp3);
+;
+	lda     _temp3
+	asl     a
+	asl     a
+	asl     a
+	ora     _temp2
+	sta     _temp0
+;
+; temp0 = tile_colormap[temp0];
+;
+	ldy     _temp0
+	lda     _cmap+64,y
+	sta     _temp0
+;
+; temp4 <<= 2;
+;
+	lda     _temp4
+	asl     a
+	asl     a
+	sta     _temp4
+;
+; temp4 |= deckswabber_metatile_palettes[temp0];
+;
+	ldy     _temp0
+	lda     _deckswabber_metatile_palettes,y
+	ora     _temp4
+	sta     _temp4
+;
+; one_vram_buffer(temp4, address);
+;
+	jsr     pusha
+	lda     _address
+	ldx     _address+1
+	jmp     _one_vram_buffer
 
 .endproc
 
@@ -2753,13 +2952,13 @@ L0806:	lda     _player_frame_timer
 ; if (temp1 > 2) { temp1 = 1; }
 ;
 	cmp     #$03
-	bcc     L086D
+	bcc     L0873
 	lda     #$01
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L086D:	ldy     _temp0
+L0873:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
@@ -2800,13 +2999,13 @@ L086D:	ldy     _temp0
 ; if (temp1 > 2) { temp1 = 0; }
 ;
 	cmp     #$03
-	bcc     L0889
+	bcc     L088F
 	lda     #$00
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L0889:	ldy     _temp0
+L088F:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
@@ -2847,13 +3046,13 @@ L0889:	ldy     _temp0
 ; if (temp1 > 3) { temp1 = 2; }
 ;
 	cmp     #$04
-	bcc     L08A5
+	bcc     L08AB
 	lda     #$02
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L08A5:	ldy     _temp0
+L08AB:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
@@ -2894,13 +3093,13 @@ L08A5:	ldy     _temp0
 ; if (temp1 > 3) { temp1 = 0; }
 ;
 	cmp     #$04
-	bcc     L08C1
+	bcc     L08C7
 	lda     #$00
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L08C1:	ldy     _temp0
+L08C7:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
@@ -2941,13 +3140,13 @@ L08C1:	ldy     _temp0
 ; if (temp1 > 4) { temp1 = 3; }
 ;
 	cmp     #$05
-	bcc     L08DD
+	bcc     L08E3
 	lda     #$03
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L08DD:	ldy     _temp0
+L08E3:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
@@ -2988,13 +3187,13 @@ L08DD:	ldy     _temp0
 ; if (temp1 > 4) { temp1 = 0; }
 ;
 	cmp     #$05
-	bcc     L08F9
+	bcc     L08FF
 	lda     #$00
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L08F9:	ldy     _temp0
+L08FF:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
