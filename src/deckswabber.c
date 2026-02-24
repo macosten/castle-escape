@@ -33,6 +33,7 @@ ZEROPAGE_EXTERN(unsigned char, y);
 ZEROPAGE_EXTERN(Hitbox, hitbox);
 ZEROPAGE_EXTERN(Hitbox, hitbox2);
 ZEROPAGE_EXTERN(const unsigned char *, temppointer);
+ZEROPAGE_EXTERN(const unsigned char *, temppointer1);
 ZEROPAGE_EXTERN(unsigned int, score);
 ZEROPAGE_EXTERN(unsigned int, old_x);
 ZEROPAGE_EXTERN(unsigned int, old_y);
@@ -42,7 +43,7 @@ ZEROPAGE_EXTERN(unsigned char, player_flags2);
 ZEROPAGE_EXTERN(unsigned char, menu);
 ZEROPAGE_EXTERN(unsigned char, shuffle_offset);
 ZEROPAGE_EXTERN(unsigned char, shuffle_maximum);
-
+ZEROPAGE_EXTERN(unsigned char, energy);
 ZEROPAGE_EXTERN(unsigned char, player_frame_timer);
 
 extern unsigned char cmap[];
@@ -53,14 +54,30 @@ extern unsigned char cmap[];
 
 ZEROPAGE_EXTERN(unsigned char, temp_x);
 ZEROPAGE_EXTERN(unsigned char, temp_y);
-#define player_tile_x (temp_x)
-#define player_tile_y (temp_y)
+#define player_tile_x (old_x)
+#define player_tile_y (old_y)
 
 ZEROPAGE_EXTERN(unsigned char, eject_L);
 #define tile_color_increment_type eject_L
 
+ZEROPAGE_EXTERN(unsigned char, eject_R);
+#define tiles_remaining eject_R
+
+ZEROPAGE_EXTERN(unsigned char, eject_U);
+#define round eject_U
+
+ZEROPAGE_EXTERN(unsigned char, level_index);
+#define level level_index
+
 extern unsigned int deckswabber_1p_high_score;
 extern unsigned int previous_score;
+
+const unsigned char * const * deckswabber_active_level_pack_levels;
+const unsigned char * deckswabber_active_level_pack_header;
+
+#if (DECKSWABBER_TILE_WIDTH != 8 || DECKSWABBER_TILE_HEIGHT != 8)
+    #warning "Careful (deckswabber): Odd width and height, the code probably doesn't support this yet."
+#endif
 
 #pragma rodata-name(push, "BANK1")
 
@@ -104,6 +121,9 @@ void deckswabber_player_movement(void);
 void deckswabber_draw_sprites(void);
 void deckswabber_draw_player(void);
 void deckswabber_redraw_player_tile(void);
+// Note: temp_x and temp_y should be set to the values to update the byte for, in deckswabber tile coordinates.
+void deckswabber_update_attribute_byte(void);
+void deckswabber_update_score(void);
 
 void deckswabber_tile_increment_fn_original_round1(void);
 void deckswabber_tile_increment_fn_original_round2(void);
@@ -153,6 +173,12 @@ void begin_deckswabber_sub(void) {
 
     set_mt_pointer(deckswabber_metatiles);
 
+    level = 1;
+    round = 0;
+
+    // Temporary/Debug: Hardcode selected level pack
+    deckswabber_active_level_pack_levels = deckswabber_original_level_pack_levels;
+
     // Begin first level...
     begin_deckswabber_level();
 
@@ -161,9 +187,79 @@ void begin_deckswabber_sub(void) {
 }
 
 void begin_deckswabber_level(void) {
+    ppu_off();
     // Reset tile typemap, tile colormap, tile enemymap, and chrbuffer
-    // TODO - make it so that we only reset colormap and later, we can just write over typemap once on load
-    memfill(cmap, 0, 64 + 64 + 64 + 32); // 64 tile types + 64 tile colors + 64 game board enemy presences + 32 characters for text buffering
+    set_prg_bank(DECKSWABBER_CODE_BANK);
+    // Figure out what the tilemap should be (from the current options...)
+    temppointer = deckswabber_original_map10;//deckswabber_active_level_pack_levels[level];
+    
+    memfill(tile_colormap, 0, 64 + 64 + 32); // Temporary...
+
+    tiles_remaining = DECKSWABBER_TILE_HEIGHT * DECKSWABBER_TILE_WIDTH;
+    
+    x = 8;
+    y = 8;
+    for (index = 0; index < (DECKSWABBER_TILE_HEIGHT * DECKSWABBER_TILE_WIDTH); index += 2) {
+        clear_vram_buffer();
+        // Bitpacked: 2 tiles per byte
+        temp4 = index >> 1;
+        temp0 = temppointer[temp4] >> 4;
+        temp1 = temppointer[temp4] & 0x0F;
+
+        temp0 = deckswabber_nibble_to_tile_id_map[temp0];
+        temp1 = deckswabber_nibble_to_tile_id_map[temp1];
+
+        if (temp0 == DECKSWABBER_WATER_HOLE_ID || temp0 == DECKSWABBER_EMPTY_HOLE_ID) {
+            --tiles_remaining;
+        }
+
+        if (temp1 == DECKSWABBER_WATER_HOLE_ID || temp1 == DECKSWABBER_EMPTY_HOLE_ID) {
+            --tiles_remaining;
+        }
+
+        tile_typemap[index] = temp0;
+        temp2 = deckswabber_metatile_palettes[temp0];
+        tile_colormap[index] = temp0;
+        enemymap[index] = 0;
+        
+        address = NTADR_A(x, y);
+        buffer_1_mt(address, temp0);
+
+        //address += 2; // Equivalent to x += 2 and then recalc'ing address, since we know it'll never skip to the next row here (x would be odd)
+        x += 2;
+
+        tile_typemap[index + 1] = temp1;
+        temp2 = deckswabber_metatile_palettes[temp1];
+        tile_colormap[index + 1] = temp1;
+        enemymap[index + 1] = 0;
+        
+        address = NTADR_A(x, y);
+        buffer_1_mt(address, temp1);
+
+        x += 2;
+        if (x >= 24) {
+            x = 8;
+            y += 2;
+        }
+        flush_vram_update_nmi();
+    }
+
+    index = 0;
+    // Draw attribute table bytes
+    
+    for (y = 0; y < DECKSWABBER_TILE_HEIGHT; y += 1) {
+        for (x = 0; x < DECKSWABBER_TILE_WIDTH; x += 1) {
+            clear_vram_buffer();
+            temp_x = x;
+            temp_y = y;
+            DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+            deckswabber_update_attribute_byte();
+            flush_vram_update_nmi();
+        }
+    }
+
+    // Draw attribute bytes...
+    
 
     // Reset all PPU palette entries on the board
     // ...
@@ -171,16 +267,21 @@ void begin_deckswabber_level(void) {
     // (Re)draw the "goal" indicator, if applicable?
     // ...
 
-    // Increment the starting tile by 1 and update it
+    energy = 192; // 6 HUD tiles that take up the visual HP bar * 32 "health" per tile (16 per "tick")
+    // Redraw the energy meter
 
     // X and Y coordinates for this game will be in tiles; the drawing routines will figure out where they belong on-screen...
     player_tile_x = 0;
     player_tile_y = 0;
 
-    // This should become some kind of lookup to the update function
+    // Increment the starting tile by 1 and update it
     tile_color_increment_type = 0; // Set based on some level info
+    
+    temp_x = player_tile_x;
+    temp_y = player_tile_y;
     AsmCallFunctionAtPtrOffsetByIndexVar(tile_increment_functions, eject_L);
     deckswabber_redraw_player_tile();
+    ppu_on_all();
 }
 
 void game_deckswabber(void) {
@@ -197,6 +298,9 @@ void game_deckswabber(void) {
     deckswabber_player_movement();
 
     deckswabber_draw_sprites();
+
+    // Temporarily (eventually do this only when flagged):
+    deckswabber_update_score();
 
     if (pad1 & PAD_B) {
         end_deckswabber();
@@ -236,16 +340,33 @@ void deckswabber_player_movement(void) {
     if (temp0) {
         sfx_play(SFX_JUMP, 0);
         player_frame_timer = 12;
-        // Update new tile if necessary
-        AsmCallFunctionAtPtrOffsetByIndexVar(tile_increment_functions, eject_L);
-        // Update the tile under the player
-        deckswabber_redraw_player_tile();
+        // Update new tile if necessary (if this is a non-hazard tile)
+        DeckswabberGetTileIndex(temp0, old_x, old_y);
+        temp1 = tile_typemap[temp0];
+        if (temp1 < DECKSWABBER_WATER_HOLE_ID) {
+            temp_x = player_tile_x;
+            temp_y = player_tile_y;
+            AsmCallFunctionAtPtrOffsetByIndexVar(tile_increment_functions, eject_L);
+            // Update the tile under the player
+            deckswabber_redraw_player_tile();
+            //deckswabber_update_tiles_remaining_hud();
+        }
     }
+}
+
+void deckswabber_update_score(void) {
+    convert_to_decimal(score);
+    prepare_score_string();
+    multi_vram_buffer_horz(score_string, 5, NTADR_A(4, 3)); // Change, or if it doesn't change, just call hasee_update_score for code reuse as this is in the same bank
 }
 
 void deckswabber_draw_sprites(void) {
     set_prg_bank(DECKSWABBER_METASPRITE_BANK);
     oam_clear();
+
+    // Idea:
+    // Have an array of 8 bytes that serves as a 1-d version of enemymap
+    // each bit is 1 if that enemy slot is in that row, or 0 if not
 
     // This will need to be made to draw things from "front" to "back", but for now:
     deckswabber_draw_player();
@@ -263,13 +384,21 @@ void deckswabber_draw_player(void) {
 }
 
 // Tile increment functions:
+// Assume temp0 is set with DeckswabberGetTileIndex
 // - Modify the color of the tile
 // - set temp0 to the tile's index in the tilemaps (DeckswabberGetTileIndex(temp0, ..., ...))
 // - set temp1 to the just-set color of the tile, in case something else wants to know
+// - set temp2 to the previous color of the tile
 void deckswabber_tile_increment_fn_original_round1(void) {
     DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp2 = tile_colormap[temp0];
     tile_colormap[temp0] = 1;
+    if (temp2 != 1) {
+        --tiles_remaining;
+    }
     temp1 = 1;
+    // Update the "tiles remaining" value
+    // ...
 }
 
 void deckswabber_tile_increment_fn_original_round2(void) {
@@ -326,19 +455,24 @@ void deckswabber_redraw_player_tile(void) {
     temp3 = 8 + (player_tile_y << 1);
     address = NTADR_A(temp2, temp3);
     buffer_1_mt(address, temp1);
+    temp_x = player_tile_x;
+    temp_y = player_tile_y;
+    deckswabber_update_attribute_byte();
+}
 
+void deckswabber_update_attribute_byte(void) {
     // Figure out the attribute table update address
     address = ATTRIBTABLE_A;
     
-    temp2 = 2 + (player_tile_x >> 1);
-    temp3 = 2 + (player_tile_y >> 1);
+    temp2 = 2 + (temp_x >> 1);
+    temp3 = 2 + (temp_y >> 1);
 
     temp0 = (temp3 << 3) + temp2;
     address += temp0;
 
     // Figure out what the new attribute byte *should* be
-    temp2 = player_tile_x | 1; // Ensure we start on the bottom-right metatile for this attribute table byte
-    temp3 = player_tile_y | 1;
+    temp2 = temp_x | 1; // Ensure we start on the bottom-right metatile for this attribute table byte
+    temp3 = temp_y | 1;
 
     temp4 = 0; // Destination byte buffer
 

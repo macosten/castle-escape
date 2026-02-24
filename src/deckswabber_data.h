@@ -694,12 +694,22 @@ const unsigned char deckswabber_original_starting_coords[] = {
 
 const unsigned char deckswabber_metatiles[] = {
     0x80, 0x81, 0x90, 0x91, 0, // Brown board, plain
-    0xA8, 0xA9, 0xB8, 0xB9, 0, // Yellow board, plain
+    0x82, 0x83, 0x92, 0x93, 0, // Yellow board, plain
     0xA0, 0xA1, 0xB0, 0xB1, 2, // Blue board, wavy
     0xA2, 0xA3, 0xB2, 0xB3, 2, // Green board, wavy
     0x84, 0x85, 0x94, 0x95, 3, // Red board, chevron
     0xA4, 0xA5, 0xB4, 0xB5, 3, // Pink board, chevron
+    0xE8, 0xE9, 0xF8, 0xF9, 0, // Black board, wavy 
+    0xE8, 0xE9, 0xF8, 0xF9, 2, // Light Green Board
+    // Others go below...
+
+    // These two holes should stay the last two in this order
+    0xA8, 0xA9, 0xB8, 0xB9, 1, // Water hole
+    0xC8, 0xC9, 0xD8, 0xD9, 0, // Empty hole
 };
+
+#define DECKSWABBER_WATER_HOLE_ID (sizeof(deckswabber_metatiles)/5 - 2)
+#define DECKSWABBER_EMPTY_HOLE_ID (sizeof(deckswabber_metatiles)/5 - 1)
 
 // Code using these values assumes all will be 0...3
 const unsigned char deckswabber_metatile_palettes[] = {
@@ -709,6 +719,45 @@ const unsigned char deckswabber_metatile_palettes[] = {
     2,
     3,
     3,
+    0,
+    2,
+    //
+    1,
+    0,
+};
+
+const unsigned char deckswabber_nibble_to_tile_id_map[] = {
+    0, // 0x0 -> Plain Tile
+    DECKSWABBER_WATER_HOLE_ID, // 0x1 -> Water hole
+    DECKSWABBER_EMPTY_HOLE_ID, // 0x2 -> Empty hole
+    // The rest of these could correspond to tiles that block 1 or more directions
+};
+
+// Each row is one "level" and each row is of the format:
+// (which index level to use), (which index tile color increment function to use)
+
+
+const unsigned char * const deckswabber_original_level_pack_levels[] = {
+    deckswabber_original_map1,
+    deckswabber_original_map2,
+    deckswabber_original_map3,
+    deckswabber_original_map4,
+    deckswabber_original_map5,
+    deckswabber_original_map6,
+    deckswabber_original_map7,
+    deckswabber_original_map8,
+    deckswabber_original_map9,
+    deckswabber_original_map10,
+};
+
+const unsigned char * const * const deckswabber_level_data_db[] = {
+    deckswabber_original_level_pack_levels,
+    // ..., ..., "Stowaway Sting Levels",
+};
+
+const char * const deckswabber_level_name_db[] = {
+    "Original Levels",
+    // "Stowaway Sting",
 };
 
 #pragma rodata-name(pop);

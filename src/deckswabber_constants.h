@@ -15,3 +15,6 @@
     __asm__("ora %v", x_coord); \
     __asm__("sta %v", destinationVar); \
 };
+
+#define DECKSWABBER_WATER_HOLE_ID (sizeof(deckswabber_metatiles)/5 - 2)
+#define DECKSWABBER_EMPTY_HOLE_ID (sizeof(deckswabber_metatiles)/5 - 1)
