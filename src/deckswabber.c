@@ -134,6 +134,7 @@ void deckswabber_update_attribute_byte(void);
 void deckswabber_update_score(void);
 void deckswabber_update_tiles_remaining(void);
 void deckswabber_write_finished_message(void);
+void deckswabber_update_health_bar(void);
 
 void deckswabber_tile_increment_fn_original_round1(void);
 void deckswabber_tile_increment_fn_original_round2(void);
@@ -270,17 +271,34 @@ void begin_deckswabber_level(void) {
     transition_timer = 120;
     
     // Clear the rest of relevant memory
-    memfill(tile_colormap, 0, 64 + 64 + 32);
+    memfill(enemymap, 0, 64 + 32);
 
-    // (Re)draw the "goal" indicator, if applicable?
-    // ...
+    // Update HUD for level/round
+    clear_vram_buffer();
+    convert_to_decimal(round + 1);
+    prepare_score_string();
+    multi_vram_buffer_horz(score_string, 5, NTADR_A(9, 3));
+    convert_to_decimal(level + 1);
+    prepare_score_string();
+    multi_vram_buffer_horz(score_string, 5, NTADR_A(16, 3));
+    flush_vram_update_nmi();
 
+
+    clear_vram_buffer();
     energy = 192; // 6 HUD tiles that take up the visual HP bar * 32 "health" per tile (16 per "tick")
     // Redraw the energy meter
+    deckswabber_update_health_bar();
+    
+    // (Re)draw the "goal" indicator
+    // ...
+
 
     // X and Y coordinates for this game will be in tiles; the drawing routines will figure out where they belong on-screen...
-    player_tile_x = 0;
-    player_tile_y = 0;
+    temppointer1 = deckswabber_starting_coords_db[level_pack_index];
+    temp0 = temppointer1[level];
+    
+    player_tile_x = temp0 >> 4;
+    player_tile_y = temp0 & 0x0F;
 
     // Increment the starting tile by 1 and update it
     tile_color_increment_type = round; // Set based on some level info
@@ -291,6 +309,7 @@ void begin_deckswabber_level(void) {
     deckswabber_redraw_player_tile();
 
     multi_vram_buffer_horz(deckswabber_tiles_remaining, 10, NTADR_A(17, 4));
+    multi_vram_buffer_horz(chrbuffer, 12, NTADR_A(17, 5));
     deckswabber_update_tiles_remaining();
 
     ppu_on_all();
@@ -410,10 +429,15 @@ void deckswabber_write_finished_message(void) {
     multi_vram_buffer_horz(deckswabber_bonus, 6, NTADR_A(17, 5));
 
     // ...calculate bonus here
-    // ...temporary
-    convert_to_decimal(energy);
+    convert_to_decimal(0); // Todo - proper bonus calculation
     igloo_write_decimal_in_message_sub(); // Note: this writes to cmap+64. It shouldn't matter by the time we call this, though.
     multi_vram_buffer_horz(cmap+64, temp0, NTADR_A(24, 5));
+}
+
+const unsigned char deckswabber_full_hp_bar[] = { 0xF6, 0xF6, 0xF6, 0xF6, 0xF6, 0xF6 };
+void deckswabber_update_health_bar(void) {
+    // Todo - implement proper bar rendering (and delete the above Full HP Bar)
+    multi_vram_buffer_horz(deckswabber_full_hp_bar, 6, NTADR_A(6, 5));
 }
 
 void deckswabber_draw_sprites(void) {

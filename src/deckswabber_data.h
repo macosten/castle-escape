@@ -780,6 +780,11 @@ const unsigned char * const deckswabber_round_bounds_db[] = {
     deckswabber_original_level_pack_round_bounds
 };
 
+// Expected to be bitpacked tile x,y
+const unsigned char * const deckswabber_starting_coords_db[] = {
+    deckswabber_original_starting_coords,
+};
+
 const char * const deckswabber_tiles_remaining = "Tiles Left";
 const char * const deckswabber_level_finished = "Finished!";
 const char * const deckswabber_bonus = "Bonus:";
