@@ -103,6 +103,7 @@ extern void bg_collision(void);
 // BOSS_STATE_IDLE -- Idle and vulnerable -- only vulnerable in this state. this == 2.
 // BOSS_STATE_ASCENDING -- Flying upwards. Shoots fireballs in this mode. this == 3.
 
+#pragma code-name(push, "BANK2") // Castle Escape Enemy AI Bank
 
 void boss_shoot_fireball(void) {
     // Find a free space for a fireball...
@@ -259,24 +260,6 @@ void boss_ai_ascending(void) {
 
 }
 
-void boss_collide_sub(void) {
-    coordinates = (temp1 >> 4) + (temp3 & 0xf0); 
-    
-    // Instead of selecting from one of two c_maps, select from one of the many cmaps.
-    // The index is stored in the high byte of temp5 right now.
-    // temp_mutablepointer = (unsigned char *)cmaps[high_byte(temp5)];
-    temp0 = high_byte(temp5);
-    AsmSet2ByteFromPtrAtIndexVar(temp_mutablepointer, cmaps, temp0);
-
-    //temp4 = temp_mutablepointer[coordinates];
-    AsmSet1ByteFromZpPtrAtIndexVar(temp4, temp_mutablepointer, coordinates);
-
-    // Fetch all the properties about this tile.
-    temp0 = metatile_property_lookup_table[temp4];
-
-    collision = METATILE_IS_SOLID(temp4);
-}
-
 void boss_ai_descending(void) {
     // Look for a solid block underneath me.
     // Adapted from sun_ai.
@@ -351,6 +334,8 @@ void boss_ai_dying(void) {
     }
 }
 
+#pragma code-name(pop)
+
 const unsigned char const boss_state_deadliness[] = {
     0,
     0,
@@ -379,6 +364,8 @@ void collision_with_boss(void) {
     }
 }
 
+#pragma code-name(push, "BANK5") // Metasprite bank
+
 void draw_boss_flying(void) {
     // Flying
     temp3 >>= 2;
@@ -398,3 +385,4 @@ void draw_boss_dying(void) {
     music_stop();
 }
 
+#pragma code-name(pop)
