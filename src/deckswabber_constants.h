@@ -18,3 +18,10 @@
 
 #define DECKSWABBER_WATER_HOLE_ID (sizeof(deckswabber_metatiles)/5 - 2)
 #define DECKSWABBER_EMPTY_HOLE_ID (sizeof(deckswabber_metatiles)/5 - 1)
+
+// Flags that need to be cleared at the start of each frame...
+#define DECKSWABBER_DID_SCORE_CHANGE_THIS_FRAME_MASK      0b00000001
+
+#define DECKSWABBER_RESET_PLAYER_FLAGS_START_FRAME() (player_flags &= ~(DECKSWABBER_DID_SCORE_CHANGE_THIS_FRAME_MASK))
+
+#define DECKSWABBER_SCORE_CHANGED_THIS_FRAME          (player_flags & DECKSWABBER_DID_SCORE_CHANGE_THIS_FRAME_MASK)

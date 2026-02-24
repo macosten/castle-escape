@@ -117,8 +117,14 @@
 	.export		_deckswabber_metatile_palettes
 	.export		_deckswabber_nibble_to_tile_id_map
 	.export		_deckswabber_original_level_pack_levels
+	.export		_deckswabber_original_level_pack_round_bounds
 	.export		_deckswabber_level_data_db
 	.export		_deckswabber_level_name_db
+	.export		_deckswabber_maximum_round_db
+	.export		_deckswabber_round_bounds_db
+	.export		_deckswabber_tiles_remaining
+	.export		_deckswabber_level_finished
+	.export		_deckswabber_bonus
 	.export		_deckswabber_game_screen
 	.importzp	_temp0
 	.importzp	_temp1
@@ -132,10 +138,12 @@
 	.importzp	_x
 	.importzp	_y
 	.importzp	_temppointer
+	.importzp	_temppointer1
 	.importzp	_score
 	.importzp	_old_x
 	.importzp	_old_y
 	.importzp	_game_mode
+	.importzp	_player_flags
 	.importzp	_menu
 	.importzp	_energy
 	.importzp	_player_frame_timer
@@ -146,6 +154,8 @@
 	.importzp	_eject_R
 	.importzp	_eject_U
 	.importzp	_level_index
+	.importzp	_enemy_is_using_bg_collision
+	.importzp	_coordinates
 	.export		_deckswabber_active_level_pack_levels
 	.export		_deckswabber_active_level_pack_header
 	.export		_deckswabber_palette_sp
@@ -155,6 +165,7 @@
 	.import		_switch_menu
 	.import		_LZG_decode
 	.import		_prepare_score_string
+	.import		_igloo_write_decimal_in_message_sub
 	.export		_game_deckswabber
 	.export		_begin_deckswabber
 	.export		_begin_deckswabber_sub
@@ -167,6 +178,7 @@
 	.export		_deckswabber_update_attribute_byte
 	.export		_deckswabber_update_score
 	.export		_deckswabber_update_tiles_remaining
+	.export		_deckswabber_write_finished_message
 	.export		_deckswabber_tile_increment_fn_original_round1
 	.export		_deckswabber_tile_increment_fn_original_round2
 	.export		_deckswabber_tile_increment_fn_original_round3
@@ -1815,10 +1827,37 @@ _deckswabber_original_level_pack_levels:
 	.addr	_deckswabber_original_map8
 	.addr	_deckswabber_original_map9
 	.addr	_deckswabber_original_map10
+_deckswabber_original_level_pack_round_bounds:
+	.byte	$00
+	.byte	$05
+	.byte	$00
+	.byte	$05
+	.byte	$01
+	.byte	$06
+	.byte	$02
+	.byte	$07
+	.byte	$03
+	.byte	$08
+	.byte	$04
+	.byte	$09
+	.byte	$05
+	.byte	$0A
+	.byte	$05
+	.byte	$0A
 _deckswabber_level_data_db:
 	.addr	_deckswabber_original_level_pack_levels
 _deckswabber_level_name_db:
-	.addr	L0605
+	.addr	L0615
+_deckswabber_maximum_round_db:
+	.byte	$08
+_deckswabber_round_bounds_db:
+	.addr	_deckswabber_original_level_pack_round_bounds
+_deckswabber_tiles_remaining:
+	.addr	L061A
+_deckswabber_level_finished:
+	.addr	L061C
+_deckswabber_bonus:
+	.addr	L061E
 .segment	"RODATA"
 .segment	"BANK5"
 _deckswabber_game_screen:
@@ -2174,8 +2213,14 @@ _tile_increment_functions:
 	.addr	_deckswabber_tile_increment_fn_original_round7
 	.addr	_deckswabber_tile_increment_fn_original_round8
 .segment	"RODATA"
-L0605:
+L0615:
 	.byte	$4F,$72,$69,$67,$69,$6E,$61,$6C,$20,$4C,$65,$76,$65,$6C,$73,$00
+L061A:
+	.byte	$54,$69,$6C,$65,$73,$20,$4C,$65,$66,$74,$00
+L061C:
+	.byte	$46,$69,$6E,$69,$73,$68,$65,$64,$21,$00
+L061E:
+	.byte	$42,$6F,$6E,$75,$73,$3A,$00
 
 .segment	"BSS"
 
@@ -2194,6 +2239,12 @@ _deckswabber_active_level_pack_header:
 
 .segment	"BANK1"
 
+;
+; DECKSWABBER_RESET_PLAYER_FLAGS_START_FRAME();
+;
+	lda     _player_flags
+	and     #$FE
+	sta     _player_flags
 ;
 ; pad1 = pad_poll(0); // read the first controller
 ;
@@ -2220,21 +2271,144 @@ _deckswabber_active_level_pack_header:
 	lda     #$01
 	jsr     _set_prg_bank
 ;
+; if (tiles_remaining > 0) {
+;
+	lda     _eject_R
+	beq     L0BA3
+;
 ; deckswabber_player_movement();
 ;
 	jsr     _deckswabber_player_movement
 ;
+; } else {
+;
+	jmp     L08E5
+;
+; if (transition_timer == 120) {
+;
+L0BA3:	lda     _enemy_is_using_bg_collision
+	cmp     #$78
+	bne     L08DE
+;
+; deckswabber_write_finished_message();
+;
+	jsr     _deckswabber_write_finished_message
+;
+; if (transition_timer) {
+;
+L08DE:	lda     _enemy_is_using_bg_collision
+	beq     L08E1
+;
+; --transition_timer;
+;
+	dec     _enemy_is_using_bg_collision
+;
+; } else if (pad1_new) {
+;
+	jmp     L08E5
+L08E1:	lda     _pad1_new
+	beq     L08E5
+;
+; ++level;
+;
+	inc     _level_index
+;
+; temp0 = round << 1;   
+;
+	lda     _eject_U
+	asl     a
+	sta     _temp0
+;
+; temppointer1 = deckswabber_round_bounds_db[level_pack_index];
+;
+	ldx     #$00
+	lda     _coordinates
+	asl     a
+	bcc     L0BA1
+	inx
+	clc
+L0BA1:	adc     #<(_deckswabber_round_bounds_db)
+	sta     ptr1
+	txa
+	adc     #>(_deckswabber_round_bounds_db)
+	sta     ptr1+1
+	ldy     #$01
+	lda     (ptr1),y
+	tax
+	dey
+	lda     (ptr1),y
+	sta     _temppointer1
+	stx     _temppointer1+1
+;
+; temp2 = temppointer1[temp0 + 1]; // Maximum level in round
+;
+	sta     ptr1
+	stx     ptr1+1
+	ldx     #$00
+	lda     _temp0
+	clc
+	adc     #$01
+	bcc     L0BA2
+	inx
+	clc
+L0BA2:	adc     ptr1
+	sta     ptr1
+	txa
+	adc     ptr1+1
+	sta     ptr1+1
+	lda     (ptr1),y
+	sta     _temp2
+;
+; if (level >= temp2) {
+;
+	lda     _level_index
+	cmp     _temp2
+	bcc     L08F7
+;
+; level = temppointer1[temp0]; // Minimum level in round
+;
+	lda     _temppointer1
+	ldx     _temppointer1+1
+	ldy     _temp0
+	sta     ptr1
+	stx     ptr1+1
+	lda     (ptr1),y
+	sta     _level_index
+;
+; ++round;
+;
+	inc     _eject_U
+;
+; if (round >= deckswabber_maximum_round_db[level_pack_index]) {
+;
+	lda     _eject_U
+	jsr     pusha0
+	ldy     _coordinates
+	lda     _deckswabber_maximum_round_db,y
+	jsr     tosicmp0
+;
+; end_deckswabber();
+;
+	jcs     _end_deckswabber
+;
+; begin_deckswabber_level(); // Next Level (todo)
+;
+L08F7:	jmp     _begin_deckswabber_level
+;
 ; deckswabber_draw_sprites();
 ;
-	jsr     _deckswabber_draw_sprites
+L08E5:	jsr     _deckswabber_draw_sprites
 ;
-; deckswabber_update_score();
+; if (DECKSWABBER_SCORE_CHANGED_THIS_FRAME) { deckswabber_update_score(); }
 ;
+	lda     _player_flags
+	and     #$01
+	beq     L0BA4
 	jsr     _deckswabber_update_score
 ;
 ; if (pad1 & PAD_B) {
 ;
-	lda     _pad1
+L0BA4:	lda     _pad1
 	and     #$40
 	cmp     #$00
 ;
@@ -2246,7 +2420,7 @@ _deckswabber_active_level_pack_header:
 ;
 	lda     _pad1_new
 	and     #$10
-	beq     L08B2
+	beq     L0905
 ;
 ; ++tile_color_increment_type; // Cycle through for debug
 ;
@@ -2260,7 +2434,7 @@ _deckswabber_active_level_pack_header:
 ;
 ; }
 ;
-L08B2:	rts
+L0905:	rts
 
 .endproc
 
@@ -2362,21 +2536,37 @@ L08B2:	rts
 	ldx     #>(_deckswabber_metatiles)
 	jsr     _set_mt_pointer
 ;
-; level = 1;
+; level = 0;
 ;
-	lda     #$01
+	lda     #$00
 	sta     _level_index
 ;
 ; round = 0;
 ;
-	lda     #$00
 	sta     _eject_U
 ;
-; deckswabber_active_level_pack_levels = deckswabber_original_level_pack_levels;
+; level_pack_index = 0;
 ;
-	lda     #>(_deckswabber_original_level_pack_levels)
+	sta     _coordinates
+;
+; deckswabber_active_level_pack_levels = deckswabber_level_data_db[level_pack_index];
+;
+	tax
+	lda     _coordinates
+	asl     a
+	bcc     L0BA7
+	inx
+	clc
+L0BA7:	adc     #<(_deckswabber_level_data_db)
+	sta     ptr1
+	txa
+	adc     #>(_deckswabber_level_data_db)
+	sta     ptr1+1
+	ldy     #$01
+	lda     (ptr1),y
 	sta     _deckswabber_active_level_pack_levels+1
-	lda     #<(_deckswabber_original_level_pack_levels)
+	dey
+	lda     (ptr1),y
 	sta     _deckswabber_active_level_pack_levels
 ;
 ; pal_bright(4);
@@ -2449,28 +2639,25 @@ L08B2:	rts
 	lda     #$01
 	jsr     _set_prg_bank
 ;
-; temppointer = deckswabber_original_map10;//deckswabber_active_level_pack_levels[level];
+; temppointer = deckswabber_active_level_pack_levels[level];//deckswabber_active_level_pack_levels[level];
 ;
-	lda     #>(_deckswabber_original_map10)
-	sta     _temppointer+1
-	lda     #<(_deckswabber_original_map10)
-	sta     _temppointer
-;
-; memfill(tile_colormap, 0, 64 + 64 + 32); // Temporary...
-;
-	jsr     decsp3
-	lda     #<(_cmap+64)
+	ldx     #$00
+	lda     _level_index
+	asl     a
+	bcc     L0BAC
+	inx
+	clc
+L0BAC:	adc     _deckswabber_active_level_pack_levels
+	sta     ptr1
+	txa
+	adc     _deckswabber_active_level_pack_levels+1
+	sta     ptr1+1
 	ldy     #$01
-	sta     (sp),y
-	iny
-	lda     #>(_cmap+64)
-	sta     (sp),y
-	lda     #$00
-	tay
-	sta     (sp),y
-	tax
-	lda     #$A0
-	jsr     _memfill
+	lda     (ptr1),y
+	sta     _temppointer+1
+	dey
+	lda     (ptr1),y
+	sta     _temppointer
 ;
 ; tiles_remaining = DECKSWABBER_TILE_HEIGHT * DECKSWABBER_TILE_WIDTH;
 ;
@@ -2488,10 +2675,10 @@ L08B2:	rts
 ;
 ; for (index = 0; index < (DECKSWABBER_TILE_HEIGHT * DECKSWABBER_TILE_WIDTH); index += 2) {
 ;
-	lda     #$00
-L0B30:	sta     _index
+	tya
+L0BAB:	sta     _index
 	cmp     #$40
-	jcs     L0B37
+	jcs     L0BB3
 ;
 ; clear_vram_buffer();
 ;
@@ -2544,29 +2731,29 @@ L0B30:	sta     _index
 ;
 	lda     _temp0
 	cmp     #$08
-	beq     L0B34
+	beq     L0BB0
 	cmp     #$09
-	bne     L0B35
+	bne     L0BB1
 ;
 ; --tiles_remaining;
 ;
-L0B34:	dec     _eject_R
+L0BB0:	dec     _eject_R
 ;
 ; if (temp1 == DECKSWABBER_WATER_HOLE_ID || temp1 == DECKSWABBER_EMPTY_HOLE_ID) {
 ;
-L0B35:	lda     _temp1
+L0BB1:	lda     _temp1
 	cmp     #$08
-	beq     L0B36
+	beq     L0BB2
 	cmp     #$09
-	bne     L07F4
+	bne     L080E
 ;
 ; --tiles_remaining;
 ;
-L0B36:	dec     _eject_R
+L0BB2:	dec     _eject_R
 ;
 ; tile_typemap[index] = temp0;
 ;
-L07F4:	ldy     _index
+L080E:	ldy     _index
 	lda     _temp0
 	sta     _cmap,y
 ;
@@ -2630,10 +2817,10 @@ L07F4:	ldy     _index
 	lda     _index
 	clc
 	adc     #$01
-	bcc     L0B31
+	bcc     L0BAD
 	inx
 	clc
-L0B31:	adc     #<(_cmap)
+L0BAD:	adc     #<(_cmap)
 	sta     ptr1
 	txa
 	adc     #>(_cmap)
@@ -2654,10 +2841,10 @@ L0B31:	adc     #<(_cmap)
 	lda     _index
 	clc
 	adc     #$01
-	bcc     L0B32
+	bcc     L0BAE
 	inx
 	clc
-L0B32:	adc     #<(_cmap+64)
+L0BAE:	adc     #<(_cmap+64)
 	sta     ptr1
 	txa
 	adc     #>(_cmap+64)
@@ -2672,10 +2859,10 @@ L0B32:	adc     #<(_cmap+64)
 	lda     _index
 	clc
 	adc     #$01
-	bcc     L0B33
+	bcc     L0BAF
 	inx
 	clc
-L0B33:	adc     #<(_cmap+128)
+L0BAF:	adc     #<(_cmap+128)
 	sta     ptr1
 	txa
 	adc     #>(_cmap+128)
@@ -2722,7 +2909,7 @@ L0B33:	adc     #<(_cmap+128)
 ; if (x >= 24) {
 ;
 	cmp     #$18
-	bcc     L0854
+	bcc     L086E
 ;
 ; x = 8;
 ;
@@ -2738,34 +2925,34 @@ L0B33:	adc     #<(_cmap+128)
 ;
 ; flush_vram_update_nmi();
 ;
-L0854:	jsr     _flush_vram_update_nmi
+L086E:	jsr     _flush_vram_update_nmi
 ;
 ; for (index = 0; index < (DECKSWABBER_TILE_HEIGHT * DECKSWABBER_TILE_WIDTH); index += 2) {
 ;
 	lda     #$02
 	clc
 	adc     _index
-	jmp     L0B30
+	jmp     L0BAB
 ;
 ; index = 0;
 ;
-L0B37:	lda     #$00
+L0BB3:	lda     #$00
 	sta     _index
 ;
 ; for (y = 0; y < DECKSWABBER_TILE_HEIGHT; y += 1) {
 ;
 	sta     _y
-L0B38:	lda     _y
+L0BB4:	lda     _y
 	cmp     #$08
-	bcs     L0B3B
+	bcs     L0BB7
 ;
 ; for (x = 0; x < DECKSWABBER_TILE_WIDTH; x += 1) {
 ;
 	lda     #$00
 	sta     _x
-L0B39:	lda     _x
+L0BB5:	lda     _x
 	cmp     #$08
-	bcs     L0B3A
+	bcs     L0BB6
 ;
 ; clear_vram_buffer();
 ;
@@ -2800,16 +2987,37 @@ L0B39:	lda     _x
 ; for (x = 0; x < DECKSWABBER_TILE_WIDTH; x += 1) {
 ;
 	inc     _x
-	jmp     L0B39
+	jmp     L0BB5
 ;
 ; for (y = 0; y < DECKSWABBER_TILE_HEIGHT; y += 1) {
 ;
-L0B3A:	inc     _y
-	jmp     L0B38
+L0BB6:	inc     _y
+	jmp     L0BB4
+;
+; transition_timer = 120;
+;
+L0BB7:	lda     #$78
+	sta     _enemy_is_using_bg_collision
+;
+; memfill(tile_colormap, 0, 64 + 64 + 32);
+;
+	jsr     decsp3
+	lda     #<(_cmap+64)
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     #>(_cmap+64)
+	sta     (sp),y
+	lda     #$00
+	tay
+	sta     (sp),y
+	tax
+	lda     #$A0
+	jsr     _memfill
 ;
 ; energy = 192; // 6 HUD tiles that take up the visual HP bar * 32 "health" per tile (16 per "tick")
 ;
-L0B3B:	lda     #$C0
+	lda     #$C0
 	sta     _energy
 ;
 ; player_tile_x = 0;
@@ -2823,8 +3031,9 @@ L0B3B:	lda     #$C0
 	sta     _old_y
 	sta     _old_y+1
 ;
-; tile_color_increment_type = 0; // Set based on some level info
+; tile_color_increment_type = round; // Set based on some level info
 ;
+	lda     _eject_U
 	sta     _eject_L
 ;
 ; temp_x = player_tile_x;
@@ -2849,6 +3058,22 @@ L0B3B:	lda     #$C0
 ; deckswabber_redraw_player_tile();
 ;
 	jsr     _deckswabber_redraw_player_tile
+;
+; multi_vram_buffer_horz(deckswabber_tiles_remaining, 10, NTADR_A(17, 4));
+;
+	jsr     decsp3
+	lda     _deckswabber_tiles_remaining
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     _deckswabber_tiles_remaining+1
+	sta     (sp),y
+	lda     #$0A
+	ldy     #$00
+	sta     (sp),y
+	ldx     #$20
+	lda     #$91
+	jsr     _multi_vram_buffer_horz
 ;
 ; deckswabber_update_tiles_remaining();
 ;
@@ -2880,10 +3105,10 @@ L0B3B:	lda     #$C0
 ;
 	lda     _pad1_new
 	and     #$08
-	beq     L0B40
+	beq     L0BBC
 	lda     _old_y
 	ora     _old_y+1
-	beq     L0B40
+	beq     L0BBC
 ;
 ; player_tile_y -= 1;
 ;
@@ -2891,37 +3116,37 @@ L0B3B:	lda     #$C0
 	sec
 	sbc     #$01
 	sta     _old_y
-	bcs     L08F5
+	bcs     L0948
 	dec     _old_y+1
 ;
 ; } else if (pad1_new & PAD_DOWN && player_tile_y < DECKSWABBER_TILE_HEIGHT-1) {
 ;
-	jmp     L08F5
-L0B40:	lda     _pad1_new
+	jmp     L0948
+L0BBC:	lda     _pad1_new
 	and     #$04
-	beq     L0B44
+	beq     L0BC0
 	lda     _old_y+1
 	cmp     #$00
-	bne     L08D6
+	bne     L0929
 	lda     _old_y
 	cmp     #$07
-L08D6:	bcs     L0B44
+L0929:	bcs     L0BC0
 ;
 ; player_tile_y += 1;
 ;
 	inc     _old_y
-	bne     L08F5
+	bne     L0948
 	inc     _old_y+1
 ;
 ; } else if (pad1_new & PAD_LEFT && player_tile_x > 0) {
 ;
-	jmp     L08F5
-L0B44:	lda     _pad1_new
+	jmp     L0948
+L0BC0:	lda     _pad1_new
 	and     #$02
-	beq     L0B48
+	beq     L0BC4
 	lda     _old_x
 	ora     _old_x+1
-	beq     L0B48
+	beq     L0BC4
 ;
 ; player_tile_x -= 1;
 ;
@@ -2929,37 +3154,37 @@ L0B44:	lda     _pad1_new
 	sec
 	sbc     #$01
 	sta     _old_x
-	bcs     L08F5
+	bcs     L0948
 	dec     _old_x+1
 ;
 ; } else if (pad1_new & PAD_RIGHT && player_tile_x < DECKSWABBER_TILE_WIDTH-1) {
 ;
-	jmp     L08F5
-L0B48:	lda     _pad1_new
+	jmp     L0948
+L0BC4:	lda     _pad1_new
 	and     #$01
-	beq     L08EC
+	beq     L093F
 	lda     _old_x+1
 	cmp     #$00
-	bne     L08F0
+	bne     L0943
 	lda     _old_x
 	cmp     #$07
-L08F0:	bcs     L08EC
+L0943:	bcs     L093F
 ;
 ; player_tile_x += 1;
 ;
 	inc     _old_x
-	bne     L08F5
+	bne     L0948
 	inc     _old_x+1
 ;
 ; temp0 = 1;
 ;
-L08F5:	lda     #$01
+L0948:	lda     #$01
 	sta     _temp0
 ;
 ; if (temp0) {
 ;
-L08EC:	lda     _temp0
-	beq     L0910
+L093F:	lda     _temp0
+	beq     L0963
 ;
 ; sfx_play(SFX_JUMP, 0);
 ;
@@ -2991,7 +3216,7 @@ L08EC:	lda     _temp0
 ; if (temp1 < DECKSWABBER_WATER_HOLE_ID) {
 ;
 	cmp     #$08
-	bcs     L0910
+	bcs     L0963
 ;
 ; temp_x = player_tile_x;
 ;
@@ -3022,7 +3247,7 @@ L08EC:	lda     _temp0
 ;
 ; }
 ;
-L0910:	rts
+L0963:	rts
 
 .endproc
 
@@ -3066,7 +3291,7 @@ L0910:	rts
 ; if (player_frame_timer) {
 ;
 	lda     _player_frame_timer
-	beq     L0948
+	beq     L09BA
 ;
 ; --player_frame_timer;
 ;
@@ -3074,7 +3299,7 @@ L0910:	rts
 ;
 ; temp0 = player_frame_timer >> 2;
 ;
-L0948:	lda     _player_frame_timer
+L09BA:	lda     _player_frame_timer
 	lsr     a
 	lsr     a
 	sta     _temp0
@@ -3417,7 +3642,7 @@ L0948:	lda     _player_frame_timer
 ;
 	jsr     _prepare_score_string
 ;
-; multi_vram_buffer_horz(score_string, 5, NTADR_A(4, 3)); // Change, or if it doesn't change, just call hasee_update_score for code reuse as this is in the same bank
+; multi_vram_buffer_horz(score_string, 5, NTADR_A(4, 3));
 ;
 	jsr     decsp3
 	lda     #<(_score_string)
@@ -3475,6 +3700,77 @@ L0948:	lda     _player_frame_timer
 .endproc
 
 ; ---------------------------------------------------------------
+; void __near__ deckswabber_write_finished_message (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_write_finished_message: near
+
+.segment	"BANK1"
+
+;
+; multi_vram_buffer_horz(deckswabber_level_finished, 10, NTADR_A(17, 4));
+;
+	jsr     decsp3
+	lda     _deckswabber_level_finished
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     _deckswabber_level_finished+1
+	sta     (sp),y
+	lda     #$0A
+	ldy     #$00
+	sta     (sp),y
+	ldx     #$20
+	lda     #$91
+	jsr     _multi_vram_buffer_horz
+;
+; multi_vram_buffer_horz(deckswabber_bonus, 6, NTADR_A(17, 5));
+;
+	jsr     decsp3
+	lda     _deckswabber_bonus
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     _deckswabber_bonus+1
+	sta     (sp),y
+	lda     #$06
+	ldy     #$00
+	sta     (sp),y
+	ldx     #$20
+	lda     #$B1
+	jsr     _multi_vram_buffer_horz
+;
+; convert_to_decimal(energy);
+;
+	lda     _energy
+	ldx     #$00
+	jsr     _convert_to_decimal
+;
+; igloo_write_decimal_in_message_sub(); // Note: this writes to cmap+64. It shouldn't matter by the time we call this, though.
+;
+	jsr     _igloo_write_decimal_in_message_sub
+;
+; multi_vram_buffer_horz(cmap+64, temp0, NTADR_A(24, 5));
+;
+	jsr     decsp3
+	lda     #<(_cmap+64)
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     #>(_cmap+64)
+	sta     (sp),y
+	lda     _temp0
+	ldy     #$00
+	sta     (sp),y
+	ldx     #$20
+	lda     #$B8
+	jmp     _multi_vram_buffer_horz
+
+.endproc
+
+; ---------------------------------------------------------------
 ; void __near__ deckswabber_tile_increment_fn_original_round1 (void)
 ; ---------------------------------------------------------------
 
@@ -3510,7 +3806,7 @@ L0948:	lda     _player_frame_timer
 ;
 	lda     _temp2
 	cmp     #$01
-	beq     L0B4E
+	beq     L0BCA
 ;
 ; --tiles_remaining;
 ;
@@ -3519,7 +3815,7 @@ L0948:	lda     _player_frame_timer
 ; temp1 = 1;
 ;
 	lda     #$01
-L0B4E:	sta     _temp1
+L0BCA:	sta     _temp1
 ;
 ; }
 ;
@@ -3572,7 +3868,7 @@ L0B4E:	sta     _temp1
 ;
 	lda     _temp1
 	cmp     #$01
-	bne     L0B50
+	bne     L0BCC
 ;
 ; --tiles_remaining;
 ;
@@ -3581,9 +3877,9 @@ L0B4E:	sta     _temp1
 ; } else if (temp2 == 1) {
 ;
 	rts
-L0B50:	lda     _temp2
+L0BCC:	lda     _temp2
 	cmp     #$01
-	bne     L09AA
+	bne     L0A1C
 ;
 ; ++tiles_remaining;
 ;
@@ -3591,7 +3887,7 @@ L0B50:	lda     _temp2
 ;
 ; }
 ;
-L09AA:	rts
+L0A1C:	rts
 
 .endproc
 
@@ -3630,13 +3926,13 @@ L09AA:	rts
 ; if (temp1 > 2) { temp1 = 1; }
 ;
 	cmp     #$03
-	bcc     L09C2
+	bcc     L0A34
 	lda     #$01
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L09C2:	ldy     _temp0
+L0A34:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
@@ -3644,7 +3940,7 @@ L09C2:	ldy     _temp0
 ;
 	lda     _temp1
 	cmp     #$02
-	bne     L0B52
+	bne     L0BCE
 ;
 ; --tiles_remaining;
 ;
@@ -3653,9 +3949,9 @@ L09C2:	ldy     _temp0
 ; } else if (temp2 == 2) {
 ;
 	rts
-L0B52:	lda     _temp2
+L0BCE:	lda     _temp2
 	cmp     #$02
-	bne     L09CF
+	bne     L0A41
 ;
 ; ++tiles_remaining;
 ;
@@ -3663,7 +3959,7 @@ L0B52:	lda     _temp2
 ;
 ; }
 ;
-L09CF:	rts
+L0A41:	rts
 
 .endproc
 
@@ -3702,13 +3998,13 @@ L09CF:	rts
 ; if (temp1 > 2) { temp1 = 0; }
 ;
 	cmp     #$03
-	bcc     L09E7
+	bcc     L0A59
 	lda     #$00
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L09E7:	ldy     _temp0
+L0A59:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
@@ -3716,7 +4012,7 @@ L09E7:	ldy     _temp0
 ;
 	lda     _temp1
 	cmp     #$02
-	bne     L0B54
+	bne     L0BD0
 ;
 ; --tiles_remaining;
 ;
@@ -3725,9 +4021,9 @@ L09E7:	ldy     _temp0
 ; } else if (temp2 == 2) {
 ;
 	rts
-L0B54:	lda     _temp2
+L0BD0:	lda     _temp2
 	cmp     #$02
-	bne     L09F4
+	bne     L0A66
 ;
 ; ++tiles_remaining;
 ;
@@ -3735,7 +4031,7 @@ L0B54:	lda     _temp2
 ;
 ; }
 ;
-L09F4:	rts
+L0A66:	rts
 
 .endproc
 
@@ -3774,13 +4070,13 @@ L09F4:	rts
 ; if (temp1 > 3) { temp1 = 2; }
 ;
 	cmp     #$04
-	bcc     L0A0C
+	bcc     L0A7E
 	lda     #$02
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L0A0C:	ldy     _temp0
+L0A7E:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
@@ -3788,7 +4084,7 @@ L0A0C:	ldy     _temp0
 ;
 	lda     _temp1
 	cmp     #$03
-	bne     L0B56
+	bne     L0BD2
 ;
 ; --tiles_remaining;
 ;
@@ -3797,9 +4093,9 @@ L0A0C:	ldy     _temp0
 ; } else if (temp2 == 3) {
 ;
 	rts
-L0B56:	lda     _temp2
+L0BD2:	lda     _temp2
 	cmp     #$03
-	bne     L0A19
+	bne     L0A8B
 ;
 ; ++tiles_remaining;
 ;
@@ -3807,7 +4103,7 @@ L0B56:	lda     _temp2
 ;
 ; }
 ;
-L0A19:	rts
+L0A8B:	rts
 
 .endproc
 
@@ -3846,13 +4142,13 @@ L0A19:	rts
 ; if (temp1 > 3) { temp1 = 0; }
 ;
 	cmp     #$04
-	bcc     L0A31
+	bcc     L0AA3
 	lda     #$00
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L0A31:	ldy     _temp0
+L0AA3:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
@@ -3860,7 +4156,7 @@ L0A31:	ldy     _temp0
 ;
 	lda     _temp1
 	cmp     #$03
-	bne     L0B58
+	bne     L0BD4
 ;
 ; --tiles_remaining;
 ;
@@ -3869,9 +4165,9 @@ L0A31:	ldy     _temp0
 ; } else if (temp2 == 3) {
 ;
 	rts
-L0B58:	lda     _temp2
+L0BD4:	lda     _temp2
 	cmp     #$03
-	bne     L0A3E
+	bne     L0AB0
 ;
 ; ++tiles_remaining;
 ;
@@ -3879,7 +4175,7 @@ L0B58:	lda     _temp2
 ;
 ; }
 ;
-L0A3E:	rts
+L0AB0:	rts
 
 .endproc
 
@@ -3918,13 +4214,13 @@ L0A3E:	rts
 ; if (temp1 > 4) { temp1 = 3; }
 ;
 	cmp     #$05
-	bcc     L0A56
+	bcc     L0AC8
 	lda     #$03
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L0A56:	ldy     _temp0
+L0AC8:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
@@ -3932,7 +4228,7 @@ L0A56:	ldy     _temp0
 ;
 	lda     _temp1
 	cmp     #$04
-	bne     L0B5A
+	bne     L0BD6
 ;
 ; --tiles_remaining;
 ;
@@ -3941,9 +4237,9 @@ L0A56:	ldy     _temp0
 ; } else if (temp2 == 4) {
 ;
 	rts
-L0B5A:	lda     _temp2
+L0BD6:	lda     _temp2
 	cmp     #$04
-	bne     L0A63
+	bne     L0AD5
 ;
 ; ++tiles_remaining;
 ;
@@ -3951,7 +4247,7 @@ L0B5A:	lda     _temp2
 ;
 ; }
 ;
-L0A63:	rts
+L0AD5:	rts
 
 .endproc
 
@@ -3990,13 +4286,13 @@ L0A63:	rts
 ; if (temp1 > 4) { temp1 = 0; }
 ;
 	cmp     #$05
-	bcc     L0A7B
+	bcc     L0AED
 	lda     #$00
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L0A7B:	ldy     _temp0
+L0AED:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
@@ -4004,7 +4300,7 @@ L0A7B:	ldy     _temp0
 ;
 	lda     _temp1
 	cmp     #$04
-	bne     L0B5C
+	bne     L0BD8
 ;
 ; --tiles_remaining;
 ;
@@ -4013,9 +4309,9 @@ L0A7B:	ldy     _temp0
 ; } else if (temp2 == 4) {
 ;
 	rts
-L0B5C:	lda     _temp2
+L0BD8:	lda     _temp2
 	cmp     #$04
-	bne     L0A88
+	bne     L0AFA
 ;
 ; ++tiles_remaining;
 ;
@@ -4023,7 +4319,7 @@ L0B5C:	lda     _temp2
 ;
 ; }
 ;
-L0A88:	rts
+L0AFA:	rts
 
 .endproc
 

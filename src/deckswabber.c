@@ -69,6 +69,12 @@ ZEROPAGE_EXTERN(unsigned char, eject_U);
 ZEROPAGE_EXTERN(unsigned char, level_index);
 #define level level_index
 
+ZEROPAGE_EXTERN(unsigned char, enemy_is_using_bg_collision);
+#define transition_timer enemy_is_using_bg_collision
+
+ZEROPAGE_EXTERN(unsigned char, coordinates);
+#define level_pack_index coordinates
+
 extern unsigned int deckswabber_1p_high_score;
 extern unsigned int previous_score;
 
@@ -109,6 +115,8 @@ extern void LZG_decode(const unsigned char *src, unsigned char *dest);
 extern void prepare_score_string(void);
 extern void update_checksum(void);
 
+extern void igloo_write_decimal_in_message_sub(void);
+
 void game_deckswabber(void);
 void begin_deckswabber(void);
 void begin_deckswabber_sub(void);
@@ -125,6 +133,7 @@ void deckswabber_redraw_player_tile(void);
 void deckswabber_update_attribute_byte(void);
 void deckswabber_update_score(void);
 void deckswabber_update_tiles_remaining(void);
+void deckswabber_write_finished_message(void);
 
 void deckswabber_tile_increment_fn_original_round1(void);
 void deckswabber_tile_increment_fn_original_round2(void);
@@ -174,11 +183,13 @@ void begin_deckswabber_sub(void) {
 
     set_mt_pointer(deckswabber_metatiles);
 
-    level = 1;
+    level = 0;
     round = 0;
 
     // Temporary/Debug: Hardcode selected level pack
-    deckswabber_active_level_pack_levels = deckswabber_original_level_pack_levels;
+    level_pack_index = 0;
+
+    deckswabber_active_level_pack_levels = deckswabber_level_data_db[level_pack_index];
 
     pal_bright(4);
 
@@ -191,10 +202,8 @@ void begin_deckswabber_level(void) {
     // Reset tile typemap, tile colormap, tile enemymap, and chrbuffer
     set_prg_bank(DECKSWABBER_CODE_BANK);
     // Figure out what the tilemap should be (from the current options...)
-    temppointer = deckswabber_original_map10;//deckswabber_active_level_pack_levels[level];
+    temppointer = deckswabber_active_level_pack_levels[level];//deckswabber_active_level_pack_levels[level];
     
-    memfill(tile_colormap, 0, 64 + 64 + 32); // Temporary...
-
     tiles_remaining = DECKSWABBER_TILE_HEIGHT * DECKSWABBER_TILE_WIDTH;
     
     x = 8;
@@ -258,11 +267,10 @@ void begin_deckswabber_level(void) {
         }
     }
 
-    // Draw attribute bytes...
+    transition_timer = 120;
     
-
-    // Reset all PPU palette entries on the board
-    // ...
+    // Clear the rest of relevant memory
+    memfill(tile_colormap, 0, 64 + 64 + 32);
 
     // (Re)draw the "goal" indicator, if applicable?
     // ...
@@ -275,17 +283,22 @@ void begin_deckswabber_level(void) {
     player_tile_y = 0;
 
     // Increment the starting tile by 1 and update it
-    tile_color_increment_type = 0; // Set based on some level info
+    tile_color_increment_type = round; // Set based on some level info
     
     temp_x = player_tile_x;
     temp_y = player_tile_y;
     AsmCallFunctionAtPtrOffsetByIndexVar(tile_increment_functions, eject_L);
     deckswabber_redraw_player_tile();
+
+    multi_vram_buffer_horz(deckswabber_tiles_remaining, 10, NTADR_A(17, 4));
     deckswabber_update_tiles_remaining();
+
     ppu_on_all();
 }
 
 void game_deckswabber(void) {
+    DECKSWABBER_RESET_PLAYER_FLAGS_START_FRAME();
+
     pad1 = pad_poll(0); // read the first controller
     pad1_new = get_pad_new(0);
 
@@ -296,12 +309,37 @@ void game_deckswabber(void) {
     // If not paused:
     set_prg_bank(DECKSWABBER_CODE_BANK);
 
-    deckswabber_player_movement();
+    if (tiles_remaining > 0) {
+        deckswabber_player_movement();
+    } else {
+        if (transition_timer == 120) {
+            deckswabber_write_finished_message();
+        }
+        if (transition_timer) {
+            --transition_timer;
+        } else if (pad1_new) {
+            ++level;
+            temp0 = round << 1;   
+            temppointer1 = deckswabber_round_bounds_db[level_pack_index];
+            temp2 = temppointer1[temp0 + 1]; // Maximum level in round
+            if (level >= temp2) {
+                // Increment round
+                level = temppointer1[temp0]; // Minimum level in round
+                ++round;
+                if (round >= deckswabber_maximum_round_db[level_pack_index]) {
+                    // Todo - write some kind of congrats message for winning
+                    end_deckswabber();
+                    return;
+                }
+            }
+            begin_deckswabber_level(); // Next Level (todo)
+            return;
+        }
+    }
 
     deckswabber_draw_sprites();
 
-    // Temporarily (eventually do this only when flagged):
-    deckswabber_update_score();
+    if (DECKSWABBER_SCORE_CHANGED_THIS_FRAME) { deckswabber_update_score(); }
 
     if (pad1 & PAD_B) {
         end_deckswabber();
@@ -358,13 +396,24 @@ void deckswabber_player_movement(void) {
 void deckswabber_update_score(void) {
     convert_to_decimal(score);
     prepare_score_string();
-    multi_vram_buffer_horz(score_string, 5, NTADR_A(4, 3)); // Change, or if it doesn't change, just call hasee_update_score for code reuse as this is in the same bank
+    multi_vram_buffer_horz(score_string, 5, NTADR_A(4, 3));
 }
 
 void deckswabber_update_tiles_remaining(void) {
     convert_to_decimal(tiles_remaining);
     prepare_score_string();
     multi_vram_buffer_horz(score_string+3, 2, NTADR_A(21, 5));
+}
+
+void deckswabber_write_finished_message(void) {
+    multi_vram_buffer_horz(deckswabber_level_finished, 10, NTADR_A(17, 4));
+    multi_vram_buffer_horz(deckswabber_bonus, 6, NTADR_A(17, 5));
+
+    // ...calculate bonus here
+    // ...temporary
+    convert_to_decimal(energy);
+    igloo_write_decimal_in_message_sub(); // Note: this writes to cmap+64. It shouldn't matter by the time we call this, though.
+    multi_vram_buffer_horz(cmap+64, temp0, NTADR_A(24, 5));
 }
 
 void deckswabber_draw_sprites(void) {

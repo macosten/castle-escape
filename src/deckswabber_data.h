@@ -750,6 +750,18 @@ const unsigned char * const deckswabber_original_level_pack_levels[] = {
     deckswabber_original_map10,
 };
 
+
+const unsigned char deckswabber_original_level_pack_round_bounds[] = {
+    0, 5, // Round 1: Start at level 0 (1-indexed 1), round up at level 5 (after beating 1-indexed level 5)
+    0, 5, // etc
+    1, 6,
+    2, 7,
+    3, 8,
+    4, 9,
+    5, 10,
+    5, 10, // 8 rounds originally
+};
+
 const unsigned char * const * const deckswabber_level_data_db[] = {
     deckswabber_original_level_pack_levels,
     // ..., ..., "Stowaway Sting Levels",
@@ -759,6 +771,18 @@ const char * const deckswabber_level_name_db[] = {
     "Original Levels",
     // "Stowaway Sting",
 };
+
+const unsigned char deckswabber_maximum_round_db[] = {
+    sizeof(deckswabber_original_level_pack_round_bounds)/2, // Original levels have 8 rounds
+};
+
+const unsigned char * const deckswabber_round_bounds_db[] = {
+    deckswabber_original_level_pack_round_bounds
+};
+
+const char * const deckswabber_tiles_remaining = "Tiles Left";
+const char * const deckswabber_level_finished = "Finished!";
+const char * const deckswabber_bonus = "Bonus:";
 
 #pragma rodata-name(pop);
 
