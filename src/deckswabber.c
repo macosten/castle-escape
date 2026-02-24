@@ -124,6 +124,7 @@ void deckswabber_redraw_player_tile(void);
 // Note: temp_x and temp_y should be set to the values to update the byte for, in deckswabber tile coordinates.
 void deckswabber_update_attribute_byte(void);
 void deckswabber_update_score(void);
+void deckswabber_update_tiles_remaining(void);
 
 void deckswabber_tile_increment_fn_original_round1(void);
 void deckswabber_tile_increment_fn_original_round2(void);
@@ -179,11 +180,10 @@ void begin_deckswabber_sub(void) {
     // Temporary/Debug: Hardcode selected level pack
     deckswabber_active_level_pack_levels = deckswabber_original_level_pack_levels;
 
-    // Begin first level...
-    begin_deckswabber_level();
-
-    ppu_on_all();
     pal_bright(4);
+
+    // Begin first level...
+    begin_deckswabber_level();    
 }
 
 void begin_deckswabber_level(void) {
@@ -281,6 +281,7 @@ void begin_deckswabber_level(void) {
     temp_y = player_tile_y;
     AsmCallFunctionAtPtrOffsetByIndexVar(tile_increment_functions, eject_L);
     deckswabber_redraw_player_tile();
+    deckswabber_update_tiles_remaining();
     ppu_on_all();
 }
 
@@ -349,7 +350,7 @@ void deckswabber_player_movement(void) {
             AsmCallFunctionAtPtrOffsetByIndexVar(tile_increment_functions, eject_L);
             // Update the tile under the player
             deckswabber_redraw_player_tile();
-            //deckswabber_update_tiles_remaining_hud();
+            deckswabber_update_tiles_remaining();
         }
     }
 }
@@ -358,6 +359,12 @@ void deckswabber_update_score(void) {
     convert_to_decimal(score);
     prepare_score_string();
     multi_vram_buffer_horz(score_string, 5, NTADR_A(4, 3)); // Change, or if it doesn't change, just call hasee_update_score for code reuse as this is in the same bank
+}
+
+void deckswabber_update_tiles_remaining(void) {
+    convert_to_decimal(tiles_remaining);
+    prepare_score_string();
+    multi_vram_buffer_horz(score_string+3, 2, NTADR_A(21, 5));
 }
 
 void deckswabber_draw_sprites(void) {
@@ -397,57 +404,97 @@ void deckswabber_tile_increment_fn_original_round1(void) {
         --tiles_remaining;
     }
     temp1 = 1;
-    // Update the "tiles remaining" value
-    // ...
 }
 
 void deckswabber_tile_increment_fn_original_round2(void) {
     DeckswabberGetTileIndex(temp0, temp_x, temp_y);
-    temp1 = tile_colormap[temp0];
+    temp2 = tile_colormap[temp0];
+    temp1 = temp2;
     temp1 ^= 1;
     tile_colormap[temp0] = temp1;
+    if (temp1 == 1) {
+        --tiles_remaining;
+    } else if (temp2 == 1) {
+        ++tiles_remaining;
+    }
 }
 
 void deckswabber_tile_increment_fn_original_round3(void) {
     DeckswabberGetTileIndex(temp0, temp_x, temp_y);
-    temp1 = tile_colormap[temp0] + 1;
+    temp2 = tile_colormap[temp0];
+    temp1 = temp2 + 1;
     if (temp1 > 2) { temp1 = 1; }
     tile_colormap[temp0] = temp1;
+    if (temp1 == 2) {
+        --tiles_remaining;
+    } else if (temp2 == 2) {
+        ++tiles_remaining;
+    }
 }
 
 void deckswabber_tile_increment_fn_original_round4(void) {
     DeckswabberGetTileIndex(temp0, temp_x, temp_y);
-    temp1 = tile_colormap[temp0] + 1;
+    temp2 = tile_colormap[temp0];
+    temp1 = temp2 + 1;
     if (temp1 > 2) { temp1 = 0; }
     tile_colormap[temp0] = temp1;
+    if (temp1 == 2) {
+        --tiles_remaining;
+    } else if (temp2 == 2) {
+        ++tiles_remaining;
+    }
 }
 
 void deckswabber_tile_increment_fn_original_round5(void) {
     DeckswabberGetTileIndex(temp0, temp_x, temp_y);
-    temp1 = tile_colormap[temp0] + 1;
+    temp2 = tile_colormap[temp0];
+    temp1 = temp2 + 1;
     if (temp1 > 3) { temp1 = 2; }
     tile_colormap[temp0] = temp1;
+    if (temp1 == 3) {
+        --tiles_remaining;
+    } else if (temp2 == 3) {
+        ++tiles_remaining;
+    }
 }
 
 void deckswabber_tile_increment_fn_original_round6(void) {
     DeckswabberGetTileIndex(temp0, temp_x, temp_y);
-    temp1 = tile_colormap[temp0] + 1;
+    temp2 = tile_colormap[temp0];
+    temp1 = temp2 + 1;
     if (temp1 > 3) { temp1 = 0; }
     tile_colormap[temp0] = temp1;
+    if (temp1 == 3) {
+        --tiles_remaining;
+    } else if (temp2 == 3) {
+        ++tiles_remaining;
+    }
 }
 
 void deckswabber_tile_increment_fn_original_round7(void) {
     DeckswabberGetTileIndex(temp0, temp_x, temp_y);
-    temp1 = tile_colormap[temp0] + 1;
+    temp2 = tile_colormap[temp0];
+    temp1 = temp2 + 1;
     if (temp1 > 4) { temp1 = 3; }
     tile_colormap[temp0] = temp1;
+    if (temp1 == 4) {
+        --tiles_remaining;
+    } else if (temp2 == 4) {
+        ++tiles_remaining;
+    }
 }
 
 void deckswabber_tile_increment_fn_original_round8(void) {
     DeckswabberGetTileIndex(temp0, temp_x, temp_y);
-    temp1 = tile_colormap[temp0] + 1;
+    temp2 = tile_colormap[temp0];
+    temp1 = temp2 + 1;
     if (temp1 > 4) { temp1 = 0; }
     tile_colormap[temp0] = temp1;
+    if (temp1 == 4) {
+        --tiles_remaining;
+    } else if (temp2 == 4) {
+        ++tiles_remaining;
+    }
 }
 
 void deckswabber_redraw_player_tile(void) {

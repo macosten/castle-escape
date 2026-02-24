@@ -1287,6 +1287,8 @@ void load_level_new(void) {
     // Actually make the memory visible/switch banks.
     set_prg_bank(level_nametable_banks[level_index]);
 
+    // TODO - if not in Bank 5/whatever bank LZG_decode is in, copy this to another buffer first.
+
     // Decompress.
     LZG_decode(temppointer, cmap);
 

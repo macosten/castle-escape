@@ -166,6 +166,7 @@
 	.export		_deckswabber_redraw_player_tile
 	.export		_deckswabber_update_attribute_byte
 	.export		_deckswabber_update_score
+	.export		_deckswabber_update_tiles_remaining
 	.export		_deckswabber_tile_increment_fn_original_round1
 	.export		_deckswabber_tile_increment_fn_original_round2
 	.export		_deckswabber_tile_increment_fn_original_round3
@@ -2245,7 +2246,7 @@ _deckswabber_active_level_pack_header:
 ;
 	lda     _pad1_new
 	and     #$10
-	beq     L08B3
+	beq     L08B2
 ;
 ; ++tile_color_increment_type; // Cycle through for debug
 ;
@@ -2259,7 +2260,7 @@ _deckswabber_active_level_pack_header:
 ;
 ; }
 ;
-L08B3:	rts
+L08B2:	rts
 
 .endproc
 
@@ -2378,18 +2379,14 @@ L08B3:	rts
 	lda     #<(_deckswabber_original_level_pack_levels)
 	sta     _deckswabber_active_level_pack_levels
 ;
-; begin_deckswabber_level();
-;
-	jsr     _begin_deckswabber_level
-;
-; ppu_on_all();
-;
-	jsr     _ppu_on_all
-;
 ; pal_bright(4);
 ;
 	lda     #$04
-	jmp     _pal_bright
+	jsr     _pal_bright
+;
+; begin_deckswabber_level();    
+;
+	jmp     _begin_deckswabber_level
 
 .endproc
 
@@ -2492,9 +2489,9 @@ L08B3:	rts
 ; for (index = 0; index < (DECKSWABBER_TILE_HEIGHT * DECKSWABBER_TILE_WIDTH); index += 2) {
 ;
 	lda     #$00
-L0AE4:	sta     _index
+L0B30:	sta     _index
 	cmp     #$40
-	jcs     L0AEB
+	jcs     L0B37
 ;
 ; clear_vram_buffer();
 ;
@@ -2547,29 +2544,29 @@ L0AE4:	sta     _index
 ;
 	lda     _temp0
 	cmp     #$08
-	beq     L0AE8
+	beq     L0B34
 	cmp     #$09
-	bne     L0AE9
+	bne     L0B35
 ;
 ; --tiles_remaining;
 ;
-L0AE8:	dec     _eject_R
+L0B34:	dec     _eject_R
 ;
 ; if (temp1 == DECKSWABBER_WATER_HOLE_ID || temp1 == DECKSWABBER_EMPTY_HOLE_ID) {
 ;
-L0AE9:	lda     _temp1
+L0B35:	lda     _temp1
 	cmp     #$08
-	beq     L0AEA
+	beq     L0B36
 	cmp     #$09
-	bne     L07F5
+	bne     L07F4
 ;
 ; --tiles_remaining;
 ;
-L0AEA:	dec     _eject_R
+L0B36:	dec     _eject_R
 ;
 ; tile_typemap[index] = temp0;
 ;
-L07F5:	ldy     _index
+L07F4:	ldy     _index
 	lda     _temp0
 	sta     _cmap,y
 ;
@@ -2633,10 +2630,10 @@ L07F5:	ldy     _index
 	lda     _index
 	clc
 	adc     #$01
-	bcc     L0AE5
+	bcc     L0B31
 	inx
 	clc
-L0AE5:	adc     #<(_cmap)
+L0B31:	adc     #<(_cmap)
 	sta     ptr1
 	txa
 	adc     #>(_cmap)
@@ -2657,10 +2654,10 @@ L0AE5:	adc     #<(_cmap)
 	lda     _index
 	clc
 	adc     #$01
-	bcc     L0AE6
+	bcc     L0B32
 	inx
 	clc
-L0AE6:	adc     #<(_cmap+64)
+L0B32:	adc     #<(_cmap+64)
 	sta     ptr1
 	txa
 	adc     #>(_cmap+64)
@@ -2675,10 +2672,10 @@ L0AE6:	adc     #<(_cmap+64)
 	lda     _index
 	clc
 	adc     #$01
-	bcc     L0AE7
+	bcc     L0B33
 	inx
 	clc
-L0AE7:	adc     #<(_cmap+128)
+L0B33:	adc     #<(_cmap+128)
 	sta     ptr1
 	txa
 	adc     #>(_cmap+128)
@@ -2725,7 +2722,7 @@ L0AE7:	adc     #<(_cmap+128)
 ; if (x >= 24) {
 ;
 	cmp     #$18
-	bcc     L0855
+	bcc     L0854
 ;
 ; x = 8;
 ;
@@ -2741,34 +2738,34 @@ L0AE7:	adc     #<(_cmap+128)
 ;
 ; flush_vram_update_nmi();
 ;
-L0855:	jsr     _flush_vram_update_nmi
+L0854:	jsr     _flush_vram_update_nmi
 ;
 ; for (index = 0; index < (DECKSWABBER_TILE_HEIGHT * DECKSWABBER_TILE_WIDTH); index += 2) {
 ;
 	lda     #$02
 	clc
 	adc     _index
-	jmp     L0AE4
+	jmp     L0B30
 ;
 ; index = 0;
 ;
-L0AEB:	lda     #$00
+L0B37:	lda     #$00
 	sta     _index
 ;
 ; for (y = 0; y < DECKSWABBER_TILE_HEIGHT; y += 1) {
 ;
 	sta     _y
-L0AEC:	lda     _y
+L0B38:	lda     _y
 	cmp     #$08
-	bcs     L0AEF
+	bcs     L0B3B
 ;
 ; for (x = 0; x < DECKSWABBER_TILE_WIDTH; x += 1) {
 ;
 	lda     #$00
 	sta     _x
-L0AED:	lda     _x
+L0B39:	lda     _x
 	cmp     #$08
-	bcs     L0AEE
+	bcs     L0B3A
 ;
 ; clear_vram_buffer();
 ;
@@ -2803,16 +2800,16 @@ L0AED:	lda     _x
 ; for (x = 0; x < DECKSWABBER_TILE_WIDTH; x += 1) {
 ;
 	inc     _x
-	jmp     L0AED
+	jmp     L0B39
 ;
 ; for (y = 0; y < DECKSWABBER_TILE_HEIGHT; y += 1) {
 ;
-L0AEE:	inc     _y
-	jmp     L0AEC
+L0B3A:	inc     _y
+	jmp     L0B38
 ;
 ; energy = 192; // 6 HUD tiles that take up the visual HP bar * 32 "health" per tile (16 per "tick")
 ;
-L0AEF:	lda     #$C0
+L0B3B:	lda     #$C0
 	sta     _energy
 ;
 ; player_tile_x = 0;
@@ -2853,9 +2850,9 @@ L0AEF:	lda     #$C0
 ;
 	jsr     _deckswabber_redraw_player_tile
 ;
-; --tiles_remaining;
+; deckswabber_update_tiles_remaining();
 ;
-	dec     _eject_R
+	jsr     _deckswabber_update_tiles_remaining
 ;
 ; ppu_on_all();
 ;
@@ -2883,10 +2880,10 @@ L0AEF:	lda     #$C0
 ;
 	lda     _pad1_new
 	and     #$08
-	beq     L0AF4
+	beq     L0B40
 	lda     _old_y
 	ora     _old_y+1
-	beq     L0AF4
+	beq     L0B40
 ;
 ; player_tile_y -= 1;
 ;
@@ -2894,37 +2891,37 @@ L0AEF:	lda     #$C0
 	sec
 	sbc     #$01
 	sta     _old_y
-	bcs     L08F6
+	bcs     L08F5
 	dec     _old_y+1
 ;
 ; } else if (pad1_new & PAD_DOWN && player_tile_y < DECKSWABBER_TILE_HEIGHT-1) {
 ;
-	jmp     L08F6
-L0AF4:	lda     _pad1_new
+	jmp     L08F5
+L0B40:	lda     _pad1_new
 	and     #$04
-	beq     L0AF8
+	beq     L0B44
 	lda     _old_y+1
 	cmp     #$00
-	bne     L08D7
+	bne     L08D6
 	lda     _old_y
 	cmp     #$07
-L08D7:	bcs     L0AF8
+L08D6:	bcs     L0B44
 ;
 ; player_tile_y += 1;
 ;
 	inc     _old_y
-	bne     L08F6
+	bne     L08F5
 	inc     _old_y+1
 ;
 ; } else if (pad1_new & PAD_LEFT && player_tile_x > 0) {
 ;
-	jmp     L08F6
-L0AF8:	lda     _pad1_new
+	jmp     L08F5
+L0B44:	lda     _pad1_new
 	and     #$02
-	beq     L0AFC
+	beq     L0B48
 	lda     _old_x
 	ora     _old_x+1
-	beq     L0AFC
+	beq     L0B48
 ;
 ; player_tile_x -= 1;
 ;
@@ -2932,37 +2929,37 @@ L0AF8:	lda     _pad1_new
 	sec
 	sbc     #$01
 	sta     _old_x
-	bcs     L08F6
+	bcs     L08F5
 	dec     _old_x+1
 ;
 ; } else if (pad1_new & PAD_RIGHT && player_tile_x < DECKSWABBER_TILE_WIDTH-1) {
 ;
-	jmp     L08F6
-L0AFC:	lda     _pad1_new
+	jmp     L08F5
+L0B48:	lda     _pad1_new
 	and     #$01
-	beq     L08ED
+	beq     L08EC
 	lda     _old_x+1
 	cmp     #$00
-	bne     L08F1
+	bne     L08F0
 	lda     _old_x
 	cmp     #$07
-L08F1:	bcs     L08ED
+L08F0:	bcs     L08EC
 ;
 ; player_tile_x += 1;
 ;
 	inc     _old_x
-	bne     L08F6
+	bne     L08F5
 	inc     _old_x+1
 ;
 ; temp0 = 1;
 ;
-L08F6:	lda     #$01
+L08F5:	lda     #$01
 	sta     _temp0
 ;
 ; if (temp0) {
 ;
-L08ED:	lda     _temp0
-	beq     L0911
+L08EC:	lda     _temp0
+	beq     L0910
 ;
 ; sfx_play(SFX_JUMP, 0);
 ;
@@ -2994,7 +2991,7 @@ L08ED:	lda     _temp0
 ; if (temp1 < DECKSWABBER_WATER_HOLE_ID) {
 ;
 	cmp     #$08
-	bcs     L0911
+	bcs     L0910
 ;
 ; temp_x = player_tile_x;
 ;
@@ -3017,11 +3014,15 @@ L08ED:	lda     _temp0
 ;
 ; deckswabber_redraw_player_tile();
 ;
-	jmp     _deckswabber_redraw_player_tile
+	jsr     _deckswabber_redraw_player_tile
+;
+; deckswabber_update_tiles_remaining();
+;
+	jmp     _deckswabber_update_tiles_remaining
 ;
 ; }
 ;
-L0911:	rts
+L0910:	rts
 
 .endproc
 
@@ -3065,7 +3066,7 @@ L0911:	rts
 ; if (player_frame_timer) {
 ;
 	lda     _player_frame_timer
-	beq     L093B
+	beq     L0948
 ;
 ; --player_frame_timer;
 ;
@@ -3073,7 +3074,7 @@ L0911:	rts
 ;
 ; temp0 = player_frame_timer >> 2;
 ;
-L093B:	lda     _player_frame_timer
+L0948:	lda     _player_frame_timer
 	lsr     a
 	lsr     a
 	sta     _temp0
@@ -3435,6 +3436,45 @@ L093B:	lda     _player_frame_timer
 .endproc
 
 ; ---------------------------------------------------------------
+; void __near__ deckswabber_update_tiles_remaining (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_update_tiles_remaining: near
+
+.segment	"BANK1"
+
+;
+; convert_to_decimal(tiles_remaining);
+;
+	lda     _eject_R
+	ldx     #$00
+	jsr     _convert_to_decimal
+;
+; prepare_score_string();
+;
+	jsr     _prepare_score_string
+;
+; multi_vram_buffer_horz(score_string+3, 2, NTADR_A(21, 5));
+;
+	jsr     decsp3
+	lda     #<(_score_string+3)
+	ldy     #$01
+	sta     (sp),y
+	iny
+	lda     #>(_score_string+3)
+	sta     (sp),y
+	tya
+	ldy     #$00
+	sta     (sp),y
+	ldx     #$20
+	lda     #$B5
+	jmp     _multi_vram_buffer_horz
+
+.endproc
+
+; ---------------------------------------------------------------
 ; void __near__ deckswabber_tile_increment_fn_original_round1 (void)
 ; ---------------------------------------------------------------
 
@@ -3470,7 +3510,7 @@ L093B:	lda     _player_frame_timer
 ;
 	lda     _temp2
 	cmp     #$01
-	beq     L0B02
+	beq     L0B4E
 ;
 ; --tiles_remaining;
 ;
@@ -3479,7 +3519,7 @@ L093B:	lda     _player_frame_timer
 ; temp1 = 1;
 ;
 	lda     #$01
-L0B02:	sta     _temp1
+L0B4E:	sta     _temp1
 ;
 ; }
 ;
@@ -3507,10 +3547,14 @@ L0B02:	sta     _temp1
 	ora     _temp_x
 	sta     _temp0
 ;
-; temp1 = tile_colormap[temp0];
+; temp2 = tile_colormap[temp0];
 ;
 	ldy     _temp0
 	lda     _cmap+64,y
+	sta     _temp2
+;
+; temp1 = temp2;
+;
 	sta     _temp1
 ;
 ; temp1 ^= 1;
@@ -3524,9 +3568,30 @@ L0B02:	sta     _temp1
 	lda     _temp1
 	sta     _cmap+64,y
 ;
-; }
+; if (temp1 == 1) {
+;
+	lda     _temp1
+	cmp     #$01
+	bne     L0B50
+;
+; --tiles_remaining;
+;
+	dec     _eject_R
+;
+; } else if (temp2 == 1) {
 ;
 	rts
+L0B50:	lda     _temp2
+	cmp     #$01
+	bne     L09AA
+;
+; ++tiles_remaining;
+;
+	inc     _eject_R
+;
+; }
+;
+L09AA:	rts
 
 .endproc
 
@@ -3550,10 +3615,14 @@ L0B02:	sta     _temp1
 	ora     _temp_x
 	sta     _temp0
 ;
-; temp1 = tile_colormap[temp0] + 1;
+; temp2 = tile_colormap[temp0];
 ;
 	ldy     _temp0
 	lda     _cmap+64,y
+	sta     _temp2
+;
+; temp1 = temp2 + 1;
+;
 	clc
 	adc     #$01
 	sta     _temp1
@@ -3561,19 +3630,40 @@ L0B02:	sta     _temp1
 ; if (temp1 > 2) { temp1 = 1; }
 ;
 	cmp     #$03
-	bcc     L09AA
+	bcc     L09C2
 	lda     #$01
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L09AA:	ldy     _temp0
+L09C2:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
-; }
+; if (temp1 == 2) {
+;
+	lda     _temp1
+	cmp     #$02
+	bne     L0B52
+;
+; --tiles_remaining;
+;
+	dec     _eject_R
+;
+; } else if (temp2 == 2) {
 ;
 	rts
+L0B52:	lda     _temp2
+	cmp     #$02
+	bne     L09CF
+;
+; ++tiles_remaining;
+;
+	inc     _eject_R
+;
+; }
+;
+L09CF:	rts
 
 .endproc
 
@@ -3597,10 +3687,14 @@ L09AA:	ldy     _temp0
 	ora     _temp_x
 	sta     _temp0
 ;
-; temp1 = tile_colormap[temp0] + 1;
+; temp2 = tile_colormap[temp0];
 ;
 	ldy     _temp0
 	lda     _cmap+64,y
+	sta     _temp2
+;
+; temp1 = temp2 + 1;
+;
 	clc
 	adc     #$01
 	sta     _temp1
@@ -3608,19 +3702,40 @@ L09AA:	ldy     _temp0
 ; if (temp1 > 2) { temp1 = 0; }
 ;
 	cmp     #$03
-	bcc     L09C6
+	bcc     L09E7
 	lda     #$00
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L09C6:	ldy     _temp0
+L09E7:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
-; }
+; if (temp1 == 2) {
+;
+	lda     _temp1
+	cmp     #$02
+	bne     L0B54
+;
+; --tiles_remaining;
+;
+	dec     _eject_R
+;
+; } else if (temp2 == 2) {
 ;
 	rts
+L0B54:	lda     _temp2
+	cmp     #$02
+	bne     L09F4
+;
+; ++tiles_remaining;
+;
+	inc     _eject_R
+;
+; }
+;
+L09F4:	rts
 
 .endproc
 
@@ -3644,10 +3759,14 @@ L09C6:	ldy     _temp0
 	ora     _temp_x
 	sta     _temp0
 ;
-; temp1 = tile_colormap[temp0] + 1;
+; temp2 = tile_colormap[temp0];
 ;
 	ldy     _temp0
 	lda     _cmap+64,y
+	sta     _temp2
+;
+; temp1 = temp2 + 1;
+;
 	clc
 	adc     #$01
 	sta     _temp1
@@ -3655,19 +3774,40 @@ L09C6:	ldy     _temp0
 ; if (temp1 > 3) { temp1 = 2; }
 ;
 	cmp     #$04
-	bcc     L09E2
+	bcc     L0A0C
 	lda     #$02
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L09E2:	ldy     _temp0
+L0A0C:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
-; }
+; if (temp1 == 3) {
+;
+	lda     _temp1
+	cmp     #$03
+	bne     L0B56
+;
+; --tiles_remaining;
+;
+	dec     _eject_R
+;
+; } else if (temp2 == 3) {
 ;
 	rts
+L0B56:	lda     _temp2
+	cmp     #$03
+	bne     L0A19
+;
+; ++tiles_remaining;
+;
+	inc     _eject_R
+;
+; }
+;
+L0A19:	rts
 
 .endproc
 
@@ -3691,10 +3831,14 @@ L09E2:	ldy     _temp0
 	ora     _temp_x
 	sta     _temp0
 ;
-; temp1 = tile_colormap[temp0] + 1;
+; temp2 = tile_colormap[temp0];
 ;
 	ldy     _temp0
 	lda     _cmap+64,y
+	sta     _temp2
+;
+; temp1 = temp2 + 1;
+;
 	clc
 	adc     #$01
 	sta     _temp1
@@ -3702,19 +3846,40 @@ L09E2:	ldy     _temp0
 ; if (temp1 > 3) { temp1 = 0; }
 ;
 	cmp     #$04
-	bcc     L09FE
+	bcc     L0A31
 	lda     #$00
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L09FE:	ldy     _temp0
+L0A31:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
-; }
+; if (temp1 == 3) {
+;
+	lda     _temp1
+	cmp     #$03
+	bne     L0B58
+;
+; --tiles_remaining;
+;
+	dec     _eject_R
+;
+; } else if (temp2 == 3) {
 ;
 	rts
+L0B58:	lda     _temp2
+	cmp     #$03
+	bne     L0A3E
+;
+; ++tiles_remaining;
+;
+	inc     _eject_R
+;
+; }
+;
+L0A3E:	rts
 
 .endproc
 
@@ -3738,10 +3903,14 @@ L09FE:	ldy     _temp0
 	ora     _temp_x
 	sta     _temp0
 ;
-; temp1 = tile_colormap[temp0] + 1;
+; temp2 = tile_colormap[temp0];
 ;
 	ldy     _temp0
 	lda     _cmap+64,y
+	sta     _temp2
+;
+; temp1 = temp2 + 1;
+;
 	clc
 	adc     #$01
 	sta     _temp1
@@ -3749,19 +3918,40 @@ L09FE:	ldy     _temp0
 ; if (temp1 > 4) { temp1 = 3; }
 ;
 	cmp     #$05
-	bcc     L0A1A
+	bcc     L0A56
 	lda     #$03
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L0A1A:	ldy     _temp0
+L0A56:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
-; }
+; if (temp1 == 4) {
+;
+	lda     _temp1
+	cmp     #$04
+	bne     L0B5A
+;
+; --tiles_remaining;
+;
+	dec     _eject_R
+;
+; } else if (temp2 == 4) {
 ;
 	rts
+L0B5A:	lda     _temp2
+	cmp     #$04
+	bne     L0A63
+;
+; ++tiles_remaining;
+;
+	inc     _eject_R
+;
+; }
+;
+L0A63:	rts
 
 .endproc
 
@@ -3785,10 +3975,14 @@ L0A1A:	ldy     _temp0
 	ora     _temp_x
 	sta     _temp0
 ;
-; temp1 = tile_colormap[temp0] + 1;
+; temp2 = tile_colormap[temp0];
 ;
 	ldy     _temp0
 	lda     _cmap+64,y
+	sta     _temp2
+;
+; temp1 = temp2 + 1;
+;
 	clc
 	adc     #$01
 	sta     _temp1
@@ -3796,19 +3990,40 @@ L0A1A:	ldy     _temp0
 ; if (temp1 > 4) { temp1 = 0; }
 ;
 	cmp     #$05
-	bcc     L0A36
+	bcc     L0A7B
 	lda     #$00
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L0A36:	ldy     _temp0
+L0A7B:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
-; }
+; if (temp1 == 4) {
+;
+	lda     _temp1
+	cmp     #$04
+	bne     L0B5C
+;
+; --tiles_remaining;
+;
+	dec     _eject_R
+;
+; } else if (temp2 == 4) {
 ;
 	rts
+L0B5C:	lda     _temp2
+	cmp     #$04
+	bne     L0A88
+;
+; ++tiles_remaining;
+;
+	inc     _eject_R
+;
+; }
+;
+L0A88:	rts
 
 .endproc
 
