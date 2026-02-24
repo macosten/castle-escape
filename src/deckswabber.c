@@ -79,7 +79,6 @@ extern unsigned int deckswabber_1p_high_score;
 extern unsigned int previous_score;
 
 const unsigned char * const * deckswabber_active_level_pack_levels;
-const unsigned char * deckswabber_active_level_pack_header;
 
 #if (DECKSWABBER_TILE_WIDTH != 8 || DECKSWABBER_TILE_HEIGHT != 8)
     #warning "Careful (deckswabber): Odd width and height, the code probably doesn't support this yet."
@@ -190,8 +189,6 @@ void begin_deckswabber_sub(void) {
     // Temporary/Debug: Hardcode selected level pack
     level_pack_index = 0;
 
-    deckswabber_active_level_pack_levels = deckswabber_level_data_db[level_pack_index];
-
     pal_bright(4);
 
     // Begin first level...
@@ -203,18 +200,24 @@ void begin_deckswabber_level(void) {
     // Reset tile typemap, tile colormap, tile enemymap, and chrbuffer
     set_prg_bank(DECKSWABBER_CODE_BANK);
     // Figure out what the tilemap should be (from the current options...)
-    temppointer = deckswabber_active_level_pack_levels[level];//deckswabber_active_level_pack_levels[level];
+    //address = (int)(deckswabber_level_data_db[level_pack_index]);
+    AsmSet2ByteFromPtrAtIndexVar(address, deckswabber_level_data_db, coordinates);
+    //temppointer = (const unsigned char *)((const unsigned char * const *)address)[level];
+    AsmSet2ByteFromMutPtrWithOffset(temppointer, address, level_index);
     
     tiles_remaining = DECKSWABBER_TILE_HEIGHT * DECKSWABBER_TILE_WIDTH;
     
     x = 8;
     y = 8;
-    for (index = 0; index < (DECKSWABBER_TILE_HEIGHT * DECKSWABBER_TILE_WIDTH); index += 2) {
+    for (index = 0; index < (DECKSWABBER_TILE_HEIGHT * DECKSWABBER_TILE_WIDTH); index += 1) {
         clear_vram_buffer();
         // Bitpacked: 2 tiles per byte
         temp4 = index >> 1;
-        temp0 = temppointer[temp4] >> 4;
-        temp1 = temppointer[temp4] & 0x0F;
+
+        // temp2 = temppointer[temp4];
+        AsmSet1ByteFromZpPtrAtIndexVar(temp2, temppointer, temp4);
+        temp0 = temp2 >> 4;
+        temp1 = temp2 & 0x0F;
 
         temp0 = deckswabber_nibble_to_tile_id_map[temp0];
         temp1 = deckswabber_nibble_to_tile_id_map[temp1];
@@ -238,10 +241,12 @@ void begin_deckswabber_level(void) {
         //address += 2; // Equivalent to x += 2 and then recalc'ing address, since we know it'll never skip to the next row here (x would be odd)
         x += 2;
 
-        tile_typemap[index + 1] = temp1;
+        ++index;
+
+        tile_typemap[index] = temp1;
         temp2 = deckswabber_metatile_palettes[temp1];
-        tile_colormap[index + 1] = temp1;
-        enemymap[index + 1] = 0;
+        tile_colormap[index] = temp1;
+        enemymap[index] = 0;
         
         address = NTADR_A(x, y);
         buffer_1_mt(address, temp1);
@@ -294,7 +299,8 @@ void begin_deckswabber_level(void) {
 
 
     // X and Y coordinates for this game will be in tiles; the drawing routines will figure out where they belong on-screen...
-    temppointer1 = deckswabber_starting_coords_db[level_pack_index];
+    //temppointer1 = deckswabber_starting_coords_db[level_pack_index];
+    AsmSet2ByteFromPtrAtIndexVar(temppointer1, deckswabber_starting_coords_db, coordinates);
     temp0 = temppointer1[level];
     
     player_tile_x = temp0 >> 4;
@@ -338,12 +344,16 @@ void game_deckswabber(void) {
             --transition_timer;
         } else if (pad1_new) {
             ++level;
-            temp0 = round << 1;   
-            temppointer1 = deckswabber_round_bounds_db[level_pack_index];
-            temp2 = temppointer1[temp0 + 1]; // Maximum level in round
+            temp0 = round << 1;
+            //temppointer1 = deckswabber_round_bounds_db[level_pack_index];
+            AsmSet2ByteFromPtrAtIndexVar(temppointer1, deckswabber_round_bounds_db, coordinates);
+            temp1 = temp0 + 1;
+            // temp2 = temppointer1[temp1]; // Maximum level in round
+            AsmSet1ByteFromZpPtrAtIndexVar(temp2, temppointer1, temp1); // Maximum level in round
             if (level >= temp2) {
                 // Increment round
-                level = temppointer1[temp0]; // Minimum level in round
+                //level = temppointer1[temp0]; // Minimum level in round
+                AsmSet1ByteFromZpPtrAtIndexVar(level_index, temppointer1, temp0);
                 ++round;
                 if (round >= deckswabber_maximum_round_db[level_pack_index]) {
                     // Todo - write some kind of congrats message for winning
