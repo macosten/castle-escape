@@ -833,7 +833,7 @@ void hasee_buffer_yay_message(void) {
         temp1 = temp0 & 1;
     }
     AsmSet2ByteFromPtrAtIndexVar(temppointer, hasee_yay_phrases, temp1);
-    multi_vram_buffer_horz(temppointer, HASEE_YAY_PHRASE_LENGTH, NTADR_A(12, 4));
+    multi_vram_buffer_horz_indirect_ptr(temppointer, HASEE_YAY_PHRASE_LENGTH, NTADR_A(12, 4));
 }
 
 void hasee_clear_yay_message(void) {
@@ -847,7 +847,7 @@ void hasee_clear_bottom_message(void) {
 void hasee_buffer_treat_warning_message(void) {
     temp2 = hasee_treat_name_lens[temp4];
     AsmSet2ByteFromPtrAtIndexVar(temppointer, hasee_treat_names, temp4);
-    multi_vram_buffer_horz(temppointer, temp2, NTADR_A(6,5));
+    multi_vram_buffer_horz_indirect_ptr(temppointer, temp2, NTADR_A(6,5));
     temp2 += 6;
     multi_vram_buffer_horz(hasee_treat_postfix, HASEE_TREAT_NAME_POSTFIX_LEN, NTADR_A(temp2,5));
     temp2 += HASEE_TREAT_NAME_POSTFIX_LEN;
@@ -860,7 +860,7 @@ void hasee_buffer_treat_warning_message(void) {
 void hasee_buffer_time_bonus_message(void) {
     multi_vram_buffer_horz(hasee_omg_time_bonus_yay_quote, HASEE_YAY_PHRASE_LENGTH, NTADR_A(12, 4));
     temppointer = temp4 == HASEE_SUPER_TIME_BONUS ? hasee_super_time_bonus_quote : hasee_time_bonus_quote;
-    multi_vram_buffer_horz(temppointer, HASEE_LONGEST_COMPLETE_PHRASE_LEN, NTADR_A(6,5));
+    multi_vram_buffer_horz_indirect_ptr(temppointer, HASEE_LONGEST_COMPLETE_PHRASE_LEN, NTADR_A(6,5));
 }
 
 void hasee_buffer_letter_time_message(void) {
@@ -881,7 +881,7 @@ void hasee_buffer_gross_message(void) {
 
 void hasee_buffer_game_over_message(void) {
     temppointer = score > 99 ? hasee_happy_ending_quote : hasee_sad_ending_quote;
-    multi_vram_buffer_horz(temppointer, HASEE_LONGEST_COMPLETE_PHRASE_LEN, NTADR_A(6,5));
+    multi_vram_buffer_horz_indirect_ptr(temppointer, HASEE_LONGEST_COMPLETE_PHRASE_LEN, NTADR_A(6,5));
     multi_vram_buffer_horz(hasee_quit_instructions, HASEE_QUIT_INSTRUCTIONS_LEN, NTADR_A(9, 14));
 }
 
@@ -1011,8 +1011,8 @@ void handle_letter_collection(void) {
         }
         // Handle tile clear
         // temp5 = hasee_letter_hud_ntaddr_lut[0]
-        multi_vram_buffer_horz(hasee_blank_letters_lut, 10, hasee_letter_hud_ntaddr_lut[0]);
-        multi_vram_buffer_horz(hasee_blank_letters_lut + 10, 10, hasee_letter_hud_ntaddr_lut[5]);
+        multi_vram_buffer_horz(hasee_blank_letters_lut1, 10, hasee_letter_hud_ntaddr_lut[0]);
+        multi_vram_buffer_horz(hasee_blank_letters_lut2, 10, hasee_letter_hud_ntaddr_lut[5]);
         if (!HASEE_DID_BUFFER_MESSAGE_THIS_FRAME) {
             hasee_buffer_time_bonus_message(); // Should be at ~64 (5 score, 5 time, 20 BG letters, 10 yay message, 24 bottom message) buffered VRAM bytes worst-case? (Less than the 74 maximum)
             HASEE_SET_BUFFERED_MESSAGE_THIS_FRAME();

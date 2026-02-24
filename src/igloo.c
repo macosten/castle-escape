@@ -125,6 +125,7 @@ extern unsigned char enemies_timer[MAX_ENEMIES]; // Timer???
 extern unsigned char enemies_count;
 
 extern unsigned char cmap[];
+extern unsigned char chrbuffer[32];
 
 extern unsigned int igloo_1p_high_score;
 
@@ -220,7 +221,6 @@ void begin_igloo(void) {
     temppointer = igloo_game_screen;
     LZG_decode(temppointer, cmap);
     vram_write(cmap, 32*32);
-    memfill(cmap, 0, 32); // For character buffering later on when we want spaces
 
     set_prg_bank(IGLOO_CODE_BANK);
     begin_igloo_sub();   
@@ -230,6 +230,8 @@ void begin_igloo(void) {
 
 void begin_igloo_sub(void) {
     music_play(ICE_CREAM_MACHINE_SONG);
+
+    memfill(cmap, 0, 32); // For character buffering later on when we want spaces
 
     game_mode = MODE_GAME;
     enemies_count = ONSCREEN_JUNK_MAXIMUM; // Used by extern'd functions
@@ -436,13 +438,13 @@ void igloo_write_decimal_in_message_sub(void) {
     prepare_score_string();
     // Count non-space chars...
     temp0 = 0; // Digit count
-    temp1 = 64; // Offset to cmap to write to as temporary buffer
+    temp1 = 0; // Offset to chrbuffer to write to as temporary buffer
     for (x = 0; x < 5; ++x) { // Assuming at least one digit every time
         if (score_string[x] >= '0') {
             ++temp0;
-            // cmap[temp1] = score_string[x];
+            // chrbuffer[temp1] = score_string[x];
             temp2 = score_string[x];
-            cmap[temp1] = temp2;
+            chrbuffer[temp1] = temp2;
             ++temp1;
         }
     }
@@ -453,14 +455,14 @@ void igloo_write_allitems_message(void) {
     multi_vram_buffer_horz(igloo_all_items_bonus_prefix, 7, NTADR_A(12, 6));
     convert_to_decimal(score_this_round);
     igloo_write_decimal_in_message_sub();
-    multi_vram_buffer_horz(cmap+64, temp0, NTADR_A(19, 6));
+    multi_vram_buffer_horz(chrbuffer, temp0, NTADR_A(19, 6));
 }
 
 void igloo_write_nextlevel_message(void) {
     multi_vram_buffer_horz(igloo_starting_next_level_phrase, 6, NTADR_A(13, 7));
     convert_to_decimal(round_number);
     igloo_write_decimal_in_message_sub();
-    multi_vram_buffer_horz(cmap+64, temp0, NTADR_A(19, 7));
+    multi_vram_buffer_horz(chrbuffer, temp0, NTADR_A(19, 7));
 }
 
 void igloo_clear_top_message(void) {

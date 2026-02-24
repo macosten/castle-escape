@@ -27,13 +27,41 @@ void __fastcall__ one_vram_buffer(unsigned char data, int ppu_address);
 // to push a single byte write to the vram_buffer
 
 
-void __fastcall__ multi_vram_buffer_horz(const char * data, unsigned char len, int ppu_address);
+// void __fastcall__ multi_vram_buffer_horz(const char * data, unsigned char len, int ppu_address);
+void __fastcall__ multi_vram_buffer_horz_sub(int ppu_address);
+
+
+
 // to push multiple writes as one sequential horizontal write to the vram_buffer
+// If the pointer isn't located at the base of the underlying block of memory, use multi_vram_buffer_horz_indirect_ptr.
+#define multi_vram_buffer_horz_direct_ptr(data_ptr, len_chr, ppu_address) {\
+	__asm__("lda #<(%v)", data_ptr);\
+	__asm__("sta %v", TEMP);\
+	__asm__("lda #>(%v)", data_ptr);\
+	__asm__("sta %v+1", TEMP);\
+	TEMP[2] = len_chr;\
+	multi_vram_buffer_horz_sub(ppu_address);\
+}
 
+// If the pointer isn't located at the base of the underlying block of memory.
+#define multi_vram_buffer_horz_indirect_ptr(data_ptr, len_chr, ppu_address) {\
+	__asm__("lda %v", data_ptr);\
+	__asm__("sta %v", TEMP);\
+	__asm__("lda %v+1", data_ptr);\
+	__asm__("sta %v+1", TEMP);\
+	TEMP[2] = len_chr;\
+	multi_vram_buffer_horz_sub(ppu_address);\
+}
 
-void __fastcall__ multi_vram_buffer_vert(const char * data, unsigned char len, int ppu_address);
+#define multi_vram_buffer_horz(data_ptr, len_chr, ppu_address) multi_vram_buffer_horz_direct_ptr(data_ptr, len_chr, ppu_address)
+
+void __fastcall__ multi_vram_buffer_vert_sub(int ppu_address);
 // to push multiple writes as one sequential vertical write to the vram_buffer
-
+#define multi_vram_buffer_vert_indirect_ptr(data_ptr, len_chr, ppu_address) {\
+	((unsigned char **)TEMP)[0] = data_ptr;\
+	TEMP[2] = len_chr;\
+	multi_vram_buffer_vert_sub(ppu_address);\
+}
 
 void clear_vram_buffer(void);
 // just sets the index into the vram buffer to zero

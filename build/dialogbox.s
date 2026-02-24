@@ -18,7 +18,7 @@
 	.export		_dbox_erase_text
 	.export		_dbox_erase_text_addr_calc_sub
 	.import		_one_vram_buffer
-	.import		_multi_vram_buffer_horz
+	.import		_multi_vram_buffer_horz_sub
 	.import		_add_scroll_y_fast_sub
 	.import		_set_data_pointer
 	.importzp	_TEMP
@@ -259,7 +259,7 @@ _dbox_current_string:
 ; if (scroll_count == 0) {
 ;
 	lda     _scroll_count
-	bne     L0157
+	bne     L0162
 ;
 ; dbox_y += 0x20;
 ;
@@ -270,7 +270,7 @@ _dbox_current_string:
 ;
 ; if (dbox_y > 0x20) { // ...but there are only two rows.
 ;
-L0157:	lda     _dbox_y
+L0162:	lda     _dbox_y
 	cmp     #$21
 	bcc     L008C
 ;
@@ -328,7 +328,7 @@ L008C:	rts
 ;
 	ldx     #$00
 	lda     _temp0
-	bne     L015B
+	bne     L0166
 ;
 ; dbox_status = DBOX_STATUS_AWAITING_BUTTON;
 ;
@@ -342,17 +342,17 @@ L008C:	rts
 ; } else if (temp0 == '\n') {
 ;
 	rts
-L015B:	lda     _temp0
+L0166:	lda     _temp0
 	cmp     #$0A
 ;
 ; } else {
 ;
-	beq     L0161
+	beq     L016C
 ;
 ; if (nt == 0) {
 ;
 	lda     _nt
-	bne     L015D
+	bne     L0168
 ;
 ; address = NTADR_A(dbox_x, dbox_y);
 ;
@@ -370,11 +370,11 @@ L015B:	lda     _temp0
 ;
 ; } else {
 ;
-	jmp     L015F
+	jmp     L016A
 ;
 ; address = NTADR_C(dbox_x, dbox_y);
 ;
-L015D:	lda     _dbox_y
+L0168:	lda     _dbox_y
 	jsr     aslax4
 	stx     tmp1
 	asl     a
@@ -385,7 +385,7 @@ L015D:	lda     _dbox_y
 	sta     _address
 	lda     tmp1
 	ora     #$28
-L015F:	sta     _address+1
+L016A:	sta     _address+1
 ;
 ; one_vram_buffer(temp0, address);
 ;
@@ -407,7 +407,7 @@ L015F:	sta     _address+1
 ;
 ; dbox_x = TEXT_START_X;
 ;
-L0161:	lda     #$02
+L016C:	lda     #$02
 	sta     _dbox_x
 ;
 ; ++dbox_y;
@@ -450,7 +450,7 @@ L00BD:	rts
 	ldx     #$00
 	lda     _active_dboxdata+4
 	cmp     _dbox_string_index
-	bne     L0166
+	bne     L0171
 ;
 ; dbox_status = DBOX_STATUS_ERASING_BOX;
 ;
@@ -463,16 +463,16 @@ L00BD:	rts
 ;
 ; } else {
 ;
-	jmp     L0164
+	jmp     L016F
 ;
 ; dbox_current_string = active_dboxdata.strings[dbox_string_index];
 ;
-L0166:	lda     _dbox_string_index
+L0171:	lda     _dbox_string_index
 	asl     a
-	bcc     L0165
+	bcc     L0170
 	inx
 	clc
-L0165:	adc     _active_dboxdata+2
+L0170:	adc     _active_dboxdata+2
 	sta     ptr1
 	txa
 	adc     _active_dboxdata+2+1
@@ -544,7 +544,7 @@ L00C5:	lda     _dbox_y
 ;
 	lda     _dbox_y
 	and     #$1F
-L0164:	sta     _dbox_y
+L016F:	sta     _dbox_y
 ;
 ; }
 ;
@@ -601,7 +601,7 @@ L0164:	sta     _dbox_y
 ; if (scroll_count == 0) {
 ;
 	lda     _scroll_count
-	bne     L0167
+	bne     L0172
 ;
 ; dbox_y += 0x20;
 ;
@@ -612,9 +612,9 @@ L0164:	sta     _dbox_y
 ;
 ; if (dbox_y > 0x20) {
 ;
-L0167:	lda     _dbox_y
+L0172:	lda     _dbox_y
 	cmp     #$21
-	bcc     L0151
+	bcc     L015C
 ;
 ; game_mode = MODE_GAME;
 ;
@@ -628,7 +628,7 @@ L0167:	lda     _dbox_y
 ;
 ; }
 ;
-L0151:	rts
+L015C:	rts
 
 .endproc
 
@@ -647,9 +647,9 @@ L0151:	rts
 ;
 	lda     #$00
 	sta     _temp0
-L0168:	lda     _temp0
+L0173:	lda     _temp0
 	cmp     #$02
-	bcs     L0169
+	bcs     L0174
 ;
 ; dbox_x = dbox_erase_text_x_values[dbox_erase_text_frame];
 ;
@@ -669,22 +669,23 @@ L0168:	lda     _temp0
 	sta     _address
 	stx     _address+1
 ;
-; multi_vram_buffer_horz(empty_string, dbox_erase_text_lengths[temp0], address);
+; temp1 = dbox_erase_text_lengths[temp0];
 ;
-	jsr     decsp3
-	lda     #<(_empty_string)
-	ldy     #$01
-	sta     (sp),y
-	iny
-	lda     #>(_empty_string)
-	sta     (sp),y
 	ldy     _temp0
 	lda     _dbox_erase_text_lengths,y
-	ldy     #$00
-	sta     (sp),y
+	sta     _temp1
+;
+; multi_vram_buffer_horz(empty_string, temp1, address);
+;
+	lda     #<(_empty_string)
+	sta     _TEMP
+	lda     #>(_empty_string)
+	sta     _TEMP+1
+	lda     _temp1
+	sta     _TEMP+2
 	lda     _address
 	ldx     _address+1
-	jsr     _multi_vram_buffer_horz
+	jsr     _multi_vram_buffer_horz_sub
 ;
 ; ++dbox_erase_text_frame;
 ;
@@ -693,13 +694,13 @@ L0168:	lda     _temp0
 ; for (temp0 = 0; temp0 < 2; ++temp0) {
 ;
 	inc     _temp0
-	jmp     L0168
+	jmp     L0173
 ;
 ; if (dbox_erase_text_frame == 4) {
 ;
-L0169:	lda     _dbox_erase_text_frame
+L0174:	lda     _dbox_erase_text_frame
 	cmp     #$04
-	bne     L0125
+	bne     L0130
 ;
 ; dbox_status = DBOX_STATUS_DRAWING_TEXT;
 ;
@@ -717,7 +718,7 @@ L0169:	lda     _dbox_erase_text_frame
 ;
 ; }
 ;
-L0125:	rts
+L0130:	rts
 
 .endproc
 
@@ -736,7 +737,7 @@ L0125:	rts
 ;
 	ldx     #$00
 	lda     _nt
-	bne     L016B
+	bne     L0176
 ;
 ; return NTADR_A(dbox_x, dbox_y);
 ;
@@ -751,11 +752,11 @@ L0125:	rts
 	pha
 	lda     tmp1
 	ora     #$20
-	jmp     L016C
+	jmp     L0177
 ;
 ; return NTADR_C(dbox_x, dbox_y);
 ;
-L016B:	lda     _dbox_y
+L0176:	lda     _dbox_y
 	jsr     aslax4
 	stx     tmp1
 	asl     a
@@ -766,7 +767,7 @@ L016B:	lda     _dbox_y
 	pha
 	lda     tmp1
 	ora     #$28
-L016C:	tax
+L0177:	tax
 	pla
 ;
 ; }

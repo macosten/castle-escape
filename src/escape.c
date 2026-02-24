@@ -120,6 +120,7 @@ unsigned char game_music_track;
 #define CMAP_COUNT 6
 
 unsigned char cmap[240 * CMAP_COUNT];
+unsigned char chrbuffer[32];
 
 // There's space for more, but I'm leaving it at this for now.
 
@@ -933,7 +934,7 @@ void menu_settings(void) {
             default:
                 temp5 = NTADR_A(settings_menu_toggle_text_x, settings_menu_text_y[menu_selection]);
                 temppointer = temp0 ? string_on : string_off;
-                multi_vram_buffer_horz(temppointer, 3, temp5);
+                multi_vram_buffer_horz_indirect_ptr(temppointer, 3, temp5);
                 temppointer = settings_menu_selector_x;
                 break;
         }

@@ -785,9 +785,9 @@ const unsigned char * const deckswabber_starting_coords_db[] = {
     deckswabber_original_starting_coords,
 };
 
-const char * const deckswabber_tiles_remaining = "Tiles Left";
-const char * const deckswabber_level_finished = "Finished!";
-const char * const deckswabber_bonus = "Bonus:";
+const char deckswabber_tiles_remaining[] = "Tiles Left";
+const char deckswabber_level_finished[] = "Finished!";
+const char deckswabber_bonus[] = "Bonus:";
 
 #pragma rodata-name(pop);
 

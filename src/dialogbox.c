@@ -260,7 +260,8 @@ void dbox_erase_text(void) {
 		dbox_x = dbox_erase_text_x_values[dbox_erase_text_frame];
 		dbox_y = dbox_erase_text_y_values[dbox_erase_text_frame];
 		address = dbox_erase_text_addr_calc_sub();
-		multi_vram_buffer_horz(empty_string, dbox_erase_text_lengths[temp0], address);
+		temp1 = dbox_erase_text_lengths[temp0];
+		multi_vram_buffer_horz(empty_string, temp1, address);
 		++dbox_erase_text_frame;
 	}
 

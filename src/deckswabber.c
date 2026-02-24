@@ -50,7 +50,6 @@ extern unsigned char cmap[];
 #define tile_typemap (cmap)
 #define tile_colormap (cmap + 64)
 #define enemymap (cmap + 128)
-#define chrbuffer (cmap + 192)
 
 ZEROPAGE_EXTERN(unsigned char, temp_x);
 ZEROPAGE_EXTERN(unsigned char, temp_y);
@@ -77,6 +76,7 @@ ZEROPAGE_EXTERN(unsigned char, coordinates);
 
 extern unsigned int deckswabber_1p_high_score;
 extern unsigned int previous_score;
+extern unsigned char chrbuffer[32];
 
 const unsigned char * const * deckswabber_active_level_pack_levels;
 
@@ -276,7 +276,8 @@ void begin_deckswabber_level(void) {
     transition_timer = 120;
     
     // Clear the rest of relevant memory
-    memfill(enemymap, 0, 64 + 32);
+    memfill(enemymap, 0, 64);
+    memfill(chrbuffer, 0, 32);
 
     // Update HUD for level/round
     clear_vram_buffer();
@@ -428,10 +429,12 @@ void deckswabber_update_score(void) {
     multi_vram_buffer_horz(score_string, 5, NTADR_A(4, 3));
 }
 
+const unsigned char * const score_string_last2 = score_string + 3;
 void deckswabber_update_tiles_remaining(void) {
     convert_to_decimal(tiles_remaining);
     prepare_score_string();
-    multi_vram_buffer_horz(score_string+3, 2, NTADR_A(21, 5));
+    //score_string + 3;
+    multi_vram_buffer_horz_indirect_ptr(score_string_last2, 2, NTADR_A(21, 5));
 }
 
 void deckswabber_write_finished_message(void) {
@@ -441,7 +444,7 @@ void deckswabber_write_finished_message(void) {
     // ...calculate bonus here
     convert_to_decimal(0); // Todo - proper bonus calculation
     igloo_write_decimal_in_message_sub(); // Note: this writes to cmap+64. It shouldn't matter by the time we call this, though.
-    multi_vram_buffer_horz(cmap+64, temp0, NTADR_A(24, 5));
+    multi_vram_buffer_horz(chrbuffer, temp0, NTADR_A(24, 5));
 }
 
 const unsigned char deckswabber_full_hp_bar[] = { 0xF6, 0xF6, 0xF6, 0xF6, 0xF6, 0xF6 };

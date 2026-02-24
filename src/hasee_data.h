@@ -27,7 +27,7 @@ const char * const hasee_treat_names[] = {
     "Grun",
 };
 
-const char * const hasee_treat_postfix = "Doughnutfruit!";
+const char hasee_treat_postfix[] = "Doughnutfruit!";
 #define HASEE_TREAT_NAME_POSTFIX_LEN (15-1)
 #define HASEE_LONGEST_COMPLETE_PHRASE_LEN 24
 
@@ -49,20 +49,18 @@ const unsigned char const hasee_treat_name_lens[] = {
 
 #define HASEE_LONGEST_TREAT_NAME_LEN (11-1)
 
-const char * doughnutfruit_string = "Doughnutfruit!";
+const char maccy_confusion_quote[] = "Huh?!?! What's that?!?!";
+const char bleh_gross_quote[] = "Bleh!! Gross!!! Yuck!!!";
 
-const char * const maccy_confusion_quote = "Huh?!?! What's that?!?!";
-const char * const bleh_gross_quote = "Bleh!! Gross!!! Yuck!!!";
+const char hasee_letter_bonus_quote[] = "    +2 Seconds!!!      ";
+const char hasee_omg_time_bonus_yay_quote[] = "Hasee OMG!";
+const char hasee_time_bonus_quote[] = "Hasee +20 Second Bonus!";
+const char hasee_super_time_bonus_quote[] = "Super +40 Second Bonus!"; // Length of this = Longest Phrase Length
+const char hasee_time_up_quote[] = "Time's up!";
 
-const char * const hasee_letter_bonus_quote = "    +2 Seconds!!!      ";
-const char * const hasee_omg_time_bonus_yay_quote = "Hasee OMG!";
-const char * const hasee_time_bonus_quote = "Hasee +20 Second Bonus!";
-const char * const hasee_super_time_bonus_quote = "Super +40 Second Bonus!"; // Length of this = Longest Phrase Length
-const char * const hasee_time_up_quote = "Time's up!";
-
-const char * const hasee_sad_ending_quote = "Still feeling hungry...";
-const char * const hasee_happy_ending_quote = "The Hasees are happy!!!";
-const char * const hasee_quit_instructions = "B: Back To Menu";
+const char hasee_sad_ending_quote[] = "Still feeling hungry...";
+const char hasee_happy_ending_quote[] = "The Hasees are happy!!!";
+const char hasee_quit_instructions[] = "B: Back To Menu";
 
 #define HASEE_QUIT_INSTRUCTIONS_LEN 16
 
@@ -689,14 +687,12 @@ const unsigned int const hasee_letter_hud_ntaddr_lut[] = {
     NTADR_A(12, 7),
 };
 
-const unsigned char const hasee_blank_letters_lut[] = {
-    0xAC,0xAD,0xA8,0xA9,0xAE,0xAF,0xAA,0xAB,0xAA,0xAB,
-    0xBC,0xBD,0xB8,0xB9,0xBE,0xBF,0xBA,0xBB,0xBA,0xBB,
+const unsigned char const hasee_blank_letters_lut1[] = {
+    0xAC,0xAD,0xA8,0xA9,0xAE,0xAF,0xAA,0xAB,0xAA,0xAB
 };
 
-const unsigned char const hasee_purple_filled_letters_lut[] = {
-    0x84,0x85,0x80,0x81,0x86,0x87,0x82,0x83,0x82,0x83,
-    0x94,0x95,0x90,0x91,0x96,0x97,0x92,0x93,0x92,0x93,
+const unsigned char const hasee_blank_letters_lut2[] = {
+    0xBC,0xBD,0xB8,0xB9,0xBE,0xBF,0xBA,0xBB,0xBA,0xBB,
 };
 
 const unsigned char const hasee_leftright_subpixel_movement_lut[] = {

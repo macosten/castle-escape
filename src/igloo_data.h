@@ -4,18 +4,18 @@
 
 #pragma rodata-name(push, "BANK1")
 
-const char * const igloo_all_items_bonus_phrase = "Got all items!";
-const char * const igloo_all_items_bonus_prefix = "Bonus: ";
-const char * const igloo_starting_next_level_phrase = "Level ";
-const char * const fake_time = " 30";
+const char igloo_all_items_bonus_phrase[] = "Got all items!";
+const char igloo_all_items_bonus_prefix[] = "Bonus: ";
+const char igloo_starting_next_level_phrase[] = "Level ";
+const char fake_time[] = " 30";
 
-const char * const igloo_piano_troll_message_1 = "Piano catching";
-const char * const igloo_piano_troll_message_2 = "is a bad idea!";
+const char igloo_piano_troll_message_1[] = "Piano catching";
+const char igloo_piano_troll_message_2[] = "is a bad idea!";
 
-const char * const igloo_itemdrop_troll_message_1 = "Cleanup on";
-const char * const igloo_itemdrop_troll_message_2 = "aisle you!";
+const char igloo_itemdrop_troll_message_1[] = "Cleanup on";
+const char igloo_itemdrop_troll_message_2[] = "aisle you!";
 
-const char * const igloo_game_over_message = "Game Over";
+const char igloo_game_over_message[] = "Game Over";
 
 const unsigned char const carassa_idle[] = {
   0, 0, 0x81, 0|OAM_FLIP_H,

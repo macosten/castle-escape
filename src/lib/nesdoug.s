@@ -1,13 +1,13 @@
 ;written by Doug Fraker 2018
 ;v 1.01x
 
-.export _set_vram_buffer, _multi_vram_buffer_horz, _multi_vram_buffer_vert, _one_vram_buffer
+.export _set_vram_buffer, _multi_vram_buffer_horz_sub, _multi_vram_buffer_vert_sub, _one_vram_buffer
 .export _clear_vram_buffer, _get_pad_new, _get_frame_count, _set_music_speed
 .export _check_collision, _pal_fade_to, _set_scroll_x, _set_scroll_y, _sub_scroll_y
 .export  _get_at_addr, _set_data_pointer, _set_mt_pointer
 .export _color_emphasis, _xy_split, _gray_line, _seed_rng
 
-; Modified by macosten 2020
+; Modified by macosten 2020, 2026
 
 .export _add_scroll_y_fast_sub, _buffer_4_mt_fast_sub, _buffer_1_mt_fast_sub, _get_ppu_addr_fast, _check_collision_fast
 
@@ -28,7 +28,7 @@ _set_vram_buffer:
 
 	
 ;void multi_vram_buffer_horz(char * data, unsigned char len, int ppu_address);
-_multi_vram_buffer_horz:
+_multi_vram_buffer_horz_sub:
 	;note PTR = TEMP and TEMP+1
 
 	ldy VRAM_INDEX
@@ -39,13 +39,14 @@ _multi_vram_buffer_horz:
 	sta VRAM_BUF, y
 	
 _multi_vram_buffer_common:
-	jsr popa ;len
+	lda TEMP+2 ;len
 		sta TEMP+3 ;loop count
 		ldy VRAM_INDEX
 		sta VRAM_BUF+2, y
-	jsr popax ;pointer to data
-		sta <PTR
-		stx <PTR+1
+	; lda TEMP ;pointer to data
+	; 	sta <PTR
+	; 	lda TEMP+1
+	; 	stx <PTR+1
 	ldx VRAM_INDEX ;need y for source, x is for dest and for vram_index
 		inx
 		inx
@@ -68,7 +69,7 @@ _multi_vram_buffer_common:
 	
 
 ;void multi_vram_buffer_vert(char * data, unsigned char len, int ppu_address);
-_multi_vram_buffer_vert:
+_multi_vram_buffer_vert_sub:
 	ldy VRAM_INDEX
 	sta VRAM_BUF+1, y
 	txa
