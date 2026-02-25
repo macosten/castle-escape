@@ -280,26 +280,6 @@ extern void begin_deckswabber(void);
 extern unsigned char const * titlescreen;
 
 // MARK: Lookup Tables
-
-// The lookup tables for draw_screen_sub().
-
-const unsigned char const draw_screen_sub_lookup_addr_0[] = {0, 0x40, 0x80, 0xc0};
-const unsigned char const draw_screen_sub_lookup_index_offset_0[] = {0, 4, 8, 12};
-const unsigned char const draw_screen_sub_lookup_addr_1[] = {0x20, 0x60, 0xa0, 0xe0};
-const unsigned char const draw_screen_sub_lookup_index_offset_1[] = {2, 6, 10, 14};
-
-// The lookup tables for enemy_movement().
-const unsigned char const leftright_movement_offset_lookup_table[] = {0xff, 15};
-const unsigned char const leftright_movement_moving_lookup_table[] = {0xff, 1};
-const unsigned char const updown_movement_offset_lookup_table[] = {0xff, 15};
-
-// Offset lookup tables for determining a cannon's direction.
-const unsigned char const cannon_ul_sprite_lookup_table[] = {6, 7, 0};
-const unsigned char const cannon_ur_sprite_lookup_table[] = {2, 1, 0};
-const unsigned char const cannon_dr_sprite_lookup_table[] = {2, 3, 4};
-const unsigned char const cannon_dl_sprite_lookup_table[] = {6, 5, 4};
-const unsigned char * const cannon_sprite_quadrant_lookup_table[] = {cannon_ul_sprite_lookup_table, cannon_ur_sprite_lookup_table, cannon_dl_sprite_lookup_table, cannon_dr_sprite_lookup_table};
-
 // Lookup table so the game knows what to do at a given menu.
 const void (* const menu_logic_functions[])(void) = {
     menu_game_type_select,
@@ -464,7 +444,7 @@ void game_castle_escape(void) {
     }
     
     // Check to see what's on-screen
-    // set_prg_bank(2); -- should still be in bank 2
+    // set_prg_bank(2); // -- should still be in bank 2
     check_spr_objects();
     
     // Do the following only if we're not dead:
@@ -477,7 +457,7 @@ void game_castle_escape(void) {
 
     // Move enemies
     if (!GAME_PAUSED) {
-        // set_prg_bank(2); // -- should still be in bank 2
+        set_prg_bank(2); // -- should still be in bank 2
         enemy_movement();
     }
 
@@ -1840,6 +1820,26 @@ void draw_floating_numbers_effect(void) {
 #pragma code-name(push, "BANK2")
 #pragma rodata-name(push, "BANK2")
 
+// The lookup tables for draw_screen_sub().
+
+const unsigned char const draw_screen_sub_lookup_addr_0[] = {0, 0x40, 0x80, 0xc0};
+const unsigned char const draw_screen_sub_lookup_index_offset_0[] = {0, 4, 8, 12};
+const unsigned char const draw_screen_sub_lookup_addr_1[] = {0x20, 0x60, 0xa0, 0xe0};
+const unsigned char const draw_screen_sub_lookup_index_offset_1[] = {2, 6, 10, 14};
+
+// The lookup tables for enemy_movement().
+const unsigned char const leftright_movement_offset_lookup_table[] = {0xff, 15};
+const unsigned char const leftright_movement_moving_lookup_table[] = {0xff, 1};
+const unsigned char const updown_movement_offset_lookup_table[] = {0xff, 15};
+
+// Offset lookup tables for determining a cannon's direction.
+const unsigned char const cannon_ul_sprite_lookup_table[] = {6, 7, 0};
+const unsigned char const cannon_ur_sprite_lookup_table[] = {2, 1, 0};
+const unsigned char const cannon_dr_sprite_lookup_table[] = {2, 3, 4};
+const unsigned char const cannon_dl_sprite_lookup_table[] = {6, 5, 4};
+const unsigned char * const cannon_sprite_quadrant_lookup_table[] = {cannon_ul_sprite_lookup_table, cannon_ur_sprite_lookup_table, cannon_dl_sprite_lookup_table, cannon_dr_sprite_lookup_table};
+
+
 // MARK: -- Movement.
 
 void movement(void) {
@@ -2322,6 +2322,12 @@ void draw_screen_sub(void) {
     temp4 = draw_screen_sub_lookup_index_offset_1[scroll_count];
 
     get_ppu_addr(address, nt, draw_screen_sub_lookup_addr_0[scroll_count], y);
+    if (address < NAMETABLE_A || address > 0x3000) { return; }
+
+    ++debug_values[3];
+    debug_values[0] = low_byte(address);
+    debug_values[1] = high_byte(address);
+
     index = (y & 0xf0) + temp2;
     buffer_4_mt(address, index); // ppu_address, index to the data
             
