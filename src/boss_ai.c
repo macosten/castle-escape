@@ -104,6 +104,7 @@ extern void bg_collision(void);
 // BOSS_STATE_ASCENDING -- Flying upwards. Shoots fireballs in this mode. this == 3.
 
 #pragma code-name(push, "BANK2") // Castle Escape Enemy AI Bank
+#pragma rodata-name(push, "BANK2") 
 
 void boss_shoot_fireball(void) {
     // Find a free space for a fireball...
@@ -334,8 +335,6 @@ void boss_ai_dying(void) {
     }
 }
 
-#pragma code-name(pop)
-
 const unsigned char const boss_state_deadliness[] = {
     0,
     0,
@@ -363,6 +362,9 @@ void collision_with_boss(void) {
         SET_STATUS_DEAD();
     }
 }
+
+#pragma code-name(pop)
+#pragma rodata-name(pop)
 
 #pragma code-name(push, "BANK5") // Metasprite bank
 

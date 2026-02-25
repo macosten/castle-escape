@@ -76,6 +76,7 @@
 
 .segment	"RODATA"
 
+.segment	"BANK2"
 _boss_state_deadliness:
 	.byte	$00
 	.byte	$00
@@ -83,6 +84,7 @@ _boss_state_deadliness:
 	.byte	$01
 	.byte	$00
 	.byte	$00
+.segment	"RODATA"
 
 ; ---------------------------------------------------------------
 ; void __near__ boss_ai_idle (void)
@@ -135,12 +137,12 @@ _boss_state_deadliness:
 ;
 	lda     _temp0
 	and     #$01
-	beq     L022D
+	beq     L022F
 	jsr     _cannonball_ai_sub
 ;
 ; enemy_is_using_bg_collision = 1;
 ;
-L022D:	lda     #$01
+L022F:	lda     #$01
 	sta     _enemy_is_using_bg_collision
 ;
 ; hitbox.x = enemies_x[x];
@@ -172,79 +174,79 @@ L022D:	lda     #$01
 ;
 	lda     _collision_U
 	cmp     #$02
-	bcc     L0231
+	bcc     L0233
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$20
-	bne     L0231
+	bne     L0233
 	ldy     _x
 	lda     _enemies_flags,y
 	ora     #$20
 ;
 ; else if (collision_D >= 2 && CANNONBALL_Y_DIRECTION(x)) { CANNONBALL_SET_NEG_Y(x); }
 ;
-	jmp     L022B
-L0231:	lda     _collision_D
+	jmp     L022D
+L0233:	lda     _collision_D
 	cmp     #$02
-	bcc     L0235
+	bcc     L0237
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$20
-	beq     L0235
+	beq     L0237
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$DF
-L022B:	sta     _enemies_flags,y
+L022D:	sta     _enemies_flags,y
 ;
 ; if (collision_L >= 2 && !CANNONBALL_X_DIRECTION(x)) { CANNONBALL_SET_POS_X(x); }
 ;
-L0235:	lda     _collision_L
+L0237:	lda     _collision_L
 	cmp     #$02
-	bcc     L0239
+	bcc     L023B
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$40
-	bne     L0239
+	bne     L023B
 	ldy     _x
 	lda     _enemies_flags,y
 	ora     #$40
 ;
 ; else if (collision_R >= 2 && CANNONBALL_X_DIRECTION(x)) { CANNONBALL_SET_NEG_X(x); }
 ;
-	jmp     L022C
-L0239:	lda     _collision_R
+	jmp     L022E
+L023B:	lda     _collision_R
 	cmp     #$02
 	lda     #$00
-	bcc     L023E
+	bcc     L0240
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$40
-	beq     L023E
+	beq     L0240
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$BF
-L022C:	sta     _enemies_flags,y
+L022E:	sta     _enemies_flags,y
 ;
 ; enemy_is_using_bg_collision = 0;
 ;
 	lda     #$00
-L023E:	sta     _enemy_is_using_bg_collision
+L0240:	sta     _enemy_is_using_bg_collision
 ;
 ; if (BOSS_FIREBALL_COOLDOWN) { --BOSS_FIREBALL_COOLDOWN; }
 ;
 	lda     _boss_memory+1
-	beq     L00FC
+	beq     L00FD
 	dec     _boss_memory+1
 ;
 ; else {
 ;
-	jmp     L0101
+	jmp     L0102
 ;
 ; if (rand8() > 250) { 
 ;
-L00FC:	jsr     _rand8
+L00FD:	jsr     _rand8
 	cmp     #$FB
-	bcc     L0101
+	bcc     L0102
 ;
 ; boss_shoot_fireball();
 ;
@@ -252,7 +254,7 @@ L00FC:	jsr     _rand8
 ;
 ; temp1 = enemies_extra[x]; // This gets modified by cannonball_ai_sub.
 ;
-L0101:	ldy     _x
+L0102:	ldy     _x
 	lda     _enemies_extra,y
 	sta     _temp1
 ;
@@ -266,7 +268,7 @@ L0101:	ldy     _x
 ;
 	lda     _temp1
 	cmp     _temp0
-	bne     L010D
+	bne     L010E
 ;
 ; boss_state = BOSS_STATE_DESCENDING;
 ;
@@ -281,7 +283,7 @@ L0101:	ldy     _x
 ;
 ; }
 ;
-L010D:	rts
+L010E:	rts
 
 .endproc
 
@@ -383,7 +385,7 @@ L010D:	rts
 	ldy     _collision
 	lda     _metatile_property_lookup_table,y
 	and     #$01
-	beq     L0159
+	beq     L015A
 ;
 ; temp0 = rand8();
 ;
@@ -403,7 +405,7 @@ L010D:	rts
 ;
 ; enemies_nt[x] = high_byte(temp5);
 ;
-L0159:	ldy     _x
+L015A:	ldy     _x
 	lda     _temp5+1
 	sta     _enemies_nt,y
 ;
@@ -442,7 +444,7 @@ L0159:	ldy     _x
 ;
 	and     #$03
 	cmp     #$03
-	beq     L0242
+	beq     L0244
 ;
 ; }
 ;
@@ -450,7 +452,7 @@ L0159:	ldy     _x
 ;
 ; high_byte(temp5) = enemies_nt[x];
 ;
-L0242:	ldy     _x
+L0244:	ldy     _x
 	lda     _enemies_nt,y
 	sta     _temp5+1
 ;
@@ -523,7 +525,7 @@ L0242:	ldy     _x
 	ldy     _collision
 	lda     _metatile_property_lookup_table,y
 	and     #$01
-	bne     L01AA
+	bne     L01AB
 ;
 ; enemies_nt[x] = high_byte(temp6);
 ;
@@ -539,7 +541,7 @@ L0242:	ldy     _x
 ;
 ; }
 ;
-L01AA:	rts
+L01AB:	rts
 
 .endproc
 
@@ -558,7 +560,7 @@ L01AA:	rts
 ;
 	ldy     _x
 	lda     _enemies_timer,y
-	bne     L01BA
+	bne     L01BB
 ;
 ; game_level_advance_behavior = LEVEL_UP_BEHAVIOR_EXIT;
 ;
@@ -571,7 +573,7 @@ L01AA:	rts
 ;
 ; }
 ;
-L01BA:	rts
+L01BB:	rts
 
 .endproc
 
@@ -579,11 +581,11 @@ L01BA:	rts
 ; void __near__ collision_with_boss (void)
 ; ---------------------------------------------------------------
 
-.segment	"CODE"
+.segment	"BANK2"
 
 .proc	_collision_with_boss: near
 
-.segment	"CODE"
+.segment	"BANK2"
 
 ;
 ; if (IS_SWINGING_SWORD && boss_state == BOSS_STATE_IDLE) {
@@ -601,7 +603,7 @@ L01BA:	rts
 ;
 ; if (BOSS_HP == 0) {
 ;
-	bne     L0248
+	bne     L024A
 ;
 ; boss_state = BOSS_STATE_DYING; // Begin to end the level.
 ;
@@ -621,7 +623,7 @@ L01BA:	rts
 ;
 ; boss_state = BOSS_STATE_DAMAGED;
 ;
-L0248:	lda     #$04
+L024A:	lda     #$04
 	sta     _boss_state
 ;
 ; enemies_timer[x] = 127; // ~2 seconds of iframes (these will be incremented until it overflows)
@@ -641,7 +643,7 @@ L01CA:	ldy     _boss_state
 ;
 	lda     _player_flags
 	and     #$02
-	bne     L0249
+	bne     L024B
 ;
 ; sfx_play(SFX_SMACK, 0);
 ;
@@ -656,7 +658,7 @@ L01CA:	ldy     _boss_state
 ;
 ; SET_STATUS_DEAD();
 ;
-L0249:	lda     _player_flags
+L024B:	lda     _player_flags
 	ora     #$02
 	sta     _player_flags
 ;
@@ -799,11 +801,11 @@ L01E1:	rts
 	adc     #$01
 	sta     _temp_x
 	ldx     #$00
-L024A:	lda     _temp_x
+L024C:	lda     _temp_x
 	cmp     _temp1
 	txa
 	sbc     #$00
-	bcc     L024C
+	bcc     L024E
 ;
 ; }
 ;
@@ -811,10 +813,10 @@ L024A:	lda     _temp_x
 ;
 ; if (IS_ENEMY_ACTIVE(temp_x)) { continue; } // ENEMY_NONE
 ;
-L024C:	ldy     _temp_x
+L024E:	ldy     _temp_x
 	lda     _enemies_flags,y
 	and     #$80
-	jne     L024B
+	jne     L024D
 ;
 ; enemies_type[temp_x] = ENEMY_BOSS_FIREBALL;
 ;
@@ -928,8 +930,8 @@ L024C:	ldy     _temp_x
 ;
 ; for (temp_x = x+1; temp_x < temp1; ++temp_x) {
 ;
-L024B:	inc     _temp_x
-	jmp     L024A
+L024D:	inc     _temp_x
+	jmp     L024C
 
 .endproc
 

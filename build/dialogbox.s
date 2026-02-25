@@ -252,6 +252,11 @@ _dbox_current_string:
 	lda     _pseudo_scroll_y+1
 	sta     _temp1
 ;
+; set_prg_bank(2);
+;
+	lda     #$02
+	jsr     _set_prg_bank
+;
 ; draw_screen_sub();
 ;
 	jsr     _draw_screen_sub
@@ -259,7 +264,7 @@ _dbox_current_string:
 ; if (scroll_count == 0) {
 ;
 	lda     _scroll_count
-	bne     L0162
+	bne     L0166
 ;
 ; dbox_y += 0x20;
 ;
@@ -270,9 +275,9 @@ _dbox_current_string:
 ;
 ; if (dbox_y > 0x20) { // ...but there are only two rows.
 ;
-L0162:	lda     _dbox_y
+L0166:	lda     _dbox_y
 	cmp     #$21
-	bcc     L008C
+	bcc     L008E
 ;
 ; dbox_status = DBOX_STATUS_DRAWING_TEXT;
 ;
@@ -290,7 +295,7 @@ L0162:	lda     _dbox_y
 ;
 ; }
 ;
-L008C:	rts
+L008E:	rts
 
 .endproc
 
@@ -328,7 +333,7 @@ L008C:	rts
 ;
 	ldx     #$00
 	lda     _temp0
-	bne     L0166
+	bne     L016A
 ;
 ; dbox_status = DBOX_STATUS_AWAITING_BUTTON;
 ;
@@ -342,17 +347,17 @@ L008C:	rts
 ; } else if (temp0 == '\n') {
 ;
 	rts
-L0166:	lda     _temp0
+L016A:	lda     _temp0
 	cmp     #$0A
 ;
 ; } else {
 ;
-	beq     L016C
+	beq     L0170
 ;
 ; if (nt == 0) {
 ;
 	lda     _nt
-	bne     L0168
+	bne     L016C
 ;
 ; address = NTADR_A(dbox_x, dbox_y);
 ;
@@ -370,11 +375,11 @@ L0166:	lda     _temp0
 ;
 ; } else {
 ;
-	jmp     L016A
+	jmp     L016E
 ;
 ; address = NTADR_C(dbox_x, dbox_y);
 ;
-L0168:	lda     _dbox_y
+L016C:	lda     _dbox_y
 	jsr     aslax4
 	stx     tmp1
 	asl     a
@@ -385,7 +390,7 @@ L0168:	lda     _dbox_y
 	sta     _address
 	lda     tmp1
 	ora     #$28
-L016A:	sta     _address+1
+L016E:	sta     _address+1
 ;
 ; one_vram_buffer(temp0, address);
 ;
@@ -403,11 +408,11 @@ L016A:	sta     _address+1
 ;
 	lda     _dbox_x
 	cmp     #$1E
-	bcc     L00BD
+	bcc     L00BF
 ;
 ; dbox_x = TEXT_START_X;
 ;
-L016C:	lda     #$02
+L0170:	lda     #$02
 	sta     _dbox_x
 ;
 ; ++dbox_y;
@@ -416,7 +421,7 @@ L016C:	lda     #$02
 ;
 ; }
 ;
-L00BD:	rts
+L00BF:	rts
 
 .endproc
 
@@ -439,7 +444,7 @@ L00BD:	rts
 ; if (pad1_new) {
 ;
 	lda     _pad1_new
-	beq     L00C5
+	beq     L00C7
 ;
 ; ++dbox_string_index;
 ;
@@ -450,7 +455,7 @@ L00BD:	rts
 	ldx     #$00
 	lda     _active_dboxdata+4
 	cmp     _dbox_string_index
-	bne     L0171
+	bne     L0175
 ;
 ; dbox_status = DBOX_STATUS_ERASING_BOX;
 ;
@@ -463,16 +468,16 @@ L00BD:	rts
 ;
 ; } else {
 ;
-	jmp     L016F
+	jmp     L0173
 ;
 ; dbox_current_string = active_dboxdata.strings[dbox_string_index];
 ;
-L0171:	lda     _dbox_string_index
+L0175:	lda     _dbox_string_index
 	asl     a
-	bcc     L0170
+	bcc     L0174
 	inx
 	clc
-L0170:	adc     _active_dboxdata+2
+L0174:	adc     _active_dboxdata+2
 	sta     ptr1
 	txa
 	adc     _active_dboxdata+2+1
@@ -513,7 +518,7 @@ L0170:	adc     _active_dboxdata+2
 ;
 ; temp1 = dbox_y >> 3;
 ;
-L00C5:	lda     _dbox_y
+L00C7:	lda     _dbox_y
 	lsr     a
 	lsr     a
 	lsr     a
@@ -544,7 +549,7 @@ L00C5:	lda     _dbox_y
 ;
 	lda     _dbox_y
 	and     #$1F
-L016F:	sta     _dbox_y
+L0173:	sta     _dbox_y
 ;
 ; }
 ;
@@ -594,6 +599,11 @@ L016F:	sta     _dbox_y
 	ldx     _temppointer+1
 	jsr     _set_data_pointer
 ;
+; set_prg_bank(2);
+;
+	lda     #$02
+	jsr     _set_prg_bank
+;
 ; draw_screen_sub();
 ;
 	jsr     _draw_screen_sub
@@ -601,7 +611,7 @@ L016F:	sta     _dbox_y
 ; if (scroll_count == 0) {
 ;
 	lda     _scroll_count
-	bne     L0172
+	bne     L0176
 ;
 ; dbox_y += 0x20;
 ;
@@ -612,9 +622,9 @@ L016F:	sta     _dbox_y
 ;
 ; if (dbox_y > 0x20) {
 ;
-L0172:	lda     _dbox_y
+L0176:	lda     _dbox_y
 	cmp     #$21
-	bcc     L015C
+	bcc     L0160
 ;
 ; game_mode = MODE_GAME;
 ;
@@ -628,7 +638,7 @@ L0172:	lda     _dbox_y
 ;
 ; }
 ;
-L015C:	rts
+L0160:	rts
 
 .endproc
 
@@ -647,9 +657,9 @@ L015C:	rts
 ;
 	lda     #$00
 	sta     _temp0
-L0173:	lda     _temp0
+L0177:	lda     _temp0
 	cmp     #$02
-	bcs     L0174
+	bcs     L0178
 ;
 ; dbox_x = dbox_erase_text_x_values[dbox_erase_text_frame];
 ;
@@ -694,13 +704,13 @@ L0173:	lda     _temp0
 ; for (temp0 = 0; temp0 < 2; ++temp0) {
 ;
 	inc     _temp0
-	jmp     L0173
+	jmp     L0177
 ;
 ; if (dbox_erase_text_frame == 4) {
 ;
-L0174:	lda     _dbox_erase_text_frame
+L0178:	lda     _dbox_erase_text_frame
 	cmp     #$04
-	bne     L0130
+	bne     L0132
 ;
 ; dbox_status = DBOX_STATUS_DRAWING_TEXT;
 ;
@@ -718,7 +728,7 @@ L0174:	lda     _dbox_erase_text_frame
 ;
 ; }
 ;
-L0130:	rts
+L0132:	rts
 
 .endproc
 
@@ -737,7 +747,7 @@ L0130:	rts
 ;
 	ldx     #$00
 	lda     _nt
-	bne     L0176
+	bne     L017A
 ;
 ; return NTADR_A(dbox_x, dbox_y);
 ;
@@ -752,11 +762,11 @@ L0130:	rts
 	pha
 	lda     tmp1
 	ora     #$20
-	jmp     L0177
+	jmp     L017B
 ;
 ; return NTADR_C(dbox_x, dbox_y);
 ;
-L0176:	lda     _dbox_y
+L017A:	lda     _dbox_y
 	jsr     aslax4
 	stx     tmp1
 	asl     a
@@ -767,7 +777,7 @@ L0176:	lda     _dbox_y
 	pha
 	lda     tmp1
 	ora     #$28
-L0177:	tax
+L017B:	tax
 	pla
 ;
 ; }

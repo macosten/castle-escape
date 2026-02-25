@@ -457,9 +457,14 @@ void game_castle_escape(void) {
     clear_vram_buffer();
 
     // Move the player.
-    if (!GAME_PAUSED) { movement(); }
+    set_prg_bank(2);
+    if (!GAME_PAUSED) {
+        // set_prg_bank(2);
+        movement();
+    }
     
     // Check to see what's on-screen
+    // set_prg_bank(2); -- should still be in bank 2
     check_spr_objects();
     
     // Do the following only if we're not dead:
@@ -472,18 +477,14 @@ void game_castle_escape(void) {
 
     // Move enemies
     if (!GAME_PAUSED) {
-        set_prg_bank(2);
+        // set_prg_bank(2); // -- should still be in bank 2
         enemy_movement();
     }
 
     set_scroll_y(scroll_y);
     
     if (SCORE_CHANGED_THIS_FRAME) { convert_to_decimal(score); }
-    
-    // Ensure the metasprite bank is banked.
-    set_prg_bank(METASPRITE_BANK);
-    draw_sprites();
-    
+        
     // Draw tiles on the edge of the screen.
     if (valrigard.velocity_y >= 0) { // If this is true, draw down. Otherwise, draw up.
         //draw_screen_D();
@@ -500,10 +501,14 @@ void game_castle_escape(void) {
     AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
     set_data_pointer(temppointer); // Should this value be clamped to the number of cmaps?
 
+    // Should still be in bank 2 for these two:
     draw_screen_sub();
     // Done drawing tiles on the edge of the screen.
-
     handle_tile_clear_queue();
+
+    // Ensure the metasprite bank is banked for this next part...
+    set_prg_bank(METASPRITE_BANK);
+    draw_sprites();
 
     // TODO: Make this a flag instead of a separate game mode.
     if (game_mode == MODE_LEVEL_COMPLETE) {
@@ -1832,6 +1837,9 @@ void draw_floating_numbers_effect(void) {
 #pragma code-name(pop)
 #pragma rodata-name(pop)
 
+#pragma code-name(push, "BANK2")
+#pragma rodata-name(push, "BANK2")
+
 // MARK: -- Movement.
 
 void movement(void) {
@@ -2588,9 +2596,6 @@ void sprite_collisions(void) {
 // It's possible that calls to this can be optimized away.
 // (i.e skip if a certain condition?)
 
-// collision_with_inert:
-void empty_function(void) { }
-
 void collision_with_killable_slashable(void) {
     if (!IS_SWINGING_SWORD) { 
         if (!STATUS_DEAD) { 
@@ -2674,8 +2679,6 @@ const void (* const ai_pointers[])(void) = {
     death_effect_timer_ai, // 13 - ENEMY_SPLYKE_DEATH_EFFECT;
     death_effect_timer_ai, // 14 - ENEMY_FLOATING_NUMBERS_EFFECT;
 };
-
-#pragma code-name(push, "BANK2")
 
 // Enemy AI.
 void enemy_movement(void) {
@@ -3488,3 +3491,7 @@ void death_effect_timer_ai(void) {
 }
 
 #pragma code-name(pop)
+#pragma rodata-name(pop)
+
+// collision_with_inert:
+void empty_function(void) { }

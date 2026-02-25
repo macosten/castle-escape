@@ -78,6 +78,7 @@ extern unsigned char debug_tile_y;
 extern const unsigned char * const cmaps[];
 
 // This reuses the draw_screen_sub code defined elsewhere (and used for drawing the screen).
+// This has been moved to bank 2 so ensure we are in that bank before calling it...
 extern void draw_screen_sub(void);
 extern void set_prg_bank(unsigned char bank);
 
@@ -137,6 +138,7 @@ void dbox_draw_box(void) {
 	// Necessary:
 	temp1 = high_byte(pseudo_scroll_y);
 	// Yep: we're reusing this code to draw the box.
+	set_prg_bank(2);
 	draw_screen_sub();
 
 	if (scroll_count == 0) {
@@ -281,6 +283,7 @@ void dbox_erase_box(void) {
 	AsmSet2ByteFromPtrAtIndexVar(temppointer, cmaps, temp1);
 	set_data_pointer(temppointer);
 
+	set_prg_bank(2);
 	draw_screen_sub();
 
 	if (scroll_count == 0) {
