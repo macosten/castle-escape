@@ -305,6 +305,11 @@ void begin_deckswabber_level(void) {
     multi_vram_buffer_horz(score_string, 5, NTADR_A(16, 3));
     flush_vram_update_nmi();
 
+    // Increment the starting tile by 1 and update it
+    tile_color_increment_type = round; // Set based on some level info
+
+    // (Re)draw the "goal" indicator
+    deckswabber_draw_goal_hud();
 
     clear_vram_buffer();
     energy = 192; // 6 HUD tiles that take up the visual HP bar * 32 "health" per tile (16 per "tick")
@@ -318,9 +323,6 @@ void begin_deckswabber_level(void) {
     
     player_tile_x = temp0 >> 4;
     player_tile_y = temp0 & 0x0F;
-
-    // Increment the starting tile by 1 and update it
-    tile_color_increment_type = round; // Set based on some level info
     
     temp_x = player_tile_x;
     temp_y = player_tile_y;
@@ -331,8 +333,6 @@ void begin_deckswabber_level(void) {
     multi_vram_buffer_horz(chrbuffer, 12, NTADR_A(17, 5));
     deckswabber_update_tiles_remaining();
 
-    // (Re)draw the "goal" indicator
-    deckswabber_draw_goal_hud();
 
     ppu_on_all();
 }

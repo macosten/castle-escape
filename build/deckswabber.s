@@ -3258,6 +3258,15 @@ L09A3:	jsr     _convert_to_decimal
 ;
 	jsr     _flush_vram_update_nmi
 ;
+; tile_color_increment_type = round; // Set based on some level info
+;
+	lda     _eject_U
+	sta     _eject_L
+;
+; deckswabber_draw_goal_hud();
+;
+	jsr     _deckswabber_draw_goal_hud
+;
 ; clear_vram_buffer();
 ;
 	jsr     _clear_vram_buffer
@@ -3309,11 +3318,6 @@ L09A3:	jsr     _convert_to_decimal
 	sta     _old_y
 	stx     _old_y+1
 ;
-; tile_color_increment_type = round; // Set based on some level info
-;
-	lda     _eject_U
-	sta     _eject_L
-;
 ; temp_x = player_tile_x;
 ;
 	lda     _old_x
@@ -3364,10 +3368,6 @@ L09A3:	jsr     _convert_to_decimal
 ; deckswabber_update_tiles_remaining();
 ;
 	jsr     _deckswabber_update_tiles_remaining
-;
-; deckswabber_draw_goal_hud();
-;
-	jsr     _deckswabber_draw_goal_hud
 ;
 ; ppu_on_all();
 ;
