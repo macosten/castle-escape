@@ -4,6 +4,11 @@
 
 #pragma rodata-name(push, "BANK1")
 
+const char deckswabber_tiles_remaining[] = "Tiles Left";
+const char deckswabber_level_finished[] = "Finished!";
+const char deckswabber_bonus[] = "Bonus:";
+const char deckswabber_goal[] = "Goal";
+
 const unsigned char blumaroo_idle[] = {
     0, 0, 0x00, 0,
     8, 0, 0x01, 0,
@@ -699,8 +704,8 @@ const unsigned char deckswabber_metatiles[] = {
     0xA2, 0xA3, 0xB2, 0xB3, 2, // Green board, wavy
     0x84, 0x85, 0x94, 0x95, 3, // Red board, chevron
     0xA4, 0xA5, 0xB4, 0xB5, 3, // Pink board, chevron
+    0x82, 0x83, 0x92, 0x93, 2, // Light Blue Board, plain
     0xE8, 0xE9, 0xF8, 0xF9, 0, // Black board, wavy 
-    0xE8, 0xE9, 0xF8, 0xF9, 2, // Light Green Board
     // Others go below...
 
     // These two holes should stay the last two in this order
@@ -719,8 +724,8 @@ const unsigned char deckswabber_metatile_palettes[] = {
     2,
     3,
     3,
+    1,
     0,
-    2,
     //
     1,
     0,
@@ -785,9 +790,91 @@ const unsigned char * const deckswabber_starting_coords_db[] = {
     deckswabber_original_starting_coords,
 };
 
-const char deckswabber_tiles_remaining[] = "Tiles Left";
-const char deckswabber_level_finished[] = "Finished!";
-const char deckswabber_bonus[] = "Bonus:";
+const unsigned char deckswabber_goal_hud_tiles_toprow[] = {
+    0x80, 0x81, 0x08, 0x82, 0x83, 0x08, 0xA0, 0xA1, 0x08, 0xA2, 0xA3, 0x08, 0x84, 0x85, 0x08, 0xA4, 0xA5, 0x08, 0x82, 0x83, 0x08, 0xE8, 0xE9, 0x08
+};
+
+const unsigned char deckswabber_goal_hud_tiles_bottomrow[] = {
+    0x90, 0x91, 0x00, 0x92, 0x93, 0x00, 0xB0, 0xB1, 0x00, 0xB2, 0xB3, 0x00, 0x94, 0x95, 0x00, 0xB4, 0xB5, 0x00, 0x92, 0x93, 0x00, 0xF8, 0xF9, 0x00
+};
+
+// 8x8 tile x, not 16 by 16 tile x
+const unsigned char deckswabber_goal_hud_starting_tile_x_from_increment_type[] = {
+    12,
+    12,
+    12,
+    12,
+    9,
+    9,
+    9,
+    9,
+    6,
+    6,
+    6,
+    6,
+    3,
+    3,
+};
+
+// How much of each row should be written out to the hud (in tiles/bytes) 
+const unsigned char deckswabber_goal_hud_byte_write_length_from_increment_type[] = {
+    5,
+    5,
+    8,
+    8,
+    11,
+    11,
+    14,
+    14,
+    17,
+    17,
+    20,
+    20,
+    23,
+    23,
+};
+
+/*
+Do something based on the lower nibble: 
+   - 0: Nothing
+   - 1: Add a backwards arrow on the bottom row between the final two tiles
+   - 2: Write out a (meta)tile after this one (the upper nibble determines which one, if I bother implementing that)
+*/ 
+const unsigned char deckswabber_goal_hud_touchup_procedure_from_increment_type[] = {
+    0x00,
+    0x01,
+    0x01,
+    0x02,
+    0x01,
+    0x02,
+    0x01,
+    0x02,
+    0x01,
+    0x02,
+    0x01,
+    0x02,
+    0x01,
+    0x02, // Theoretically we could want a future increment type to loop back to a different tile than the first
+};
+
+// Writes starting at X3F0 (figure these out by looking in NES Screen Tool)
+// *in case* I want two consecutive ones to not be identical, I'm not doubling up
+const unsigned char deckswabber_goal_hud_attribute_bytes_from_increment_type[] = {
+    0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x44, // 0
+    0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x44, // 1
+    0x11, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x44, // 2
+    0x11, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x44, // 3
+    0x11, 0x00, 0x00, 0x80, 0xA0, 0x00, 0x00, 0x44, // 4
+    0x11, 0x00, 0x00, 0x80, 0xA0, 0x00, 0x00, 0x44, // 5
+    0x11, 0x00, 0x00, 0x80, 0xA0, 0xF0, 0x00, 0x44, // 6
+    0x11, 0x00, 0x00, 0x80, 0xA0, 0xF0, 0x00, 0x44, // 7
+    0x11, 0x00, 0x00, 0xA0, 0xE0, 0xF0, 0x00, 0x44, // 8
+    0x11, 0x00, 0x00, 0xA0, 0xE0, 0xF0, 0x00, 0x44, // 9
+    0x11, 0x00, 0x00, 0xA0, 0xE0, 0xF0, 0x10, 0x44, // 10
+    0x11, 0x00, 0x00, 0xA0, 0xE0, 0xF0, 0x10, 0x44, // 11
+    0x11, 0x00, 0xA0, 0xE0, 0xF0, 0x50, 0x00, 0x44, // 12
+    0x11, 0x00, 0xA0, 0xE0, 0xF0, 0x50, 0x00, 0x44, // 13
+};
 
 #pragma rodata-name(pop);
 
@@ -795,7 +882,7 @@ const char deckswabber_bonus[] = "Bonus:";
 
 // LibLZG'd data either need to be in Bank 5 or be copied to RAM because the LZG decode function is in bank 5
 const unsigned char const deckswabber_game_screen[] = {
-	76,90,71,0,0,4,0,0,0,1,51,129,116,98,120,1,
+	76,90,71,0,0,4,0,0,0,1,41,158,174,97,9,1,
 	2,3,6,7,135,224,225,134,135,7,54,6,20,151,230,229,
 	231,7,23,240,241,150,135,230,244,0,83,99,111,114,101,0,
 	82,111,117,110,100,0,0,76,101,118,101,108,0,0,84,105,
@@ -812,10 +899,9 @@ const unsigned char const deckswabber_game_screen[] = {
 	28,56,150,3,66,156,3,23,56,3,71,184,3,18,56,3,
 	72,184,3,66,24,3,78,55,3,69,24,3,69,56,208,3,
 	78,55,211,211,210,3,74,120,7,21,3,7,56,3,23,24,
-	3,69,120,7,21,3,66,120,152,153,150,209,3,15,150,7,
-	2,197,209,3,66,120,85,7,5,81,20,5,5,0,0,64,
-	85,85,1,3,2,81,4,85,85,3,4,90,7,247,6,37,
-	7,2,5,
+	3,27,56,6,184,3,67,152,7,21,226,227,150,85,7,6,
+	21,5,7,1,69,85,85,1,6,113,4,85,85,6,250,7,
+	240,80,7,3,85,6,102,7,2,
 };
 
 #pragma rodata-name(pop);

@@ -115,6 +115,7 @@ extern void prepare_score_string(void);
 extern void update_checksum(void);
 
 extern void igloo_write_decimal_in_message_sub(void);
+extern void empty_function(void);
 
 void game_deckswabber(void);
 void begin_deckswabber(void);
@@ -134,6 +135,9 @@ void deckswabber_update_score(void);
 void deckswabber_update_tiles_remaining(void);
 void deckswabber_write_finished_message(void);
 void deckswabber_update_health_bar(void);
+void deckswabber_draw_goal_hud(void);
+void deckswabber_draw_goal_hud_sub_write_ending_backarrow(void);
+void deckswabber_draw_goal_hud_sub_write_mt(void);
 
 void deckswabber_tile_increment_fn_original_round1(void);
 void deckswabber_tile_increment_fn_original_round2(void);
@@ -143,6 +147,12 @@ void deckswabber_tile_increment_fn_original_round5(void);
 void deckswabber_tile_increment_fn_original_round6(void);
 void deckswabber_tile_increment_fn_original_round7(void);
 void deckswabber_tile_increment_fn_original_round8(void);
+void deckswabber_tile_increment_fn_bonus_round9(void);
+void deckswabber_tile_increment_fn_bonus_round10(void);
+void deckswabber_tile_increment_fn_bonus_round11(void);
+void deckswabber_tile_increment_fn_bonus_round12(void);
+void deckswabber_tile_increment_fn_bonus_round13(void);
+void deckswabber_tile_increment_fn_bonus_round14(void);
 
 // Lookup table for behavior when landing on a tile. Assume that player_tile_x and player_tile_y is correctly set when called.
 const void (* const tile_increment_functions[])(void) = {
@@ -154,6 +164,12 @@ const void (* const tile_increment_functions[])(void) = {
     deckswabber_tile_increment_fn_original_round6,
     deckswabber_tile_increment_fn_original_round7,
     deckswabber_tile_increment_fn_original_round8,
+    deckswabber_tile_increment_fn_bonus_round9,
+    deckswabber_tile_increment_fn_bonus_round10,
+    deckswabber_tile_increment_fn_bonus_round11,
+    deckswabber_tile_increment_fn_bonus_round12,
+    deckswabber_tile_increment_fn_bonus_round13,
+    deckswabber_tile_increment_fn_bonus_round14,
 };
 
 void begin_deckswabber(void) {
@@ -294,10 +310,6 @@ void begin_deckswabber_level(void) {
     energy = 192; // 6 HUD tiles that take up the visual HP bar * 32 "health" per tile (16 per "tick")
     // Redraw the energy meter
     deckswabber_update_health_bar();
-    
-    // (Re)draw the "goal" indicator
-    // ...
-
 
     // X and Y coordinates for this game will be in tiles; the drawing routines will figure out where they belong on-screen...
     //temppointer1 = deckswabber_starting_coords_db[level_pack_index];
@@ -318,6 +330,9 @@ void begin_deckswabber_level(void) {
     multi_vram_buffer_horz(deckswabber_tiles_remaining, 10, NTADR_A(17, 4));
     multi_vram_buffer_horz(chrbuffer, 12, NTADR_A(17, 5));
     deckswabber_update_tiles_remaining();
+
+    // (Re)draw the "goal" indicator
+    deckswabber_draw_goal_hud();
 
     ppu_on_all();
 }
@@ -377,8 +392,11 @@ void game_deckswabber(void) {
     }
 
     if (pad1_new & PAD_START) {
-        ++tile_color_increment_type; // Cycle through for debug
-        tile_color_increment_type &= 0b111; // 0-7
+        ++round;
+        if (round >= sizeof(tile_increment_functions)/2) {
+            round = 0;
+        }
+        begin_deckswabber_level();
     }
     // gray_line();
 }
@@ -583,6 +601,84 @@ void deckswabber_tile_increment_fn_original_round8(void) {
     }
 }
 
+void deckswabber_tile_increment_fn_bonus_round9(void) {
+    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp2 = tile_colormap[temp0];
+    temp1 = temp2 + 1;
+    if (temp1 > 5) { temp1 = 4; }
+    tile_colormap[temp0] = temp1;
+    if (temp1 == 5) {
+        --tiles_remaining;
+    } else if (temp2 == 5) {
+        ++tiles_remaining;
+    }
+}
+
+void deckswabber_tile_increment_fn_bonus_round10(void) {
+    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp2 = tile_colormap[temp0];
+    temp1 = temp2 + 1;
+    if (temp1 > 5) { temp1 = 0; }
+    tile_colormap[temp0] = temp1;
+    if (temp1 == 5) {
+        --tiles_remaining;
+    } else if (temp2 == 5) {
+        ++tiles_remaining;
+    }
+}
+
+void deckswabber_tile_increment_fn_bonus_round11(void) {
+    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp2 = tile_colormap[temp0];
+    temp1 = temp2 + 1;
+    if (temp1 > 6) { temp1 = 5; }
+    tile_colormap[temp0] = temp1;
+    if (temp1 == 6) {
+        --tiles_remaining;
+    } else if (temp2 == 6) {
+        ++tiles_remaining;
+    }
+}
+
+void deckswabber_tile_increment_fn_bonus_round12(void) {
+    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp2 = tile_colormap[temp0];
+    temp1 = temp2 + 1;
+    if (temp1 > 6) { temp1 = 0; }
+    tile_colormap[temp0] = temp1;
+    if (temp1 == 6) {
+        --tiles_remaining;
+    } else if (temp2 == 6) {
+        ++tiles_remaining;
+    }
+}
+
+void deckswabber_tile_increment_fn_bonus_round13(void) {
+    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp2 = tile_colormap[temp0];
+    temp1 = temp2 + 1;
+    if (temp1 > 7) { temp1 = 6; }
+    tile_colormap[temp0] = temp1;
+    if (temp1 == 7) {
+        --tiles_remaining;
+    } else if (temp2 == 7) {
+        ++tiles_remaining;
+    }
+}
+
+void deckswabber_tile_increment_fn_bonus_round14(void) {
+    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp2 = tile_colormap[temp0];
+    temp1 = temp2 + 1;
+    if (temp1 > 7) { temp1 = 0; }
+    tile_colormap[temp0] = temp1;
+    if (temp1 == 7) {
+        --tiles_remaining;
+    } else if (temp2 == 7) {
+        ++tiles_remaining;
+    }
+}
+
 void deckswabber_redraw_player_tile(void) {
     temp2 = 8 + (player_tile_x << 1);
     temp3 = 8 + (player_tile_y << 1);
@@ -639,6 +735,71 @@ void deckswabber_update_attribute_byte(void) {
 
     // Write it!
     one_vram_buffer(temp4, address);
+}
+
+const void (* const deckswabber_goal_hud_subfns[])(void) = {
+    empty_function,
+    deckswabber_draw_goal_hud_sub_write_ending_backarrow,
+    deckswabber_draw_goal_hud_sub_write_mt,
+};
+
+void deckswabber_draw_goal_hud(void) {
+    // Assuming the PPU is off...
+
+    // Clear the HUD area first
+    clear_vram_buffer();
+    multi_vram_buffer_horz(chrbuffer, 26, NTADR_A(3, 26));
+    multi_vram_buffer_horz(chrbuffer, 26, NTADR_A(3, 27));
+    multi_vram_buffer_horz(chrbuffer, 26, NTADR_A(3, 28));
+    flush_vram_update_nmi();
+
+    // Draw the tiles themselves...
+    clear_vram_buffer();
+    temp_x = deckswabber_goal_hud_starting_tile_x_from_increment_type[tile_color_increment_type];
+    temp4 = deckswabber_goal_hud_byte_write_length_from_increment_type[tile_color_increment_type];
+    multi_vram_buffer_horz(deckswabber_goal_hud_tiles_toprow, temp4, NTADR_A(temp_x, 26));
+    multi_vram_buffer_horz(deckswabber_goal_hud_tiles_bottomrow, temp4, NTADR_A(temp_x, 27));
+    flush_vram_update_nmi();
+
+
+    // Draw the attribute bytes
+    clear_vram_buffer();
+    // Using precomputed arrays...
+    address = NAMETABLE_A + 0x03F0;
+    temppointer = deckswabber_goal_hud_attribute_bytes_from_increment_type + (tile_color_increment_type << 3);
+    multi_vram_buffer_horz_indirect_ptr(temppointer, 8, address);
+    flush_vram_update_nmi();
+
+    // Draw the word "goal"
+    clear_vram_buffer();
+    temp0 = temp_x + temp4 - 3;
+    multi_vram_buffer_horz(deckswabber_goal, 4, NTADR_A(temp0, 28));
+    flush_vram_update_nmi();
+
+    // Perform touch-ups
+    clear_vram_buffer();
+    temp2 = deckswabber_goal_hud_touchup_procedure_from_increment_type[tile_color_increment_type];
+    temp3 = temp2 & 0x0F;
+    AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_goal_hud_subfns, temp3);
+    flush_vram_update_nmi();    
+}
+
+void deckswabber_draw_goal_hud_sub_write_ending_backarrow(void) {
+    one_vram_buffer(0x18, NTADR_A(temp0, 27));
+}
+
+void deckswabber_draw_goal_hud_sub_write_mt(void) {
+    // Draw arrow
+    temp0 += 3;
+    address = NTADR_A(temp0, 26);
+    one_vram_buffer(0x08, address);
+    // Draw tile
+    address += 1;
+    temppointer = deckswabber_metatiles;
+    multi_vram_buffer_horz_indirect_ptr(temppointer, 2, address);
+    address += 0x20;
+    temppointer += 2;
+    multi_vram_buffer_horz_indirect_ptr(temppointer, 2, address);
 }
 
 #pragma code-name(pop)
