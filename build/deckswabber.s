@@ -227,7 +227,7 @@ _blumaroo_idle:
 	.byte	$00
 	.byte	$00
 	.byte	$08
-	.byte	$10
+	.byte	$3E
 	.byte	$00
 	.byte	$08
 	.byte	$08
