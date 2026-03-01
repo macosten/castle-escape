@@ -568,6 +568,18 @@ const unsigned char * const cannon_jump_animation[] = {
     cannon_jump1,
 };
 
+const unsigned char * const flag_half_jump_animation[] = {
+    flag_half_idle,
+    flag_half_jump2,
+    flag_half_jump1,
+};
+
+const unsigned char * const flag_full_jump_animation[] = {
+    flag_full_idle,
+    flag_full_jump2,
+    flag_full_jump1,
+};
+
 extern const unsigned char * const item_explosion_animation[];
 
 // Levels. Each hex digit corresponds to a tile type.
@@ -874,6 +886,37 @@ const unsigned char deckswabber_goal_hud_attribute_bytes_from_increment_type[] =
     0x11, 0x00, 0x00, 0xA0, 0xE0, 0xF0, 0x10, 0x44, // 11
     0x11, 0x00, 0xA0, 0xE0, 0xF0, 0x50, 0x00, 0x44, // 12
     0x11, 0x00, 0xA0, 0xE0, 0xF0, 0x50, 0x00, 0x44, // 13
+};
+
+const unsigned char deckswabber_entity_index_to_depthmask[] = {
+    0b1,
+    0b10,
+    0b100,
+    0b1000,
+    0b10000,
+    0b100000,
+    0b1000000,
+    // MSB reserved for player
+};
+
+const unsigned char * const * const deckswabber_entity_id_to_animation_ptr[] = {
+    entity_intro_curtain_animation,
+    item_explosion_animation,
+    coin_bronze_jump_animation,
+    coin_silver_jump_animation,
+    coin_gold_jump_animation,
+    chest_bronze_jump_animation,
+    chest_silver_jump_animation,
+    chest_gold_jump_animation,
+    sword_jump_animation,
+    flag_half_jump_animation,
+    flag_full_jump_animation,
+    dirt_bomb_plus_jump_animation,
+    dirt_bomb_square_jump_animation,
+    cannon_jump_animation,
+    mynci_jump_animation,
+    techo_jump_animation,
+    captain_dread_jump_animation,
 };
 
 #pragma rodata-name(pop);
