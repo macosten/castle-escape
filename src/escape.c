@@ -1108,7 +1108,7 @@ void menu_deckswabber_menu(void) {
 
 #define DECKSWABBER_OPTIONS 1
 
-extern unsigned char const deckswabber_palette_sp[];
+extern unsigned char deckswabber_palette_sp[];
 extern unsigned char const deckswabber_palette_bg[];
 
 const unsigned char const deckswabber_menu_selector_x[] = {

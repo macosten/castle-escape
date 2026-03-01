@@ -68,51 +68,51 @@ const unsigned char techo_jump2[] = {
 };
 
 const unsigned char sword_idle[] = {
-    0, 0, 0x0C, 1,
-    0, 8, 0x1C, 1,
-    0,16, 0x2C, 1,
+    4, 0, 0x0C, 1,
+    4, 8, 0x1C, 1,
+    4,16, 0x2C, 1,
     128
 };
 
 const unsigned char sword_jump1[] = {
-    0, 0, 0x0D, 1,
-    0, 8, 0x1D, 1,
-    0,16, 0x2D, 1,
+    4, 0, 0x0D, 1,
+    4, 8, 0x1D, 1,
+    4,16, 0x2D, 1,
     128
 };
 
 const unsigned char sword_jump2[] = {
-    0, 0, 0x0E, 1,
-    0, 8, 0x1E, 1,
-    0,16, 0x2E, 1,
+    4, 0, 0x0E, 1,
+    4, 8, 0x1E, 1,
+    4,16, 0x2E, 1,
     128
 };
 
 const unsigned char entity_intro_curtain1[] = {
-    0, 0, 0x1F, 1,
-    8, 0, 0x1F, 1,
-    128
-};
-
-const unsigned char entity_intro_curtain2[] = {
-    0, 0, 0x0F, 1,
-    8, 0, 0x0F, 1,
-    128
-};
-
-const unsigned char entity_intro_curtain3[] = {
-    0, 0, 0x0F, 1,
-    8, 0, 0x0F, 1,
     0, 8, 0x1F, 1,
     8, 8, 0x1F, 1,
     128
 };
 
-const unsigned char entity_intro_curtain4[] = {
-    0, 0, 0x0F, 1,
-    8, 0, 0x0F, 1,
+const unsigned char entity_intro_curtain2[] = {
     0, 8, 0x0F, 1,
     8, 8, 0x0F, 1,
+    128
+};
+
+const unsigned char entity_intro_curtain3[] = {
+    0, 8, 0x0F, 1,
+    8, 8, 0x0F, 1,
+    0,16, 0x1F, 1,
+    8,16, 0x1F, 1,
+    128
+};
+
+const unsigned char entity_intro_curtain4[] = {
+    0, 8, 0x0F, 1,
+    8, 8, 0x0F, 1,
+    0,16, 0x0F, 1,
+    8,16, 0x0F, 1,
     128
 };
 
@@ -149,7 +149,7 @@ const unsigned char chest_bronze_idle[] = {
     8, 7, 0x37, 1,
     0,15, 0x46, 1,
     8,15, 0x47, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -158,7 +158,7 @@ const unsigned char chest_bronze_jump1[] = {
     8, 4, 0x39, 1,
     0,12, 0x48, 1,
     8,12, 0x49, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -167,7 +167,7 @@ const unsigned char chest_bronze_jump2[] = {
     8, 6, 0x39, 1,
     0,14, 0x48, 1,
     8,14, 0x49, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -176,7 +176,7 @@ const unsigned char chest_silver_idle[] = {
     8, 7, 0x3B, 1,
     0,15, 0x4A, 1,
     8,15, 0x4B, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -185,7 +185,7 @@ const unsigned char chest_silver_jump1[] = {
     8, 4, 0x3D, 1,
     0,12, 0x4C, 1,
     8,12, 0x4D, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -194,7 +194,7 @@ const unsigned char chest_silver_jump2[] = {
     8, 6, 0x3D, 1,
     0,14, 0x4C, 1,
     8,14, 0x4D, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -203,7 +203,7 @@ const unsigned char chest_gold_idle[] = {
     8, 7, 0x37, 2,
     0,15, 0x46, 2,
     8,15, 0x47, 2,
-    4,16, 0x8A, 2,
+    //4,16, 0x8A, 2,
     128
 };
 
@@ -212,7 +212,7 @@ const unsigned char chest_gold_jump1[] = {
     8, 4, 0x39, 2,
     0,12, 0x48, 2,
     8,12, 0x49, 2,
-    4,16, 0x8A, 2,
+    //4,16, 0x8A, 2,
     128
 };
 
@@ -221,7 +221,7 @@ const unsigned char chest_gold_jump2[] = {
     8, 6, 0x39, 2,
     0,14, 0x48, 2,
     8,14, 0x49, 2,
-    4,16, 0x8A, 2,
+    //4,16, 0x8A, 2,
     128
 };
 
@@ -230,7 +230,7 @@ const unsigned char coin_bronze_idle[] = {
     8, 7, 0x5B, 1,
     0,15, 0x6A, 1,
     8,15, 0x6B, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -239,7 +239,7 @@ const unsigned char coin_bronze_jump1[] = {
     8, 4, 0x5D, 1,
     0,12, 0x6C, 1,
     8,12, 0x6D, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -248,7 +248,7 @@ const unsigned char coin_bronze_jump2[] = {
     8, 6, 0x5F, 1,
     0,14, 0x6E, 1,
     8,14, 0x6F, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -257,7 +257,7 @@ const unsigned char coin_silver_idle[] = {
     8, 7, 0x55, 1,
     0,15, 0x64, 1,
     8,15, 0x65, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -266,7 +266,7 @@ const unsigned char coin_silver_jump1[] = {
     8, 4, 0x57, 1,
     0,12, 0x66, 1,
     8,12, 0x67, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -275,7 +275,7 @@ const unsigned char coin_silver_jump2[] = {
     8, 6, 0x59, 1,
     0,14, 0x68, 1,
     8,14, 0x69, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -284,7 +284,7 @@ const unsigned char coin_gold_idle[] = {
     8, 7, 0x5B, 2,
     0,15, 0x6A, 2,
     8,15, 0x6B, 2,
-    4,16, 0x8A, 2,
+    //4,16, 0x8A, 2,
     128
 };
 
@@ -293,7 +293,7 @@ const unsigned char coin_gold_jump1[] = {
     8, 4, 0x5D, 2,
     0,12, 0x6C, 2,
     8,12, 0x6D, 2,
-    4,16, 0x8A, 2,
+    //4,16, 0x8A, 2,
     128
 };
 
@@ -302,7 +302,7 @@ const unsigned char coin_gold_jump2[] = {
     8, 6, 0x5F, 2,
     0,14, 0x6E, 2,
     8,14, 0x6F, 2,
-    4,16, 0x8A, 2,
+    //4,16, 0x8A, 2,
     128
 };
 
@@ -312,7 +312,7 @@ const unsigned char flag_half_idle[] = {
     0,16, 0x70, 1,
     1, 8, 0x2F, 2,
     9, 8, 0x2F, 2|OAM_FLIP_H|OAM_FLIP_V,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -322,7 +322,7 @@ const unsigned char flag_half_jump1[] = {
     0,13, 0x71, 1,
     3, 5, 0x62, 2,
    11, 5, 0x63, 2,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -332,7 +332,7 @@ const unsigned char flag_half_jump2[] = {
     0,15, 0x71, 1,
     3, 7, 0x62, 2,
    11, 7, 0x63, 2,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -342,7 +342,7 @@ const unsigned char flag_full_idle[] = {
     0,16, 0x70, 1,
     1, 0, 0x2F, 2,
     9, 0, 0x2F, 2|OAM_FLIP_H|OAM_FLIP_V,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -352,7 +352,7 @@ const unsigned char flag_full_jump1[] = {
     0,13, 0x71, 1,
     1,-3, 0x62, 2,
     9,-3, 0x63, 2,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -362,7 +362,7 @@ const unsigned char flag_full_jump2[] = {
     0,15, 0x71, 1,
     1, 7, 0x62, 2,
     9, 7, 0x63, 2,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -371,7 +371,7 @@ const unsigned char dirt_bomb_plus_idle[] = {
     8, 7, 0x73, 1,
     0,15, 0x82, 1,
     8,15, 0x83, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -380,7 +380,7 @@ const unsigned char dirt_bomb_plus_jump1[] = {
     8, 4, 0x75, 1,
     0,12, 0x84, 1,
     8,12, 0x85, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -389,7 +389,7 @@ const unsigned char dirt_bomb_plus_jump2[] = {
     8, 6, 0x77, 1,
     0,14, 0x86, 1,
     8,14, 0x87, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -398,7 +398,7 @@ const unsigned char dirt_bomb_square_idle[] = {
     8, 7, 0x79, 1,
     0,15, 0x88, 1,
     8,15, 0x89, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -406,7 +406,7 @@ const unsigned char dirt_bomb_square_jump1[] = {
    -3, 4, 0x7A, 1,
     5, 4, 0x7B, 1,
     5,12, 0x8B, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -414,7 +414,7 @@ const unsigned char dirt_bomb_square_jump2[] = {
     0, 6, 0x7C, 1,
     0,14, 0x8C, 1,
     8,14, 0x8D, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -444,7 +444,7 @@ const unsigned char mynci_jump2[] = {
     0, 8, 0xA4, 3,
     8, 8, 0xA5, 3,
     0,16, 0xB4, 3,
-    8,16, 0xB4, 3,
+    8,16, 0xB5, 3,
     128
 };
 
@@ -453,7 +453,7 @@ const unsigned char cannon_idle[] = {
     8, 7, 0x97, 1,
     0,15, 0xA6, 1,
     8,15, 0xA7, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -462,7 +462,7 @@ const unsigned char cannon_jump1[] = {
     8, 4, 0x99, 1,
     0,12, 0xA8, 1,
     8,12, 0xA9, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 
@@ -471,7 +471,7 @@ const unsigned char cannon_jump2[] = {
     8, 6, 0x99, 1,
     0,14, 0xA8, 1,
     8,14, 0xA9, 1,
-    4,16, 0x8A, 1,
+    //4,16, 0x8A, 1,
     128
 };
 

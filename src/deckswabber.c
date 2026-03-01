@@ -97,6 +97,9 @@ extern unsigned char chrbuffer[32];
 
 const unsigned char * const * deckswabber_active_level_pack_levels;
 
+extern unsigned char shuffle_array[];
+extern unsigned char shuffle_leg_size;
+
 // Importing only the enemies_whatever arrays we need to store Doughnutfruit data...
 extern unsigned char enemies_x[MAX_ENEMIES]; // Entity X coords (tile X)
 extern unsigned char enemies_y[MAX_ENEMIES]; // Entity Y coords (tile Y)
@@ -106,6 +109,7 @@ extern unsigned char enemies_extra2[MAX_ENEMIES]; // aggression (likelihood to t
 #define enemies_aggression enemies_extra2
 extern unsigned char enemies_type[MAX_ENEMIES];
 extern unsigned char enemies_flags[MAX_ENEMIES]; // animation timer
+extern unsigned char enemies_count;
 
 #if (DECKSWABBER_TILE_WIDTH != 8 || DECKSWABBER_TILE_HEIGHT != 8)
     #warning "Careful (deckswabber): Odd width and height, the code probably doesn't support this yet."
@@ -115,9 +119,9 @@ extern unsigned char enemies_flags[MAX_ENEMIES]; // animation timer
 
 unsigned char deckswabber_palette_sp[] = {
     0x37, 0x1c, 0x38, 0x0f, // Player Character (Teal/Yellow/Black)
-    0x21, 0x3d, 0x16, 0x0f, // Grey + Brown (Sword, Boxes, Cannon, Coins/Chests etc)
-    0x21, 0x30, 0x27, 0x0f, // White + Gold (Kiko Skeleton, Gold Coins/Chests, flags)
-    0x21, 0x0f, 0x00, 0x00, // Reserved for Mynci/Techo color palette
+    0x37, 0x2d, 0x17, 0x0f, // Grey + Brown (Sword, Boxes, Cannon, Coins/Chests etc)
+    0x37, 0x30, 0x27, 0x0f, // White + Gold (Kiko Skeleton, Gold Coins/Chests, flags)
+    0x37, 0x14, 0x36, 0x0f, // Reserved for Mynci/Techo color palette
 };
 
 // Techo Pirate - 0x2A, 0x26, 0x0f
@@ -233,7 +237,8 @@ void begin_deckswabber(void) {
 void begin_deckswabber_sub(void) {
     music_play(ICE_CREAM_MACHINE_SONG);
     game_mode = MODE_GAME;
-    // ...
+    enemies_count = DECKSWABBER_MAX_ONSCREEN_ENTITIES; // Used by extern'd functions
+    calculate_shuffle_array();
 
     seed_rng();
     srand(rand8());
@@ -464,11 +469,12 @@ void game_deckswabber(void) {
                             enemies_aggression[x] = 255;
                             enemies_extra[x] = DECKSWABBER_ENTITY_ID_CAPTAIN_DREAD;
                         }
-                    } 
+                    }
                     enemies_type[x] = DECKSWABBER_ENTITY_ID_CURTAIN;
                     enemies_timer[x] = 32;
+                    enemies_x[x] = rand8() & 0b111;
+                    enemies_y[x] = rand8() & 0b111;
                     ACTIVATE_ENEMY(x);
-                    debug_values[0] += 1;
                 }
             } else {
                 DECKSWABBER_SET_CAN_MAKE_HOSTILE_ENTITY();
@@ -513,8 +519,9 @@ void game_deckswabber(void) {
                     enemies_aggression[x] = 0;
                     enemies_type[x] = DECKSWABBER_ENTITY_ID_CURTAIN;
                     enemies_timer[x] = 32;
+                    enemies_x[x] = rand8() & 0b111;
+                    enemies_y[x] = rand8() & 0b111;
                     ACTIVATE_ENEMY(x);
-                    debug_values[1] += 1;
                 }
             } else {
                 DECKSWABBER_SET_CAN_MAKE_PASSIVE_ENTITY();
@@ -568,7 +575,7 @@ void game_deckswabber(void) {
         }
         begin_deckswabber_level();
     }
-    // gray_line();
+    gray_line();
 }
 
 void end_deckswabber(void) {
@@ -669,50 +676,35 @@ void deckswabber_draw_sprites(void) {
     oam_clear();
 
     // We need to draw from front to back, so:
-    for (y = 0; y < DECKSWABBER_TILE_HEIGHT; ++y) {
+    for (y = DECKSWABBER_TILE_HEIGHT; y != 0xFF; --y) {
+        if (player_tile_y == y) { deckswabber_draw_player(); }
         temp4 = depthmap[y];
-        if (temp4 & DECKSWABBER_PLAYER_DEPTHMAP_MASK) {
-            deckswabber_draw_player();
-        }
-        temp4 &= ~DECKSWABBER_PLAYER_DEPTHMAP_MASK;
-        // if (temp4 == 0) { continue; }
-
-        // for (x = 0; x < 7; ++x) {
-        //     if (temp4 == 0) { break; }
-        //     if (temp4 & 1) {
-
-        //         temp1 = enemies_type[x];
-        //         AsmSet2ByteFromPtrAtIndexVar(temppointer, deckswabber_entity_id_to_animation_ptr, temp1);
-        //         if (temp1 == DECKSWABBER_ENTITY_ID_CURTAIN) {
-        //             temp1 = enemies_timer[x] >> 3;
-        //         } else {
-        //             temp1 = enemies_extra[x] >> 2;
-        //         }
-        //         AsmSet2ByteFromMutPtrWithOffset(temppointer1, temppointer, temp1);
-        //         oam_meta_spr(temp_x, temp_y, temppointer1);
-        //     }
-        //     temp4 >>= 1;
+        // if (temp4 & DECKSWABBER_PLAYER_DEPTHMAP_MASK) {
+        //     deckswabber_draw_player();
         // }
-    }
+        temp4 &= ~DECKSWABBER_PLAYER_DEPTHMAP_MASK;
+        if (temp4 == 0) { continue; }
 
-    for (x = 0; x < 7; ++x) {
-        if (IS_ENEMY_ACTIVE(x)) {
-            temp_x = 64 + (enemies_x[x] << 4);
-            temp_y = 54 + (enemies_y[x] << 4);
-            // AsmCallFunctionAtPtrOffsetByIndexVar(igloo_draw_func_pointers, temp0);
-            // oam_meta_spr(temp_x, temp_y, temppointer);
-
-            temp1 = enemies_type[x];
-            AsmSet2ByteFromPtrAtIndexVar(temppointer, deckswabber_entity_id_to_animation_ptr, temp1);
-            if (temp1 == DECKSWABBER_ENTITY_ID_CURTAIN) {
-                temp1 = enemies_timer[x] >> 3;
-            } else {
-                temp1 = enemies_extra[x] >> 2;
+        for (index = 0; index < shuffle_leg_size; ++index) {
+            temp1 = index + shuffle_offset;
+            AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
+            if (enemies_y[x] == y && IS_ENEMY_ACTIVE(x)) {
+                temp_x = 64 + (enemies_x[x] << 4);
+                temp_y = 54 + (enemies_y[x] << 4);
+                temp1 = enemies_type[x];
+                AsmSet2ByteFromPtrAtIndexVar(temppointer, deckswabber_entity_id_to_animation_ptr, temp1);
+                if (temp1 == DECKSWABBER_ENTITY_ID_CURTAIN) {
+                    temp2 = enemies_timer[x] >> 3;
+                } else {
+                    temp2 = enemies_extra[x] >> 2;
+                }
+                AsmSet2ByteFromMutPtrWithOffset(temppointer1, temppointer, temp2);
+                oam_meta_spr(temp_x, temp_y, temppointer1);
             }
-            AsmSet2ByteFromMutPtrWithOffset(temppointer1, temppointer, temp1);
-            oam_meta_spr(temp_x, temp_y, temppointer1);
         }
-    }   
+    }
+    shuffle_offset += shuffle_leg_size;
+    if (shuffle_offset == shuffle_maximum) { shuffle_offset = 0; }
 }
 
 void deckswabber_draw_player(void) {
@@ -979,6 +971,8 @@ void deckswabber_entity_movement(void) {
                 AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_ai_pointers, temp0);
             } else {
                 // Generic AI option
+                if (enemies_extra[x]) { --enemies_extra[x]; }
+
                 temp0 = enemies_timer[x];
                 --temp0;
                 if (temp0 == 0) {
@@ -1063,6 +1057,7 @@ void deckswabber_entity_ai_sub_go_up(void) {
     --temp_y;
     temp_x = enemies_x[x];
     DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp0 = tile_typemap[temp0];
     if (temp0 < DECKSWABBER_WATER_HOLE_ID) { // Don't jump into a hole
         enemies_y[x] = temp_y; // Move (and update depthmap)
         temp0 = deckswabber_entity_index_to_depthmask[x];
@@ -1077,7 +1072,7 @@ void deckswabber_entity_ai_sub_go_up(void) {
         temp1 &= ~temp0;
         depthmap[temp_y] = temp1;
 
-        enemies_extra[x] = 12;
+        enemies_extra[x] = 11;
     }
 }
 
@@ -1089,6 +1084,7 @@ void deckswabber_entity_ai_sub_go_down(void) {
     ++temp_y;
     temp_x = enemies_x[x];
     DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp0 = tile_typemap[temp0];
     if (temp0 < DECKSWABBER_WATER_HOLE_ID) { // Don't jump into a hole
         enemies_y[x] = temp_y; // Move (and update depthmap)
         temp0 = deckswabber_entity_index_to_depthmask[x];
@@ -1103,7 +1099,7 @@ void deckswabber_entity_ai_sub_go_down(void) {
         temp1 &= ~temp0;
         depthmap[temp_y] = temp1;
 
-        enemies_extra[x] = 12;
+        enemies_extra[x] = 11;
     }
 }
 
@@ -1115,9 +1111,10 @@ void deckswabber_entity_ai_sub_go_left(void) {
     --temp_x;
     temp_y = enemies_y[x];
     DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp0 = tile_typemap[temp0];
     if (temp0 < DECKSWABBER_WATER_HOLE_ID) { // Don't jump into a hole
         enemies_x[x] = temp_x;
-        enemies_extra[x] = 12;
+        enemies_extra[x] = 11;
     }
 }
 
@@ -1129,9 +1126,10 @@ void deckswabber_entity_ai_sub_go_right(void) {
     ++temp_x;
     temp_y = enemies_y[x];
     DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp0 = tile_typemap[temp0];
     if (temp0 < DECKSWABBER_WATER_HOLE_ID) { // Don't jump into a hole
         enemies_x[x] = temp_x;
-        enemies_extra[x] = 12;
+        enemies_extra[x] = 11;
     }
 }
 
