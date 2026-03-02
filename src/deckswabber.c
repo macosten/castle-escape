@@ -206,6 +206,11 @@ void deckswabber_entity_ai_sub_clear_from_enemymap(void);
 void deckswabber_entity_kill(void);
 
 void deckswabber_player_collision(void);
+void deckswabber_collide_with_points(void);
+void deckswabber_collide_with_half_flag(void);
+void deckswabber_collide_with_full_flag(void);
+void deckswabber_collide_with_harmful(void);
+void deckswabber_collide_with_fatal(void);
 
 // Lookup table for behavior when landing on a tile. Assume that player_tile_x and player_tile_y is correctly set when called.
 const void (* const tile_increment_functions[])(void) = {
@@ -370,7 +375,8 @@ void begin_deckswabber_level(void) {
 
     clear_vram_buffer();
     energy = 192; // 6 HUD tiles that take up the visual HP bar * 32 "health" per tile (16 per "tick")
-    // Redraw the energy meter
+    // Redraw score + energy meter
+    deckswabber_update_score();
     deckswabber_update_health_bar();
 
     // X and Y coordinates for this game will be in tiles; the drawing routines will figure out where they belong on-screen...
@@ -420,6 +426,7 @@ void game_deckswabber(void) {
     if (tiles_remaining > 0) {
         deckswabber_player_movement();
         deckswabber_entity_movement();
+        deckswabber_player_collision();
 
         --game_frame_timer;
         if (game_frame_timer == 0) {
@@ -572,6 +579,7 @@ void game_deckswabber(void) {
     deckswabber_draw_sprites();
 
     if (DECKSWABBER_SCORE_CHANGED_THIS_FRAME) { deckswabber_update_score(); }
+    if (DECKSWABBER_HP_CHANGED_THIS_FRAME) { deckswabber_update_health_bar(); }
 
     if (pad1 & PAD_B) {
         end_deckswabber();
@@ -681,11 +689,14 @@ void deckswabber_update_health_bar(void) {
         if (temp0 > 32) {
             temp0 -= 32;
             healthbar[index] = DECKSWABBER_HEALTHBAR_FULL_TILE;
-        } else if (temp0 == 0) {
-            healthbar[index] = 0;
-        } else {
+        } else if (temp0 > 16) {
+            healthbar[index] = DECKSWABBER_HEALTHBAR_FULL_TILE;
+            temp0 = 0;
+        } else if (temp0 > 0) {
             healthbar[index] = DECKSWABBER_HEALTHBAR_PART_TILE;
             temp0 = 0;
+        } else {
+            healthbar[index] = 0;
         }
     }
     // Todo - implement proper bar rendering (and delete the above Full HP Bar)
@@ -1190,6 +1201,26 @@ void deckswabber_entity_ai_sub_is_target_space_blocked(void) {
     }
 }
 
+const void (* const deckswabber_player_collision_fns[])(void) = {
+    empty_function, // 0 - Curtain
+    empty_function, // 1 - Explosion
+    deckswabber_collide_with_points,
+    deckswabber_collide_with_points,
+    deckswabber_collide_with_points,
+    deckswabber_collide_with_points,
+    deckswabber_collide_with_points,
+    deckswabber_collide_with_points,
+    empty_function, // 8 - Sword
+    deckswabber_collide_with_half_flag,
+    deckswabber_collide_with_full_flag,
+    deckswabber_entity_kill, // Dirt Bombs
+    deckswabber_entity_kill,
+    deckswabber_collide_with_harmful,
+    deckswabber_collide_with_harmful,
+    deckswabber_collide_with_harmful,
+    deckswabber_collide_with_fatal,
+};
+
 void deckswabber_player_collision(void) {
     DeckswabberGetTileIndex(temp0, old_x, old_y); // player_tile_x, player_tile_y
     temp1 = enemymap[temp0];
@@ -1197,34 +1228,7 @@ void deckswabber_player_collision(void) {
         if (temp1 & 1) {
             // Colliding with entity X
             temp0 = enemies_type[x];
-            if (temp0 <= DECKSWABBER_ENTITY_ID_EXPLOSION || temp0 == DECKSWABBER_ENTITY_ID_SWORD) { // If-chain should be more compact but cost performance, which we can spare...?
-                continue;                
-            } else if (temp0 <= DECKSWABBER_ENTITY_ID_CHEST_GOLD) {
-                temp0 -= DECKSWABBER_ENTITY_ID_COIN_BRONZE;
-                score += deckswabber_treasure_point_values[temp0];
-                DECKSWABBER_SET_SCORE_CHANGED_THIS_FRAME();
-                // Kill this object
-                deckswabber_entity_kill();
-            } else if (temp0 == DECKSWABBER_ENTITY_ID_FLAG_HALF) {
-                if (energy >= 96) {
-                    energy = 192;
-                } else {
-                    energy += 96;
-                }
-                DECKSWABBER_SET_HP_CHANGED_THIS_FRAME();
-                // play_sfx(deckswabber_heal);
-                deckswabber_entity_kill();
-            } else if (temp0 == DECKSWABBER_ENTITY_ID_FLAG_FULL) {
-                energy = 192;
-                DECKSWABBER_SET_HP_CHANGED_THIS_FRAME();
-                // play_sfx(deckswabber_heal);
-                deckswabber_entity_kill();
-            } else if (temp0 <= DECKSWABBER_ENTITY_ID_DIRT_BOMB_SQUARE) {
-                // Kill this object
-                deckswabber_entity_kill();
-            } else {
-
-            }
+            AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_player_collision_fns, temp0);
         }
         temp1 >>= 1;
     }
@@ -1233,6 +1237,44 @@ void deckswabber_player_collision(void) {
 void deckswabber_entity_kill(void) {
     deckswabber_entity_ai_sub_clear_from_enemymap();
     DEACTIVATE_ENEMY(x);
+}
+
+void deckswabber_collide_with_points(void) {
+    temp0 -= DECKSWABBER_ENTITY_ID_COIN_BRONZE;
+    score += deckswabber_treasure_point_values[temp0];
+    DECKSWABBER_SET_SCORE_CHANGED_THIS_FRAME();
+    // Kill this object
+    deckswabber_entity_kill();
+}
+
+void deckswabber_collide_with_half_flag(void) {
+    if (energy >= 96) {
+        energy = 192;
+    } else {
+        energy += 96;
+    }
+    DECKSWABBER_SET_HP_CHANGED_THIS_FRAME();
+    // play_sfx(deckswabber_heal);
+    deckswabber_entity_kill();
+}
+
+void deckswabber_collide_with_full_flag(void) {
+    energy = 192;
+    DECKSWABBER_SET_HP_CHANGED_THIS_FRAME();
+    // play_sfx(deckswabber_heal);
+    deckswabber_entity_kill();
+}
+
+void deckswabber_collide_with_harmful(void) {
+    --energy;
+    DECKSWABBER_SET_HP_CHANGED_THIS_FRAME();
+    // play_sfx(deckswabber_ouch);
+}
+
+void deckswabber_collide_with_fatal(void) {
+    energy = 0;
+    DECKSWABBER_SET_HP_CHANGED_THIS_FRAME();
+    // play_sfx(deckswabber_ouch);
 }
 
 #pragma code-name(pop)
