@@ -919,6 +919,15 @@ const unsigned char * const * const deckswabber_entity_id_to_animation_ptr[] = {
     captain_dread_jump_animation,
 };
 
+const unsigned char deckswabber_treasure_point_values[] = {
+    1, // Should really be 0.5 but... instead I guess I'll multiply the original point values by 2
+    2,
+    4,
+    10,
+    15,
+    20,
+};
+
 #pragma rodata-name(pop);
 
 #pragma rodata-name(push, "BANK5")

@@ -6,6 +6,9 @@
 
 #define DECKSWABBER_LEVEL_PACK_SIZE 10
 
+#define DECKSWABBER_HEALTHBAR_FULL_TILE 0xF6
+#define DECKSWABBER_HEALTHBAR_PART_TILE 0xF7
+
 // Assumes an original-style 8 by 8 grid... will need to use something else if we want alternate grid sizes
 #define DeckswabberGetTileIndex(destinationVar, x_coord, y_coord) { \
     __asm__("lda %v", y_coord); \
@@ -42,10 +45,15 @@
 
 // Flags that need to be cleared at the start of each frame...
 #define DECKSWABBER_DID_SCORE_CHANGE_THIS_FRAME_MASK      0b00000001
+#define DECKSWABBER_DID_HP_CHANGE_THIS_FRAME_MASK         0b00000010
 
-#define DECKSWABBER_RESET_PLAYER_FLAGS_START_FRAME() (player_flags &= ~(DECKSWABBER_DID_SCORE_CHANGE_THIS_FRAME_MASK))
+#define DECKSWABBER_RESET_PLAYER_FLAGS_START_FRAME() (player_flags &= ~(DECKSWABBER_DID_SCORE_CHANGE_THIS_FRAME_MASK | DECKSWABBER_DID_HP_CHANGE_THIS_FRAME_MASK))
+
+#define DECKSWABBER_SET_SCORE_CHANGED_THIS_FRAME()       (player_flags |= DECKSWABBER_DID_SCORE_CHANGE_THIS_FRAME_MASK)
+#define DECKSWABBER_SET_HP_CHANGED_THIS_FRAME()       (player_flags |= DECKSWABBER_DID_HP_CHANGE_THIS_FRAME_MASK)
 
 #define DECKSWABBER_SCORE_CHANGED_THIS_FRAME          (player_flags & DECKSWABBER_DID_SCORE_CHANGE_THIS_FRAME_MASK)
+#define DECKSWABBER_HP_CHANGED_THIS_FRAME             (player_flags & DECKSWABBER_DID_HP_CHANGE_THIS_FRAME_MASK)
 
 // Flags that don't
 #define DECKSWABBER_CAN_MAKE_HOSTILE_ENTITY_MASK        0b00000100

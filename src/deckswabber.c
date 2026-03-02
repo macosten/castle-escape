@@ -55,6 +55,7 @@ extern unsigned char cmap[];
 #define tile_colormap (cmap + 64)
 #define enemymap (cmap + 128)
 #define depthmap (enemymap + 64)
+#define healthbar (depthmap + 8)
 
 ZEROPAGE_EXTERN(unsigned char, temp_x);
 ZEROPAGE_EXTERN(unsigned char, temp_y);
@@ -201,6 +202,10 @@ void deckswabber_entity_ai_sub_go_right(void);
 void deckswabber_entity_ai_sub_is_target_space_blocked(void);
 void deckswabber_entity_ai_sub_set_in_enemymap(void);
 void deckswabber_entity_ai_sub_clear_from_enemymap(void);
+
+void deckswabber_entity_kill(void);
+
+void deckswabber_player_collision(void);
 
 // Lookup table for behavior when landing on a tile. Assume that player_tile_x and player_tile_y is correctly set when called.
 const void (* const tile_increment_functions[])(void) = {
@@ -670,10 +675,22 @@ void deckswabber_write_finished_message(void) {
     multi_vram_buffer_horz(chrbuffer, temp0, NTADR_A(24, 5));
 }
 
-const unsigned char deckswabber_full_hp_bar[] = { 0xF6, 0xF6, 0xF6, 0xF6, 0xF6, 0xF6 };
 void deckswabber_update_health_bar(void) {
+    temp0 = energy;
+    for (index = 0; index < 6; ++index) {
+        if (temp0 > 32) {
+            temp0 -= 32;
+            healthbar[index] = DECKSWABBER_HEALTHBAR_FULL_TILE;
+        } else if (temp0 == 0) {
+            healthbar[index] = 0;
+        } else {
+            healthbar[index] = DECKSWABBER_HEALTHBAR_PART_TILE;
+            temp0 = 0;
+        }
+    }
     // Todo - implement proper bar rendering (and delete the above Full HP Bar)
-    multi_vram_buffer_horz(deckswabber_full_hp_bar, 6, NTADR_A(6, 5));
+    temppointer = healthbar;
+    multi_vram_buffer_horz_indirect_ptr(temppointer, 6, NTADR_A(6, 5));
 }
 
 void deckswabber_draw_sprites(void) {
@@ -1171,6 +1188,51 @@ void deckswabber_entity_ai_sub_is_target_space_blocked(void) {
     } else {
         temp1 = enemymap[temp1]; // If there is any entity here
     }
+}
+
+void deckswabber_player_collision(void) {
+    DeckswabberGetTileIndex(temp0, old_x, old_y); // player_tile_x, player_tile_y
+    temp1 = enemymap[temp0];
+    for (x = 0; x < DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++x) {
+        if (temp1 & 1) {
+            // Colliding with entity X
+            temp0 = enemies_type[x];
+            if (temp0 <= DECKSWABBER_ENTITY_ID_EXPLOSION || temp0 == DECKSWABBER_ENTITY_ID_SWORD) { // If-chain should be more compact but cost performance, which we can spare...?
+                continue;                
+            } else if (temp0 <= DECKSWABBER_ENTITY_ID_CHEST_GOLD) {
+                temp0 -= DECKSWABBER_ENTITY_ID_COIN_BRONZE;
+                score += deckswabber_treasure_point_values[temp0];
+                DECKSWABBER_SET_SCORE_CHANGED_THIS_FRAME();
+                // Kill this object
+                deckswabber_entity_kill();
+            } else if (temp0 == DECKSWABBER_ENTITY_ID_FLAG_HALF) {
+                if (energy >= 96) {
+                    energy = 192;
+                } else {
+                    energy += 96;
+                }
+                DECKSWABBER_SET_HP_CHANGED_THIS_FRAME();
+                // play_sfx(deckswabber_heal);
+                deckswabber_entity_kill();
+            } else if (temp0 == DECKSWABBER_ENTITY_ID_FLAG_FULL) {
+                energy = 192;
+                DECKSWABBER_SET_HP_CHANGED_THIS_FRAME();
+                // play_sfx(deckswabber_heal);
+                deckswabber_entity_kill();
+            } else if (temp0 <= DECKSWABBER_ENTITY_ID_DIRT_BOMB_SQUARE) {
+                // Kill this object
+                deckswabber_entity_kill();
+            } else {
+
+            }
+        }
+        temp1 >>= 1;
+    }
+}
+
+void deckswabber_entity_kill(void) {
+    deckswabber_entity_ai_sub_clear_from_enemymap();
+    DEACTIVATE_ENEMY(x);
 }
 
 #pragma code-name(pop)
