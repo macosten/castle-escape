@@ -198,6 +198,9 @@ void deckswabber_entity_ai_sub_go_up(void);
 void deckswabber_entity_ai_sub_go_down(void);
 void deckswabber_entity_ai_sub_go_left(void);
 void deckswabber_entity_ai_sub_go_right(void);
+void deckswabber_entity_ai_sub_is_target_space_blocked(void);
+void deckswabber_entity_ai_sub_set_in_enemymap(void);
+void deckswabber_entity_ai_sub_clear_from_enemymap(void);
 
 // Lookup table for behavior when landing on a tile. Assume that player_tile_x and player_tile_y is correctly set when called.
 const void (* const tile_increment_functions[])(void) = {
@@ -475,6 +478,7 @@ void game_deckswabber(void) {
                     enemies_x[x] = rand8() & 0b111;
                     enemies_y[x] = rand8() & 0b111;
                     ACTIVATE_ENEMY(x);
+                    deckswabber_entity_ai_sub_set_in_enemymap();
                 }
             } else {
                 DECKSWABBER_SET_CAN_MAKE_HOSTILE_ENTITY();
@@ -522,6 +526,7 @@ void game_deckswabber(void) {
                     enemies_x[x] = rand8() & 0b111;
                     enemies_y[x] = rand8() & 0b111;
                     ACTIVATE_ENEMY(x);
+                    deckswabber_entity_ai_sub_set_in_enemymap();
                 }
             } else {
                 DECKSWABBER_SET_CAN_MAKE_PASSIVE_ENTITY();
@@ -575,7 +580,7 @@ void game_deckswabber(void) {
         }
         begin_deckswabber_level();
     }
-    gray_line();
+    //gray_line();
 }
 
 void end_deckswabber(void) {
@@ -591,10 +596,10 @@ void deckswabber_player_movement(void) {
     // temp1 = depthmap[player_tile_y];
     // temp1 &= ~DECKSWABBER_PLAYER_DEPTHMAP_MASK;
     // depthmap[player_tile_y] = temp1;
-    __asm__("ldy %v", old_y);
-    __asm__("lda %v+%s,y", cmap, 192);
-    __asm__("and #%b", 0b01111111);
-    __asm__("sta %v+%s,y", cmap, 192);
+    // __asm__("ldy %v", old_y);
+    // __asm__("lda %v+%s,y", cmap, 192);
+    // __asm__("and #%b", 0b01111111);
+    // __asm__("sta %v+%s,y", cmap, 192);
 
     if (pad1_new & PAD_UP && player_tile_y > 0) {
         player_tile_y -= 1;
@@ -612,10 +617,10 @@ void deckswabber_player_movement(void) {
     // temp1 = depthmap[player_tile_y];
     // temp1 |= DECKSWABBER_PLAYER_DEPTHMAP_MASK;
     // depthmap[player_tile_y] = temp1;
-    __asm__("ldy %v", old_y);
-    __asm__("lda %v+%s,y", cmap, 192);
-    __asm__("ora #$80");
-    __asm__("sta %v+%s,y", cmap, 192);
+    // __asm__("ldy %v", old_y);
+    // __asm__("lda %v+%s,y", cmap, 192);
+    // __asm__("ora #$80");
+    // __asm__("sta %v+%s,y", cmap, 192);
 
 
     if (temp0) {
@@ -682,7 +687,7 @@ void deckswabber_draw_sprites(void) {
         // if (temp4 & DECKSWABBER_PLAYER_DEPTHMAP_MASK) {
         //     deckswabber_draw_player();
         // }
-        temp4 &= ~DECKSWABBER_PLAYER_DEPTHMAP_MASK;
+        // temp4 &= ~DECKSWABBER_PLAYER_DEPTHMAP_MASK;
         if (temp4 == 0) { continue; }
 
         for (index = 0; index < shuffle_leg_size; ++index) {
@@ -971,27 +976,53 @@ void deckswabber_entity_movement(void) {
                 AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_ai_pointers, temp0);
             } else {
                 // Generic AI option
-                if (enemies_extra[x]) { --enemies_extra[x]; }
+                temp0 = enemies_extra[x];
+                if (temp0) {
+                    --temp0;
+                    enemies_extra[x] = temp0;
+                }
 
                 temp0 = enemies_timer[x];
                 --temp0;
                 if (temp0 == 0) {
                     // Take a movement opportunity:
+                    deckswabber_entity_ai_sub_clear_from_enemymap();
                     temp0 = rand8();
-                    if (temp0 <= enemies_aggression[x]) {
+                    temp1 = enemies_aggression[x];
+                    if (temp0 <= temp1) {
                         deckswabber_entity_ai_sub_target(); // Go towards the player
                     } else {
                         // Random direction
                         temp1 = rand8() & 0b11;
                         AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_ai_direction_function_pointers, temp1);
                     }
+                    deckswabber_entity_ai_sub_set_in_enemymap();
                     enemies_timer[x] = 48;
                 } else {
                     enemies_timer[x] = temp0;
                 }
-            }            
+            }
         }
     }
+}
+
+void deckswabber_entity_ai_sub_set_in_enemymap(void) {
+    temp_x = enemies_x[x];
+    temp_y = enemies_y[x];
+    DeckswabberGetTileIndex(temp4, temp_x, temp_y);
+    temp3 = enemymap[temp4];
+    temp3 |= deckswabber_entity_index_to_depthmask[x];
+    enemymap[temp4] = temp3; 
+}
+
+void deckswabber_entity_ai_sub_clear_from_enemymap(void) {
+    temp_x = enemies_x[x];
+    temp_y = enemies_y[x];
+    DeckswabberGetTileIndex(temp4, temp_x, temp_y);
+    temp3 = enemymap[temp4];
+    temp3 &= (~deckswabber_entity_index_to_depthmask[x]);
+    enemymap[temp4] = temp3;
+    // enemymap[temp4] = 0;
 }
 
 void deckswabber_entity_ai_curtain(void) {
@@ -1056,9 +1087,8 @@ void deckswabber_entity_ai_sub_go_up(void) {
     }
     --temp_y;
     temp_x = enemies_x[x];
-    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
-    temp0 = tile_typemap[temp0];
-    if (temp0 < DECKSWABBER_WATER_HOLE_ID) { // Don't jump into a hole
+    deckswabber_entity_ai_sub_is_target_space_blocked();
+    if (temp1 == 0) {
         enemies_y[x] = temp_y; // Move (and update depthmap)
         temp0 = deckswabber_entity_index_to_depthmask[x];
         
@@ -1083,9 +1113,8 @@ void deckswabber_entity_ai_sub_go_down(void) {
     }
     ++temp_y;
     temp_x = enemies_x[x];
-    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
-    temp0 = tile_typemap[temp0];
-    if (temp0 < DECKSWABBER_WATER_HOLE_ID) { // Don't jump into a hole
+    deckswabber_entity_ai_sub_is_target_space_blocked();
+    if (temp1 == 0) {
         enemies_y[x] = temp_y; // Move (and update depthmap)
         temp0 = deckswabber_entity_index_to_depthmask[x];
 
@@ -1110,9 +1139,8 @@ void deckswabber_entity_ai_sub_go_left(void) {
     }
     --temp_x;
     temp_y = enemies_y[x];
-    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
-    temp0 = tile_typemap[temp0];
-    if (temp0 < DECKSWABBER_WATER_HOLE_ID) { // Don't jump into a hole
+    deckswabber_entity_ai_sub_is_target_space_blocked();
+    if (temp1 == 0) {
         enemies_x[x] = temp_x;
         enemies_extra[x] = 11;
     }
@@ -1125,11 +1153,23 @@ void deckswabber_entity_ai_sub_go_right(void) {
     }
     ++temp_x;
     temp_y = enemies_y[x];
-    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
-    temp0 = tile_typemap[temp0];
-    if (temp0 < DECKSWABBER_WATER_HOLE_ID) { // Don't jump into a hole
+    deckswabber_entity_ai_sub_is_target_space_blocked();
+    if (temp1 == 0) {
         enemies_x[x] = temp_x;
         enemies_extra[x] = 11;
+    }
+}
+
+// Set temp1 to zero if this entity can hop into the space at temp_x, temp_y, or nonzero if it's blocked by something
+void deckswabber_entity_ai_sub_is_target_space_blocked(void) {
+    DeckswabberGetTileIndex(temp1, temp_x, temp_y);
+    temp0 = tile_typemap[temp1];
+    if (temp0 >= DECKSWABBER_WATER_HOLE_ID) { // Don't jump into a hole
+        temp1 = 1;
+    } else if (enemies_type[x] == DECKSWABBER_ENTITY_ID_SWORD) {
+        temp1 = 0; // Swords can jump into other entities
+    } else {
+        temp1 = enemymap[temp1]; // If there is any entity here
     }
 }
 

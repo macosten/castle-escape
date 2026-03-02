@@ -20,7 +20,6 @@
 	.import		_set_mt_pointer
 	.import		_buffer_1_mt_fast_sub
 	.import		_flush_vram_update_nmi
-	.import		_gray_line
 	.import		_seed_rng
 	.import		_pal_bright
 	.import		_ppu_wait_nmi
@@ -242,6 +241,9 @@
 	.export		_deckswabber_entity_ai_sub_go_down
 	.export		_deckswabber_entity_ai_sub_go_left
 	.export		_deckswabber_entity_ai_sub_go_right
+	.export		_deckswabber_entity_ai_sub_is_target_space_blocked
+	.export		_deckswabber_entity_ai_sub_set_in_enemymap
+	.export		_deckswabber_entity_ai_sub_clear_from_enemymap
 	.export		_tile_increment_functions
 	.export		_score_string_last2
 	.export		_deckswabber_full_hp_bar
@@ -2457,7 +2459,7 @@ _deckswabber_active_level_pack_levels:
 ; if (tiles_remaining > 0) {
 ;
 	lda     _eject_R
-	jeq     L10BF
+	jeq     L10D5
 ;
 ; deckswabber_player_movement();
 ;
@@ -2473,7 +2475,7 @@ _deckswabber_active_level_pack_levels:
 ;
 ; if (game_frame_timer == 0) {
 ;
-	bne     L10AE
+	bne     L10C4
 ;
 ; --hostile_entity_timer;
 ;
@@ -2500,36 +2502,36 @@ L09E7:	jsr     _deckswabber_update_game_time
 ;
 ; if (hostile_entity_timer == 0) {
 ;
-L10AE:	lda     _player_sword_timer
-	jne     L10BA
+L10C4:	lda     _player_sword_timer
+	jne     L10D0
 ;
 ; for (x = 0; x <= DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++x) {
 ;
 	sta     _x
-L10AF:	lda     _x
+L10C5:	lda     _x
 	cmp     #$08
-	bcs     L10B0
+	bcs     L10C6
 ;
 ; if (!IS_ENEMY_ACTIVE(x)) { break; }
 ;
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$80
-	beq     L10B0
+	beq     L10C6
 ;
 ; for (x = 0; x <= DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++x) {
 ;
 	inc     _x
-	jmp     L10AF
+	jmp     L10C5
 ;
 ; if (DECKSWABBER_CAN_MAKE_HOSTILE_ENTITY && x < DECKSWABBER_MAX_ONSCREEN_ENTITIES) {
 ;
-L10B0:	lda     _player_flags
+L10C6:	lda     _player_flags
 	and     #$04
-	jeq     L10B8
+	jeq     L10CE
 	lda     _x
 	cmp     #$07
-	jcs     L10B8
+	jcs     L10CE
 ;
 ; DECKSWABBER_RESET_CAN_MAKE_HOSTILE_ENTITY();
 ;
@@ -2546,13 +2548,13 @@ L10B0:	lda     _player_flags
 ;
 	jsr     _rand8
 	and     #$01
-	jne     L10B9
+	jne     L10CF
 ;
 ; if (round < 2) {
 ;
 	lda     _eject_U
 	cmp     #$02
-	bcs     L10B4
+	bcs     L10CA
 ;
 ; if (temp0 & 0b10) {
 ;
@@ -2573,7 +2575,7 @@ L10B0:	lda     _player_flags
 ;
 ; } else {
 ;
-	jmp     L10AB
+	jmp     L10C1
 ;
 ; enemies_aggression[x] = 42;
 ;
@@ -2588,16 +2590,16 @@ L0A0A:	ldy     _x
 ;
 ; } else if (round < 4) {
 ;
-	jmp     L10AB
-L10B4:	lda     _eject_U
+	jmp     L10C1
+L10CA:	lda     _eject_U
 	cmp     #$04
-	bcs     L10B6
+	bcs     L10CC
 ;
 ; if (temp0 < 85) {
 ;
 	lda     _temp0
 	cmp     #$55
-	bcs     L10B5
+	bcs     L10CB
 ;
 ; enemies_aggression[x] = 0;
 ;
@@ -2612,8 +2614,8 @@ L10B4:	lda     _eject_U
 ;
 ; } else if (temp0 < 171) {
 ;
-	jmp     L10AB
-L10B5:	lda     _temp0
+	jmp     L10C1
+L10CB:	lda     _temp0
 	cmp     #$AB
 	bcs     L0A2B
 ;
@@ -2630,7 +2632,7 @@ L10B5:	lda     _temp0
 ;
 ; } else {
 ;
-	jmp     L10AB
+	jmp     L10C1
 ;
 ; enemies_aggression[x] = 171;
 ;
@@ -2645,10 +2647,10 @@ L0A2B:	ldy     _x
 ;
 ; } else if (round < 6) {
 ;
-	jmp     L10AB
-L10B6:	lda     _eject_U
+	jmp     L10C1
+L10CC:	lda     _eject_U
 	cmp     #$06
-	bcs     L10B7
+	bcs     L10CD
 ;
 ; if (temp0 & 0b10) {
 ;
@@ -2663,13 +2665,13 @@ L10B6:	lda     _eject_U
 ;
 ; } else {
 ;
-	jmp     L10AC
+	jmp     L10C2
 ;
 ; enemies_aggression[x] = 171;
 ;
 L0A41:	ldy     _x
 	lda     #$AB
-L10AC:	sta     _enemies_extra2,y
+L10C2:	sta     _enemies_extra2,y
 ;
 ; enemies_extra[x] = DECKSWABBER_ENTITY_ID_MYNCI;
 ;
@@ -2678,11 +2680,11 @@ L10AC:	sta     _enemies_extra2,y
 ;
 ; } else {
 ;
-	jmp     L10AB
+	jmp     L10C1
 ;
 ; if (temp0 & 0b10) {
 ;
-L10B7:	lda     _temp0
+L10CD:	lda     _temp0
 	and     #$02
 	beq     L0A51
 ;
@@ -2699,7 +2701,7 @@ L10B7:	lda     _temp0
 ;
 ; } else {
 ;
-	jmp     L10AB
+	jmp     L10C1
 ;
 ; enemies_aggression[x] = 255;
 ;
@@ -2711,7 +2713,7 @@ L0A51:	ldy     _x
 ;
 	ldy     _x
 	lda     #$10
-L10AB:	sta     _enemies_extra,y
+L10C1:	sta     _enemies_extra,y
 ;
 ; enemies_type[x] = DECKSWABBER_ENTITY_ID_CURTAIN;
 ;
@@ -2760,50 +2762,54 @@ L0A72:	jsr     pushax
 	ora     #$80
 	sta     _enemies_flags,y
 ;
+; deckswabber_entity_ai_sub_set_in_enemymap();
+;
+	jsr     _deckswabber_entity_ai_sub_set_in_enemymap
+;
 ; } else {
 ;
-	jmp     L10B9
+	jmp     L10CF
 ;
 ; DECKSWABBER_SET_CAN_MAKE_HOSTILE_ENTITY();
 ;
-L10B8:	lda     _player_flags
+L10CE:	lda     _player_flags
 	ora     #$04
 	sta     _player_flags
 ;
 ; hostile_entity_timer = 5;
 ;
-L10B9:	lda     #$05
+L10CF:	lda     #$05
 	sta     _player_sword_timer
 ;
 ; if (passive_entity_timer == 0) {
 ;
-L10BA:	lda     _player_death_timer
-	jne     L0B09
+L10D0:	lda     _player_death_timer
+	jne     L0B0B
 ;
 ; for (x = 0; x <= DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++x) {
 ;
 	sta     _x
-L10BB:	lda     _x
+L10D1:	lda     _x
 	cmp     #$08
-	bcs     L10BC
+	bcs     L10D2
 ;
 ; if (!IS_ENEMY_ACTIVE(x)) { break; }
 ;
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$80
-	beq     L10BC
+	beq     L10D2
 ;
 ; for (x = 0; x <= DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++x) {
 ;
 	inc     _x
-	jmp     L10BB
+	jmp     L10D1
 ;
 ; if (DECKSWABBER_CAN_MAKE_PASSIVE_ENTITY) {
 ;
-L10BC:	lda     _player_flags
+L10D2:	lda     _player_flags
 	and     #$08
-	jeq     L10BD
+	jeq     L10D3
 ;
 ; DECKSWABBER_RESET_CAN_MAKE_PASSIVE_ENTITY();
 ;
@@ -2815,7 +2821,7 @@ L10BC:	lda     _player_flags
 ;
 	jsr     _rand8
 	and     #$03
-	jne     L10BE
+	jne     L10D4
 ;
 ; temp5 = rand(); // 0...RAND_MAX (0x7FFF)
 ;
@@ -2826,9 +2832,9 @@ L10BC:	lda     _player_flags
 ; if (temp5 < 9503) {
 ;
 	cpx     #$25
-	bne     L0A9F
+	bne     L0AA0
 	cmp     #$1F
-L0A9F:	bcs     L0A9D
+L0AA0:	bcs     L0A9E
 ;
 ; temp0 = DECKSWABBER_ENTITY_ID_SWORD;
 ;
@@ -2836,13 +2842,13 @@ L0A9F:	bcs     L0A9D
 ;
 ; } else if (temp5 < 10256) {
 ;
-	jmp     L10AD
-L0A9D:	lda     _temp5+1
+	jmp     L10C3
+L0A9E:	lda     _temp5+1
 	cmp     #$28
-	bne     L0AA5
+	bne     L0AA6
 	lda     _temp5
 	cmp     #$10
-L0AA5:	bcs     L0AA3
+L0AA6:	bcs     L0AA4
 ;
 ; temp0 = DECKSWABBER_ENTITY_ID_CHEST_BRONZE;
 ;
@@ -2850,13 +2856,13 @@ L0AA5:	bcs     L0AA3
 ;
 ; } else if (temp5 < 10813) {
 ;
-	jmp     L10AD
-L0AA3:	lda     _temp5+1
+	jmp     L10C3
+L0AA4:	lda     _temp5+1
 	cmp     #$2A
-	bne     L0AAB
+	bne     L0AAC
 	lda     _temp5
 	cmp     #$3D
-L0AAB:	bcs     L0AA9
+L0AAC:	bcs     L0AAA
 ;
 ; temp0 = DECKSWABBER_ENTITY_ID_CHEST_SILVER;
 ;
@@ -2864,13 +2870,13 @@ L0AAB:	bcs     L0AA9
 ;
 ; } else if (temp5 < 11141) {
 ;
-	jmp     L10AD
-L0AA9:	lda     _temp5+1
+	jmp     L10C3
+L0AAA:	lda     _temp5+1
 	cmp     #$2B
-	bne     L0AB1
+	bne     L0AB2
 	lda     _temp5
 	cmp     #$85
-L0AB1:	bcs     L0AAF
+L0AB2:	bcs     L0AB0
 ;
 ; temp0 = DECKSWABBER_ENTITY_ID_CHEST_GOLD;
 ;
@@ -2878,13 +2884,13 @@ L0AB1:	bcs     L0AAF
 ;
 ; } else if (temp5 < 14090) {
 ;
-	jmp     L10AD
-L0AAF:	lda     _temp5+1
+	jmp     L10C3
+L0AB0:	lda     _temp5+1
 	cmp     #$37
-	bne     L0AB7
+	bne     L0AB8
 	lda     _temp5
 	cmp     #$0A
-L0AB7:	bcs     L0AB5
+L0AB8:	bcs     L0AB6
 ;
 ; temp0 = DECKSWABBER_ENTITY_ID_FLAG_FULL;
 ;
@@ -2892,13 +2898,13 @@ L0AB7:	bcs     L0AB5
 ;
 ; } else if (temp5 < 17039) {
 ;
-	jmp     L10AD
-L0AB5:	lda     _temp5+1
+	jmp     L10C3
+L0AB6:	lda     _temp5+1
 	cmp     #$42
-	bne     L0ABD
+	bne     L0ABE
 	lda     _temp5
 	cmp     #$8F
-L0ABD:	bcs     L0ABB
+L0ABE:	bcs     L0ABC
 ;
 ; temp0 = DECKSWABBER_ENTITY_ID_FLAG_HALF;
 ;
@@ -2906,13 +2912,13 @@ L0ABD:	bcs     L0ABB
 ;
 ; } else if (temp5 < 19988) {
 ;
-	jmp     L10AD
-L0ABB:	lda     _temp5+1
+	jmp     L10C3
+L0ABC:	lda     _temp5+1
 	cmp     #$4E
-	bne     L0AC3
+	bne     L0AC4
 	lda     _temp5
 	cmp     #$14
-L0AC3:	bcs     L0AC1
+L0AC4:	bcs     L0AC2
 ;
 ; temp0 = DECKSWABBER_ENTITY_ID_DIRT_BOMB_PLUS;
 ;
@@ -2920,13 +2926,13 @@ L0AC3:	bcs     L0AC1
 ;
 ; } else if (temp5 < 22937) {
 ;
-	jmp     L10AD
-L0AC1:	lda     _temp5+1
+	jmp     L10C3
+L0AC2:	lda     _temp5+1
 	cmp     #$59
-	bne     L0AC9
+	bne     L0ACA
 	lda     _temp5
 	cmp     #$99
-L0AC9:	bcs     L0AC7
+L0ACA:	bcs     L0AC8
 ;
 ; temp0 = DECKSWABBER_ENTITY_ID_DIRT_BOMB_SQUARE;
 ;
@@ -2934,13 +2940,13 @@ L0AC9:	bcs     L0AC7
 ;
 ; } else if (temp5 < 29490) {
 ;
-	jmp     L10AD
-L0AC7:	lda     _temp5+1
+	jmp     L10C3
+L0AC8:	lda     _temp5+1
 	cmp     #$73
-	bne     L0ACF
+	bne     L0AD0
 	lda     _temp5
 	cmp     #$32
-L0ACF:	bcs     L0ACD
+L0AD0:	bcs     L0ACE
 ;
 ; temp0 = DECKSWABBER_ENTITY_ID_COIN_BRONZE;
 ;
@@ -2948,13 +2954,13 @@ L0ACF:	bcs     L0ACD
 ;
 ; } else if (temp5 < 31456) {
 ;
-	jmp     L10AD
-L0ACD:	lda     _temp5+1
+	jmp     L10C3
+L0ACE:	lda     _temp5+1
 	cmp     #$7A
-	bne     L0AD5
+	bne     L0AD6
 	lda     _temp5
 	cmp     #$E0
-L0AD5:	bcs     L0AD3
+L0AD6:	bcs     L0AD4
 ;
 ; temp0 = DECKSWABBER_ENTITY_ID_COIN_SILVER;
 ;
@@ -2962,12 +2968,12 @@ L0AD5:	bcs     L0AD3
 ;
 ; } else {
 ;
-	jmp     L10AD
+	jmp     L10C3
 ;
 ; temp0 = DECKSWABBER_ENTITY_ID_COIN_GOLD;
 ;
-L0AD3:	lda     #$04
-L10AD:	sta     _temp0
+L0AD4:	lda     #$04
+L10C3:	sta     _temp0
 ;
 ; enemies_extra[x] = temp0;
 ;
@@ -2998,9 +3004,9 @@ L10AD:	sta     _temp0
 	ldx     #>(_enemies_x)
 	clc
 	adc     _x
-	bcc     L0AED
+	bcc     L0AEE
 	inx
-L0AED:	jsr     pushax
+L0AEE:	jsr     pushax
 	jsr     _rand8
 	and     #$07
 	ldy     #$00
@@ -3012,9 +3018,9 @@ L0AED:	jsr     pushax
 	ldx     #>(_enemies_y)
 	clc
 	adc     _x
-	bcc     L0AF1
+	bcc     L0AF2
 	inx
-L0AF1:	jsr     pushax
+L0AF2:	jsr     pushax
 	jsr     _rand8
 	and     #$07
 	ldy     #$00
@@ -3027,30 +3033,34 @@ L0AF1:	jsr     pushax
 	ora     #$80
 	sta     _enemies_flags,y
 ;
+; deckswabber_entity_ai_sub_set_in_enemymap();
+;
+	jsr     _deckswabber_entity_ai_sub_set_in_enemymap
+;
 ; } else {
 ;
-	jmp     L10BE
+	jmp     L10D4
 ;
 ; DECKSWABBER_SET_CAN_MAKE_PASSIVE_ENTITY();
 ;
-L10BD:	lda     _player_flags
+L10D3:	lda     _player_flags
 	ora     #$08
 	sta     _player_flags
 ;
 ; passive_entity_timer = 6;
 ;
-L10BE:	lda     #$06
+L10D4:	lda     #$06
 	sta     _player_death_timer
 ;
 ; } else {
 ;
-	jmp     L0B09
+	jmp     L0B0B
 ;
 ; if (transition_timer == 120) {
 ;
-L10BF:	lda     _enemy_is_using_bg_collision
+L10D5:	lda     _enemy_is_using_bg_collision
 	cmp     #$78
-	bne     L0B02
+	bne     L0B04
 ;
 ; deckswabber_write_finished_message();
 ;
@@ -3058,8 +3068,8 @@ L10BF:	lda     _enemy_is_using_bg_collision
 ;
 ; if (transition_timer) {
 ;
-L0B02:	lda     _enemy_is_using_bg_collision
-	beq     L0B05
+L0B04:	lda     _enemy_is_using_bg_collision
+	beq     L0B07
 ;
 ; --transition_timer;
 ;
@@ -3067,9 +3077,9 @@ L0B02:	lda     _enemy_is_using_bg_collision
 ;
 ; } else if (pad1_new) {
 ;
-	jmp     L0B09
-L0B05:	lda     _pad1_new
-	beq     L0B09
+	jmp     L0B0B
+L0B07:	lda     _pad1_new
+	beq     L0B0B
 ;
 ; ++level;
 ;
@@ -3108,7 +3118,7 @@ L0B05:	lda     _pad1_new
 ;
 	lda     _level_index
 	cmp     _temp2
-	bcc     L0B2E
+	bcc     L0B30
 ;
 ; AsmSet1ByteFromZpPtrAtIndexVar(level_index, temppointer1, temp0);
 ;
@@ -3134,22 +3144,22 @@ L0B05:	lda     _pad1_new
 ;
 ; begin_deckswabber_level(); // Next Level (todo)
 ;
-L0B2E:	jmp     _begin_deckswabber_level
+L0B30:	jmp     _begin_deckswabber_level
 ;
 ; deckswabber_draw_sprites();
 ;
-L0B09:	jsr     _deckswabber_draw_sprites
+L0B0B:	jsr     _deckswabber_draw_sprites
 ;
 ; if (DECKSWABBER_SCORE_CHANGED_THIS_FRAME) { deckswabber_update_score(); }
 ;
 	lda     _player_flags
 	and     #$01
-	beq     L10C0
+	beq     L10D6
 	jsr     _deckswabber_update_score
 ;
 ; if (pad1 & PAD_B) {
 ;
-L10C0:	lda     _pad1
+L10D6:	lda     _pad1
 	and     #$40
 	cmp     #$00
 ;
@@ -3161,7 +3171,7 @@ L10C0:	lda     _pad1
 ;
 	lda     _pad1_new
 	and     #$10
-	beq     L0B3C
+	beq     L0B3E
 ;
 ; ++round;
 ;
@@ -3171,7 +3181,7 @@ L10C0:	lda     _pad1
 ;
 	lda     _eject_U
 	cmp     #$0E
-	bcc     L0B3F
+	bcc     L0B41
 ;
 ; round = 0;
 ;
@@ -3180,11 +3190,11 @@ L10C0:	lda     _pad1
 ;
 ; begin_deckswabber_level();
 ;
-L0B3F:	jsr     _begin_deckswabber_level
+L0B41:	jmp     _begin_deckswabber_level
 ;
-; gray_line();
+; }
 ;
-L0B3C:	jmp     _gray_line
+L0B3E:	rts
 
 .endproc
 
@@ -3427,9 +3437,9 @@ L0B3C:	jmp     _gray_line
 ;
 	lda     #$00
 	sta     _index
-L10C3:	lda     _index
+L10D9:	lda     _index
 	cmp     #$40
-	jcs     L10C7
+	jcs     L10DD
 ;
 ; clear_vram_buffer();
 ;
@@ -3477,25 +3487,25 @@ L10C3:	lda     _index
 ;
 	lda     _temp0
 	cmp     #$08
-	beq     L10C4
+	beq     L10DA
 	cmp     #$09
-	bne     L10C5
+	bne     L10DB
 ;
 ; --tiles_remaining;
 ;
-L10C4:	dec     _eject_R
+L10DA:	dec     _eject_R
 ;
 ; if (temp1 == DECKSWABBER_WATER_HOLE_ID || temp1 == DECKSWABBER_EMPTY_HOLE_ID) {
 ;
-L10C5:	lda     _temp1
+L10DB:	lda     _temp1
 	cmp     #$08
-	beq     L10C6
+	beq     L10DC
 	cmp     #$09
 	bne     L089E
 ;
 ; --tiles_remaining;
 ;
-L10C6:	dec     _eject_R
+L10DC:	dec     _eject_R
 ;
 ; tile_typemap[index] = temp0;
 ;
@@ -3645,27 +3655,27 @@ L08FF:	jsr     _flush_vram_update_nmi
 ; for (index = 0; index < (DECKSWABBER_TILE_HEIGHT * DECKSWABBER_TILE_WIDTH); index += 1) {
 ;
 	inc     _index
-	jmp     L10C3
+	jmp     L10D9
 ;
 ; index = 0;
 ;
-L10C7:	lda     #$00
+L10DD:	lda     #$00
 	sta     _index
 ;
 ; for (y = 0; y < DECKSWABBER_TILE_HEIGHT; y += 1) {
 ;
 	sta     _y
-L10C8:	lda     _y
+L10DE:	lda     _y
 	cmp     #$08
-	bcs     L10CB
+	bcs     L10E1
 ;
 ; for (x = 0; x < DECKSWABBER_TILE_WIDTH; x += 1) {
 ;
 	lda     #$00
 	sta     _x
-L10C9:	lda     _x
+L10DF:	lda     _x
 	cmp     #$08
-	bcs     L10CA
+	bcs     L10E0
 ;
 ; clear_vram_buffer();
 ;
@@ -3700,16 +3710,16 @@ L10C9:	lda     _x
 ; for (x = 0; x < DECKSWABBER_TILE_WIDTH; x += 1) {
 ;
 	inc     _x
-	jmp     L10C9
+	jmp     L10DF
 ;
 ; for (y = 0; y < DECKSWABBER_TILE_HEIGHT; y += 1) {
 ;
-L10CA:	inc     _y
-	jmp     L10C8
+L10E0:	inc     _y
+	jmp     L10DE
 ;
 ; transition_timer = 120;
 ;
-L10CB:	lda     #$78
+L10E1:	lda     #$78
 	sta     _enemy_is_using_bg_collision
 ;
 ; memfill(enemymap, 0, 64 + 8); // enemymap and depthmap
@@ -3986,29 +3996,13 @@ L0955:	jsr     _convert_to_decimal
 	lda     #$00
 	sta     _temp0
 ;
-; __asm__("ldy %v", old_y);
-;
-	ldy     _old_y
-;
-; __asm__("lda %v+%s,y", cmap, 192);
-;
-	lda     _cmap+192,y
-;
-; __asm__("and #%b", 0b01111111);
-;
-	and     #$7F
-;
-; __asm__("sta %v+%s,y", cmap, 192);
-;
-	sta     _cmap+192,y
-;
 ; if (pad1_new & PAD_UP && player_tile_y > 0) {
 ;
 	lda     _pad1_new
 	and     #$08
-	beq     L10D0
+	beq     L10E6
 	lda     _old_y
-	beq     L10D0
+	beq     L10E6
 ;
 ; player_tile_y -= 1;
 ;
@@ -4016,13 +4010,13 @@ L0955:	jsr     _convert_to_decimal
 ;
 ; } else if (pad1_new & PAD_DOWN && player_tile_y < DECKSWABBER_TILE_HEIGHT-1) {
 ;
-	jmp     L10DC
-L10D0:	lda     _pad1_new
+	jmp     L10F2
+L10E6:	lda     _pad1_new
 	and     #$04
-	beq     L10D4
+	beq     L10EA
 	lda     _old_y
 	cmp     #$07
-	bcs     L10D4
+	bcs     L10EA
 ;
 ; player_tile_y += 1;
 ;
@@ -4030,12 +4024,12 @@ L10D0:	lda     _pad1_new
 ;
 ; } else if (pad1_new & PAD_LEFT && player_tile_x > 0) {
 ;
-	jmp     L10DC
-L10D4:	lda     _pad1_new
+	jmp     L10F2
+L10EA:	lda     _pad1_new
 	and     #$02
-	beq     L10D8
+	beq     L10EE
 	lda     _old_x
-	beq     L10D8
+	beq     L10EE
 ;
 ; player_tile_x -= 1;
 ;
@@ -4043,13 +4037,13 @@ L10D4:	lda     _pad1_new
 ;
 ; } else if (pad1_new & PAD_RIGHT && player_tile_x < DECKSWABBER_TILE_WIDTH-1) {
 ;
-	jmp     L10DC
-L10D8:	lda     _pad1_new
+	jmp     L10F2
+L10EE:	lda     _pad1_new
 	and     #$01
-	beq     L0B80
+	beq     L0B76
 	lda     _old_x
 	cmp     #$07
-	bcs     L0B80
+	bcs     L0B76
 ;
 ; player_tile_x += 1;
 ;
@@ -4057,29 +4051,13 @@ L10D8:	lda     _pad1_new
 ;
 ; temp0 = 1;
 ;
-L10DC:	lda     #$01
+L10F2:	lda     #$01
 	sta     _temp0
-;
-; __asm__("ldy %v", old_y);
-;
-L0B80:	ldy     _old_y
-;
-; __asm__("lda %v+%s,y", cmap, 192);
-;
-	lda     _cmap+192,y
-;
-; __asm__("ora #$80");
-;
-	ora     #$80
-;
-; __asm__("sta %v+%s,y", cmap, 192);
-;
-	sta     _cmap+192,y
 ;
 ; if (temp0) {
 ;
-	lda     _temp0
-	beq     L0BAC
+L0B76:	lda     _temp0
+	beq     L0B98
 ;
 ; sfx_play(SFX_JUMP, 0);
 ;
@@ -4111,7 +4089,7 @@ L0B80:	ldy     _old_y
 ; if (temp1 < DECKSWABBER_WATER_HOLE_ID) {
 ;
 	cmp     #$08
-	bcs     L0BAC
+	bcs     L0B98
 ;
 ; temp_x = player_tile_x;
 ;
@@ -4142,7 +4120,7 @@ L0B80:	ldy     _old_y
 ;
 ; }
 ;
-L0BAC:	rts
+L0B98:	rts
 
 .endproc
 
@@ -4170,42 +4148,37 @@ L0BAC:	rts
 ;
 	lda     #$08
 	sta     _y
-L10E2:	lda     _y
+L10F8:	lda     _y
 	cmp     #$FF
-	jeq     L10E8
+	jeq     L10FE
 ;
 ; if (player_tile_y == y) { deckswabber_draw_player(); }
 ;
 	cmp     _old_y
-	bne     L0C66
+	bne     L0C52
 	jsr     _deckswabber_draw_player
 ;
 ; temp4 = depthmap[y];
 ;
-L0C66:	ldy     _y
+L0C52:	ldy     _y
 	lda     _cmap+192,y
-	sta     _temp4
-;
-; temp4 &= ~DECKSWABBER_PLAYER_DEPTHMAP_MASK;
-;
-	and     #$7F
 	sta     _temp4
 ;
 ; if (temp4 == 0) { continue; }
 ;
 	lda     _temp4
-	jeq     L10E7
+	jeq     L10FD
 ;
 ; for (index = 0; index < shuffle_leg_size; ++index) {
 ;
 	lda     #$00
 	sta     _index
 	tax
-L10E3:	lda     _index
+L10F9:	lda     _index
 	cmp     _shuffle_leg_size
 	txa
 	sbc     #$00
-	jcs     L10E7
+	jcs     L10FD
 ;
 ; temp1 = index + shuffle_offset;
 ;
@@ -4225,11 +4198,11 @@ L10E3:	lda     _index
 	ldy     _x
 	lda     _enemies_y,y
 	cmp     _y
-	jne     L10E6
+	jne     L10FC
 	ldy     _x
 	lda     _enemies_flags,y
 	and     #$80
-	beq     L10E6
+	beq     L10FC
 ;
 ; temp_x = 64 + (enemies_x[x] << 4);
 ;
@@ -4273,7 +4246,7 @@ L10E3:	lda     _index
 ; if (temp1 == DECKSWABBER_ENTITY_ID_CURTAIN) {
 ;
 	lda     _temp1
-	bne     L0CAB
+	bne     L0C95
 ;
 ; temp2 = enemies_timer[x] >> 3;
 ;
@@ -4283,13 +4256,13 @@ L10E3:	lda     _index
 ;
 ; } else {
 ;
-	jmp     L10EA
+	jmp     L1100
 ;
 ; temp2 = enemies_extra[x] >> 2;
 ;
-L0CAB:	ldy     _x
+L0C95:	ldy     _x
 	lda     _enemies_extra,y
-L10EA:	lsr     a
+L1100:	lsr     a
 	lsr     a
 	sta     _temp2
 ;
@@ -4316,17 +4289,17 @@ L10EA:	lsr     a
 ; for (index = 0; index < shuffle_leg_size; ++index) {
 ;
 	ldx     #$00
-L10E6:	inc     _index
-	jmp     L10E3
+L10FC:	inc     _index
+	jmp     L10F9
 ;
 ; for (y = DECKSWABBER_TILE_HEIGHT; y != 0xFF; --y) {
 ;
-L10E7:	dec     _y
-	jmp     L10E2
+L10FD:	dec     _y
+	jmp     L10F8
 ;
 ; shuffle_offset += shuffle_leg_size;
 ;
-L10E8:	lda     _shuffle_leg_size
+L10FE:	lda     _shuffle_leg_size
 	clc
 	adc     _shuffle_offset
 	sta     _shuffle_offset
@@ -4335,13 +4308,13 @@ L10E8:	lda     _shuffle_leg_size
 ;
 	lda     _shuffle_maximum
 	cmp     _shuffle_offset
-	bne     L0CD2
+	bne     L0CBC
 	lda     #$00
 	sta     _shuffle_offset
 ;
 ; }
 ;
-L0CD2:	rts
+L0CBC:	rts
 
 .endproc
 
@@ -4359,7 +4332,7 @@ L0CD2:	rts
 ; if (player_frame_timer) {
 ;
 	lda     _player_frame_timer
-	beq     L0CD7
+	beq     L0CC1
 ;
 ; --player_frame_timer;
 ;
@@ -4367,7 +4340,7 @@ L0CD2:	rts
 ;
 ; temp0 = player_frame_timer >> 2;
 ;
-L0CD7:	lda     _player_frame_timer
+L0CC1:	lda     _player_frame_timer
 	lsr     a
 	lsr     a
 	sta     _temp0
@@ -5136,12 +5109,12 @@ L0CD7:	lda     _player_frame_timer
 ; address += 1;
 ;
 	inc     _address
-	bne     L0EEE
+	bne     L0ED8
 	inc     _address+1
 ;
 ; temppointer = deckswabber_metatiles;
 ;
-L0EEE:	lda     #>(_deckswabber_metatiles)
+L0ED8:	lda     #>(_deckswabber_metatiles)
 	sta     _temppointer+1
 	lda     #<(_deckswabber_metatiles)
 	sta     _temppointer
@@ -5163,21 +5136,21 @@ L0EEE:	lda     #>(_deckswabber_metatiles)
 	clc
 	adc     _address
 	sta     _address
-	bcc     L0F00
+	bcc     L0EEA
 	inc     _address+1
 ;
 ; temppointer += 2;
 ;
-L0F00:	lda     #$02
+L0EEA:	lda     #$02
 	clc
 	adc     _temppointer
 	sta     _temppointer
-	bcc     L0F03
+	bcc     L0EED
 	inc     _temppointer+1
 ;
 ; multi_vram_buffer_horz_indirect_ptr(temppointer, 2, address);
 ;
-L0F03:	lda     _temppointer
+L0EED:	lda     _temppointer
 	sta     _TEMP
 	lda     _temppointer+1
 	sta     _TEMP+1
@@ -5225,7 +5198,7 @@ L0F03:	lda     _temppointer
 ;
 	lda     _temp2
 	cmp     #$01
-	beq     L10EE
+	beq     L1104
 ;
 ; --tiles_remaining;
 ;
@@ -5234,7 +5207,7 @@ L0F03:	lda     _temppointer
 ; temp1 = 1;
 ;
 	lda     #$01
-L10EE:	sta     _temp1
+L1104:	sta     _temp1
 ;
 ; }
 ;
@@ -5629,14 +5602,14 @@ L10EE:	sta     _temp1
 ;
 	sec
 	sbc     _temp3
-	bcc     L0D7D
-	beq     L0D7D
+	bcc     L0D67
+	beq     L0D67
 	lda     _temp4
 	sta     _temp1
 ;
 ; tile_colormap[temp0] = temp1;
 ;
-L0D7D:	ldy     _temp0
+L0D67:	ldy     _temp0
 	lda     _temp1
 	sta     _cmap+64,y
 ;
@@ -5644,7 +5617,7 @@ L0D7D:	ldy     _temp0
 ;
 	lda     _temp3
 	cmp     _temp1
-	bne     L10F2
+	bne     L1108
 ;
 ; --tiles_remaining;
 ;
@@ -5653,9 +5626,9 @@ L0D7D:	ldy     _temp0
 ; } else if (temp2 == temp3) {
 ;
 	rts
-L10F2:	lda     _temp3
+L1108:	lda     _temp3
 	cmp     _temp2
-	bne     L0D8A
+	bne     L0D74
 ;
 ; ++tiles_remaining;
 ;
@@ -5663,7 +5636,7 @@ L10F2:	lda     _temp3
 ;
 ; }
 ;
-L0D8A:	rts
+L0D74:	rts
 
 .endproc
 
@@ -5682,9 +5655,9 @@ L0D8A:	rts
 ;
 	lda     #$00
 	sta     _x
-L10F5:	lda     _x
+L110B:	lda     _x
 	cmp     #$07
-	bcc     L10F7
+	bcc     L110D
 ;
 ; }
 ;
@@ -5692,10 +5665,10 @@ L10F5:	lda     _x
 ;
 ; if (IS_ENEMY_ACTIVE(x)) {
 ;
-L10F7:	ldy     _x
+L110D:	ldy     _x
 	lda     _enemies_flags,y
 	and     #$80
-	jeq     L10F6
+	jeq     L110C
 ;
 ; temp0 = GET_ENEMY_TYPE(x);
 ;
@@ -5706,7 +5679,7 @@ L10F7:	ldy     _x
 ; if (temp0 <= DECKSWABBER_ENTITY_ID_EXPLOSION) {
 ;
 	cmp     #$02
-	bcs     L0F2A
+	bcs     L0F14
 ;
 ; AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_ai_pointers, temp0);
 ;
@@ -5719,30 +5692,32 @@ L10F7:	ldy     _x
 ;
 ; } else {
 ;
-	jmp     L10F6
+	jmp     L110C
 ;
-; if (enemies_extra[x]) { --enemies_extra[x]; }
+; temp0 = enemies_extra[x];
 ;
-L0F2A:	ldy     _x
+L0F14:	ldy     _x
 	lda     _enemies_extra,y
-	beq     L0F39
-	lda     #<(_enemies_extra)
-	ldx     #>(_enemies_extra)
-	clc
-	adc     _x
-	bcc     L0F3F
-	inx
-L0F3F:	sta     ptr1
-	stx     ptr1+1
-	ldy     #$00
-	lda     (ptr1),y
-	sec
-	sbc     #$01
-	sta     (ptr1),y
+	sta     _temp0
+;
+; if (temp0) {
+;
+	lda     _temp0
+	beq     L0F27
+;
+; --temp0;
+;
+	dec     _temp0
+;
+; enemies_extra[x] = temp0;
+;
+	ldy     _x
+	lda     _temp0
+	sta     _enemies_extra,y
 ;
 ; temp0 = enemies_timer[x];
 ;
-L0F39:	ldy     _x
+L0F27:	ldy     _x
 	lda     _enemies_timer,y
 	sta     _temp0
 ;
@@ -5752,34 +5727,44 @@ L0F39:	ldy     _x
 ;
 ; if (temp0 == 0) {
 ;
-	bne     L0F45
+	bne     L0F33
+;
+; deckswabber_entity_ai_sub_clear_from_enemymap();
+;
+	jsr     _deckswabber_entity_ai_sub_clear_from_enemymap
 ;
 ; temp0 = rand8();
 ;
 	jsr     _rand8
 	sta     _temp0
 ;
-; if (temp0 <= enemies_aggression[x]) {
+; temp1 = enemies_aggression[x];
 ;
-	lda     _temp0
-	jsr     pusha0
 	ldy     _x
 	lda     _enemies_extra2,y
-	jsr     tosicmp0
-	beq     L10F4
-	bcs     L0F49
+	sta     _temp1
+;
+; if (temp0 <= temp1) {
+;
+	lda     _temp0
+	sec
+	sbc     _temp1
+	sta     tmp1
+	lda     tmp1
+	beq     L1109
+	bcs     L0F3C
 ;
 ; deckswabber_entity_ai_sub_target(); // Go towards the player
 ;
-L10F4:	jsr     _deckswabber_entity_ai_sub_target
+L1109:	jsr     _deckswabber_entity_ai_sub_target
 ;
 ; } else {
 ;
-	jmp     L0F4E
+	jmp     L0F3F
 ;
 ; temp1 = rand8() & 0b11;
 ;
-L0F49:	jsr     _rand8
+L0F3C:	jsr     _rand8
 	and     #$03
 	sta     _temp1
 ;
@@ -5791,25 +5776,29 @@ L0F49:	jsr     _rand8
 	ldx     _deckswabber_ai_direction_function_pointers+1,y
 	jsr     callax
 ;
+; deckswabber_entity_ai_sub_set_in_enemymap();
+;
+L0F3F:	jsr     _deckswabber_entity_ai_sub_set_in_enemymap
+;
 ; enemies_timer[x] = 48;
 ;
-L0F4E:	ldy     _x
+	ldy     _x
 	lda     #$30
 ;
 ; } else {
 ;
-	jmp     L10F3
+	jmp     L110A
 ;
 ; enemies_timer[x] = temp0;
 ;
-L0F45:	ldy     _x
+L0F33:	ldy     _x
 	lda     _temp0
-L10F3:	sta     _enemies_timer,y
+L110A:	sta     _enemies_timer,y
 ;
 ; for (x = 0; x < DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++x) {
 ;
-L10F6:	inc     _x
-	jmp     L10F5
+L110C:	inc     _x
+	jmp     L110B
 
 .endproc
 
@@ -5836,7 +5825,7 @@ L10F6:	inc     _x
 ;
 ; if (temp0 == 0) {
 ;
-	bne     L0F6C
+	bne     L0FA5
 ;
 ; __asm__("ldy %v", x);
 ;
@@ -5862,7 +5851,7 @@ L10F6:	inc     _x
 ;
 ; enemies_timer[x] = temp0;
 ;
-L0F6C:	ldy     _x
+L0FA5:	ldy     _x
 	lda     _temp0
 	sta     _enemies_timer,y
 ;
@@ -5895,7 +5884,7 @@ L0F6C:	ldy     _x
 ;
 ; if (temp0 == 0) {
 ;
-	bne     L0F83
+	bne     L0FBC
 ;
 ; DEACTIVATE_ENEMY(x);
 ;
@@ -5910,7 +5899,7 @@ L0F6C:	ldy     _x
 ;
 ; enemies_timer[x] = temp0;
 ;
-L0F83:	ldy     _x
+L0FBC:	ldy     _x
 	lda     _temp0
 	sta     _enemies_timer,y
 ;
@@ -5942,7 +5931,7 @@ L0F83:	ldy     _x
 ; if (temp0 > 127) {
 ;
 	cmp     #$80
-	bcc     L0F99
+	bcc     L0FD2
 ;
 ; temp0 = ((temp0 ^ 0xFF) + 1);
 ;
@@ -5954,7 +5943,7 @@ L0F83:	ldy     _x
 ;
 ; temp1 = enemies_y[x] - player_tile_y;
 ;
-L0F99:	ldy     _x
+L0FD2:	ldy     _x
 	lda     _enemies_y,y
 	sec
 	sbc     _old_y
@@ -5963,7 +5952,7 @@ L0F99:	ldy     _x
 ; if (temp1 > 127) {
 ;
 	cmp     #$80
-	bcc     L10F8
+	bcc     L110E
 ;
 ; temp1 = ((temp1 ^ 0xFF) + 1);
 ;
@@ -5975,9 +5964,9 @@ L0F99:	ldy     _x
 ;
 ; if (temp1 < temp0) { // Or temp1 <= temp0?
 ;
-L10F8:	lda     _temp1
+L110E:	lda     _temp1
 	cmp     _temp0
-	bcs     L10F9
+	bcs     L110F
 ;
 ; if (enemies_x[x] > player_tile_x) {
 ;
@@ -5985,7 +5974,7 @@ L10F8:	lda     _temp1
 	lda     _enemies_x,y
 	sec
 	sbc     _old_x
-	bcc     L0FAE
+	bcc     L0FE7
 ;
 ; deckswabber_entity_ai_sub_go_left();
 ;
@@ -5993,15 +5982,15 @@ L10F8:	lda     _temp1
 ;
 ; deckswabber_entity_ai_sub_go_right();
 ;
-L0FAE:	jmp     _deckswabber_entity_ai_sub_go_right
+L0FE7:	jmp     _deckswabber_entity_ai_sub_go_right
 ;
 ; } else if (temp1 > temp0) {
 ;
-L10F9:	lda     _temp1
+L110F:	lda     _temp1
 	sec
 	sbc     _temp0
-	bcc     L0FBF
-	beq     L0FBF
+	bcc     L0FF8
+	beq     L0FF8
 ;
 ; if (enemies_y[x] > player_tile_y) {
 ;
@@ -6009,7 +5998,7 @@ L10F9:	lda     _temp1
 	lda     _enemies_y,y
 	sec
 	sbc     _old_y
-	bcc     L0FB9
+	bcc     L0FF2
 ;
 ; deckswabber_entity_ai_sub_go_up();
 ;
@@ -6017,11 +6006,11 @@ L10F9:	lda     _temp1
 ;
 ; deckswabber_entity_ai_sub_go_down();
 ;
-L0FB9:	jmp     _deckswabber_entity_ai_sub_go_down
+L0FF2:	jmp     _deckswabber_entity_ai_sub_go_down
 ;
 ; }
 ;
-L0FBF:	rts
+L0FF8:	rts
 
 .endproc
 
@@ -6048,7 +6037,7 @@ L0FBF:	rts
 ;
 ; return;
 ;
-	beq     L0FDE
+	beq     L1007
 ;
 ; --temp_y;
 ;
@@ -6060,25 +6049,14 @@ L0FBF:	rts
 	lda     _enemies_x,y
 	sta     _temp_x
 ;
-; DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+; deckswabber_entity_ai_sub_is_target_space_blocked();
 ;
-	lda     _temp_y
-	asl     a
-	asl     a
-	asl     a
-	ora     _temp_x
-	sta     _temp0
+	jsr     _deckswabber_entity_ai_sub_is_target_space_blocked
 ;
-; temp0 = tile_typemap[temp0];
+; if (temp1 == 0) {
 ;
-	ldy     _temp0
-	lda     _cmap,y
-	sta     _temp0
-;
-; if (temp0 < DECKSWABBER_WATER_HOLE_ID) { // Don't jump into a hole
-;
-	cmp     #$08
-	bcs     L0FDE
+	lda     _temp1
+	bne     L1007
 ;
 ; enemies_y[x] = temp_y; // Move (and update depthmap)
 ;
@@ -6141,7 +6119,7 @@ L0FBF:	rts
 ;
 ; }
 ;
-L0FDE:	rts
+L1007:	rts
 
 .endproc
 
@@ -6168,7 +6146,7 @@ L0FDE:	rts
 ;
 ; return;
 ;
-	bcs     L1029
+	bcs     L1040
 ;
 ; ++temp_y;
 ;
@@ -6180,25 +6158,14 @@ L0FDE:	rts
 	lda     _enemies_x,y
 	sta     _temp_x
 ;
-; DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+; deckswabber_entity_ai_sub_is_target_space_blocked();
 ;
-	lda     _temp_y
-	asl     a
-	asl     a
-	asl     a
-	ora     _temp_x
-	sta     _temp0
+	jsr     _deckswabber_entity_ai_sub_is_target_space_blocked
 ;
-; temp0 = tile_typemap[temp0];
+; if (temp1 == 0) {
 ;
-	ldy     _temp0
-	lda     _cmap,y
-	sta     _temp0
-;
-; if (temp0 < DECKSWABBER_WATER_HOLE_ID) { // Don't jump into a hole
-;
-	cmp     #$08
-	bcs     L1029
+	lda     _temp1
+	bne     L1040
 ;
 ; enemies_y[x] = temp_y; // Move (and update depthmap)
 ;
@@ -6261,7 +6228,7 @@ L0FDE:	rts
 ;
 ; }
 ;
-L1029:	rts
+L1040:	rts
 
 .endproc
 
@@ -6288,7 +6255,7 @@ L1029:	rts
 ;
 ; return;
 ;
-	beq     L1073
+	beq     L1078
 ;
 ; --temp_x;
 ;
@@ -6300,24 +6267,14 @@ L1029:	rts
 	lda     _enemies_y,y
 	sta     _temp_y
 ;
-; DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+; deckswabber_entity_ai_sub_is_target_space_blocked();
 ;
-	asl     a
-	asl     a
-	asl     a
-	ora     _temp_x
-	sta     _temp0
+	jsr     _deckswabber_entity_ai_sub_is_target_space_blocked
 ;
-; temp0 = tile_typemap[temp0];
+; if (temp1 == 0) {
 ;
-	ldy     _temp0
-	lda     _cmap,y
-	sta     _temp0
-;
-; if (temp0 < DECKSWABBER_WATER_HOLE_ID) { // Don't jump into a hole
-;
-	cmp     #$08
-	bcs     L1073
+	lda     _temp1
+	bne     L1078
 ;
 ; enemies_x[x] = temp_x;
 ;
@@ -6333,7 +6290,7 @@ L1029:	rts
 ;
 ; }
 ;
-L1073:	rts
+L1078:	rts
 
 .endproc
 
@@ -6360,7 +6317,7 @@ L1073:	rts
 ;
 ; return;
 ;
-	bcs     L109D
+	bcs     L1090
 ;
 ; ++temp_x;
 ;
@@ -6372,24 +6329,14 @@ L1073:	rts
 	lda     _enemies_y,y
 	sta     _temp_y
 ;
-; DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+; deckswabber_entity_ai_sub_is_target_space_blocked();
 ;
-	asl     a
-	asl     a
-	asl     a
-	ora     _temp_x
-	sta     _temp0
+	jsr     _deckswabber_entity_ai_sub_is_target_space_blocked
 ;
-; temp0 = tile_typemap[temp0];
+; if (temp1 == 0) {
 ;
-	ldy     _temp0
-	lda     _cmap,y
-	sta     _temp0
-;
-; if (temp0 < DECKSWABBER_WATER_HOLE_ID) { // Don't jump into a hole
-;
-	cmp     #$08
-	bcs     L109D
+	lda     _temp1
+	bne     L1090
 ;
 ; enemies_x[x] = temp_x;
 ;
@@ -6405,7 +6352,183 @@ L1073:	rts
 ;
 ; }
 ;
-L109D:	rts
+L1090:	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ deckswabber_entity_ai_sub_is_target_space_blocked (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_entity_ai_sub_is_target_space_blocked: near
+
+.segment	"BANK1"
+
+;
+; DeckswabberGetTileIndex(temp1, temp_x, temp_y);
+;
+	lda     _temp_y
+	asl     a
+	asl     a
+	asl     a
+	ora     _temp_x
+	sta     _temp1
+;
+; temp0 = tile_typemap[temp1];
+;
+	ldy     _temp1
+	lda     _cmap,y
+	sta     _temp0
+;
+; if (temp0 >= DECKSWABBER_WATER_HOLE_ID) { // Don't jump into a hole
+;
+	cmp     #$08
+	bcc     L10AC
+;
+; temp1 = 1;
+;
+	lda     #$01
+;
+; } else if (enemies_type[x] == DECKSWABBER_ENTITY_ID_SWORD) {
+;
+	jmp     L1110
+L10AC:	ldy     _x
+	lda     _enemies_type,y
+	cmp     #$08
+	bne     L10B3
+;
+; temp1 = 0; // Swords can jump into other entities
+;
+	lda     #$00
+;
+; } else {
+;
+	jmp     L1110
+;
+; temp1 = enemymap[temp1]; // If there is any entity here
+;
+L10B3:	ldy     _temp1
+	lda     _cmap+128,y
+L1110:	sta     _temp1
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ deckswabber_entity_ai_sub_set_in_enemymap (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_entity_ai_sub_set_in_enemymap: near
+
+.segment	"BANK1"
+
+;
+; temp_x = enemies_x[x];
+;
+	ldy     _x
+	lda     _enemies_x,y
+	sta     _temp_x
+;
+; temp_y = enemies_y[x];
+;
+	ldy     _x
+	lda     _enemies_y,y
+	sta     _temp_y
+;
+; DeckswabberGetTileIndex(temp4, temp_x, temp_y);
+;
+	asl     a
+	asl     a
+	asl     a
+	ora     _temp_x
+	sta     _temp4
+;
+; temp3 = enemymap[temp4];
+;
+	ldy     _temp4
+	lda     _cmap+128,y
+	sta     _temp3
+;
+; temp3 |= deckswabber_entity_index_to_depthmask[x];
+;
+	ldy     _x
+	lda     _deckswabber_entity_index_to_depthmask,y
+	ora     _temp3
+	sta     _temp3
+;
+; enemymap[temp4] = temp3; 
+;
+	ldy     _temp4
+	lda     _temp3
+	sta     _cmap+128,y
+;
+; }
+;
+	rts
+
+.endproc
+
+; ---------------------------------------------------------------
+; void __near__ deckswabber_entity_ai_sub_clear_from_enemymap (void)
+; ---------------------------------------------------------------
+
+.segment	"BANK1"
+
+.proc	_deckswabber_entity_ai_sub_clear_from_enemymap: near
+
+.segment	"BANK1"
+
+;
+; temp_x = enemies_x[x];
+;
+	ldy     _x
+	lda     _enemies_x,y
+	sta     _temp_x
+;
+; temp_y = enemies_y[x];
+;
+	ldy     _x
+	lda     _enemies_y,y
+	sta     _temp_y
+;
+; DeckswabberGetTileIndex(temp4, temp_x, temp_y);
+;
+	asl     a
+	asl     a
+	asl     a
+	ora     _temp_x
+	sta     _temp4
+;
+; temp3 = enemymap[temp4];
+;
+	ldy     _temp4
+	lda     _cmap+128,y
+	sta     _temp3
+;
+; temp3 &= (~deckswabber_entity_index_to_depthmask[x]);
+;
+	ldy     _x
+	lda     _deckswabber_entity_index_to_depthmask,y
+	eor     #$FF
+	and     _temp3
+	sta     _temp3
+;
+; enemymap[temp4] = temp3;
+;
+	ldy     _temp4
+	lda     _temp3
+	sta     _cmap+128,y
+;
+; }
+;
+	rts
 
 .endproc
 
