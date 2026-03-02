@@ -226,6 +226,22 @@ void begin_igloo(void) {
     begin_igloo_sub();   
 }
 
+void igloo_write_decimal_in_message_sub(void) {
+    prepare_score_string();
+    // Count non-space chars...
+    temp0 = 0; // Digit count
+    temp1 = 0; // Offset to chrbuffer to write to as temporary buffer
+    for (x = 0; x < 5; ++x) { // Assuming at least one digit every time
+        if (score_string[x] >= '0') {
+            ++temp0;
+            // chrbuffer[temp1] = score_string[x];
+            temp2 = score_string[x];
+            chrbuffer[temp1] = temp2;
+            ++temp1;
+        }
+    }
+}
+
 #pragma code-name(push, "BANK1")
 
 void begin_igloo_sub(void) {
@@ -432,22 +448,6 @@ void igloo_begin_new_round(void) {
     next_item_timer = 1 + rand8() & 0b11111;
     igloo_write_nextlevel_message();
     igloo_write_fake_time();
-}
-
-void igloo_write_decimal_in_message_sub(void) {
-    prepare_score_string();
-    // Count non-space chars...
-    temp0 = 0; // Digit count
-    temp1 = 0; // Offset to chrbuffer to write to as temporary buffer
-    for (x = 0; x < 5; ++x) { // Assuming at least one digit every time
-        if (score_string[x] >= '0') {
-            ++temp0;
-            // chrbuffer[temp1] = score_string[x];
-            temp2 = score_string[x];
-            chrbuffer[temp1] = temp2;
-            ++temp1;
-        }
-    }
 }
 
 void igloo_write_allitems_message(void) {

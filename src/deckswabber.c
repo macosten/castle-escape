@@ -116,7 +116,7 @@ extern unsigned char enemies_count;
     #warning "Careful (deckswabber): Odd width and height, the code probably doesn't support this yet."
 #endif
 
-#pragma rodata-name(push, "BANK1")
+#pragma rodata-name(push, "BANK3")
 
 unsigned char deckswabber_palette_sp[] = {
     0x37, 0x1c, 0x38, 0x0f, // Player Character (Teal/Yellow/Black)
@@ -240,7 +240,7 @@ void begin_deckswabber(void) {
     begin_deckswabber_sub();
 }
 
-#pragma code-name(push, "BANK1")
+#pragma code-name(push, "BANK3")
 
 void begin_deckswabber_sub(void) {
     music_play(ICE_CREAM_MACHINE_SONG);

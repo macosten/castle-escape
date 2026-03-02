@@ -2,7 +2,7 @@
 // swapped in the correct place in RAM.
 // Otherwise, you'll get garbage data.
 
-#pragma rodata-name(push, "BANK1")
+#pragma rodata-name(push, "BANK3")
 
 const char deckswabber_tiles_remaining[] = "Tiles Left";
 const char deckswabber_level_finished[] = "Finished!";

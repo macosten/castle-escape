@@ -2042,7 +2042,7 @@ _igloo_draw_func_pointers:
 ;
 	lda     _player_flags
 	and     #$10
-	bne     L0714
+	bne     L0730
 ;
 ; igloo_player_movement();
 ;
@@ -2054,15 +2054,15 @@ _igloo_draw_func_pointers:
 ;
 ; } else {
 ;
-	jmp     L0719
+	jmp     L0735
 ;
 ; igloo_carassa_movement_gameover();
 ;
-L0714:	jsr     _igloo_carassa_movement_gameover
+L0730:	jsr     _igloo_carassa_movement_gameover
 ;
 ; igloo_item_movement();
 ;
-L0719:	jsr     _igloo_item_movement
+L0735:	jsr     _igloo_item_movement
 ;
 ; igloo_sprite_collisions();
 ;
@@ -2086,7 +2086,7 @@ L0DA0:	lda     _player_flags
 ;
 ; } else if (game_seconds_timer > 0 || game_frame_timer > 0) {
 ;
-	jne     L079B
+	jne     L07B7
 	lda     _enemy_limit
 	bne     L0DA1
 	lda     _lowest_enemy_index
@@ -2127,7 +2127,7 @@ L0DA3:	dec     _index
 ;
 ; if (next_item_timer == 0) {
 ;
-	jne     L079B
+	jne     L07B7
 ;
 ; temp0 = (rand8() & 0b111);
 ;
@@ -2158,7 +2158,7 @@ L0DA3:	dec     _index
 	sta     _x
 L0DA4:	lda     _x
 	cmp     #$0C
-	jcs     L079B
+	jcs     L07B7
 ;
 ; if (!IS_ENEMY_ACTIVE(x)) {
 ;
@@ -2262,7 +2262,7 @@ L0DA4:	lda     _x
 ;
 ; break;
 ;
-	jmp     L079B
+	jmp     L07B7
 ;
 ; for (x = 0; x < ONSCREEN_JUNK_MAXIMUM; ++x) {
 ;
@@ -2272,7 +2272,7 @@ L0DA5:	inc     _x
 ; } else if (round_begin_timer > 0) {
 ;
 L0DA6:	lda     _eject_R
-	beq     L079B
+	beq     L07B7
 ;
 ; --round_begin_timer;
 ;
@@ -2280,7 +2280,7 @@ L0DA6:	lda     _eject_R
 ;
 ; if (round_begin_timer == 0) {
 ;
-	bne     L079B
+	bne     L07B7
 ;
 ; game_seconds_timer = 30;
 ;
@@ -2302,12 +2302,12 @@ L0DA6:	lda     _eject_R
 ;
 ; if (pad1 && IGLOO_IS_GAME_OVER) {
 ;
-L079B:	lda     _pad1
-	beq     L07A5
+L07B7:	lda     _pad1
+	beq     L07C1
 	lda     _player_flags
 	and     #$10
 	bne     L0DA7
-L07A5:	rts
+L07C1:	rts
 ;
 ; if (pad1 & PAD_B || temp3) {
 ;
@@ -2469,9 +2469,9 @@ L0DA8:	jmp     _end_igloo
 ;
 	clc
 	adc     #$10
-	bcc     L06F6
+	bcc     L0712
 	inx
-L06F6:	sta     _old_y
+L0712:	sta     _old_y
 	stx     _old_y+1
 ;
 ; igloo_begin_new_round();
@@ -3592,11 +3592,11 @@ L0DC9:	inc     _x
 ; void __near__ igloo_write_decimal_in_message_sub (void)
 ; ---------------------------------------------------------------
 
-.segment	"BANK1"
+.segment	"CODE"
 
 .proc	_igloo_write_decimal_in_message_sub: near
 
-.segment	"BANK1"
+.segment	"CODE"
 
 ;
 ; prepare_score_string();
@@ -3617,7 +3617,7 @@ L0DC9:	inc     _x
 	sta     _x
 L0DCB:	lda     _x
 	cmp     #$05
-	bcs     L0864
+	bcs     L06DC
 ;
 ; if (score_string[x] >= '0') {
 ;
@@ -3653,7 +3653,7 @@ L0DCC:	inc     _x
 ;
 ; }
 ;
-L0864:	rts
+L06DC:	rts
 
 .endproc
 
@@ -4109,9 +4109,9 @@ L0DDD:	sta     _temp0
 	lda     _level_index
 	cmp     #$0C
 	bcs     L0DDE
-	jmp     L0855
+	jmp     L0871
 L0DDE:	lda     #$0C
-L0855:	asl     a
+L0871:	asl     a
 	asl     a
 	asl     a
 	sta     _did_headbonk

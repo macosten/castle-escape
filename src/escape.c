@@ -1126,7 +1126,7 @@ void load_deckswabber_menu(void) {
     active_game = GAME_DECKSWABBER;
     // Change to Deckswabber graphics
     pal_fade_to(4, 0);
-    set_prg_bank(1);
+    set_prg_bank(3);
     set_chr_bank_0(6);
     set_chr_bank_1(7);
     pal_bg(deckswabber_palette_bg);
