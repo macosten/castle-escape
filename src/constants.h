@@ -67,6 +67,15 @@
 #define SFX_ACID_DROP 6
 #define SFX_SMACK 7
 #define SFX_JUMP 8
+#define SFX_LAND_ON_GROUND 9
+#define SFX_JUMP_LOWER 10
+#define SFX_CHARGED 11
+#define SFX_PAUSED 12
+#define SFX_UNPAUSED 13
+#define SFX_BWIP 14
+#define SFX_JUMP_LOWEST 15
+#define SFX_CLICK 16
+#define SFX_BOZOBONK 17
 
 // ===
 // Constants for songs/their names.
