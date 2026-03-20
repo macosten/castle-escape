@@ -222,6 +222,8 @@ void deckswabber_entity_selfdestruct_default(void);
 void deckswabber_entity_selfdestruct_dirt_bomb_plus(void);
 void deckswabber_entity_selfdestruct_dirt_bomb_square(void);
 
+void deckswabber_entity_selfdestruct_sub_dirt_bomb_attribute_update(void);
+
 void deckswabber_player_collision(void);
 void deckswabber_collide_with_points(void);
 void deckswabber_collide_with_half_flag(void);
@@ -607,9 +609,19 @@ void game_deckswabber(void) {
     if (DECKSWABBER_SCORE_CHANGED_THIS_FRAME) { deckswabber_update_score(); }
     if (DECKSWABBER_HP_CHANGED_THIS_FRAME) { deckswabber_update_health_bar(); }
 
+    // Debug functionality:
     if (pad1 & PAD_B) {
         end_deckswabber();
         return;
+    }
+
+    if (pad1 & PAD_SELECT) {
+        temp5 = 0;
+        x = 10; // The memory exists/doesn't trample over anything else, just not used by this game normally
+        enemies_x[x] = player_tile_x;
+        enemies_y[x] = player_tile_y;
+        //deckswabber_entity_selfdestruct_dirt_bomb_plus();
+        deckswabber_entity_selfdestruct_dirt_bomb_square();
     }
 
     if (pad1_new & PAD_START) {
@@ -893,6 +905,22 @@ void deckswabber_tile_increment_fn_sub_upperlimit_rollover(void) {
     }
 }
 
+void deckswabber_clear_tile(void) {
+    if (temp_x >= DECKSWABBER_TILE_WIDTH || temp_y >= DECKSWABBER_TILE_HEIGHT) { return; }
+    
+    DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+    temp2 = tile_typemap[temp0];
+    
+    if (temp2 >= DECKSWABBER_WATER_HOLE_ID) { return; }
+    temp2 = tile_colormap[temp0];
+    if (temp2 == deckswabber_round_highest_tile_value[round]) {
+        ++tiles_remaining;
+    }
+    tile_colormap[temp0] = 0;
+    temp1 = 0;
+    deckswabber_redraw_tile_no_attr_update();
+}
+
 void deckswabber_redraw_player_tile(void) {
     temp_x = player_tile_x;
     temp_y = player_tile_y;
@@ -1113,7 +1141,22 @@ void deckswabber_entity_selfdestruct_dirt_bomb_plus(void) {
         enemies_timer[x] = 60;
         sfx_play(SFX_BOZOBONK, 1);
         // Dirty some of the surrounding tiles
-        
+        temp_x = enemies_x[x];
+        temp_y = enemies_y[x];
+        deckswabber_clear_tile();
+        --temp_y;
+        deckswabber_clear_tile();
+        ++temp_y;
+        ++temp_y;
+        deckswabber_clear_tile();
+        --temp_y;
+        --temp_x;
+        deckswabber_clear_tile();
+        ++temp_x;
+        ++temp_x;
+        deckswabber_clear_tile();
+        deckswabber_update_tiles_remaining();
+        deckswabber_entity_selfdestruct_sub_dirt_bomb_attribute_update();
     }
 }
 
@@ -1124,9 +1167,46 @@ void deckswabber_entity_selfdestruct_dirt_bomb_square(void) {
         enemies_timer[x] = 60;
         sfx_play(SFX_BOZOBONK, 1);
         // Dirty some of the surrounding tiles
-        // temp_x 
 
+        // It's actually a little bit beyond the hardware's capabilities to update 9 MTs in one frame,
+        // So this is actually only an X-pattern (should have figured this before naming these functions)
+        temp_x = enemies_x[x] - 1;
+        temp_y = enemies_y[x] - 1;
+        deckswabber_clear_tile();
+        ++temp_x;
+        // deckswabber_clear_tile();
+        ++temp_x;
+        deckswabber_clear_tile();
+        ++temp_y;
+        // deckswabber_clear_tile();
+        --temp_x;
+        deckswabber_clear_tile();
+        --temp_x;
+        // deckswabber_clear_tile();
+        ++temp_y;
+        deckswabber_clear_tile();
+        ++temp_x;
+        // deckswabber_clear_tile();
+        ++temp_x;
+        deckswabber_clear_tile();
+        deckswabber_update_tiles_remaining();
+        deckswabber_entity_selfdestruct_sub_dirt_bomb_attribute_update(); 
     }
+}
+
+void deckswabber_entity_selfdestruct_sub_dirt_bomb_attribute_update(void) {
+    temp_x = enemies_x[x] - 1;
+    temp_y = enemies_y[x] - 1;
+    if (temp_x < DECKSWABBER_TILE_WIDTH && temp_y < DECKSWABBER_TILE_HEIGHT) { deckswabber_update_attribute_byte(); }
+    ++temp_x;
+    ++temp_x;
+    if (temp_x < DECKSWABBER_TILE_WIDTH && temp_y < DECKSWABBER_TILE_HEIGHT) { deckswabber_update_attribute_byte(); }
+    ++temp_y;
+    ++temp_y;
+    if (temp_x < DECKSWABBER_TILE_WIDTH && temp_y < DECKSWABBER_TILE_HEIGHT) { deckswabber_update_attribute_byte(); }
+    --temp_x;
+    --temp_x;
+    if (temp_x < DECKSWABBER_TILE_WIDTH && temp_y < DECKSWABBER_TILE_HEIGHT) { deckswabber_update_attribute_byte(); }
 }
 
 void deckswabber_entity_ai_sub_set_in_enemymap(void) {
