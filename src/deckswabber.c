@@ -229,6 +229,10 @@ void deckswabber_entity_ai_sub_clear_from_enemymap(void);
 
 void deckswabber_entity_kill(void);
 
+void deckswabber_entity_selfdestruct_default(void);
+void deckswabber_entity_selfdestruct_dirt_bomb_plus(void);
+void deckswabber_entity_selfdestruct_dirt_bomb_square(void);
+
 void deckswabber_player_collision(void);
 void deckswabber_collide_with_points(void);
 void deckswabber_collide_with_half_flag(void);
@@ -1114,6 +1118,26 @@ const void (* const deckswabber_ai_pointers[])(void) = {
     deckswabber_entity_ai_always_target_player,
 };
 
+const void (* const deckswabber_entity_selfdestruct_pointers[])(void) = {
+    empty_function,   // 0 - DECKSWABBER_ENTITY_CURTAIN
+    empty_function, // 1 - Explosion effect
+    deckswabber_entity_selfdestruct_default, // 2
+    deckswabber_entity_selfdestruct_default,
+    deckswabber_entity_selfdestruct_default,
+    deckswabber_entity_selfdestruct_default, // 5
+    deckswabber_entity_selfdestruct_default,
+    deckswabber_entity_selfdestruct_default,
+    deckswabber_entity_selfdestruct_default, // 8
+    deckswabber_entity_selfdestruct_default, // 9
+    deckswabber_entity_selfdestruct_default,
+    deckswabber_entity_selfdestruct_dirt_bomb_plus, // 11
+    deckswabber_entity_selfdestruct_dirt_bomb_square,
+    deckswabber_entity_selfdestruct_default, // 13
+    deckswabber_entity_selfdestruct_default,
+    deckswabber_entity_selfdestruct_default,
+    deckswabber_entity_selfdestruct_default,
+};
+
 const void (* const deckswabber_ai_direction_function_pointers[])(void) = {
     deckswabber_entity_ai_sub_go_up,
     deckswabber_entity_ai_sub_go_down,
@@ -1125,13 +1149,15 @@ void deckswabber_entity_movement(void) {
     for (x = 0; x < DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++x) {
         if (IS_ENEMY_ACTIVE(x)) {
             temp0 = GET_ENEMY_TYPE(x);
+            temp5 = rand();
+            AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_entity_selfdestruct_pointers, temp0);
             AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_ai_pointers, temp0);
         }
     }
 
     for (x = 0; x < DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++x) {
         // If this is a sword and there's an enemy where we're about to land, turn it into an explosion and deactivate ourselves
-        if (enemies_type[x] == DECKSWABBER_ENTITY_ID_SWORD) {
+        if (enemies_type[x] == DECKSWABBER_ENTITY_ID_SWORD && IS_ENEMY_ACTIVE(x)) {
             temp_x = enemies_x[x];
             temp_y = enemies_y[x];
             DeckswabberGetTileIndex(temp0, temp_x, temp_y);
@@ -1147,6 +1173,30 @@ void deckswabber_entity_movement(void) {
                 }
             }
         }
+    }
+}
+
+void deckswabber_entity_selfdestruct_default(void) {
+    if (temp5 < 16) {
+        enemies_type[x] = DECKSWABBER_ENTITY_ID_EXPLOSION;
+        enemies_timer[x] = 60;
+        sfx_play(SFX_BOZOBONK, 1);
+    }
+}
+
+void deckswabber_entity_selfdestruct_dirt_bomb_plus(void) {
+    if (temp5 < 82) {
+        enemies_type[x] = DECKSWABBER_ENTITY_ID_EXPLOSION;
+        enemies_timer[x] = 60;
+        sfx_play(SFX_BOZOBONK, 1);
+    }
+}
+
+void deckswabber_entity_selfdestruct_dirt_bomb_square(void) {
+    if (temp5 < 82) {
+        enemies_type[x] = DECKSWABBER_ENTITY_ID_EXPLOSION;
+        enemies_timer[x] = 60;
+        sfx_play(SFX_BOZOBONK, 1);
     }
 }
 
