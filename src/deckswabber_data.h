@@ -580,7 +580,61 @@ const unsigned char * const flag_full_jump_animation[] = {
     flag_full_jump1,
 };
 
-extern const unsigned char * const item_explosion_animation[];
+const unsigned char deckswabber_explosion1[] = {
+    0, 0, 0xFD, 0,
+    8, 0, 0xFD, 0|OAM_FLIP_H,
+    0, 8, 0xFD, 0|OAM_FLIP_V,
+    8, 8, 0xFD, 0|OAM_FLIP_H|OAM_FLIP_V,
+    -3, 14, 0xFF, 0,
+    10, -8, 0xFF, 0,
+    4, -10, 0xFE, 0,
+    12, 10, 0xFE, 0,
+    128
+};
+
+const unsigned char deckswabber_explosion2[] = {
+    -1, 0, 0xFD, 0,
+    7, 0, 0xFD, 0|OAM_FLIP_H,
+    -1, 8, 0xFD, 0|OAM_FLIP_V,
+    7, 8, 0xFD, 0|OAM_FLIP_H|OAM_FLIP_V,
+    4, -10, 0xFF, 0,
+    12, 10, 0xFF, 0,
+    -7, 3, 0xFE, 0,
+    15, -4, 0xFE, 0,
+    128
+};
+
+const unsigned char deckswabber_explosion3[] = {
+    -1, -1, 0xFD, 0,
+    7, -1, 0xFD, 0|OAM_FLIP_H,
+    -1, 7, 0xFD, 0|OAM_FLIP_V,
+    7, 7, 0xFD, 0|OAM_FLIP_H|OAM_FLIP_V,
+    -7, 3, 0xFF, 0,
+    15, -4, 0xFF, 0,
+    -8, -8, 0xFE, 0,
+    6, 17, 0xFE, 0,
+    128
+};
+
+const unsigned char deckswabber_explosion4[] = {
+    0, -1, 0xFD, 0,
+    8, -1, 0xFD, 0|OAM_FLIP_H,
+    0, 7, 0xFD, 0|OAM_FLIP_V,
+    8, 7, 0xFD, 0|OAM_FLIP_H|OAM_FLIP_V,
+    -8, -8, 0xFF, 0,
+    6, 17, 0xFF, 0,
+    -3, 14, 0xFE, 0,
+    10, -8, 0xFE, 0,
+    128
+};
+
+const unsigned char * const deckswabber_explosion_animation[] = {
+    deckswabber_explosion1,
+    deckswabber_explosion2,
+    deckswabber_explosion3,
+    deckswabber_explosion4,
+};
+
 
 // Levels. Each hex digit corresponds to a tile type.
 // 0 is regular, 1 is water; 2-F will be extra types for extra levels.
@@ -901,7 +955,7 @@ const unsigned char deckswabber_entity_index_to_depthmask[] = {
 
 const unsigned char * const * const deckswabber_entity_id_to_animation_ptr[] = {
     entity_intro_curtain_animation,
-    item_explosion_animation,
+    deckswabber_explosion_animation,
     coin_bronze_jump_animation,
     coin_silver_jump_animation,
     coin_gold_jump_animation,
