@@ -76,6 +76,7 @@
 #define SFX_JUMP_LOWEST 15
 #define SFX_CLICK 16
 #define SFX_BOZOBONK 17
+#define SFX_WATER_SPLASHING 18
 
 // ===
 // Constants for songs/their names.

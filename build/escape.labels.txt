@@ -19,7 +19,7 @@ al 008000 .__BANK2_RUN__
 al 0016CB .__BANK2_SIZE__
 al 008000 .__BANK3_LOAD__
 al 008000 .__BANK3_RUN__
-al 001AB3 .__BANK3_SIZE__
+al 001AC5 .__BANK3_SIZE__
 al 008000 .__BANK4_LOAD__
 al 008000 .__BANK4_RUN__
 al 0005CA .__BANK4_SIZE__
@@ -28,7 +28,7 @@ al 008000 .__BANK5_RUN__
 al 001A06 .__BANK5_SIZE__
 al 008000 .__BANK6_LOAD__
 al 008000 .__BANK6_RUN__
-al 00209E .__BANK6_SIZE__
+al 0020C2 .__BANK6_SIZE__
 al 00034A .__BSS_LOAD__
 al 00034A .__BSS_RUN__
 al 00036E .__BSS_SIZE__
@@ -54,7 +54,7 @@ al 0096CB .__PRG2_LAST__
 al 004000 .__PRG2_SIZE__
 al 008000 .__PRG2_START__
 al 00C010 .__PRG3_FILEOFFS__
-al 009AB3 .__PRG3_LAST__
+al 009AC5 .__PRG3_LAST__
 al 004000 .__PRG3_SIZE__
 al 008000 .__PRG3_START__
 al 010010 .__PRG4_FILEOFFS__
@@ -66,7 +66,7 @@ al 009A06 .__PRG5_LAST__
 al 004000 .__PRG5_SIZE__
 al 008000 .__PRG5_START__
 al 018010 .__PRG6_FILEOFFS__
-al 00A09E .__PRG6_LAST__
+al 00A0C2 .__PRG6_LAST__
 al 004000 .__PRG6_SIZE__
 al 008000 .__PRG6_START__
 al 01C010 .__PRG_FILEOFFS__
@@ -294,11 +294,11 @@ al 00034F ._deckswabber_active_level_pack_levels
 al 0087F5 ._deckswabber_ai_direction_function_pointers
 al 0087B1 ._deckswabber_ai_pointers
 al 008015 ._deckswabber_bonus
-al 009A77 ._deckswabber_collide_with_fatal
-al 009A40 ._deckswabber_collide_with_full_flag
-al 009A1B ._deckswabber_collide_with_half_flag
-al 009A57 ._deckswabber_collide_with_harmful
-al 0099F3 ._deckswabber_collide_with_points
+al 009A89 ._deckswabber_collide_with_fatal
+al 009A52 ._deckswabber_collide_with_full_flag
+al 009A2D ._deckswabber_collide_with_half_flag
+al 009A69 ._deckswabber_collide_with_harmful
+al 009A05 ._deckswabber_collide_with_points
 al 009046 ._deckswabber_draw_entity_bronze_chest
 al 009004 ._deckswabber_draw_entity_bronze_coin
 al 0090F6 ._deckswabber_draw_entity_cannon
@@ -384,7 +384,7 @@ al 000300 ._deckswabber_palette_sp
 al 009992 ._deckswabber_player_collision
 al 0087FD ._deckswabber_player_collision_fns
 al 008E6B ._deckswabber_player_movement
-al 009A8B ._deckswabber_random_entity_spawn_coords
+al 009A9D ._deckswabber_random_entity_spawn_coords
 al 00914E ._deckswabber_redraw_player_tile
 al 00867F ._deckswabber_round_bounds_db
 al 008681 ._deckswabber_starting_coords_db

@@ -1435,7 +1435,10 @@ void deckswabber_player_collision(void) {
     if (temp1 == DECKSWABBER_WATER_HOLE_ID) {
         energy -= 2;
         DECKSWABBER_SET_HP_CHANGED_THIS_FRAME();
-        // sfx_play(deckswabber_water);
+        if (repeating_sfx_timer == 0) {
+            sfx_play(SFX_WATER_SPLASHING, 1);
+            repeating_sfx_timer = 10;
+        }
     } else if (temp1 == DECKSWABBER_EMPTY_HOLE_ID) {
         deckswabber_collide_with_fatal();
         return;
