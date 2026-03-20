@@ -213,6 +213,9 @@ void deckswabber_tile_increment_fn_sub_upperlimit_rollover(void);
 void deckswabber_entity_movement(void);
 void deckswabber_entity_ai_curtain(void);
 void deckswabber_entity_ai_explosion(void);
+void deckswabber_entity_ai_wander(void);
+void deckswabber_entity_ai_use_aggression(void);
+void deckswabber_entity_ai_always_target_player(void);
 
 void deckswabber_entity_ai_sub_target(void);
 
@@ -271,7 +274,7 @@ void begin_deckswabber(void) {
 #pragma code-name(push, "BANK3")
 
 void begin_deckswabber_sub(void) {
-    music_play(ICE_CREAM_MACHINE_SONG);
+    music_play(MEEPIT_JUICE_BREAK_SONG);
     game_mode = MODE_GAME;
     enemies_count = DECKSWABBER_MAX_ONSCREEN_ENTITIES; // Used by extern'd functions
     calculate_shuffle_array();
@@ -518,6 +521,7 @@ void game_deckswabber(void) {
                     enemies_y[x] = temp_y;
                     ACTIVATE_ENEMY(x);
                     deckswabber_entity_ai_sub_set_in_enemymap();
+                    sfx_play(SFX_UNPAUSED, 1);
                 }
             } else {
                 DECKSWABBER_SET_CAN_MAKE_HOSTILE_ENTITY();
@@ -567,6 +571,7 @@ void game_deckswabber(void) {
                     enemies_y[x] = temp_y;
                     ACTIVATE_ENEMY(x);
                     deckswabber_entity_ai_sub_set_in_enemymap();
+                    sfx_play(SFX_UNPAUSED, 1);
                 }
             } else {
                 DECKSWABBER_SET_CAN_MAKE_PASSIVE_ENTITY();
@@ -621,7 +626,7 @@ void game_deckswabber(void) {
         }
         begin_deckswabber_level();
     }
-    //gray_line();
+    gray_line();
 }
 
 void end_deckswabber(void) {
@@ -744,12 +749,7 @@ void deckswabber_draw_sprites(void) {
     // We need to draw from front to back, so:
     for (y = DECKSWABBER_TILE_HEIGHT; y != 0xFF; --y) {
         if (player_tile_y == y) { deckswabber_draw_player(); }
-        temp4 = depthmap[y];
-        // if (temp4 & DECKSWABBER_PLAYER_DEPTHMAP_MASK) {
-        //     deckswabber_draw_player();
-        // }
-        // temp4 &= ~DECKSWABBER_PLAYER_DEPTHMAP_MASK;
-        if (temp4 == 0) { continue; }
+
 
         for (index = 0; index < shuffle_leg_size; ++index) {
             temp1 = index + shuffle_offset;
@@ -1097,7 +1097,21 @@ void deckswabber_draw_goal_hud_sub_write_mt(void) {
 const void (* const deckswabber_ai_pointers[])(void) = {
     deckswabber_entity_ai_curtain,   // 0 - DECKSWABBER_ENTITY_CURTAIN
     deckswabber_entity_ai_explosion, // 1 - Explosion effect
-    // All others use a generic function
+    deckswabber_entity_ai_wander, // 2
+    deckswabber_entity_ai_wander,
+    deckswabber_entity_ai_wander,
+    deckswabber_entity_ai_wander, // 5
+    deckswabber_entity_ai_wander,
+    deckswabber_entity_ai_wander,
+    deckswabber_entity_ai_wander, // 8
+    deckswabber_entity_ai_wander, // 9
+    deckswabber_entity_ai_wander,
+    deckswabber_entity_ai_wander, // 11
+    deckswabber_entity_ai_wander,
+    deckswabber_entity_ai_wander, // 13
+    deckswabber_entity_ai_use_aggression,
+    deckswabber_entity_ai_use_aggression,
+    deckswabber_entity_ai_always_target_player,
 };
 
 const void (* const deckswabber_ai_direction_function_pointers[])(void) = {
@@ -1108,40 +1122,10 @@ const void (* const deckswabber_ai_direction_function_pointers[])(void) = {
 };
 
 void deckswabber_entity_movement(void) {
-    // Only up to 7 entities at a time (MSB reserved for the player in depthmap).
     for (x = 0; x < DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++x) {
         if (IS_ENEMY_ACTIVE(x)) {
             temp0 = GET_ENEMY_TYPE(x);
-            if (temp0 <= DECKSWABBER_ENTITY_ID_EXPLOSION) {
-                AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_ai_pointers, temp0);
-            } else {
-                // Generic AI option
-                temp0 = enemies_extra[x];
-                if (temp0) {
-                    --temp0;
-                    enemies_extra[x] = temp0;
-                }
-
-                temp0 = enemies_timer[x];
-                --temp0;
-                if (temp0 == 0) {
-                    // Take a movement opportunity:
-                    deckswabber_entity_ai_sub_clear_from_enemymap();
-                    temp0 = rand8();
-                    temp1 = enemies_aggression[x];
-                    if (temp0 <= temp1) {
-                        deckswabber_entity_ai_sub_target(); // Go towards the player
-                    } else {
-                        // Random direction
-                        temp1 = rand8() & 0b11;
-                        AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_ai_direction_function_pointers, temp1);
-                    }
-                    deckswabber_entity_ai_sub_set_in_enemymap();
-                    enemies_timer[x] = 48;
-                } else {
-                    enemies_timer[x] = temp0;
-                }
-            }
+            AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_ai_pointers, temp0);
         }
     }
 
@@ -1158,8 +1142,6 @@ void deckswabber_entity_movement(void) {
                     enemies_type[temp1] = DECKSWABBER_ENTITY_ID_EXPLOSION;
                     enemies_timer[temp1] = 60;
                     sfx_play(SFX_BOZOBONK, 1);
-                    score += 100;
-                    DECKSWABBER_SET_SCORE_CHANGED_THIS_FRAME();
                     deckswabber_entity_kill();
                     break;
                 }
@@ -1184,7 +1166,6 @@ void deckswabber_entity_ai_sub_clear_from_enemymap(void) {
     temp3 = enemymap[temp4];
     temp3 &= (~deckswabber_entity_index_to_depthmask[x]);
     enemymap[temp4] = temp3;
-    // enemymap[temp4] = 0;
 }
 
 void deckswabber_entity_ai_curtain(void) {
@@ -1196,7 +1177,7 @@ void deckswabber_entity_ai_curtain(void) {
         __asm__("ldy %v", x);
         __asm__("lda %v,y", enemies_extra);
         __asm__("sta %v,y", enemies_type);
-        enemies_extra[x] = 0; // This is now its frame timer
+        enemies_extra[x] = 0; // enemies_timer[x] is now its frame timer
     } else {
         enemies_timer[x] = temp0;
     }
@@ -1212,6 +1193,73 @@ void deckswabber_entity_ai_explosion(void) {
         enemies_timer[x] = temp0;
     }
 }
+
+void deckswabber_entity_ai_wander(void) {
+    // Generic AI option
+    temp0 = enemies_extra[x];
+    if (temp0) {
+        --temp0;
+        enemies_extra[x] = temp0;
+    }
+    temp0 = enemies_timer[x];
+    --temp0;
+    if (temp0 == 0) {
+        // Take a movement opportunity:
+        deckswabber_entity_ai_sub_clear_from_enemymap();
+        temp1 = rand8() & 0b11;
+        AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_ai_direction_function_pointers, temp1);
+        deckswabber_entity_ai_sub_set_in_enemymap();
+        enemies_timer[x] = 48;
+    } else {
+        enemies_timer[x] = temp0;
+    }
+}
+
+void deckswabber_entity_ai_use_aggression(void) {
+    temp0 = enemies_extra[x];
+    if (temp0) {
+        --temp0;
+        enemies_extra[x] = temp0;
+    }
+    temp0 = enemies_timer[x];
+    --temp0;
+    if (temp0 == 0) {
+        // Take a movement opportunity:
+        deckswabber_entity_ai_sub_clear_from_enemymap();
+        temp0 = rand8();
+        temp1 = enemies_aggression[x];
+        if (temp0 <= temp1) {
+            deckswabber_entity_ai_sub_target(); // Go towards the player
+        } else {
+            // Random direction
+            temp1 = rand8() & 0b11;
+            AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_ai_direction_function_pointers, temp1);
+        }
+        deckswabber_entity_ai_sub_set_in_enemymap();
+        enemies_timer[x] = 48;
+    } else {
+        enemies_timer[x] = temp0;
+    }
+}
+
+void deckswabber_entity_ai_always_target_player(void) {
+    temp0 = enemies_extra[x];
+    if (temp0) {
+        --temp0;
+        enemies_extra[x] = temp0;
+    }
+    temp0 = enemies_timer[x];
+    --temp0;
+    if (temp0 == 0) {
+        deckswabber_entity_ai_sub_clear_from_enemymap();
+        deckswabber_entity_ai_sub_target(); // Go towards the player
+        deckswabber_entity_ai_sub_set_in_enemymap();
+        enemies_timer[x] = 48;
+    } else {
+        enemies_timer[x] = temp0;
+    }
+}
+
 
 void deckswabber_entity_ai_sub_target(void) {
     temp0 = enemies_x[x] - player_tile_x;
@@ -1251,19 +1299,7 @@ void deckswabber_entity_ai_sub_go_up(void) {
     temp_x = enemies_x[x];
     deckswabber_entity_ai_sub_is_target_space_blocked();
     if (temp1 == 0) {
-        enemies_y[x] = temp_y; // Move (and update depthmap)
-        temp0 = deckswabber_entity_index_to_depthmask[x];
-        
-        temp1 = depthmap[temp_y];
-        temp1 |= temp0;
-        depthmap[temp_y] = temp1;
-
-        ++temp_y;
-
-        temp1 = depthmap[temp_y];
-        temp1 &= ~temp0;
-        depthmap[temp_y] = temp1;
-
+        enemies_y[x] = temp_y;
         enemies_extra[x] = 11;
     }
 }
@@ -1277,19 +1313,7 @@ void deckswabber_entity_ai_sub_go_down(void) {
     temp_x = enemies_x[x];
     deckswabber_entity_ai_sub_is_target_space_blocked();
     if (temp1 == 0) {
-        enemies_y[x] = temp_y; // Move (and update depthmap)
-        temp0 = deckswabber_entity_index_to_depthmask[x];
-
-        temp1 = depthmap[temp_y];
-        temp1 |= temp0;
-        depthmap[temp_y] = temp1;
-
-        --temp_y;
-
-        temp1 = depthmap[temp_y];
-        temp1 &= ~temp0;
-        depthmap[temp_y] = temp1;
-
+        enemies_y[x] = temp_y;
         enemies_extra[x] = 11;
     }
 }
