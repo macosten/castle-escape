@@ -71,6 +71,9 @@ ZEROPAGE_EXTERN(unsigned char, eject_R);
 ZEROPAGE_EXTERN(unsigned char, eject_U);
 #define round eject_U
 
+ZEROPAGE_EXTERN(unsigned char, eject_D);
+#define repeating_sfx_timer eject_D
+
 ZEROPAGE_EXTERN(unsigned char, level_index);
 #define level level_index
 
@@ -160,6 +163,24 @@ void deckswabber_player_movement(void);
 
 void deckswabber_draw_sprites(void);
 void deckswabber_draw_player(void);
+void deckswabber_draw_entity_curtain(void);
+void deckswabber_draw_entity_explosion(void);
+void deckswabber_draw_entity_bronze_coin(void);
+void deckswabber_draw_entity_silver_coin(void);
+void deckswabber_draw_entity_gold_coin(void);
+void deckswabber_draw_entity_bronze_chest(void);
+void deckswabber_draw_entity_silver_chest(void);
+void deckswabber_draw_entity_gold_chest(void);
+void deckswabber_draw_entity_sword(void);
+void deckswabber_draw_entity_flag_half(void);
+void deckswabber_draw_entity_flag_full(void);
+void deckswabber_draw_entity_dirt_bomb_plus(void);
+void deckswabber_draw_entity_dirt_bomb_square(void);
+void deckswabber_draw_entity_cannon(void);
+void deckswabber_draw_entity_mynci(void);
+void deckswabber_draw_entity_techo(void);
+void deckswabber_draw_entity_captain_dread(void);
+
 void deckswabber_redraw_player_tile(void);
 // Note: temp_x and temp_y should be set to the values to update the byte for, in deckswabber tile coordinates.
 void deckswabber_update_attribute_byte(void);
@@ -211,6 +232,8 @@ void deckswabber_collide_with_half_flag(void);
 void deckswabber_collide_with_full_flag(void);
 void deckswabber_collide_with_harmful(void);
 void deckswabber_collide_with_fatal(void);
+
+void deckswabber_random_entity_spawn_coords(void);
 
 // Lookup table for behavior when landing on a tile. Assume that player_tile_x and player_tile_y is correctly set when called.
 const void (* const tile_increment_functions[])(void) = {
@@ -351,6 +374,7 @@ void begin_deckswabber_level(void) {
     }
 
     transition_timer = 120;
+    repeating_sfx_timer = 0;
     
     // Clear the rest of relevant memory
     memfill(enemymap, 0, 64 + 8); // enemymap and depthmap
@@ -438,11 +462,13 @@ void game_deckswabber(void) {
             game_frame_timer = 60;
         }
 
+        if (repeating_sfx_timer) { --repeating_sfx_timer; }
+
         // If too many entities on screen, skip creation
 
         // Entity creation:
         if (hostile_entity_timer == 0) {
-            for (x = 0; x <= DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++x) {
+            for (x = 0; x < DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++x) {
                 if (!IS_ENEMY_ACTIVE(x)) { break; }
             }
             if (DECKSWABBER_CAN_MAKE_HOSTILE_ENTITY && x < DECKSWABBER_MAX_ONSCREEN_ENTITIES) {
@@ -487,10 +513,9 @@ void game_deckswabber(void) {
                     }
                     enemies_type[x] = DECKSWABBER_ENTITY_ID_CURTAIN;
                     enemies_timer[x] = 32;
-                    temp0 = rand8() & 0b111;
-                    enemies_x[x] = temp0;
-                    temp0 = rand8() & 0b111;
-                    enemies_y[x] = temp0;
+                    deckswabber_random_entity_spawn_coords();
+                    enemies_x[x] = temp_x;
+                    enemies_y[x] = temp_y;
                     ACTIVATE_ENEMY(x);
                     deckswabber_entity_ai_sub_set_in_enemymap();
                 }
@@ -502,7 +527,7 @@ void game_deckswabber(void) {
 
         // Every 6th second, 25% chance to spawn a friendly entity
         if (passive_entity_timer == 0) {
-            for (x = 0; x <= DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++x) {
+            for (x = 0; x < DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++x) {
                 if (!IS_ENEMY_ACTIVE(x)) { break; }
             }
             if (DECKSWABBER_CAN_MAKE_PASSIVE_ENTITY) {
@@ -537,10 +562,9 @@ void game_deckswabber(void) {
                     enemies_aggression[x] = 0;
                     enemies_type[x] = DECKSWABBER_ENTITY_ID_CURTAIN;
                     enemies_timer[x] = 32;
-                    temp0 = rand8() & 0b111;
-                    enemies_x[x] = temp0;
-                    temp0 = rand8() & 0b111;
-                    enemies_y[x] = temp0;
+                    deckswabber_random_entity_spawn_coords();
+                    enemies_x[x] = temp_x;
+                    enemies_y[x] = temp_y;
                     ACTIVATE_ENEMY(x);
                     deckswabber_entity_ai_sub_set_in_enemymap();
                 }
@@ -693,6 +717,26 @@ void deckswabber_update_health_bar(void) {
     multi_vram_buffer_horz_indirect_ptr(temppointer, 6, NTADR_A(6, 5));
 }
 
+const void (* const deckswabber_entity_draw_fns[])(void) = {
+    deckswabber_draw_entity_curtain,
+    deckswabber_draw_entity_explosion,
+    deckswabber_draw_entity_bronze_coin,
+    deckswabber_draw_entity_silver_coin,
+    deckswabber_draw_entity_gold_coin,
+    deckswabber_draw_entity_bronze_chest,
+    deckswabber_draw_entity_silver_chest,
+    deckswabber_draw_entity_gold_chest,
+    deckswabber_draw_entity_sword,
+    deckswabber_draw_entity_flag_half,
+    deckswabber_draw_entity_flag_full,
+    deckswabber_draw_entity_dirt_bomb_plus,
+    deckswabber_draw_entity_dirt_bomb_square,
+    deckswabber_draw_entity_cannon,
+    deckswabber_draw_entity_mynci,
+    deckswabber_draw_entity_techo,
+    deckswabber_draw_entity_captain_dread,
+};
+
 void deckswabber_draw_sprites(void) {
     set_prg_bank(DECKSWABBER_METASPRITE_BANK);
     oam_clear();
@@ -714,16 +758,17 @@ void deckswabber_draw_sprites(void) {
                 temp_x = 64 + (enemies_x[x] << 4);
                 temp_y = 54 + (enemies_y[x] << 4);
                 temp1 = enemies_type[x];
-                AsmSet2ByteFromPtrAtIndexVar(temppointer, deckswabber_entity_id_to_animation_ptr, temp1);
-                if (temp1 == DECKSWABBER_ENTITY_ID_CURTAIN) {
-                    temp2 = enemies_timer[x] >> 3;
-                } else if (temp1 == DECKSWABBER_ENTITY_ID_EXPLOSION) {
-                    temp2 = (enemies_timer[x] >> 1) & 0b11;
-                } else {
-                    temp2 = enemies_extra[x] >> 2;
-                }
-                AsmSet2ByteFromMutPtrWithOffset(temppointer1, temppointer, temp2);
-                oam_meta_spr(temp_x, temp_y, temppointer1);
+                // AsmSet2ByteFromPtrAtIndexVar(temppointer, deckswabber_entity_id_to_animation_ptr, temp1);
+                // if (temp1 == DECKSWABBER_ENTITY_ID_CURTAIN) {
+                //     temp2 = enemies_timer[x] >> 3;
+                // } else if (temp1 == DECKSWABBER_ENTITY_ID_EXPLOSION) {
+                //     temp2 = (enemies_timer[x] >> 1) & 0b11;
+                // } else {
+                //     temp2 = enemies_extra[x] >> 2;
+                // }
+                // AsmSet2ByteFromMutPtrWithOffset(temppointer1, temppointer, temp2);
+                AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_entity_draw_fns, temp1);
+                oam_meta_spr(temp_x, temp_y, temppointer);
             }
         }
     }
@@ -740,6 +785,91 @@ void deckswabber_draw_player(void) {
     temp0 = 64 + (player_tile_x << 4);
     temp1 = 54 + (player_tile_y << 4);
     oam_meta_spr(temp0, temp1, temppointer);
+}
+
+void deckswabber_draw_entity_curtain(void) {
+    temp2 = enemies_timer[x] >> 3;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, entity_intro_curtain_animation, temp2);
+}
+
+void deckswabber_draw_entity_explosion(void) {
+    temp2 = (enemies_timer[x] >> 1) & 0b11;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, deckswabber_explosion_animation, temp2);
+}
+
+void deckswabber_draw_entity_bronze_coin(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, coin_bronze_jump_animation, temp2);
+}
+
+void deckswabber_draw_entity_silver_coin(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, coin_silver_jump_animation, temp2);
+}
+
+void deckswabber_draw_entity_gold_coin(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, coin_gold_jump_animation, temp2);
+}
+
+void deckswabber_draw_entity_bronze_chest(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, chest_bronze_jump_animation, temp2);
+}
+
+void deckswabber_draw_entity_silver_chest(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, chest_silver_jump_animation, temp2);
+}
+
+void deckswabber_draw_entity_gold_chest(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, chest_gold_jump_animation, temp2);
+}
+
+void deckswabber_draw_entity_sword(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, sword_jump_animation, temp2);
+}
+
+void deckswabber_draw_entity_flag_half(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, flag_half_jump_animation, temp2);
+}
+
+void deckswabber_draw_entity_flag_full(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, flag_full_jump_animation, temp2);
+}
+
+void deckswabber_draw_entity_dirt_bomb_plus(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, dirt_bomb_plus_jump_animation, temp2);
+}
+
+void deckswabber_draw_entity_dirt_bomb_square(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, dirt_bomb_square_jump_animation, temp2);
+}
+
+void deckswabber_draw_entity_cannon(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, cannon_jump_animation, temp2);
+}
+
+void deckswabber_draw_entity_mynci(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, mynci_jump_animation, temp2);
+}
+
+void deckswabber_draw_entity_techo(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, techo_jump_animation, temp2);
+}
+
+void deckswabber_draw_entity_captain_dread(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, captain_dread_jump_animation, temp2);
 }
 
 // Tile increment functions:
@@ -1024,27 +1154,23 @@ void deckswabber_entity_movement(void) {
         }
     }
 
-    // Check for any swords colliding with other entities.
     for (x = 0; x < DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++x) {
         // If this is a sword and there's an enemy where we're about to land, turn it into an explosion and deactivate ourselves
         if (enemies_type[x] == DECKSWABBER_ENTITY_ID_SWORD) {
             temp_x = enemies_x[x];
             temp_y = enemies_y[x];
-            DeckswabberGetTileIndex(temp4, temp_x, temp_y);
-            temp0 = enemymap[temp0]; 
-            if (temp0) { // If there's another enemy here...
-                for (temp1 = 0; temp1 < DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++temp1) { // Check for the first hostile one
-                    if (enemies_type[temp1] >= DECKSWABBER_ENTITY_ID_CANNON &&
-                        temp_x == enemies_x[temp1] && 
-                        temp_y == enemies_y[temp1]) {
-                        enemies_type[temp1] = DECKSWABBER_ENTITY_ID_EXPLOSION;
-                        enemies_timer[temp1] = 60;
-                        sfx_play(SFX_BOZOBONK, 1);
-                        score += 100;
-                        DECKSWABBER_SET_SCORE_CHANGED_THIS_FRAME();
-                        deckswabber_entity_kill();
-                        break;
-                    }
+            DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+            for (temp1 = 0; temp1 < DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++temp1) { // Check for the first hostile one
+                if (enemies_type[temp1] >= DECKSWABBER_ENTITY_ID_CANNON &&
+                    temp_x == enemies_x[temp1] && 
+                    temp_y == enemies_y[temp1]) {
+                    enemies_type[temp1] = DECKSWABBER_ENTITY_ID_EXPLOSION;
+                    enemies_timer[temp1] = 60;
+                    sfx_play(SFX_BOZOBONK, 1);
+                    score += 100;
+                    DECKSWABBER_SET_SCORE_CHANGED_THIS_FRAME();
+                    deckswabber_entity_kill();
+                    break;
                 }
             }
         }
@@ -1264,7 +1390,7 @@ void deckswabber_player_collision(void) {
 void deckswabber_entity_kill(void) {
     deckswabber_entity_ai_sub_clear_from_enemymap();
     DEACTIVATE_ENEMY(x);
-    enemies_type[x] = DECKSWABBER_ENTITY_ID_CURTAIN;
+    // enemies_type[x] = DECKSWABBER_ENTITY_ID_CURTAIN;
 }
 
 void deckswabber_collide_with_points(void) {
@@ -1297,13 +1423,27 @@ void deckswabber_collide_with_full_flag(void) {
 void deckswabber_collide_with_harmful(void) {
     energy -= 2;
     DECKSWABBER_SET_HP_CHANGED_THIS_FRAME();
-    // sfx_play(deckswabber_ouch);
+    if (repeating_sfx_timer == 0) {
+        sfx_play(SFX_SMACK, 1);
+        repeating_sfx_timer = 10;
+    }
 }
 
 void deckswabber_collide_with_fatal(void) {
     energy = 0;
     DECKSWABBER_SET_HP_CHANGED_THIS_FRAME();
     sfx_play(SFX_BOZOBONK, 1);
+}
+
+void deckswabber_random_entity_spawn_coords(void) {
+    //temp1 = 0;
+    do {
+        temp_x = rand8() & 0b111;
+        temp_y = rand8() & 0b111;
+        DeckswabberGetTileIndex(temp0, temp_x, temp_y);
+        ++temp1;
+        //if (temp1 > 20) { break; }
+    } while (enemymap[temp0] || tile_typemap[temp0] >= DECKSWABBER_WATER_HOLE_ID);
 }
 
 #pragma code-name(pop)
