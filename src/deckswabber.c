@@ -530,7 +530,7 @@ void game_deckswabber(void) {
             for (x = 0; x < DECKSWABBER_MAX_ONSCREEN_ENTITIES; ++x) {
                 if (!IS_ENEMY_ACTIVE(x)) { break; }
             }
-            if (DECKSWABBER_CAN_MAKE_PASSIVE_ENTITY) {
+            if (DECKSWABBER_CAN_MAKE_PASSIVE_ENTITY && x < DECKSWABBER_MAX_ONSCREEN_ENTITIES) {
                 DECKSWABBER_RESET_CAN_MAKE_PASSIVE_ENTITY();
                 if ((rand8() & 0b11) == 0) { // 25%
                     // Create a passive entity
@@ -758,15 +758,6 @@ void deckswabber_draw_sprites(void) {
                 temp_x = 64 + (enemies_x[x] << 4);
                 temp_y = 54 + (enemies_y[x] << 4);
                 temp1 = enemies_type[x];
-                // AsmSet2ByteFromPtrAtIndexVar(temppointer, deckswabber_entity_id_to_animation_ptr, temp1);
-                // if (temp1 == DECKSWABBER_ENTITY_ID_CURTAIN) {
-                //     temp2 = enemies_timer[x] >> 3;
-                // } else if (temp1 == DECKSWABBER_ENTITY_ID_EXPLOSION) {
-                //     temp2 = (enemies_timer[x] >> 1) & 0b11;
-                // } else {
-                //     temp2 = enemies_extra[x] >> 2;
-                // }
-                // AsmSet2ByteFromMutPtrWithOffset(temppointer1, temppointer, temp2);
                 AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_entity_draw_fns, temp1);
                 oam_meta_spr(temp_x, temp_y, temppointer);
             }
