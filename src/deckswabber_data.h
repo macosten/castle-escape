@@ -831,6 +831,43 @@ const unsigned char deckswabber_original_level_pack_round_bounds[] = {
     4, 9,
     5, 10,
     5, 10, // 8 rounds originally
+    // ... Add here for rounds 9-14
+};
+
+// What's the highest-value (number) tile this round?
+const unsigned char deckswabber_round_highest_tile_value[] = {
+    1,
+    1,
+    2,
+    2,
+    3,
+    3,
+    4,
+    4,
+    5,
+    5,
+    6,
+    6,
+    7,
+    7,
+};
+
+// When you jump on the "goal" tile type, what does it turn into?
+const unsigned char deckswabber_round_overflow_tile_value[] = {
+    1,
+    0,
+    1,
+    0,
+    2,
+    0,
+    3,
+    0,
+    4,
+    0,
+    5,
+    0,
+    6,
+    0,
 };
 
 const unsigned char * const * const deckswabber_level_data_db[] = {

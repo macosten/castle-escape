@@ -182,6 +182,7 @@ void deckswabber_draw_entity_techo(void);
 void deckswabber_draw_entity_captain_dread(void);
 
 void deckswabber_redraw_player_tile(void);
+void deckswabber_redraw_tile_no_attr_update(void);
 // Note: temp_x and temp_y should be set to the values to update the byte for, in deckswabber tile coordinates.
 void deckswabber_update_attribute_byte(void);
 void deckswabber_update_score(void);
@@ -194,19 +195,7 @@ void deckswabber_draw_goal_hud_sub_write_ending_backarrow(void);
 void deckswabber_draw_goal_hud_sub_write_mt(void);
 
 void deckswabber_tile_increment_fn_original_round1(void);
-void deckswabber_tile_increment_fn_original_round2(void);
-void deckswabber_tile_increment_fn_original_round3(void);
-void deckswabber_tile_increment_fn_original_round4(void);
-void deckswabber_tile_increment_fn_original_round5(void);
-void deckswabber_tile_increment_fn_original_round6(void);
-void deckswabber_tile_increment_fn_original_round7(void);
-void deckswabber_tile_increment_fn_original_round8(void);
-void deckswabber_tile_increment_fn_bonus_round9(void);
-void deckswabber_tile_increment_fn_bonus_round10(void);
-void deckswabber_tile_increment_fn_bonus_round11(void);
-void deckswabber_tile_increment_fn_bonus_round12(void);
-void deckswabber_tile_increment_fn_bonus_round13(void);
-void deckswabber_tile_increment_fn_bonus_round14(void);
+void deckswabber_tile_increment_fn_default(void);
 
 void deckswabber_tile_increment_fn_sub_upperlimit_rollover(void);
 
@@ -245,19 +234,19 @@ void deckswabber_random_entity_spawn_coords(void);
 // Lookup table for behavior when landing on a tile. Assume that player_tile_x and player_tile_y is correctly set when called.
 const void (* const tile_increment_functions[])(void) = {
     deckswabber_tile_increment_fn_original_round1,
-    deckswabber_tile_increment_fn_original_round2,
-    deckswabber_tile_increment_fn_original_round3,
-    deckswabber_tile_increment_fn_original_round4,
-    deckswabber_tile_increment_fn_original_round5,
-    deckswabber_tile_increment_fn_original_round6,
-    deckswabber_tile_increment_fn_original_round7,
-    deckswabber_tile_increment_fn_original_round8,
-    deckswabber_tile_increment_fn_bonus_round9,
-    deckswabber_tile_increment_fn_bonus_round10,
-    deckswabber_tile_increment_fn_bonus_round11,
-    deckswabber_tile_increment_fn_bonus_round12,
-    deckswabber_tile_increment_fn_bonus_round13,
-    deckswabber_tile_increment_fn_bonus_round14,
+    deckswabber_tile_increment_fn_default,
+    deckswabber_tile_increment_fn_default,
+    deckswabber_tile_increment_fn_default,
+    deckswabber_tile_increment_fn_default,
+    deckswabber_tile_increment_fn_default,
+    deckswabber_tile_increment_fn_default,
+    deckswabber_tile_increment_fn_default,
+    deckswabber_tile_increment_fn_default,
+    deckswabber_tile_increment_fn_default,
+    deckswabber_tile_increment_fn_default,
+    deckswabber_tile_increment_fn_default,
+    deckswabber_tile_increment_fn_default,
+    deckswabber_tile_increment_fn_default,
 };
 
 void begin_deckswabber(void) {
@@ -884,83 +873,12 @@ void deckswabber_tile_increment_fn_original_round1(void) {
 }
 
 // We can make these a bit more generic at some point if we need to reclaim the ROM space...
-void deckswabber_tile_increment_fn_original_round2(void) {
-    temp3 = 1;
-    temp4 = 0;
+void deckswabber_tile_increment_fn_default(void) {
+    temp3 = deckswabber_round_highest_tile_value[round];
+    temp4 = deckswabber_round_overflow_tile_value[round];
     deckswabber_tile_increment_fn_sub_upperlimit_rollover();
 }
 
-void deckswabber_tile_increment_fn_original_round3(void) {
-    temp3 = 2;
-    temp4 = 1;
-    deckswabber_tile_increment_fn_sub_upperlimit_rollover();
-}
-
-void deckswabber_tile_increment_fn_original_round4(void) {
-    temp3 = 2;
-    temp4 = 0;
-    deckswabber_tile_increment_fn_sub_upperlimit_rollover();
-}
-
-void deckswabber_tile_increment_fn_original_round5(void) {
-    temp3 = 3;
-    temp4 = 2;
-    deckswabber_tile_increment_fn_sub_upperlimit_rollover();
-}
-
-void deckswabber_tile_increment_fn_original_round6(void) {
-    temp3 = 3;
-    temp4 = 0;
-    deckswabber_tile_increment_fn_sub_upperlimit_rollover();
-}
-
-void deckswabber_tile_increment_fn_original_round7(void) {
-    temp3 = 4;
-    temp4 = 3;
-    deckswabber_tile_increment_fn_sub_upperlimit_rollover();
-}
-
-void deckswabber_tile_increment_fn_original_round8(void) {
-    temp3 = 4;
-    temp4 = 0;
-    deckswabber_tile_increment_fn_sub_upperlimit_rollover();
-}
-
-void deckswabber_tile_increment_fn_bonus_round9(void) {
-    temp3 = 5;
-    temp4 = 4;
-    deckswabber_tile_increment_fn_sub_upperlimit_rollover();
-}
-
-void deckswabber_tile_increment_fn_bonus_round10(void) {
-    temp3 = 5;
-    temp4 = 0;
-    deckswabber_tile_increment_fn_sub_upperlimit_rollover();
-}
-
-void deckswabber_tile_increment_fn_bonus_round11(void) {
-    temp3 = 6;
-    temp4 = 5;
-    deckswabber_tile_increment_fn_sub_upperlimit_rollover();
-}
-
-void deckswabber_tile_increment_fn_bonus_round12(void) {
-    temp3 = 6;
-    temp4 = 0;
-    deckswabber_tile_increment_fn_sub_upperlimit_rollover();
-}
-
-void deckswabber_tile_increment_fn_bonus_round13(void) {
-    temp3 = 7;
-    temp4 = 6;
-    deckswabber_tile_increment_fn_sub_upperlimit_rollover();
-}
-
-void deckswabber_tile_increment_fn_bonus_round14(void) {
-    temp3 = 7;
-    temp4 = 0;
-    deckswabber_tile_increment_fn_sub_upperlimit_rollover();
-}
 
 void deckswabber_tile_increment_fn_sub_upperlimit_rollover(void) {
     DeckswabberGetTileIndex(temp0, temp_x, temp_y);
@@ -976,13 +894,17 @@ void deckswabber_tile_increment_fn_sub_upperlimit_rollover(void) {
 }
 
 void deckswabber_redraw_player_tile(void) {
-    temp2 = 8 + (player_tile_x << 1);
-    temp3 = 8 + (player_tile_y << 1);
-    address = NTADR_A(temp2, temp3);
-    buffer_1_mt(address, temp1);
     temp_x = player_tile_x;
     temp_y = player_tile_y;
+    deckswabber_redraw_tile_no_attr_update();
     deckswabber_update_attribute_byte();
+}
+
+void deckswabber_redraw_tile_no_attr_update(void) {
+    temp2 = 8 + (temp_x << 1);
+    temp3 = 8 + (temp_y << 1);
+    address = NTADR_A(temp2, temp3);
+    buffer_1_mt(address, temp1);
 }
 
 void deckswabber_update_attribute_byte(void) {
@@ -1185,18 +1107,25 @@ void deckswabber_entity_selfdestruct_default(void) {
 }
 
 void deckswabber_entity_selfdestruct_dirt_bomb_plus(void) {
-    if (temp5 < 82) {
+    if (temp5 < 82 && !DECKSWABBER_DIRTBOMB_EXPLODED_THIS_FRAME) {
+        DECKSWABBER_SET_DIRTBOMB_EXPLODED_THIS_FRAME();
         enemies_type[x] = DECKSWABBER_ENTITY_ID_EXPLOSION;
         enemies_timer[x] = 60;
         sfx_play(SFX_BOZOBONK, 1);
+        // Dirty some of the surrounding tiles
+        
     }
 }
 
 void deckswabber_entity_selfdestruct_dirt_bomb_square(void) {
-    if (temp5 < 82) {
+    if (temp5 < 82 && !DECKSWABBER_DIRTBOMB_EXPLODED_THIS_FRAME) {
+        DECKSWABBER_SET_DIRTBOMB_EXPLODED_THIS_FRAME();
         enemies_type[x] = DECKSWABBER_ENTITY_ID_EXPLOSION;
         enemies_timer[x] = 60;
         sfx_play(SFX_BOZOBONK, 1);
+        // Dirty some of the surrounding tiles
+        // temp_x 
+
     }
 }
 
@@ -1509,7 +1438,7 @@ void deckswabber_random_entity_spawn_coords(void) {
         temp_x = rand8() & 0b111;
         temp_y = rand8() & 0b111;
         DeckswabberGetTileIndex(temp0, temp_x, temp_y);
-        ++temp1;
+        //++temp1;
         //if (temp1 > 20) { break; }
     } while (enemymap[temp0] || tile_typemap[temp0] >= DECKSWABBER_WATER_HOLE_ID);
 }
