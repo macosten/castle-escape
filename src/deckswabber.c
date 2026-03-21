@@ -189,6 +189,7 @@ void deckswabber_update_score(void);
 void deckswabber_update_game_time(void);
 void deckswabber_update_tiles_remaining(void);
 void deckswabber_write_finished_message_and_calc_bonus(void);
+void deckswabber_write_oops_message(void);
 void deckswabber_update_health_bar(void);
 void deckswabber_draw_goal_hud(void);
 void deckswabber_draw_goal_hud_sub_write_ending_backarrow(void);
@@ -371,7 +372,7 @@ void begin_deckswabber_level(void) {
         }
     }
 
-    transition_timer = 120;
+    transition_timer = DECKSWABBER_SCREEN_ANTIBOUNCE_FRAMES;
     repeating_sfx_timer = 0;
     
     // Clear the rest of relevant memory
@@ -445,10 +446,15 @@ void game_deckswabber(void) {
     // If not paused:
     set_prg_bank(DECKSWABBER_CODE_BANK);
 
-    if (tiles_remaining > 0) {
+    if (tiles_remaining > 0 && energy > 0) {
         deckswabber_player_movement();
         deckswabber_entity_movement();
         deckswabber_player_collision();
+
+        if (energy == 0) {
+            sfx_play(SFX_BOZOBONK, 1);
+            player_frame_timer = 60;
+        }
 
         --game_frame_timer;
         if (game_frame_timer == 0) {
@@ -574,10 +580,22 @@ void game_deckswabber(void) {
             passive_entity_timer = 6;
         }
 
-    } else {
-        if (transition_timer == 120) {
+    } else if (energy == 0) { // Revert score to previous score
+        if (transition_timer == DECKSWABBER_SCREEN_ANTIBOUNCE_FRAMES) {
+            deckswabber_write_oops_message();
+            score = previous_score;
+            DECKSWABBER_SET_SCORE_CHANGED_THIS_FRAME();
+        }
+        if (transition_timer) {
+            --transition_timer;
+        } else if (pad1_new) {
+            begin_deckswabber_level(); // Restart current level
+            return;
+        }
+    } else { // Level complete
+        if (transition_timer == DECKSWABBER_SCREEN_ANTIBOUNCE_FRAMES) {
             deckswabber_write_finished_message_and_calc_bonus();
-            deckswabber_update_score();
+            DECKSWABBER_SET_SCORE_CHANGED_THIS_FRAME();
         }
         if (transition_timer) {
             --transition_timer;
@@ -720,11 +738,15 @@ void deckswabber_write_finished_message_and_calc_bonus(void) {
     temp5 += round;
 
     score += temp5;
-    SET_SCORE_CHANGED_THIS_FRAME();
 
     convert_to_decimal(temp5);
     igloo_write_decimal_in_message_sub(); // Note: this writes to cmap+64. It shouldn't matter by the time we call this, though.
     multi_vram_buffer_horz(chrbuffer, temp0, NTADR_A(24, 5));
+}
+
+void deckswabber_write_oops_message(void) {
+    multi_vram_buffer_horz(deckswabber_oops, 10, NTADR_A(17, 4));
+    multi_vram_buffer_horz(deckswabber_tryagain, 10, NTADR_A(17, 5));
 }
 
 void deckswabber_update_health_bar(void) {
@@ -798,10 +820,16 @@ void deckswabber_draw_player(void) {
         --player_frame_timer;
     }
     temp0 = player_frame_timer >> 2;
-    AsmSet2ByteFromPtrAtIndexVar(temppointer, blumaroo_jump_animation, temp0);
-    temp0 = 64 + (player_tile_x << 4);
-    temp1 = 54 + (player_tile_y << 4);
-    oam_meta_spr(temp0, temp1, temppointer);
+    temp_x = 64 + (player_tile_x << 4);
+    temp_y = 54 + (player_tile_y << 4);
+    if (energy > 0) {
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, blumaroo_jump_animation, temp0);
+        oam_meta_spr(temp_x, temp_y, temppointer);
+    } else if (player_frame_timer) {
+        temp0 &= 0b11;
+        AsmSet2ByteFromPtrAtIndexVar(temppointer, deckswabber_explosion_animation, temp0);
+        oam_meta_spr(temp_x, temp_y, temppointer);
+    }
 }
 
 void deckswabber_draw_entity_curtain(void) {
@@ -1340,7 +1368,6 @@ void deckswabber_entity_ai_always_target_player(void) {
     }
 }
 
-
 void deckswabber_entity_ai_sub_target(void) {
     temp0 = enemies_x[x] - player_tile_x;
     // temp0 = abs(temp0);
@@ -1530,7 +1557,6 @@ void deckswabber_collide_with_harmful(void) {
 void deckswabber_collide_with_fatal(void) {
     energy = 0;
     DECKSWABBER_SET_HP_CHANGED_THIS_FRAME();
-    sfx_play(SFX_BOZOBONK, 1);
 }
 
 void deckswabber_random_entity_spawn_coords(void) {

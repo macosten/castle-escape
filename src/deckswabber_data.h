@@ -8,6 +8,8 @@ const char deckswabber_tiles_remaining[] = "Tiles Left";
 const char deckswabber_level_finished[] = "Finished!";
 const char deckswabber_bonus[] = "Bonus:";
 const char deckswabber_goal[] = "Goal";
+const char deckswabber_oops[] = "Oops...\0\0";
+const char deckswabber_tryagain[] = "Try again!";
 
 const unsigned char blumaroo_idle[] = {
     0, 0, 0x00, 0,
