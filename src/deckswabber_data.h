@@ -477,6 +477,30 @@ const unsigned char cannon_jump2[] = {
     128
 };
 
+const unsigned char zeke_idle[] = {
+    0, 7, 0x9A, 1,
+    8, 7, 0x9B, 1,
+    0,15, 0xAA, 1,
+    8,15, 0xAB, 1,
+    128
+};
+
+const unsigned char zeke_jump1[] = {
+    0, 3, 0x56, 1,
+    8, 3, 0x57, 1,
+    0,11, 0x66, 1,
+    8,11, 0x67, 1,
+    128
+};
+
+const unsigned char zeke_jump2[] = {
+    0, 6, 0x58, 1,
+    8, 6, 0x59, 1,
+    0,14, 0x68, 1,
+    8,14, 0x69, 1,
+    128
+};
+
 // Reverse order animations; they'll start with some kind of counter that will decrement
 const unsigned char * const blumaroo_jump_animation[] = {
     blumaroo_idle,
@@ -580,6 +604,12 @@ const unsigned char * const flag_full_jump_animation[] = {
     flag_full_idle,
     flag_full_jump2,
     flag_full_jump1,
+};
+
+const unsigned char * const zeke_full_jump_animation[] = {
+    zeke_idle,
+    zeke_jump2,
+    zeke_jump1,
 };
 
 const unsigned char deckswabber_explosion1[] = {
