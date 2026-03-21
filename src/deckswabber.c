@@ -188,7 +188,7 @@ void deckswabber_update_attribute_byte(void);
 void deckswabber_update_score(void);
 void deckswabber_update_game_time(void);
 void deckswabber_update_tiles_remaining(void);
-void deckswabber_write_finished_message(void);
+void deckswabber_write_finished_message_and_calc_bonus(void);
 void deckswabber_update_health_bar(void);
 void deckswabber_draw_goal_hud(void);
 void deckswabber_draw_goal_hud_sub_write_ending_backarrow(void);
@@ -576,7 +576,8 @@ void game_deckswabber(void) {
 
     } else {
         if (transition_timer == 120) {
-            deckswabber_write_finished_message();
+            deckswabber_write_finished_message_and_calc_bonus();
+            deckswabber_update_score();
         }
         if (transition_timer) {
             --transition_timer;
@@ -696,12 +697,32 @@ void deckswabber_update_tiles_remaining(void) {
     multi_vram_buffer_horz_indirect_ptr(score_string_last2, 2, NTADR_A(21, 5));
 }
 
-void deckswabber_write_finished_message(void) {
+void deckswabber_write_finished_message_and_calc_bonus(void) {
     multi_vram_buffer_horz(deckswabber_level_finished, 10, NTADR_A(17, 4));
     multi_vram_buffer_horz(deckswabber_bonus, 6, NTADR_A(17, 5));
 
     // ...calculate bonus here
-    convert_to_decimal(0); // Todo - proper bonus calculation
+    temp5 = game_seconds_timer; // Bonus amount
+    
+    // round times 100 times 3 -> round times 128 times 2 + round times 128
+    temp6 = (round << 8);
+    temp6 += (round << 7);
+    
+    while (temp5) {
+        temp6 >>= 1;
+        temp5 >>= 1;
+    }
+    temp6 = MIN(temp6, 15); // Max 15 time bonus
+
+    temp5 = 10;
+    temp5 += (energy >> 4); // Max 12 HP bonus
+    temp5 += temp6;
+    temp5 += round;
+
+    score += temp5;
+    SET_SCORE_CHANGED_THIS_FRAME();
+
+    convert_to_decimal(temp5);
     igloo_write_decimal_in_message_sub(); // Note: this writes to cmap+64. It shouldn't matter by the time we call this, though.
     multi_vram_buffer_horz(chrbuffer, temp0, NTADR_A(24, 5));
 }
