@@ -1,4 +1,5 @@
 #include "checksum.h"
+#include "deckswabber_constants.h"
 
 #include "lib/nesdoug.h"
 #include "lib/neslib.h"
@@ -18,6 +19,7 @@ extern unsigned int hasee_2p_high_score;
 extern unsigned int igloo_1p_high_score;
 extern unsigned int deckswabber_1p_high_score;
 
+extern unsigned char deckswabber_furthest_rounds[];
 extern unsigned char settings_memory[];
 
 // Our checksum will basically just be the sum of every saved value in memory, disregarding overflow.
@@ -36,6 +38,9 @@ void clear_saved_data(void) {
         ((unsigned char *)level_high_scores + 256)[temp0] = 0;
         if (temp0 == 255) { break; }
     }
+    for (temp0 = 0; temp0 < DECKSWABBER_LEVEL_PACK_COUNT; ++temp0) {
+        deckswabber_furthest_rounds[temp0] = 0;
+    }
     settings_memory[0] = 0;
 }
 
@@ -48,6 +53,9 @@ void calculate_checksum(void) {
     for (temp0 = 0; ; ++temp0) {
         temp5 += level_high_scores[temp0];
         if (temp0 == 255) { break; }
+    }
+    for (temp0 = 0; temp0 < DECKSWABBER_LEVEL_PACK_COUNT; ++temp0) {
+        temp5 += deckswabber_furthest_rounds[temp0];
     }
     temp5 += settings_memory[0];
 }

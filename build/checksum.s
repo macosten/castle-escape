@@ -23,6 +23,7 @@
 	.import		_hasee_2p_high_score
 	.import		_igloo_1p_high_score
 	.import		_deckswabber_1p_high_score
+	.import		_deckswabber_furthest_rounds
 	.import		_settings_memory
 
 ; ---------------------------------------------------------------
@@ -91,12 +92,12 @@
 ; temp5 += level_high_scores[temp0];
 ;
 	tax
-L004C:	lda     _temp0
+L0064:	lda     _temp0
 	asl     a
-	bcc     L004B
+	bcc     L0063
 	inx
 	clc
-L004B:	adc     #<(_level_high_scores)
+L0063:	adc     #<(_level_high_scores)
 	sta     ptr1
 	txa
 	adc     #>(_level_high_scores)
@@ -117,21 +118,44 @@ L004B:	adc     #<(_level_high_scores)
 ;
 	lda     _temp0
 	cmp     #$FF
-	beq     L004D
+	beq     L0065
 ;
 ; for (temp0 = 0; ; ++temp0) {
 ;
 	ldx     #$00
 	inc     _temp0
-	jmp     L004C
+	jmp     L0064
 ;
-; temp5 += settings_memory[0];
+; for (temp0 = 0; temp0 < DECKSWABBER_LEVEL_PACK_COUNT; ++temp0) {
 ;
-L004D:	lda     _settings_memory
+L0065:	sty     _temp0
+L0066:	lda     _temp0
+	cmp     #$02
+	bcs     L0067
+;
+; temp5 += deckswabber_furthest_rounds[temp0];
+;
+	ldy     _temp0
+	lda     _deckswabber_furthest_rounds,y
 	clc
 	adc     _temp5
 	sta     _temp5
-	tya
+	lda     #$00
+	adc     _temp5+1
+	sta     _temp5+1
+;
+; for (temp0 = 0; temp0 < DECKSWABBER_LEVEL_PACK_COUNT; ++temp0) {
+;
+	inc     _temp0
+	jmp     L0066
+;
+; temp5 += settings_memory[0];
+;
+L0067:	lda     _settings_memory
+	clc
+	adc     _temp5
+	sta     _temp5
+	lda     #$00
 	adc     _temp5+1
 	sta     _temp5+1
 ;
@@ -189,12 +213,12 @@ L004D:	lda     _settings_memory
 	lda     _temp5
 	ldx     _temp5+1
 	cpx     _checksum+1
-	bne     L004E
+	bne     L0068
 	cmp     _checksum
 ;
 ; clear_saved_data();
 ;
-L004E:	jne     _clear_saved_data
+L0068:	jne     _clear_saved_data
 ;
 ; }
 ;
@@ -263,16 +287,35 @@ L0014:	ldy     _temp0
 ;
 	lda     _temp0
 	cmp     #$FF
-	beq     L004F
+	beq     L0069
 ;
 ; for (temp0 = 0; ; ++temp0) {
 ;
 	inc     _temp0
 	jmp     L0014
 ;
+; for (temp0 = 0; temp0 < DECKSWABBER_LEVEL_PACK_COUNT; ++temp0) {
+;
+L0069:	lda     #$00
+	sta     _temp0
+L006A:	lda     _temp0
+	cmp     #$02
+	bcs     L006B
+;
+; deckswabber_furthest_rounds[temp0] = 0;
+;
+	ldy     _temp0
+	lda     #$00
+	sta     _deckswabber_furthest_rounds,y
+;
+; for (temp0 = 0; temp0 < DECKSWABBER_LEVEL_PACK_COUNT; ++temp0) {
+;
+	inc     _temp0
+	jmp     L006A
+;
 ; settings_memory[0] = 0;
 ;
-L004F:	lda     #$00
+L006B:	lda     #$00
 	sta     _settings_memory
 ;
 ; }

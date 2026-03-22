@@ -100,6 +100,7 @@ extern const unsigned char * const score_string_last2;
 extern unsigned int deckswabber_1p_high_score;
 extern unsigned int previous_score;
 extern unsigned char chrbuffer[32];
+extern unsigned char deckswabber_furthest_rounds[DECKSWABBER_LEVEL_PACK_COUNT];
 extern unsigned char settings_memory[];
 
 const unsigned char * const * deckswabber_active_level_pack_levels;
@@ -631,6 +632,10 @@ void game_deckswabber(void) {
         if (transition_timer == DECKSWABBER_SCREEN_ANTIBOUNCE_FRAMES) {
             deckswabber_write_finished_message_and_calc_bonus();
             DECKSWABBER_SET_SCORE_CHANGED_THIS_FRAME();
+            if (score > deckswabber_1p_high_score) {
+                deckswabber_1p_high_score = score;
+                update_checksum();
+            }
         }
         if (transition_timer) {
             --transition_timer;
@@ -651,6 +656,9 @@ void game_deckswabber(void) {
                     // Todo - write some kind of congrats message for winning
                     end_deckswabber();
                     return;
+                } else if (round > deckswabber_furthest_rounds[level_pack_index]) {
+                    deckswabber_furthest_rounds[level_pack_index] = round;
+                    update_checksum();
                 }
             }
             begin_deckswabber_level(); // Next Level (todo)

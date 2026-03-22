@@ -135,7 +135,7 @@ unsigned int hasee_1p_high_score;
 unsigned int hasee_2p_high_score;
 unsigned int igloo_1p_high_score;
 unsigned int deckswabber_1p_high_score;
-unsigned char deckswabber_furthest_rounds[4];
+unsigned char deckswabber_furthest_rounds[DECKSWABBER_LEVEL_PACK_COUNT];
 
 unsigned char settings_memory[1];
 
@@ -1143,6 +1143,9 @@ void load_deckswabber_menu(void) {
     convert_to_decimal(deckswabber_round+1);
     prepare_score_string();
     multi_vram_buffer_horz_indirect_ptr(score_string_last2, 2, NTADR_A(12, 8));
+    convert_to_decimal(deckswabber_furthest_rounds[0] + 1);
+    prepare_score_string();
+    multi_vram_buffer_horz_indirect_ptr(score_string_last2, 2, NTADR_A(24, 8));
     pal_bright(4);
 }
 
@@ -1185,6 +1188,9 @@ void menu_deckswabber_menu(void) {
         if (menu_selection == 0) {
             AsmSet2ByteFromPtrAtIndexVar(address, deckswabber_level_name_db, coordinates);
             multi_vram_buffer_horz_indirect_ptr(address, 15, NTADR_A(6, 5));
+            convert_to_decimal(deckswabber_furthest_rounds[deckswabber_level_pack_index] + 1);
+            prepare_score_string();
+            multi_vram_buffer_horz_indirect_ptr(score_string_last2, 2, NTADR_A(24, 8));
         } else {
             convert_to_decimal(deckswabber_round+1);
             prepare_score_string();
