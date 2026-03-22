@@ -261,6 +261,10 @@ void begin_igloo_sub(void) {
     player_flags = 0;
     temp3 = 0;
 
+    game_seconds_timer = 0;
+    game_frame_timer = 0;
+    carassa_walking_frame_timer = 0;
+
     // Item drop speeds
     temp_mutablepointer = ((void *)(cmap + 128)); // Pointer crimes ("it's memory, just do what I want please")
     
@@ -380,6 +384,12 @@ void game_igloo(void) {
             end_igloo();
             return;
         }
+    }
+
+    // Quit:
+    if (pad1 == (PAD_SELECT | PAD_START)) {
+        end_igloo();
+        return;
     }
 }
 

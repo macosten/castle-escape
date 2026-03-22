@@ -381,7 +381,7 @@ void game_hasee_bounce(void) {
         }
     }
 
-    if (pad1 & PAD_SELECT & PAD_B || pad2 & PAD_SELECT & PAD_B) {
+    if (pad1 == (PAD_SELECT | PAD_START) || pad2 == (PAD_SELECT | PAD_START)) {
         end_hasee_bounce();
         return;
     }

@@ -1307,6 +1307,9 @@ void begin_level(void) {
     player_flags2 = 0; 
     scroll_count = 0; 
     player_death_timer = 0;
+    player_frame_timer = 0;
+    player_sword_timer = 0;
+    player_walking_timer = 0;
 
     // Reset boss flags.
     boss_state = 0;

@@ -430,7 +430,8 @@ void begin_deckswabber_level(void) {
     game_seconds_timer = 0;
     deckswabber_update_game_time();
     player_flags = DECKSWABBER_CAN_MAKE_HOSTILE_ENTITY_MASK | DECKSWABBER_CAN_MAKE_PASSIVE_ENTITY_MASK;
-
+    player_frame_timer = 0;
+    
     if (rand8() & 1) { // Enable Techos
         DECKSWABBER_SET_SPAWN_TECHOS();
         deckswabber_palette_sp[13] = 0x2A;
@@ -673,28 +674,29 @@ void game_deckswabber(void) {
     if (DECKSWABBER_SCORE_CHANGED_THIS_FRAME) { deckswabber_update_score(); }
     if (DECKSWABBER_HP_CHANGED_THIS_FRAME) { deckswabber_update_health_bar(); }
 
-    // Debug functionality:
-    if (pad1 & PAD_B) {
+    // Quit:
+    if (pad1 == (PAD_SELECT | PAD_START)) {
         end_deckswabber();
         return;
     }
 
-    if (pad1 & PAD_SELECT) {
-        temp5 = 0;
-        x = 10; // The memory exists/doesn't trample over anything else, just not used by this game normally
-        enemies_x[x] = player_tile_x;
-        enemies_y[x] = player_tile_y;
-        //deckswabber_entity_selfdestruct_dirt_bomb_plus();
-        deckswabber_entity_selfdestruct_dirt_bomb_square();
-    }
+    // Debug functionality:
+    // if (pad1 & PAD_SELECT) {
+    //     temp5 = 0;
+    //     x = 10; // The memory exists/doesn't trample over anything else, just not used by this game normally
+    //     enemies_x[x] = player_tile_x;
+    //     enemies_y[x] = player_tile_y;
+    //     //deckswabber_entity_selfdestruct_dirt_bomb_plus();
+    //     deckswabber_entity_selfdestruct_dirt_bomb_square();
+    // }
 
-    if (pad1_new & PAD_START) {
-        ++round;
-        if (round >= sizeof(tile_increment_functions)/2) {
-            round = 0;
-        }
-        begin_deckswabber_level();
-    }
+    // if (pad1_new & PAD_START) {
+    //     ++round;
+    //     if (round >= sizeof(tile_increment_functions)/2) {
+    //         round = 0;
+    //     }
+    //     begin_deckswabber_level();
+    // }
     //gray_line();
 }
 
