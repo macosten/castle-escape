@@ -19,7 +19,7 @@ al 008000 .__BANK2_RUN__
 al 0016CB .__BANK2_SIZE__
 al 008000 .__BANK3_LOAD__
 al 008000 .__BANK3_RUN__
-al 001F0B .__BANK3_SIZE__
+al 001F18 .__BANK3_SIZE__
 al 008000 .__BANK4_LOAD__
 al 008000 .__BANK4_RUN__
 al 0005CA .__BANK4_SIZE__
@@ -54,7 +54,7 @@ al 0096CB .__PRG2_LAST__
 al 004000 .__PRG2_SIZE__
 al 008000 .__PRG2_START__
 al 00C010 .__PRG3_FILEOFFS__
-al 009F0B .__PRG3_LAST__
+al 009F18 .__PRG3_LAST__
 al 004000 .__PRG3_SIZE__
 al 008000 .__PRG3_START__
 al 010010 .__PRG4_FILEOFFS__
@@ -294,11 +294,12 @@ al 00034F ._deckswabber_active_level_pack_levels
 al 0089AD ._deckswabber_ai_direction_function_pointers
 al 008965 ._deckswabber_ai_pointers
 al 008015 ._deckswabber_bonus
-al 009ECB ._deckswabber_clear_tile
-al 009E9A ._deckswabber_collide_with_fatal
+al 009ED8 ._deckswabber_clear_tile
+al 009E7A ._deckswabber_collide_with_dirt_bomb
+al 009EA7 ._deckswabber_collide_with_fatal
 al 009E63 ._deckswabber_collide_with_full_flag
 al 009E3E ._deckswabber_collide_with_half_flag
-al 009E7A ._deckswabber_collide_with_harmful
+al 009E87 ._deckswabber_collide_with_harmful
 al 009E16 ._deckswabber_collide_with_points
 al 009327 ._deckswabber_draw_entity_bronze_chest
 al 0092E5 ._deckswabber_draw_entity_bronze_coin
@@ -390,7 +391,7 @@ al 000300 ._deckswabber_palette_sp
 al 009DA3 ._deckswabber_player_collision
 al 0089B5 ._deckswabber_player_collision_fns
 al 009120 ._deckswabber_player_movement
-al 009EA5 ._deckswabber_random_entity_spawn_coords
+al 009EB2 ._deckswabber_random_entity_spawn_coords
 al 009445 ._deckswabber_redraw_player_tile
 al 009453 ._deckswabber_redraw_tile_no_attr_update
 al 00882F ._deckswabber_round_bounds_db

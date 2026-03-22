@@ -234,6 +234,7 @@ void deckswabber_player_collision(void);
 void deckswabber_collide_with_points(void);
 void deckswabber_collide_with_half_flag(void);
 void deckswabber_collide_with_full_flag(void);
+void deckswabber_collide_with_dirt_bomb(void);
 void deckswabber_collide_with_harmful(void);
 void deckswabber_collide_with_fatal(void);
 
@@ -1528,8 +1529,8 @@ const void (* const deckswabber_player_collision_fns[])(void) = {
     empty_function, // 8 - Sword
     deckswabber_collide_with_half_flag,
     deckswabber_collide_with_full_flag,
-    deckswabber_entity_kill, // Dirt Bombs
-    deckswabber_entity_kill,
+    deckswabber_collide_with_dirt_bomb, // Dirt Bombs
+    deckswabber_collide_with_dirt_bomb,
     deckswabber_collide_with_harmful,
     deckswabber_collide_with_harmful,
     deckswabber_collide_with_harmful,
@@ -1593,6 +1594,11 @@ void deckswabber_collide_with_full_flag(void) {
     energy = 192;
     DECKSWABBER_SET_HP_CHANGED_THIS_FRAME();
     sfx_play(SFX_CHARGED, 1);
+    deckswabber_entity_kill();
+}
+
+void deckswabber_collide_with_dirt_bomb(void) {
+    sfx_play(SFX_BUMP, 1);
     deckswabber_entity_kill();
 }
 
