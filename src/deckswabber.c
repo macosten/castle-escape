@@ -288,8 +288,6 @@ void begin_deckswabber_sub(void) {
     previous_score = 0;
     score = 0;
 
-    // Temporary/Debug: Hardcode selected level pack
-    level_pack_index = 0;
 
     pal_bright(4);
 

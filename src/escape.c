@@ -1096,24 +1096,14 @@ void menu_igloo_menu(void) {
     }
 }
 
-void menu_deckswabber_menu(void) {
-    //  PRG bank must be 1 (unless we change it?)
-    simple_menu_shared_behavior();
-
-    if (pad1_new & PAD_A) {
-        begin_deckswabber();
-        return;
-    }
-
-    if (pad1_new & PAD_B) { // Back to main menu
-        menu_sub_back_to_moregames_menu();
-    }
-}
-
+#define deckswabber_level_pack_index coordinates // See deckswabber.c ...
+#define DECKSWABBER_LEVEL_PACK_COUNT 4
 #define DECKSWABBER_OPTIONS 1
 
 extern unsigned char deckswabber_palette_sp[];
 extern unsigned char const deckswabber_palette_bg[];
+extern const char * const deckswabber_level_name_db[];
+extern const char deckswabber_original_levels_title[];
 
 const unsigned char const deckswabber_menu_selector_x[] = {
     11 * 8 + 4,
@@ -1139,8 +1129,42 @@ void load_deckswabber_menu(void) {
     convert_to_decimal(deckswabber_1p_high_score);
     prepare_score_string();
     multi_vram_buffer_horz(score_string, 5, NTADR_A(21, 3));
-
+    multi_vram_buffer_horz(deckswabber_original_levels_title, 19, NTADR_A(7, 5));
+    deckswabber_level_pack_index = 0;
+    
     pal_bright(4);
+}
+
+void menu_deckswabber_menu(void) {
+    //  PRG bank must be 3 (unless we change it?)
+    simple_menu_shared_behavior();
+
+    if (pad1_new & PAD_A) {
+        begin_deckswabber();
+        return;
+    }
+
+    if (pad1_new & PAD_LEFT) {
+        --deckswabber_level_pack_index;
+        if (deckswabber_level_pack_index >= DECKSWABBER_LEVEL_PACK_COUNT) {
+            deckswabber_level_pack_index = DECKSWABBER_LEVEL_PACK_COUNT - 1;
+        }
+        AsmSet2ByteFromPtrAtIndexVar(address, deckswabber_level_name_db, coordinates);
+        multi_vram_buffer_horz_indirect_ptr(address, 19, NTADR_A(7, 5));
+        sfx_play(SFX_MENU_BEEP, 0);
+    } else if (pad1_new & PAD_RIGHT) {
+        ++deckswabber_level_pack_index;
+        if (deckswabber_level_pack_index >= DECKSWABBER_LEVEL_PACK_COUNT) {
+            deckswabber_level_pack_index = 0;
+        }
+        AsmSet2ByteFromPtrAtIndexVar(address, deckswabber_level_name_db, coordinates);
+        multi_vram_buffer_horz_indirect_ptr(address, 19, NTADR_A(7, 5));
+        sfx_play(SFX_MENU_BEEP, 0);
+    }
+
+    if (pad1_new & PAD_B) { // Back to main menu
+        menu_sub_back_to_moregames_menu();
+    }
 }
 
 // End of menus -- Castle Escape gameplay below here

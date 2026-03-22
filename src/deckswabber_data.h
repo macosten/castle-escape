@@ -10,10 +10,10 @@ const char deckswabber_bonus[] = "Bonus:";
 const char deckswabber_goal[] = "Goal";
 const char deckswabber_oops[] = "Oops...\0\0";
 const char deckswabber_tryagain[] = "Try again!";
-const char deckswabber_original_levels_title[] =    "\18 Original Levels \08";
-const char deckswabber_bonus_rounds_title[] =       " \18 Bonus Rounds \08 ";
-const char deckswabber_stowaway_sting_title[] =     "\18 Stowaway Sting \08";
-const char deckswabber_stowaway_bonus_title[] =     "\18 Stowaway Bonus \08";
+const char deckswabber_original_levels_title[] =    "\x18" " Original Levels \x08";
+const char deckswabber_bonus_rounds_title[] =       " \x18" " Bonus Rounds \x08" " ";
+const char deckswabber_stowaway_sting_title[] =     "\x18" " Stowaway Sting \x08";
+const char deckswabber_stowaway_bonus_title[] =     "\x18" " Stowaway Bonus \x08";
 
 const unsigned char blumaroo_idle[] = {
     0, 0, 0x00, 0,
@@ -901,7 +901,7 @@ const unsigned char deckswabber_metatiles[] = {
 
     // This should remain the third-to-last (see deckswabber_constants.h)
     // Logic elsewhere assumes that this is the first tile ID that doesn't need to be swabbed to complete a level
-    0x11, 0x11, 0x11, 0x11, 0, // Unpaintable tile
+    0x00, 0x00, 0x00, 0x00, 0, // Unpaintable tile
     // These two holes should stay the last two in this order
     0xA8, 0xA9, 0xB8, 0xB9, 1, // Water hole
     0xC8, 0xC9, 0xD8, 0xD9, 0, // Empty hole
