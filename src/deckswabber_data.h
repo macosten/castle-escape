@@ -486,18 +486,18 @@ const unsigned char zeke_idle[] = {
 };
 
 const unsigned char zeke_jump1[] = {
-    0, 3, 0x56, 1,
-    8, 3, 0x57, 1,
-    0,11, 0x66, 1,
-    8,11, 0x67, 1,
+    0, 3, 0x9C, 1,
+    8, 3, 0x9D, 1,
+    0,11, 0xAC, 1,
+    8,11, 0xAD, 1,
     128
 };
 
 const unsigned char zeke_jump2[] = {
-    0, 6, 0x58, 1,
-    8, 6, 0x59, 1,
-    0,14, 0x68, 1,
-    8,14, 0x69, 1,
+    0, 6, 0x8E, 1,
+    8, 6, 0x8F, 1,
+    0,14, 0x9E, 1,
+    8,14, 0x9F, 1,
     128
 };
 
@@ -606,7 +606,7 @@ const unsigned char * const flag_full_jump_animation[] = {
     flag_full_jump1,
 };
 
-const unsigned char * const zeke_full_jump_animation[] = {
+const unsigned char * const zeke_jump_animation[] = {
     zeke_idle,
     zeke_jump2,
     zeke_jump1,

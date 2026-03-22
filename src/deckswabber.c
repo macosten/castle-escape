@@ -8,6 +8,7 @@
 #include "enemy_macros.h"
 #include "other_macros.h"
 #include "player_macros.h"
+#include "settings_macros.h"
 #include "structs.h"
 
 #include "constants.h"
@@ -98,6 +99,7 @@ ZEROPAGE_EXTERN(unsigned int, pseudo_scroll_y);
 extern unsigned int deckswabber_1p_high_score;
 extern unsigned int previous_score;
 extern unsigned char chrbuffer[32];
+extern unsigned char settings_memory[];
 
 const unsigned char * const * deckswabber_active_level_pack_levels;
 
@@ -180,6 +182,7 @@ void deckswabber_draw_entity_cannon(void);
 void deckswabber_draw_entity_mynci(void);
 void deckswabber_draw_entity_techo(void);
 void deckswabber_draw_entity_captain_dread(void);
+void deckswabber_draw_entity_zeke(void);
 
 void deckswabber_redraw_player_tile(void);
 void deckswabber_redraw_tile_no_attr_update(void);
@@ -512,7 +515,8 @@ void game_deckswabber(void) {
                             enemies_extra[x] = DECKSWABBER_ENTITY_ID_MYNCI;
                         } else {
                             enemies_aggression[x] = 255;
-                            enemies_extra[x] = DECKSWABBER_ENTITY_ID_CAPTAIN_DREAD;
+                            enemies_extra[x] = SETTINGS_ARE_SECRET_CHARACTERS_ENABLED ? DECKSWABBER_ENTITY_ID_ZEKE : DECKSWABBER_ENTITY_ID_CAPTAIN_DREAD;
+                            
                         }
                     }
                     enemies_type[x] = DECKSWABBER_ENTITY_ID_CURTAIN;
@@ -650,7 +654,7 @@ void game_deckswabber(void) {
         }
         begin_deckswabber_level();
     }
-    gray_line();
+    //gray_line();
 }
 
 void end_deckswabber(void) {
@@ -788,6 +792,7 @@ const void (* const deckswabber_entity_draw_fns[])(void) = {
     deckswabber_draw_entity_mynci,
     deckswabber_draw_entity_techo,
     deckswabber_draw_entity_captain_dread,
+    deckswabber_draw_entity_zeke,
 };
 
 void deckswabber_draw_sprites(void) {
@@ -915,6 +920,11 @@ void deckswabber_draw_entity_techo(void) {
 void deckswabber_draw_entity_captain_dread(void) {
     temp2 = enemies_extra[x] >> 2;
     AsmSet2ByteFromPtrAtIndexVar(temppointer, captain_dread_jump_animation, temp2);
+}
+
+void deckswabber_draw_entity_zeke(void) {
+    temp2 = enemies_extra[x] >> 2;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, zeke_jump_animation, temp2);
 }
 
 // Tile increment functions:
@@ -1114,6 +1124,7 @@ const void (* const deckswabber_ai_pointers[])(void) = {
     deckswabber_entity_ai_wander, // 13
     deckswabber_entity_ai_use_aggression,
     deckswabber_entity_ai_use_aggression,
+    deckswabber_entity_ai_always_target_player, // 16
     deckswabber_entity_ai_always_target_player,
 };
 
@@ -1134,6 +1145,7 @@ const void (* const deckswabber_entity_selfdestruct_pointers[])(void) = {
     deckswabber_entity_selfdestruct_default, // 13
     deckswabber_entity_selfdestruct_default,
     deckswabber_entity_selfdestruct_default,
+    deckswabber_entity_selfdestruct_default, // 16
     deckswabber_entity_selfdestruct_default,
 };
 
@@ -1483,6 +1495,7 @@ const void (* const deckswabber_player_collision_fns[])(void) = {
     deckswabber_collide_with_harmful,
     deckswabber_collide_with_harmful,
     deckswabber_collide_with_harmful,
+    deckswabber_collide_with_fatal, // Captain Dread
     deckswabber_collide_with_fatal,
 };
 
