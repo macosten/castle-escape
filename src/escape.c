@@ -678,6 +678,11 @@ void prepare_score_string(void) {
 void load_level_selector(void) {
     // Ensure the level metadata is visible. (This is important!)
     set_prg_bank(LEVEL_METADATA_BANK);
+
+    if (level_index >= NUMBER_OF_LEVELS) { // Possible if we just played a minigame and got to level 200+ or something
+        level_index = 0;
+    }
+
     // Print the currently-selected level's name.
     AsmSet2ByteFromPtrAtIndexVar(temppointer, level_names, level_index);
     put_str(NTADR_A(3, 12), temppointer);
