@@ -10,10 +10,8 @@ const char deckswabber_bonus[] = "Bonus:";
 const char deckswabber_goal[] = "Goal";
 const char deckswabber_oops[] = "Oops...\0\0";
 const char deckswabber_tryagain[] = "Try again!";
-const char deckswabber_original_levels_title[] =    "\x18" " Original Levels \x08";
-const char deckswabber_bonus_rounds_title[] =       " \x18" " Bonus Rounds \x08" " ";
-const char deckswabber_stowaway_sting_title[] =     "\x18" " Stowaway Sting \x08";
-const char deckswabber_stowaway_bonus_title[] =     "\x18" " Stowaway Bonus \x08";
+const char deckswabber_original_levels_title[] = "Original Levels";
+const char deckswabber_stowaway_sting_title[] =  "Stowaway Sting";
 
 const unsigned char blumaroo_idle[] = {
     0, 0, 0x00, 0,
@@ -1030,44 +1028,22 @@ const unsigned char deckswabber_round_overflow_tile_value[] = {
 
 const unsigned char * const * const deckswabber_level_data_db[] = {
     deckswabber_original_level_pack_levels,
-    deckswabber_original_level_pack_levels,
-    deckswabber_stowaway_level_pack_levels,
     deckswabber_stowaway_level_pack_levels,
 };
 
 const char * const deckswabber_level_name_db[] = {
    deckswabber_original_levels_title,
-   deckswabber_bonus_rounds_title,
    deckswabber_stowaway_sting_title,
-   deckswabber_stowaway_bonus_title,
-};
-
-const unsigned char deckswabber_starting_round_db[] = {
-    0, // Original levels
-    0, // Stowaway levels
-    8, // Bonus rounds
-    8, // Bonus rounds
-};
-
-const unsigned char deckswabber_maximum_round_db[] = {
-    8, // Original levels have 8 rounds
-    8, // Stowaway levels
-    14, // Bonus rounds
-    14 // Bonus rounds
 };
 
 const unsigned char * const deckswabber_round_bounds_db[] = {
     deckswabber_original_level_pack_round_bounds,
-    deckswabber_original_level_pack_round_bounds,
-    deckswabber_stowaway_level_pack_round_bounds,
     deckswabber_stowaway_level_pack_round_bounds,
 };
 
 // Expected to be bitpacked tile x,y
 const unsigned char * const deckswabber_starting_coords_db[] = {
     deckswabber_original_starting_coords,
-    deckswabber_original_starting_coords,
-    deckswabber_stowaway_starting_coords,
     deckswabber_stowaway_starting_coords,
 };
 

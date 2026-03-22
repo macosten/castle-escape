@@ -96,6 +96,7 @@ ZEROPAGE_EXTERN(unsigned char, player_walking_timer);
 ZEROPAGE_EXTERN(unsigned int, pseudo_scroll_y);
 #define game_seconds_timer pseudo_scroll_y
 
+extern const unsigned char * const score_string_last2;
 extern unsigned int deckswabber_1p_high_score;
 extern unsigned int previous_score;
 extern unsigned char chrbuffer[32];
@@ -118,7 +119,7 @@ extern unsigned char enemies_flags[MAX_ENEMIES]; // animation timer
 extern unsigned char enemies_count;
 
 #if (DECKSWABBER_TILE_WIDTH != 8 || DECKSWABBER_TILE_HEIGHT != 8)
-    #warning "Careful (deckswabber): Odd width and height, the code probably doesn't support this yet."
+    #warning "Careful (deckswabber): Strange width and height, the code probably doesn't support this yet."
 #endif
 
 #pragma rodata-name(push, "BANK3")
@@ -284,7 +285,7 @@ void begin_deckswabber_sub(void) {
     set_mt_pointer(deckswabber_metatiles);
 
     level = 0;
-    round = 0;
+    // round = 0;
     previous_score = 0;
     score = 0;
 
@@ -646,7 +647,7 @@ void game_deckswabber(void) {
                 //level = temppointer1[temp0]; // Minimum level in round
                 AsmSet1ByteFromZpPtrAtIndexVar(level_index, temppointer1, temp0);
                 ++round;
-                if (round >= deckswabber_maximum_round_db[level_pack_index]) {
+                if (round >= (sizeof(tile_increment_functions)/sizeof(void *))) {
                     // Todo - write some kind of congrats message for winning
                     end_deckswabber();
                     return;
@@ -741,7 +742,6 @@ void deckswabber_update_game_time(void) {
     multi_vram_buffer_horz(score_string, 5, NTADR_A(23, 3));
 }
 
-const unsigned char * const score_string_last2 = score_string + 3;
 void deckswabber_update_tiles_remaining(void) {
     convert_to_decimal(tiles_remaining);
     prepare_score_string();

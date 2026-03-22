@@ -16,6 +16,7 @@
 #include "enemies.h"
 #include "zeropage.h" // Zeropage declarations are here. Probably better to just extern what you need than import this everywhere.
 #include "constants.h" // Constant #defines are here.
+#include "deckswabber_constants.h"
 
 #include "player_macros.h"
 #include "enemy_macros.h"
@@ -57,6 +58,8 @@ const unsigned char const palette_sp[]={
     0x0f, 0x04, 0x14, 0x24, // Purples.
     0x0f, 0x30, 0x16, 0x00, // HUD(?) and Spikeball/Acid
 };
+
+const unsigned char * const score_string_last2 = score_string + 3;
 
 // For shuffling MAX_ENEMIES enemies, plus HUD elements (score, energy).
 // Todo: make this calculated at the start of a level.
@@ -132,6 +135,7 @@ unsigned int hasee_1p_high_score;
 unsigned int hasee_2p_high_score;
 unsigned int igloo_1p_high_score;
 unsigned int deckswabber_1p_high_score;
+unsigned char deckswabber_furthest_rounds[4];
 
 unsigned char settings_memory[1];
 
@@ -1097,8 +1101,8 @@ void menu_igloo_menu(void) {
 }
 
 #define deckswabber_level_pack_index coordinates // See deckswabber.c ...
-#define DECKSWABBER_LEVEL_PACK_COUNT 4
-#define DECKSWABBER_OPTIONS 1
+#define deckswabber_round eject_U
+#define DECKSWABBER_OPTIONS 2
 
 extern unsigned char deckswabber_palette_sp[];
 extern unsigned char const deckswabber_palette_bg[];
@@ -1106,12 +1110,16 @@ extern const char * const deckswabber_level_name_db[];
 extern const char deckswabber_original_levels_title[];
 
 const unsigned char const deckswabber_menu_selector_x[] = {
-    11 * 8 + 4,
+    4 * 8 + 4,
+    4 * 8 + 4,
 };
 
 const unsigned char const deckswabber_menu_selector_y[] = {
-    4 * 8 - 1,
+    5 * 8 - 1,
+    7 * 8 + 3,
 };
+
+const char deckswabber_one_string[] = "\01";
 
 void load_deckswabber_menu(void) {
     menu_selection_count = DECKSWABBER_OPTIONS;
@@ -1129,9 +1137,12 @@ void load_deckswabber_menu(void) {
     convert_to_decimal(deckswabber_1p_high_score);
     prepare_score_string();
     multi_vram_buffer_horz(score_string, 5, NTADR_A(21, 3));
-    multi_vram_buffer_horz(deckswabber_original_levels_title, 19, NTADR_A(7, 5));
+    multi_vram_buffer_horz(deckswabber_original_levels_title, 15, NTADR_A(6, 5));
     deckswabber_level_pack_index = 0;
-    
+    deckswabber_round = 0;
+    convert_to_decimal(deckswabber_round+1);
+    prepare_score_string();
+    multi_vram_buffer_horz_indirect_ptr(score_string_last2, 2, NTADR_A(12, 8));
     pal_bright(4);
 }
 
@@ -1145,20 +1156,40 @@ void menu_deckswabber_menu(void) {
     }
 
     if (pad1_new & PAD_LEFT) {
-        --deckswabber_level_pack_index;
-        if (deckswabber_level_pack_index >= DECKSWABBER_LEVEL_PACK_COUNT) {
-            deckswabber_level_pack_index = DECKSWABBER_LEVEL_PACK_COUNT - 1;
+        if (menu_selection == 0) {
+            --deckswabber_level_pack_index;
+            if (deckswabber_level_pack_index >= DECKSWABBER_LEVEL_PACK_COUNT) {
+                deckswabber_level_pack_index = DECKSWABBER_LEVEL_PACK_COUNT - 1;
+            }
+        } else {
+            --deckswabber_round;
+            if (deckswabber_round >= DECKSWABBER_MAXIMUM_POSSIBLE_ROUND) {
+                deckswabber_round = DECKSWABBER_MAXIMUM_POSSIBLE_ROUND - 1;
+            }
         }
-        AsmSet2ByteFromPtrAtIndexVar(address, deckswabber_level_name_db, coordinates);
-        multi_vram_buffer_horz_indirect_ptr(address, 19, NTADR_A(7, 5));
-        sfx_play(SFX_MENU_BEEP, 0);
     } else if (pad1_new & PAD_RIGHT) {
-        ++deckswabber_level_pack_index;
-        if (deckswabber_level_pack_index >= DECKSWABBER_LEVEL_PACK_COUNT) {
-            deckswabber_level_pack_index = 0;
+        if (menu_selection == 0) {
+            ++deckswabber_level_pack_index;
+            if (deckswabber_level_pack_index >= DECKSWABBER_LEVEL_PACK_COUNT) {
+                deckswabber_level_pack_index = 0;
+            }
+        } else {
+            ++deckswabber_round;
+            if (deckswabber_round >= DECKSWABBER_MAXIMUM_POSSIBLE_ROUND) {
+                deckswabber_round = 0;
+            }
         }
-        AsmSet2ByteFromPtrAtIndexVar(address, deckswabber_level_name_db, coordinates);
-        multi_vram_buffer_horz_indirect_ptr(address, 19, NTADR_A(7, 5));
+    }
+
+    if (pad1_new & (PAD_LEFT | PAD_RIGHT)) {
+        if (menu_selection == 0) {
+            AsmSet2ByteFromPtrAtIndexVar(address, deckswabber_level_name_db, coordinates);
+            multi_vram_buffer_horz_indirect_ptr(address, 15, NTADR_A(6, 5));
+        } else {
+            convert_to_decimal(deckswabber_round+1);
+            prepare_score_string();
+            multi_vram_buffer_horz_indirect_ptr(score_string_last2, 2, NTADR_A(12, 8));
+        }
         sfx_play(SFX_MENU_BEEP, 0);
     }
 
