@@ -22,7 +22,7 @@
 	.import		_hasee_1p_high_score
 	.import		_hasee_2p_high_score
 	.import		_igloo_1p_high_score
-	.import		_deckswabber_1p_high_score
+	.import		_deckswabber_1p_high_scores
 	.import		_deckswabber_furthest_rounds
 	.import		_settings_memory
 
@@ -74,16 +74,6 @@
 	adc     _temp5+1
 	sta     _temp5+1
 ;
-; temp5 += deckswabber_1p_high_score;
-;
-	lda     _deckswabber_1p_high_score
-	clc
-	adc     _temp5
-	sta     _temp5
-	lda     _deckswabber_1p_high_score+1
-	adc     _temp5+1
-	sta     _temp5+1
-;
 ; for (temp0 = 0; ; ++temp0) {
 ;
 	lda     #$00
@@ -92,12 +82,12 @@
 ; temp5 += level_high_scores[temp0];
 ;
 	tax
-L0064:	lda     _temp0
+L006A:	lda     _temp0
 	asl     a
-	bcc     L0063
+	bcc     L0068
 	inx
 	clc
-L0063:	adc     #<(_level_high_scores)
+L0068:	adc     #<(_level_high_scores)
 	sta     ptr1
 	txa
 	adc     #>(_level_high_scores)
@@ -118,20 +108,20 @@ L0063:	adc     #<(_level_high_scores)
 ;
 	lda     _temp0
 	cmp     #$FF
-	beq     L0065
+	beq     L006B
 ;
 ; for (temp0 = 0; ; ++temp0) {
 ;
 	ldx     #$00
 	inc     _temp0
-	jmp     L0064
+	jmp     L006A
 ;
 ; for (temp0 = 0; temp0 < DECKSWABBER_LEVEL_PACK_COUNT; ++temp0) {
 ;
-L0065:	sty     _temp0
-L0066:	lda     _temp0
+L006B:	sty     _temp0
+L006C:	lda     _temp0
 	cmp     #$02
-	bcs     L0067
+	bcs     L006D
 ;
 ; temp5 += deckswabber_furthest_rounds[temp0];
 ;
@@ -144,18 +134,43 @@ L0066:	lda     _temp0
 	adc     _temp5+1
 	sta     _temp5+1
 ;
-; for (temp0 = 0; temp0 < DECKSWABBER_LEVEL_PACK_COUNT; ++temp0) {
+; temp5 += deckswabber_1p_high_scores[temp0];
 ;
-	inc     _temp0
-	jmp     L0066
-;
-; temp5 += settings_memory[0];
-;
-L0067:	lda     _settings_memory
+	ldx     #$00
+	lda     _temp0
+	asl     a
+	bcc     L0069
+	inx
+	clc
+L0069:	adc     #<(_deckswabber_1p_high_scores)
+	sta     ptr1
+	txa
+	adc     #>(_deckswabber_1p_high_scores)
+	sta     ptr1+1
+	ldy     #$01
+	lda     (ptr1),y
+	tax
+	dey
+	lda     (ptr1),y
 	clc
 	adc     _temp5
 	sta     _temp5
-	lda     #$00
+	txa
+	adc     _temp5+1
+	sta     _temp5+1
+;
+; for (temp0 = 0; temp0 < DECKSWABBER_LEVEL_PACK_COUNT; ++temp0) {
+;
+	inc     _temp0
+	jmp     L006C
+;
+; temp5 += settings_memory[0];
+;
+L006D:	lda     _settings_memory
+	clc
+	adc     _temp5
+	sta     _temp5
+	tya
 	adc     _temp5+1
 	sta     _temp5+1
 ;
@@ -213,12 +228,12 @@ L0067:	lda     _settings_memory
 	lda     _temp5
 	ldx     _temp5+1
 	cpx     _checksum+1
-	bne     L0068
+	bne     L006E
 	cmp     _checksum
 ;
 ; clear_saved_data();
 ;
-L0068:	jne     _clear_saved_data
+L006E:	jne     _clear_saved_data
 ;
 ; }
 ;
@@ -263,11 +278,6 @@ L0068:	jne     _clear_saved_data
 	sta     _igloo_1p_high_score
 	sta     _igloo_1p_high_score+1
 ;
-; deckswabber_1p_high_score = 0;
-;
-	sta     _deckswabber_1p_high_score
-	sta     _deckswabber_1p_high_score+1
-;
 ; for (temp0 = 0; ; ++temp0) {
 ;
 	sta     _temp0
@@ -287,7 +297,7 @@ L0014:	ldy     _temp0
 ;
 	lda     _temp0
 	cmp     #$FF
-	beq     L0069
+	beq     L0071
 ;
 ; for (temp0 = 0; ; ++temp0) {
 ;
@@ -296,11 +306,11 @@ L0014:	ldy     _temp0
 ;
 ; for (temp0 = 0; temp0 < DECKSWABBER_LEVEL_PACK_COUNT; ++temp0) {
 ;
-L0069:	lda     #$00
+L0071:	lda     #$00
 	sta     _temp0
-L006A:	lda     _temp0
+L0072:	lda     _temp0
 	cmp     #$02
-	bcs     L006B
+	bcs     L0073
 ;
 ; deckswabber_furthest_rounds[temp0] = 0;
 ;
@@ -308,14 +318,33 @@ L006A:	lda     _temp0
 	lda     #$00
 	sta     _deckswabber_furthest_rounds,y
 ;
+; deckswabber_1p_high_scores[temp0] = 0;
+;
+	tax
+	lda     _temp0
+	asl     a
+	bcc     L0070
+	inx
+	clc
+L0070:	adc     #<(_deckswabber_1p_high_scores)
+	sta     ptr1
+	txa
+	adc     #>(_deckswabber_1p_high_scores)
+	sta     ptr1+1
+	lda     #$00
+	tay
+	sta     (ptr1),y
+	iny
+	sta     (ptr1),y
+;
 ; for (temp0 = 0; temp0 < DECKSWABBER_LEVEL_PACK_COUNT; ++temp0) {
 ;
 	inc     _temp0
-	jmp     L006A
+	jmp     L0072
 ;
 ; settings_memory[0] = 0;
 ;
-L006B:	lda     #$00
+L0073:	lda     #$00
 	sta     _settings_memory
 ;
 ; }

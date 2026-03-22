@@ -134,7 +134,7 @@ unsigned int gauntlet_high_score;
 unsigned int hasee_1p_high_score;
 unsigned int hasee_2p_high_score;
 unsigned int igloo_1p_high_score;
-unsigned int deckswabber_1p_high_score;
+unsigned int deckswabber_1p_high_scores[DECKSWABBER_LEVEL_PACK_COUNT];
 unsigned char deckswabber_furthest_rounds[DECKSWABBER_LEVEL_PACK_COUNT];
 
 unsigned char settings_memory[1];
@@ -1134,7 +1134,7 @@ void load_deckswabber_menu(void) {
     pal_bg(deckswabber_palette_bg);
     pal_spr(deckswabber_palette_sp);
     // Load high scores
-    convert_to_decimal(deckswabber_1p_high_score);
+    convert_to_decimal(deckswabber_1p_high_scores[deckswabber_level_pack_index]);
     prepare_score_string();
     multi_vram_buffer_horz(score_string, 5, NTADR_A(21, 3));
     multi_vram_buffer_horz(deckswabber_original_levels_title, 15, NTADR_A(6, 5));
@@ -1158,16 +1158,22 @@ void menu_deckswabber_menu(void) {
         return;
     }
 
+    temp4 = 1 + MIN(deckswabber_furthest_rounds[deckswabber_level_pack_index], DECKSWABBER_MAXIMUM_POSSIBLE_ROUND-1);
+
     if (pad1_new & PAD_LEFT) {
         if (menu_selection == 0) {
             --deckswabber_level_pack_index;
             if (deckswabber_level_pack_index >= DECKSWABBER_LEVEL_PACK_COUNT) {
                 deckswabber_level_pack_index = DECKSWABBER_LEVEL_PACK_COUNT - 1;
             }
+            temp4 = 1 + MIN(deckswabber_furthest_rounds[deckswabber_level_pack_index], DECKSWABBER_MAXIMUM_POSSIBLE_ROUND-1);
+            if (deckswabber_round >= temp4) {
+                deckswabber_round = temp4;
+            }
         } else {
             --deckswabber_round;
-            if (deckswabber_round >= DECKSWABBER_MAXIMUM_POSSIBLE_ROUND) {
-                deckswabber_round = DECKSWABBER_MAXIMUM_POSSIBLE_ROUND - 1;
+            if (deckswabber_round >= temp4) {
+                deckswabber_round = temp4 - 1;
             }
         }
     } else if (pad1_new & PAD_RIGHT) {
@@ -1176,9 +1182,13 @@ void menu_deckswabber_menu(void) {
             if (deckswabber_level_pack_index >= DECKSWABBER_LEVEL_PACK_COUNT) {
                 deckswabber_level_pack_index = 0;
             }
+            temp4 = 1 + MIN(deckswabber_furthest_rounds[deckswabber_level_pack_index], DECKSWABBER_MAXIMUM_POSSIBLE_ROUND-1);
+            if (deckswabber_round >= temp4) {
+                deckswabber_round = temp4 - 1;
+            }
         } else {
             ++deckswabber_round;
-            if (deckswabber_round >= DECKSWABBER_MAXIMUM_POSSIBLE_ROUND) {
+            if (deckswabber_round >= temp4) {
                 deckswabber_round = 0;
             }
         }
@@ -1191,11 +1201,15 @@ void menu_deckswabber_menu(void) {
             convert_to_decimal(deckswabber_furthest_rounds[deckswabber_level_pack_index] + 1);
             prepare_score_string();
             multi_vram_buffer_horz_indirect_ptr(score_string_last2, 2, NTADR_A(24, 8));
-        } else {
-            convert_to_decimal(deckswabber_round+1);
+            convert_to_decimal(deckswabber_1p_high_scores[deckswabber_level_pack_index]);
             prepare_score_string();
-            multi_vram_buffer_horz_indirect_ptr(score_string_last2, 2, NTADR_A(12, 8));
+            multi_vram_buffer_horz(score_string, 5, NTADR_A(21, 3));
         }
+        // Always update the current round because even when menu_selection == 0 we might need to update it
+        convert_to_decimal(deckswabber_round+1);
+        prepare_score_string();
+        multi_vram_buffer_horz_indirect_ptr(score_string_last2, 2, NTADR_A(12, 8));
+
         sfx_play(SFX_MENU_BEEP, 0);
     }
 

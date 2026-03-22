@@ -97,7 +97,7 @@ ZEROPAGE_EXTERN(unsigned int, pseudo_scroll_y);
 #define game_seconds_timer pseudo_scroll_y
 
 extern const unsigned char * const score_string_last2;
-extern unsigned int deckswabber_1p_high_score;
+extern unsigned int deckswabber_1p_high_scores[DECKSWABBER_LEVEL_PACK_COUNT];
 extern unsigned int previous_score;
 extern unsigned char chrbuffer[32];
 extern unsigned char deckswabber_furthest_rounds[DECKSWABBER_LEVEL_PACK_COUNT];
@@ -286,7 +286,8 @@ void begin_deckswabber_sub(void) {
 
     set_mt_pointer(deckswabber_metatiles);
 
-    level = 0;
+    AsmSet2ByteFromPtrAtIndexVar(temppointer, deckswabber_round_bounds_db, coordinates);
+    level = temppointer[round << 1];
     // round = 0;
     previous_score = 0;
     score = 0;
@@ -633,8 +634,8 @@ void game_deckswabber(void) {
         if (transition_timer == DECKSWABBER_SCREEN_ANTIBOUNCE_FRAMES) {
             deckswabber_write_finished_message_and_calc_bonus();
             DECKSWABBER_SET_SCORE_CHANGED_THIS_FRAME();
-            if (score > deckswabber_1p_high_score) {
-                deckswabber_1p_high_score = score;
+            if (score > deckswabber_1p_high_scores[level_pack_index]) {
+                deckswabber_1p_high_scores[level_pack_index] = score;
                 update_checksum();
             }
         }
