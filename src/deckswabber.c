@@ -429,6 +429,18 @@ void begin_deckswabber_level(void) {
     deckswabber_update_game_time();
     player_flags = DECKSWABBER_CAN_MAKE_HOSTILE_ENTITY_MASK | DECKSWABBER_CAN_MAKE_PASSIVE_ENTITY_MASK;
 
+    if (rand8() & 1) { // Enable Techos
+        DECKSWABBER_SET_SPAWN_TECHOS();
+        deckswabber_palette_sp[13] = 0x2A;
+        deckswabber_palette_sp[14] = 0x26;
+        pal_spr(deckswabber_palette_sp);
+    } else { // Enable Myncis
+        DECKSWABBER_SET_SPAWN_MYNCIS();
+        deckswabber_palette_sp[13] = 0x14;
+        deckswabber_palette_sp[14] = 0x36;
+        pal_spr(deckswabber_palette_sp);
+    }
+
     previous_score = score;
 
     // TODO - figure out random selection between Myncis and Techos
@@ -489,18 +501,27 @@ void game_deckswabber(void) {
                             enemies_extra[x] = DECKSWABBER_ENTITY_ID_CANNON;
                         } else {
                             enemies_aggression[x] = 42;
-                            enemies_extra[x] = DECKSWABBER_ENTITY_ID_MYNCI;
+                            if (DECKSWABBER_SPAWN_TECHO_INSTEAD_OF_MYNCI) {
+                                enemies_extra[x] = DECKSWABBER_ENTITY_ID_TECHO;
+                            } else {
+                                enemies_extra[x] = DECKSWABBER_ENTITY_ID_MYNCI;
+                            }
                         }
                     } else if (round < 4) {
                         if (temp0 < 85) {
                             enemies_aggression[x] = 0;
                             enemies_extra[x] = DECKSWABBER_ENTITY_ID_CANNON;
-                        } else if (temp0 < 171) {
-                            enemies_aggression[x] = 42;
-                            enemies_extra[x] = DECKSWABBER_ENTITY_ID_MYNCI; // + flag to make it Techo instead this round
                         } else {
-                            enemies_aggression[x] = 171;
-                            enemies_extra[x] = DECKSWABBER_ENTITY_ID_MYNCI; // + flag to make it Techo instead this round
+                            if (temp0 < 171) {
+                                enemies_aggression[x] = 42;
+                            } else {
+                                enemies_aggression[x] = 171;
+                            }
+                            if (DECKSWABBER_SPAWN_TECHO_INSTEAD_OF_MYNCI) {
+                                enemies_extra[x] = DECKSWABBER_ENTITY_ID_TECHO;
+                            } else {
+                                enemies_extra[x] = DECKSWABBER_ENTITY_ID_MYNCI;
+                            }
                         }
                     } else if (round < 6) {
                         if (temp0 & 0b10) {
@@ -508,15 +529,26 @@ void game_deckswabber(void) {
                         } else {
                             enemies_aggression[x] = 171;
                         }
-                        enemies_extra[x] = DECKSWABBER_ENTITY_ID_MYNCI;
+                        if (DECKSWABBER_SPAWN_TECHO_INSTEAD_OF_MYNCI) {
+                            enemies_extra[x] = DECKSWABBER_ENTITY_ID_TECHO;
+                        } else {
+                            enemies_extra[x] = DECKSWABBER_ENTITY_ID_MYNCI;
+                        }
                     } else {
                         if (temp0 & 0b10) {
                             enemies_aggression[x] = 171;
-                            enemies_extra[x] = DECKSWABBER_ENTITY_ID_MYNCI;
+                            if (DECKSWABBER_SPAWN_TECHO_INSTEAD_OF_MYNCI) {
+                                enemies_extra[x] = DECKSWABBER_ENTITY_ID_TECHO;
+                            } else {
+                                enemies_extra[x] = DECKSWABBER_ENTITY_ID_MYNCI;
+                            }
                         } else {
                             enemies_aggression[x] = 255;
-                            enemies_extra[x] = SETTINGS_ARE_SECRET_CHARACTERS_ENABLED ? DECKSWABBER_ENTITY_ID_ZEKE : DECKSWABBER_ENTITY_ID_CAPTAIN_DREAD;
-                            
+                            if (SETTINGS_ARE_SECRET_CHARACTERS_ENABLED) {
+                                enemies_extra[x] = DECKSWABBER_ENTITY_ID_ZEKE;
+                            } else {
+                                enemies_extra[x] = DECKSWABBER_ENTITY_ID_CAPTAIN_DREAD;
+                            }
                         }
                     }
                     enemies_type[x] = DECKSWABBER_ENTITY_ID_CURTAIN;
@@ -1399,7 +1431,7 @@ void deckswabber_entity_ai_sub_target(void) {
         } else {
             deckswabber_entity_ai_sub_go_right();
         }
-    } else if (temp1 > temp0) {
+    } else {
         // Go up/down
         if (enemies_y[x] > player_tile_y) {
             deckswabber_entity_ai_sub_go_up();
