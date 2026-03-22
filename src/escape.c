@@ -863,35 +863,34 @@ void menu_game_complete_screen(void) {
 
 const unsigned char const settings_menu_selector_x[] = { // in pixels
      5 * 8 + 4,
+     3 * 8 + 4,
      5 * 8 + 4,
 };
-const unsigned char const settings_menu_toggle_text_x = 25; // in tiles
+const unsigned char const settings_menu_toggle_text_x[] = {
+    23,
+    24,
+    25,
+}; // in tiles - also ensure these values match in load_settings_menu
 
 const unsigned char const settings_menu_selector_y[] = { // in pixels, not tiles
     7 * 8 - 1,
+    9 * 8 - 1,
     19 * 8 - 1,
 };
 
 const unsigned char const settings_menu_text_y[] = { // in tiles, not pixels
     7,
+    9,
     0xff,
 }; // Could this be better if we define it as "constant plus (n * offset)" (e.g. [2] = 7+(1*2) = 9?)
 
-#define SETTINGS_OPTIONS 2
+#define SETTINGS_OPTIONS 3
 
 void load_settings_menu(void) {
     // All the toggles should be pre-populated with "Off" and "On"
-    for (temp0 = 0; temp0 < SETTINGS_OPTIONS - 1; ++temp0) {
-        // Map temp0 to a given bit in settings_memory
-        temp1 = temp0 & 0b111; // Index for bitmask
-        temp1 = settings_bitmask_lookup_table[temp1]; // bitmask for settings bit
-        temp2 = settings_memory[temp0 >> 3] & temp1; // 
 
-        temp5 = NTADR_A(settings_menu_toggle_text_x, settings_menu_text_y[temp0]);
-        
-        temppointer = temp2 ? string_on : string_off;
-        put_str(temp5, temppointer);
-    }
+    put_str(NTADR_A(23, 7), SETTINGS_IS_DOWN_TO_REVIVE_ENABLED ? string_on : string_off);
+    put_str(NTADR_A(24, 9), SETTINGS_ARE_SECRET_CHARACTERS_ENABLED ? string_on : string_off)
 
     menu_selection_count = SETTINGS_OPTIONS;
     temppointer = settings_menu_selector_x;
@@ -902,7 +901,7 @@ void menu_settings(void) {
     simple_menu_shared_behavior();
 
     if (pad1_new & PAD_A) {
-        switch (menu_selection) {
+        switch (menu_selection) { // Possible future optimization: turn this into a function table
             case SETTINGS_OPTIONS - 1: // Actual menu option:
                 // Clear all saved data
 
@@ -915,12 +914,17 @@ void menu_settings(void) {
                 SETTINGS_TOGGLE_DOWN_TO_REVIVE(); // This will save an unnecessary ldx/stx 
                 temp0 = SETTINGS_IS_DOWN_TO_REVIVE_ENABLED; // These aren't all located in the same bit, so...
                 goto DO_FOR_ALL_SETTINGS_TOGGLES;
+            case 1: // Toggle Secret Characters
+                SETTINGS_TOGGLE_ENABLE_SECRET_CHARACTERS();
+                temp0 = SETTINGS_ARE_SECRET_CHARACTERS_ENABLED;
+                goto DO_FOR_ALL_SETTINGS_TOGGLES;
             DO_FOR_ALL_SETTINGS_TOGGLES:
             default:
-                temp5 = NTADR_A(settings_menu_toggle_text_x, settings_menu_text_y[menu_selection]);
+                temp5 = NTADR_A(settings_menu_toggle_text_x[menu_selection], settings_menu_text_y[menu_selection]);
                 temppointer = temp0 ? string_on : string_off;
                 multi_vram_buffer_horz_indirect_ptr(temppointer, 3, temp5);
                 temppointer = settings_menu_selector_x;
+                update_checksum();
                 break;
         }
     }

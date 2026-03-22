@@ -312,7 +312,10 @@ void game_igloo(void) {
     if (IGLOO_SCORE_CHANGED_THIS_FRAME) { igloo_update_score(); }
 
     if (IGLOO_IS_GAME_OVER) {
-        
+        if (score > igloo_1p_high_score) {
+            igloo_1p_high_score = score;
+            update_checksum();
+        }
     } else if (game_seconds_timer > 0 || game_frame_timer > 0) {
         --game_frame_timer;
         if (game_frame_timer == 0) {
