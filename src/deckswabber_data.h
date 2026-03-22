@@ -10,6 +10,10 @@ const char deckswabber_bonus[] = "Bonus:";
 const char deckswabber_goal[] = "Goal";
 const char deckswabber_oops[] = "Oops...\0\0";
 const char deckswabber_tryagain[] = "Try again!";
+const char deckswabber_original_levels_title[] =    "\18 Original Levels \08";
+const char deckswabber_bonus_rounds_title[] =       " \18 Bonus Rounds \08 ";
+const char deckswabber_stowaway_sting_title[] =     "\18 Stowaway Sting \08";
+const char deckswabber_stowaway_bonus_title[] =     "\18 Stowaway Bonus \08";
 
 const unsigned char blumaroo_idle[] = {
     0, 0, 0x00, 0,
@@ -669,7 +673,7 @@ const unsigned char * const deckswabber_explosion_animation[] = {
 
 
 // Levels. Each hex digit corresponds to a tile type.
-// 0 is regular, 1 is water; 2-F will be extra types for extra levels.
+// 0 is regular, 1 is water; 2 is unpaintable; 3-F will be extra types for extra levels.
 
 const unsigned char deckswabber_original_map1[] = {
     0x00, 0x00, 0x00, 0x00,
@@ -781,6 +785,85 @@ const unsigned char deckswabber_original_map10[] = {
     0x00, 0x00, 0x00, 0x00,
 };
 
+const unsigned char deckswabber_stowaway_map1[] = {
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00,
+    0x03, 0x00, 0x00, 0x30,
+    0x00, 0x30, 0x03, 0x00,
+    0x03, 0x00, 0x00, 0x30,
+    0x00, 0x30, 0x03, 0x00,
+    0x03, 0x00, 0x00, 0x30,
+    0x00, 0x00, 0x00, 0x00,
+};
+
+const unsigned char deckswabber_stowaway_map2[] = {
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x10, 0x20, 0x00,
+    0x00, 0x00, 0x00, 0x10,
+    0x03, 0x01, 0x03, 0x10,
+    0x03, 0x00, 0x03, 0x01,
+    0x03, 0x30, 0x33, 0x00,
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x10, 0x10, 0x00,
+};
+
+const unsigned char deckswabber_stowaway_map3[] = {
+    0x00, 0x30, 0x10, 0x00,
+    0x02, 0x00, 0x20, 0x20,
+    0x10, 0x01, 0x30, 0x01,
+    0x00, 0x31, 0x11, 0x31,
+    0x13, 0x30, 0x01, 0x20,
+    0x00, 0x00, 0x00, 0x10,
+    0x02, 0x01, 0x00, 0x20,
+    0x00, 0x00, 0x00, 0x00,
+};
+
+const unsigned char deckswabber_stowaway_map4[] = {
+    0x00, 0x10, 0x00, 0x00,
+    0x00, 0x20, 0x01, 0x00,
+    0x00, 0x00, 0x00, 0x00,
+    0x03, 0x03, 0x30, 0x30,
+    0x00, 0x00, 0x00, 0x00,
+    0x03, 0x00, 0x10, 0x30,
+    0x03, 0x31, 0x03, 0x30,
+    0x00, 0x00, 0x00, 0x00,
+};
+
+const unsigned char deckswabber_stowaway_map5[] = {
+    0x00, 0x10, 0x01, 0x00,
+    0x01, 0x00, 0x00, 0x00,
+    0x00, 0x02, 0x00, 0x20,
+    0x02, 0x03, 0x00, 0x30,
+    0x00, 0x30, 0x00, 0x01,
+    0x00, 0x10, 0x00, 0x01,
+    0x00, 0x10, 0x21, 0x10,
+    0x00, 0x00, 0x00, 0x00,
+};
+
+// stowaway map6 == map3, don't bother duplicating it
+
+const unsigned char deckswabber_stowaway_map7[] = {
+    0x00, 0x10, 0x02, 0x01,
+    0x00, 0x00, 0x20, 0x00,
+    0x10, 0x00, 0x00, 0x00,
+    0x00, 0x01, 0x10, 0x01,
+    0x00, 0x30, 0x03, 0x21,
+    0x10, 0x00, 0x20, 0x00,
+    0x00, 0x02, 0x01, 0x00,
+    0x00, 0x20, 0x00, 0x00,
+};
+
+const unsigned char deckswabber_stowaway_map8[] = {
+    0x00, 0x02, 0x02, 0x10,
+    0x01, 0x01, 0x01, 0x00,
+    0x02, 0x00, 0x00, 0x10,
+    0x21, 0x00, 0x00, 0x21,
+    0x02, 0x00, 0x00, 0x12,
+    0x01, 0x00, 0x00, 0x21,
+    0x00, 0x12, 0x10, 0x10,
+    0x10, 0x00, 0x01, 0x01,
+};
+
 // Bitpacked tile x,y
 const unsigned char deckswabber_original_starting_coords[] = {
     0x00,
@@ -795,6 +878,16 @@ const unsigned char deckswabber_original_starting_coords[] = {
     0x77,
 };
 
+const unsigned char deckswabber_stowaway_starting_coords[] = {
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+};
+
 const unsigned char deckswabber_metatiles[] = {
     0x80, 0x81, 0x90, 0x91, 0, // Brown board, plain
     0x82, 0x83, 0x92, 0x93, 0, // Yellow board, plain
@@ -806,13 +899,13 @@ const unsigned char deckswabber_metatiles[] = {
     0xE8, 0xE9, 0xF8, 0xF9, 0, // Black board, wavy 
     // Others go below...
 
+    // This should remain the third-to-last (see deckswabber_constants.h)
+    // Logic elsewhere assumes that this is the first tile ID that doesn't need to be swabbed to complete a level
+    0x11, 0x11, 0x11, 0x11, 0, // Unpaintable tile
     // These two holes should stay the last two in this order
     0xA8, 0xA9, 0xB8, 0xB9, 1, // Water hole
     0xC8, 0xC9, 0xD8, 0xD9, 0, // Empty hole
 };
-
-#define DECKSWABBER_WATER_HOLE_ID (sizeof(deckswabber_metatiles)/5 - 2)
-#define DECKSWABBER_EMPTY_HOLE_ID (sizeof(deckswabber_metatiles)/5 - 1)
 
 // Code using these values assumes all will be 0...3
 const unsigned char deckswabber_metatile_palettes[] = {
@@ -825,14 +918,16 @@ const unsigned char deckswabber_metatile_palettes[] = {
     1,
     0,
     //
+    0,
     1,
     0,
 };
 
 const unsigned char deckswabber_nibble_to_tile_id_map[] = {
     0, // 0x0 -> Plain Tile
-    DECKSWABBER_WATER_HOLE_ID, // 0x1 -> Water hole
-    DECKSWABBER_EMPTY_HOLE_ID, // 0x2 -> Empty hole
+    DECKSWABBER_WATER_HOLE_ID,          // 0x1 -> Water hole
+    DECKSWABBER_EMPTY_HOLE_ID,          // 0x2 -> Empty hole
+    DECKSWABBER_UNPAINTABLE_TILE_ID,    // 0x3 -> Unpaintable tile
     // The rest of these could correspond to tiles that block 1 or more directions
 };
 
@@ -853,6 +948,15 @@ const unsigned char * const deckswabber_original_level_pack_levels[] = {
     deckswabber_original_map10,
 };
 
+const unsigned char * const deckswabber_stowaway_level_pack_levels[] = {
+    deckswabber_stowaway_map1,
+    deckswabber_stowaway_map2,
+    deckswabber_stowaway_map3,
+    deckswabber_stowaway_map4,
+    deckswabber_stowaway_map5,
+    deckswabber_stowaway_map7,
+    deckswabber_stowaway_map8,
+};
 
 const unsigned char deckswabber_original_level_pack_round_bounds[] = {
     0, 5, // Round 1: Start at level 0 (1-indexed 1), round up at level 5 (after beating 1-indexed level 5)
@@ -863,7 +967,29 @@ const unsigned char deckswabber_original_level_pack_round_bounds[] = {
     4, 9,
     5, 10,
     5, 10, // 8 rounds originally
-    // ... Add here for rounds 9-14
+    4, 10, // 9
+    4, 10, // 10
+    3, 10, // 11,
+    3, 10, // 12,
+    2, 10, // 13,
+    0, 10, // 14,
+};
+
+const unsigned char deckswabber_stowaway_level_pack_round_bounds[] = {
+    0, 7,
+    0, 7,
+    0, 7,
+    0, 7,
+    0, 7,
+    0, 7,
+    0, 7,
+    0, 7,
+    0, 7,
+    0, 7,
+    0, 7,
+    0, 7,
+    0, 7,
+    0, 7,
 };
 
 // What's the highest-value (number) tile this round?
@@ -904,25 +1030,45 @@ const unsigned char deckswabber_round_overflow_tile_value[] = {
 
 const unsigned char * const * const deckswabber_level_data_db[] = {
     deckswabber_original_level_pack_levels,
-    // ..., ..., "Stowaway Sting Levels",
+    deckswabber_original_level_pack_levels,
+    deckswabber_stowaway_level_pack_levels,
+    deckswabber_stowaway_level_pack_levels,
 };
 
 const char * const deckswabber_level_name_db[] = {
-    "Original Levels",
-    // "Stowaway Sting",
+   deckswabber_original_levels_title,
+   deckswabber_bonus_rounds_title,
+   deckswabber_stowaway_sting_title,
+   deckswabber_stowaway_bonus_title,
+};
+
+const unsigned char deckswabber_starting_round_db[] = {
+    0, // Original levels
+    0, // Stowaway levels
+    8, // Bonus rounds
+    8, // Bonus rounds
 };
 
 const unsigned char deckswabber_maximum_round_db[] = {
-    sizeof(deckswabber_original_level_pack_round_bounds)/2, // Original levels have 8 rounds
+    8, // Original levels have 8 rounds
+    8, // Stowaway levels
+    14, // Bonus rounds
+    14 // Bonus rounds
 };
 
 const unsigned char * const deckswabber_round_bounds_db[] = {
-    deckswabber_original_level_pack_round_bounds
+    deckswabber_original_level_pack_round_bounds,
+    deckswabber_original_level_pack_round_bounds,
+    deckswabber_stowaway_level_pack_round_bounds,
+    deckswabber_stowaway_level_pack_round_bounds,
 };
 
 // Expected to be bitpacked tile x,y
 const unsigned char * const deckswabber_starting_coords_db[] = {
     deckswabber_original_starting_coords,
+    deckswabber_original_starting_coords,
+    deckswabber_stowaway_starting_coords,
+    deckswabber_stowaway_starting_coords,
 };
 
 const unsigned char deckswabber_goal_hud_tiles_toprow[] = {

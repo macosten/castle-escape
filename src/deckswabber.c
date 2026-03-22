@@ -324,11 +324,11 @@ void begin_deckswabber_level(void) {
         temp0 = deckswabber_nibble_to_tile_id_map[temp0];
         temp1 = deckswabber_nibble_to_tile_id_map[temp1];
 
-        if (temp0 == DECKSWABBER_WATER_HOLE_ID || temp0 == DECKSWABBER_EMPTY_HOLE_ID) {
+        if (temp0 >= DECKSWABBER_UNPAINTABLE_TILE_ID) {
             --tiles_remaining;
         }
 
-        if (temp1 == DECKSWABBER_WATER_HOLE_ID || temp1 == DECKSWABBER_EMPTY_HOLE_ID) {
+        if (temp1 >= DECKSWABBER_UNPAINTABLE_TILE_ID) {
             --tiles_remaining;
         }
 
@@ -720,7 +720,7 @@ void deckswabber_player_movement(void) {
         // Update new tile if necessary (if this is a non-hazard tile)
         DeckswabberGetTileIndex(temp0, old_x, old_y);
         temp1 = tile_typemap[temp0];
-        if (temp1 < DECKSWABBER_WATER_HOLE_ID) {
+        if (temp1 < DECKSWABBER_UNPAINTABLE_TILE_ID) {
             temp_x = player_tile_x;
             temp_y = player_tile_y;
             AsmCallFunctionAtPtrOffsetByIndexVar(tile_increment_functions, eject_L);
@@ -1002,7 +1002,7 @@ void deckswabber_clear_tile(void) {
     DeckswabberGetTileIndex(temp0, temp_x, temp_y);
     temp2 = tile_typemap[temp0];
     
-    if (temp2 >= DECKSWABBER_WATER_HOLE_ID) { return; }
+    if (temp2 >= DECKSWABBER_UNPAINTABLE_TILE_ID) { return; }
     temp2 = tile_colormap[temp0];
     if (temp2 == deckswabber_round_highest_tile_value[round]) {
         ++tiles_remaining;

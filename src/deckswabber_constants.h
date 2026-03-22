@@ -19,8 +19,9 @@
     __asm__("sta %v", destinationVar); \
 };
 
-#define DECKSWABBER_WATER_HOLE_ID (sizeof(deckswabber_metatiles)/5 - 2)
-#define DECKSWABBER_EMPTY_HOLE_ID (sizeof(deckswabber_metatiles)/5 - 1)
+#define DECKSWABBER_UNPAINTABLE_TILE_ID (sizeof(deckswabber_metatiles)/5 - 3)
+#define DECKSWABBER_WATER_HOLE_ID       (sizeof(deckswabber_metatiles)/5 - 2)
+#define DECKSWABBER_EMPTY_HOLE_ID       (sizeof(deckswabber_metatiles)/5 - 1)
 
 #define DECKSWABBER_MAX_ONSCREEN_ENTITIES 7
 #define DECKSWABBER_SCREEN_ANTIBOUNCE_FRAMES 120
