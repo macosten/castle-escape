@@ -1157,7 +1157,7 @@ const unsigned char deckswabber_treasure_point_values[] = {
 
 #pragma rodata-name(push, "BANK5")
 
-// LibLZG'd data either need to be in Bank 5 or be copied to RAM because the LZG decode function is in bank 5
+// In bank 5 with all the other LZG'd screen data:
 const unsigned char const deckswabber_game_screen[] = {
 	76,90,71,0,0,4,0,0,0,1,41,158,174,97,9,1,
 	2,3,6,7,135,224,225,134,135,7,54,6,20,151,230,229,

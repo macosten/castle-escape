@@ -634,7 +634,7 @@ const unsigned char item_spawn_frame_delays[] = {
 
 #pragma rodata-name(push, "BANK5")
 
-// LibLZG'd data either need to be in Bank 5 or be copied to RAM because the LZG decode function is in bank 5
+// In bank 5 with all the other LZG'd screen data:
 const unsigned char const igloo_game_screen[] = {
 	76,90,71,0,0,4,0,0,0,1,85,39,224,114,121,1,
 	1,2,3,4,0,0,4,30,0,0,48,48,48,4,201,4,

@@ -710,7 +710,7 @@ const unsigned char const hasee_leftright_subpixel_movement_lut[] = {
 
 #pragma rodata-name(push, "BANK5")
 
-// LibLZG'd data either need to be in Bank 5 or be copied to RAM because the LZG decode function is in bank 5
+// In bank 5 with all the other LZG'd screen data:
 const unsigned char const hasee_game_screen[] = {
 	76,90,71,0,0,4,0,0,0,0,240,130,254,74,79,1,
 	1,2,3,4,177,177,177,178,0,4,23,176,177,4,1,2,

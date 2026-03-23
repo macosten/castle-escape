@@ -309,9 +309,6 @@ detectNTSC:
     .include "asm/math.s"
     .include "asm/score.s"
     .include "asm/helper.s"
-    
-; For every bank in which there should be level data, it's worth putting a 
-.segment "BANK0"
     .include "lib/lzgmini_6502.s"    
     
 ; Just going to follow what nesdoug did for music data and jam it into bank 6
