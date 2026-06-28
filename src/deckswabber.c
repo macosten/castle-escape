@@ -292,6 +292,7 @@ void begin_deckswabber_sub(void) {
     previous_score = 0;
     score = 0;
 
+    RESET_GAME_PAUSED();
 
     pal_bright(4);
 
@@ -464,7 +465,16 @@ void game_deckswabber(void) {
     // If not paused:
     set_prg_bank(DECKSWABBER_CODE_BANK);
 
-    if (tiles_remaining > 0 && energy > 0) {
+    if (GAME_PAUSED) {
+        if (pad1_new & PAD_START) {
+            TOGGLE_GAME_PAUSED();
+            sfx_play(SFX_UNPAUSED, 0);
+        } else if (pad1_new & PAD_B) {
+            // Quit
+            end_deckswabber();
+            return;
+        }
+    } else if (tiles_remaining > 0 && energy > 0) {
         deckswabber_player_movement();
         deckswabber_entity_movement();
         deckswabber_player_collision();
@@ -619,6 +629,11 @@ void game_deckswabber(void) {
             passive_entity_timer = 6;
         }
 
+
+        if (pad1_new & PAD_START) {
+            TOGGLE_GAME_PAUSED();
+            sfx_play(SFX_PAUSED, 0);
+        }
     } else if (energy == 0) { // Revert score to previous score
         if (transition_timer == DECKSWABBER_SCREEN_ANTIBOUNCE_FRAMES) {
             deckswabber_write_oops_message();
@@ -673,12 +688,6 @@ void game_deckswabber(void) {
 
     if (DECKSWABBER_SCORE_CHANGED_THIS_FRAME) { deckswabber_update_score(); }
     if (DECKSWABBER_HP_CHANGED_THIS_FRAME) { deckswabber_update_health_bar(); }
-
-    // Quit:
-    if (pad1 == (PAD_SELECT | PAD_START)) {
-        end_deckswabber();
-        return;
-    }
 
     // Debug functionality:
     // if (pad1 & PAD_SELECT) {
@@ -841,25 +850,34 @@ void deckswabber_draw_sprites(void) {
     set_prg_bank(DECKSWABBER_METASPRITE_BANK);
     oam_clear();
 
-    // We need to draw from front to back, so:
-    for (y = DECKSWABBER_TILE_HEIGHT; y != 0xFF; --y) {
-        if (player_tile_y == y) { deckswabber_draw_player(); }
+    if (GAME_PAUSED) {
+        oam_meta_spr(108, 112, deckswabber_paused_text_sprite);
+        deckswabber_draw_player();
+    } else {
+        // We need to draw from front to back, so:
+        for (y = DECKSWABBER_TILE_HEIGHT; y != 0xFF; --y) {
+            if (player_tile_y == y) { deckswabber_draw_player(); }
 
 
-        for (index = 0; index < shuffle_leg_size; ++index) {
-            temp1 = index + shuffle_offset;
-            AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
-            if (enemies_y[x] == y && IS_ENEMY_ACTIVE(x)) {
-                temp_x = 64 + (enemies_x[x] << 4);
-                temp_y = 54 + (enemies_y[x] << 4);
-                temp1 = enemies_type[x];
-                AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_entity_draw_fns, temp1);
-                oam_meta_spr(temp_x, temp_y, temppointer);
+            for (index = 0; index < shuffle_leg_size; ++index) {
+                temp1 = index + shuffle_offset;
+                AsmSet1ByteFromPtrAtIndexVar(x, shuffle_array, temp1);
+                if (enemies_y[x] == y && IS_ENEMY_ACTIVE(x)) {
+                    temp_x = 64 + (enemies_x[x] << 4);
+                    temp_y = 54 + (enemies_y[x] << 4);
+                    temp1 = enemies_type[x];
+                    AsmCallFunctionAtPtrOffsetByIndexVar(deckswabber_entity_draw_fns, temp1);
+                    oam_meta_spr(temp_x, temp_y, temppointer);
+                }
             }
         }
+        shuffle_offset += shuffle_leg_size;
+        if (shuffle_offset == shuffle_maximum) { shuffle_offset = 0; }
     }
-    shuffle_offset += shuffle_leg_size;
-    if (shuffle_offset == shuffle_maximum) { shuffle_offset = 0; }
+
+    #if DECKSWABBER_METASPRITE_BANK != DECKSWABBER_CODE_BANK
+        set_prg_bank(DECKSWABBER_CODE_BANK);
+    #endif
 }
 
 void deckswabber_draw_player(void) {

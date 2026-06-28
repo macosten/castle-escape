@@ -669,6 +669,21 @@ const unsigned char * const deckswabber_explosion_animation[] = {
     deckswabber_explosion4,
 };
 
+const unsigned char const deckswabber_paused_text_sprite[] = {
+    0, 0, 0xF0, 2,
+    6, 0, 0xF1, 2,
+   13, 0, 0xF2, 2,
+   19, 0, 0xF3, 2,
+   26, 0, 0xF4, 2,
+   31, 0, 0xF5, 2,
+    0, 8, 0xF6, 0,
+    6, 8, 0xF7, 2,
+   12, 8, 0xF8, 2,
+   20, 8, 0xF2, 2,
+   25, 8, 0xF9, 2,
+   31, 8, 0xFA, 2,
+  128
+};
 
 // Levels. Each hex digit corresponds to a tile type.
 // 0 is regular, 1 is water; 2 is unpaintable; 3-F will be extra types for extra levels.
