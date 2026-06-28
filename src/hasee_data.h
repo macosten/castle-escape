@@ -669,12 +669,18 @@ const unsigned char const hasee_metatiles[]={
 };
 
 const unsigned char const hasee_paused_text[] = {
-    0,  0, 0xF9, 1,
-    8,  0, 0xFA, 1,
-   16,  0, 0xFB, 1,
-   24,  0, 0xFC, 1,
-   32,  0, 0xFD, 1,
-   40,  0, 0xFE, 1,
+    0,  0, 0xF7, 0,
+    8,  0, 0xF8, 0,
+   16,  0, 0xF9, 0,
+   24,  0, 0xFA, 0,
+   32,  0, 0xFB, 0,
+   40,  0, 0xFC, 0,
+    0,  8, 0xE8, 0,
+    8,  8, 0xE9, 0,
+   16,  8, 0xEA, 0,
+   24,  8, 0xF9, 0,
+   32,  8, 0xEB, 0,
+   40,  8, 0xEC, 0,
   128
 };
 

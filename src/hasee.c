@@ -244,6 +244,7 @@ void begin_hasee_bounce_sub(void) {
     hitbox2.height = TREAT_HEIGHT;
 
     min_treat_time = 32;
+    RESET_GAME_PAUSED();
 
     seed_rng();
     srand(rand8());
@@ -270,23 +271,33 @@ void game_hasee_bounce(void) {
     // If not paused:
     set_prg_bank(HASEE_MOVEMENT_CODE_BANK);
 
-    if (HASEE_IS_MULTIPLAYER_GAME) {
-        hasee_multiplayer_movement();
-    } else {
-        hasee_singleplayer_movement();
+    if (!GAME_PAUSED) {
+        if (HASEE_IS_MULTIPLAYER_GAME) {
+            hasee_multiplayer_movement();
+        } else {
+            hasee_singleplayer_movement();
+        }
+        
+        hasee_treat_movement();
+        hasee_sprite_collisions();
     }
-    
-    hasee_treat_movement();
-
     // Even if paused:
     // draw score and other things
-    hasee_sprite_collisions();
     hasee_draw_sprites();
 
     if (HASEE_SCORE_CHANGED_THIS_FRAME) { hasee_update_score(); }
     
     // Decrement game timers (if not paused and if game seconds timer > 0)
-    if (game_seconds_timer > 0) {
+    
+    if (GAME_PAUSED) {
+        if (pad1_new & PAD_START || pad2_new & PAD_START) {
+            TOGGLE_GAME_PAUSED();
+            sfx_play(SFX_UNPAUSED, 0);
+        } else if (pad1_new & PAD_B || pad2_new & PAD_B) {
+            end_hasee_bounce();
+            return;
+        }
+    } else if (game_seconds_timer > 0) {
         --level_timer;
         if (level_timer == 0) {
             level_timer = LEVEL_FRAME_LENGTH;
@@ -356,6 +367,11 @@ void game_hasee_bounce(void) {
 
         if (player1_stun_timer) { --player1_stun_timer; }
         if (player2_stun_timer) { --player2_stun_timer; }
+
+        if (pad1_new & PAD_START || pad2_new & PAD_START) {
+            TOGGLE_GAME_PAUSED();
+            sfx_play(SFX_PAUSED, 0);
+        }
     } else {
         if (game_frame_timer) {
             --game_frame_timer;
@@ -381,10 +397,6 @@ void game_hasee_bounce(void) {
         }
     }
 
-    if (pad1 == (PAD_SELECT | PAD_START) || pad2 == (PAD_SELECT | PAD_START)) {
-        end_hasee_bounce();
-        return;
-    }
     //gray_line();
 }
 
@@ -401,7 +413,10 @@ void hasee_draw_sprites(void) {
     oam_clear();
 
     // Alternate drawing order in case many objects are in the same horizontal area
-    if (get_frame_count() & 1) {
+    
+    if (GAME_PAUSED) {
+        oam_meta_spr(104, 112, hasee_paused_text);
+    } else if (get_frame_count() & 1) {
         hasee_draw_hasees();
         hasee_draw_goodies();
     } else {
@@ -409,9 +424,9 @@ void hasee_draw_sprites(void) {
         hasee_draw_hasees();
     }
 
-    // if (GAME_PAUSED) { oam_meta_spr(108, 116, hasee_paused_text); }
-
-    // set_prg_bank(1); HASEE_METASPRITE_BANK is bank 1 at the moment...
+    #if HASEE_METASPRITE_BANK != HASEE_MOVEMENT_CODE_BANK
+        set_prg_bank(HASEE_MOVEMENT_CODE_BANK);
+    #endif
 }
 
 void hasee_draw_hasees(void) {
