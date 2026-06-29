@@ -7,6 +7,7 @@
 #include "asm/score.h"
 #include "enemy_macros.h"
 #include "other_macros.h"
+#include "player_macros.h"
 #include "structs.h"
 
 #include "constants.h"
@@ -35,6 +36,7 @@ ZEROPAGE_EXTERN(const unsigned char *, temppointer);
 ZEROPAGE_EXTERN(unsigned int, score);
 ZEROPAGE_EXTERN(unsigned char, game_mode);
 ZEROPAGE_EXTERN(unsigned char, player_flags);
+ZEROPAGE_EXTERN(unsigned char, player_flags2);
 ZEROPAGE_EXTERN(unsigned char, player_frame_timer);
 ZEROPAGE_EXTERN(unsigned char, menu);
 ZEROPAGE_EXTERN(unsigned char, shuffle_offset);
@@ -280,6 +282,8 @@ void begin_igloo_sub(void) {
     hitbox.height = MIKA_HEIGHT;
     carassa_speed = 0x0100;
 
+    RESET_GAME_PAUSED();
+
     seed_rng();
     srand(rand8());
 
@@ -302,15 +306,18 @@ void game_igloo(void) {
     // If not paused:
     set_prg_bank(IGLOO_CODE_BANK);
 
-    if (!IGLOO_IS_GAME_OVER) {
-        igloo_player_movement();
-        igloo_carassa_movement();
-    } else {
-        igloo_carassa_movement_gameover();
+    if (!GAME_PAUSED) {
+        if (!IGLOO_IS_GAME_OVER) {
+            igloo_player_movement();
+            igloo_carassa_movement();
+        } else {
+            igloo_carassa_movement_gameover();
+        }
+
+        igloo_item_movement();
+        igloo_sprite_collisions();
     }
 
-    igloo_item_movement();
-    igloo_sprite_collisions();
     igloo_draw_sprites();
 
     if (IGLOO_SCORE_CHANGED_THIS_FRAME) { igloo_update_score(); }
@@ -319,6 +326,14 @@ void game_igloo(void) {
         if (score > igloo_1p_high_score) {
             igloo_1p_high_score = score;
             update_checksum();
+        }
+    } else if (GAME_PAUSED) {
+        if (pad1_new & PAD_START) {
+            TOGGLE_GAME_PAUSED();
+            sfx_play(SFX_UNPAUSED, 0);
+        } else if (pad1_new & PAD_B) {
+            end_igloo();
+            return;
         }
     } else if (game_seconds_timer > 0 || game_frame_timer > 0) {
         --game_frame_timer;
@@ -367,6 +382,11 @@ void game_igloo(void) {
                     break;
                 }
             } // And as before if the screen is full it will just fail silently. No biggie.
+        }
+
+        if (pad1_new & PAD_START) {
+            TOGGLE_GAME_PAUSED();
+            sfx_play(SFX_PAUSED, 0);
         }
     } else if (round_begin_timer > 0) {
         // Start next round
@@ -740,10 +760,22 @@ void igloo_collision_with_piano(void) {
 
 void igloo_draw_sprites(void) {
     // clear all sprites from sprite buffer
+    #if IGLOO_METASPRITE_BANK != IGLOO_CODE_BANK
+        set_prg_bank(IGLOO_METASPRITE_BANK);
+    #endif
+
     oam_clear();
     igloo_draw_carassa();
-    igloo_draw_items();
+    if (GAME_PAUSED) {
+        oam_meta_spr(104, 112, igloo_paused_text);
+    } else {
+        igloo_draw_items();
+    }
     igloo_draw_mika();
+
+    #if IGLOO_METASPRITE_BANK != IGLOO_CODE_BANK
+        set_prg_bank(IGLOO_CODE_BANK);
+    #endif
 }
 
 void calculate_next_igloo_item(void) {

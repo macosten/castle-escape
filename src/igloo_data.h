@@ -508,6 +508,22 @@ const unsigned char * const igloot_metasprite_defaultdraw_lut[] = {
     item_piano, item_piano
 };
 
+const unsigned char const igloo_paused_text[] = {
+    0,  0, 0xF7, 0,
+    8,  0, 0xF8, 0,
+   16,  0, 0xF9, 0,
+   24,  0, 0xFA, 0,
+   32,  0, 0xFB, 0,
+   40,  0, 0xFC, 0,
+    0,  8, 0xE8, 0,
+    8,  8, 0xE9, 0,
+   16,  8, 0xEA, 0,
+   24,  8, 0xF9, 0,
+   32,  8, 0xEB, 0,
+   40,  8, 0xEC, 0,
+  128
+};
+
 const unsigned char igloot_hitbox_width_lookup_table[] = {
     16, // Bag
     16, // Chia Pop
