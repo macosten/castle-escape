@@ -2337,7 +2337,6 @@ void bg_collision_sub_collision_u(void) {
             score += 100;
             temp0 = 4;
         }
-        score += temp0;
         SET_SCORE_CHANGED_THIS_FRAME();
 
         SET_DID_HEADBONK();
