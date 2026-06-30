@@ -926,6 +926,12 @@ const unsigned char const paused_text[] = {
    24,  0, 0xFC, 1,
    32,  0, 0xFD, 1,
    40,  0, 0xFE, 1,
+    0,  8, 0xE6, 1,
+    8,  8, 0xE7, 1,
+   16,  8, 0xE9, 1,
+   24,  8, 0xFB, 1,
+   32,  8, 0xEA, 1,
+   40,  8, 0xEB, 1,
   128
 };
 

@@ -445,6 +445,13 @@ void game_castle_escape(void) {
     if (!GAME_PAUSED) {
         // set_prg_bank(2);
         movement();
+    } else {
+        // Back to whatever menu you were at before
+        if (pad1_new & PAD_B) {
+            switch_menu();
+            music_play(MENU_SONG);
+            return;
+        }
     }
     
     // Check to see what's on-screen
