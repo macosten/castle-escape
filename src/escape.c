@@ -136,6 +136,7 @@ unsigned int hasee_2p_high_score;
 unsigned int igloo_1p_high_score;
 unsigned int deckswabber_1p_high_scores[DECKSWABBER_LEVEL_PACK_COUNT];
 unsigned char deckswabber_furthest_rounds[DECKSWABBER_LEVEL_PACK_COUNT];
+unsigned char petpetpetwar_1p_high_score;
 
 unsigned char settings_memory[1];
 
@@ -156,6 +157,7 @@ void game_castle_escape(void);
 extern void game_hasee_bounce(void);
 extern void game_igloo(void);
 extern void game_deckswabber(void);
+extern void game_petpetpetwar(void);
 
 // Drawing functions.
 
@@ -248,6 +250,7 @@ void menu_more_games_menu(void);
 void menu_hasee_bounce_menu(void);
 void menu_igloo_menu(void);
 void menu_deckswabber_menu(void);
+void menu_petpetpetwar_menu(void);
 
 // Switch palettes/globals back to that of the more games menu.
 void menu_sub_back_to_moregames_menu(void);
@@ -261,6 +264,7 @@ void load_more_games_menu(void);
 void load_hasee_bounce_menu(void);
 void load_igloo_menu(void);
 void load_deckswabber_menu(void);
+void load_petpetpetwar_menu(void);
 
 // Functions in other files.
 extern void dialog_box_handler(void);
@@ -280,6 +284,7 @@ extern void draw_boss_dying(void);
 extern void begin_hasee_bounce(void);
 extern void begin_igloo(void);
 extern void begin_deckswabber(void);
+extern void begin_petpetpetwar(void);
 
 extern unsigned char const * titlescreen;
 
@@ -295,6 +300,7 @@ const void (* const menu_logic_functions[])(void) = {
     menu_hasee_bounce_menu,
     menu_igloo_menu,
     menu_deckswabber_menu,
+    menu_petpetpetwar_menu,
 };
 
 // If a menu needs something extra/special to be done before showing it, it'll do so in one of these functions.
@@ -308,6 +314,7 @@ const void (* const menu_load_functions[])(void) = {
     load_hasee_bounce_menu,
     load_igloo_menu,
     load_deckswabber_menu,
+    load_petpetpetwar_menu,
 };
 
 const unsigned char * const menu_compressed_data[] = {
@@ -329,6 +336,7 @@ const void (* const game_functions[])(void) = {
     game_hasee_bounce,
     game_igloo,
     game_deckswabber,
+    game_petpetpetwar,
 };
 
 void main (void) {
@@ -959,6 +967,7 @@ const unsigned char const more_games_menu_links[] = {
     MENU_HASEE_BOUNCE,
     MENU_IGLOO,
     MENU_DECKSWABBER,
+    MENU_PETPETPETWAR,
 };
 
 const unsigned char const more_games_menu_selector_x[] = { // in pixels
@@ -1224,6 +1233,47 @@ void menu_deckswabber_menu(void) {
 
         sfx_play(SFX_MENU_BEEP, 0);
     }
+
+    if (pad1_new & PAD_B) { // Back to main menu
+        menu_sub_back_to_moregames_menu();
+    }
+}
+
+#define PETPETPETWAR_OPTIONS 1
+
+extern unsigned char petpetpetwar_palette_sp[];
+extern unsigned char petpetpetwar_palette_bg[];
+
+const unsigned char const petpetpetwar_menu_selector_x[] = {
+    0 // Temp
+};
+
+const unsigned char const petpetpetwar_menu_selector_y[] = {
+    0 // Temp
+};
+
+void load_petpetpetwar_menu(void) {
+    menu_selection_count = PETPETPETWAR_OPTIONS;
+    temppointer = petpetpetwar_menu_selector_x;
+    temppointer1 = petpetpetwar_menu_selector_y;
+    active_game = GAME_PETPETPETWAR;
+    // Change to Petpetpet War Grapics
+    pal_fade_to(4, 0);
+    set_prg_bank(4);
+    set_chr_bank_0(8);
+    set_chr_bank_1(9);
+    pal_bg(petpetpetwar_palette_bg);
+    pal_spr(petpetpetwar_palette_sp);
+    // Load high score
+    convert_to_decimal(petpetpetwar_1p_high_score);
+    prepare_score_string();
+    // Nowhere to print this just yet
+    // ...Other menu prep not prototyped yet
+    pal_bright(4);
+}
+
+void menu_petpetpetwar_menu(void) {
+    simple_menu_shared_behavior();
 
     if (pad1_new & PAD_B) { // Back to main menu
         menu_sub_back_to_moregames_menu();
