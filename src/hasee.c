@@ -145,7 +145,6 @@ extern void LZG_decode(const unsigned char *src, unsigned char *dest);
 extern void prepare_score_string(void);
 extern void update_checksum(void);
 extern unsigned char __fastcall__ divide_by_3(unsigned char input);
-extern unsigned char __fastcall__ divide_by_26(unsigned char input);
 
 void game_hasee_bounce(void);
 void begin_hasee_bounce(void);

@@ -17,4 +17,3 @@ unsigned char __fastcall__ abs_subtract(unsigned char a, unsigned char b);
 
 // See: https://forums.nesdev.org/viewtopic.php?f=2&t=11336
 unsigned char __fastcall__ divide_by_3(unsigned char input);
-unsigned char __fastcall__ divide_by_26(unsigned char input);
